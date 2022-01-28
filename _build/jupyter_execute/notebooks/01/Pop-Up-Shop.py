@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Pop Up Shop
+# # Scenario Analysis: Pop Up Shop
+# 
+# ##
 # 
 # ![](https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg/1200px-Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg)
 # 
@@ -31,11 +33,13 @@
 # 
 # One possibility to order enough to meet expected demand. The expected demand is given by
 # 
+# $$
 # \begin{align*}
 # \mathbb E[D] & = \sum_{s} p_s D_s \\
 # & = 0.25\times 500 + 0.5\times 400 + 0.25\times 200 \\
 # & = 375
 # \end{align*}
+# $$
 # 
 # A spreadsheet analysis shows an average profit of &euro;5,052 and no scenario shows a loss. This would appear to be a satisfactory outcome.
 # 
@@ -56,12 +60,15 @@
 # 
 # The expected profit $\mathbb E[f]$ is given by
 # 
+# $$
 # \begin{align*}
 # \mathbb E[f] & = \sum_s p_s f_s
 # \end{align*}
+# $$
 # 
 # Operationally, $y_s$ can be no larger the number of items ordered, $x$, or the demand under scenario $s$, $D_s$. Putting this together, the problem to be solved is
 # 
+# $$
 # \begin{align*}
 # & \max_{x, y_s} \mathbb E[f] = \sum_{s\in S} p_s f_s \\
 # \text{subject to} \\
@@ -69,12 +76,11 @@
 # y_s & \leq x & \forall s \in S \\
 # y_s & \leq D_s & \forall s \in S
 # \end{align*}
+# $$
 # 
 # where $x$ is a non-negative number representing the number of items that will be ordered, and the non-negative variable $y_s$ refers the number of items sold in scenario $s$ in the set $S$ comprising all scenarios under consideration.
 
 # ## Coding the Model in Pyomo
-
-# 
 
 # In[1]:
 
