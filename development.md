@@ -4,7 +4,7 @@ This project is maintained using [JupyterBook](https://jupyterbook.org/intro.htm
 
 ## Media
 
-Video files need to be save in `_build/html/_static/media` where it can be referenced via the path `../_static/media/`
+Original versions of video files are maintained in the sub-directory `media` of the main project directory. For deployment, manually save a copy of the video file in `_build/html/_static/media` where it can be linked via the path `../_static/media/`. The reason for deploying a copy is to avoid any potential to overwrite or corrupt a media file in the process of rebuilding the static web pages.
 
 ## Building
 
