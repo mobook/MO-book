@@ -3,7 +3,9 @@
 
 # # Scenario Analysis: Pop Up Shop
 # 
-# ##
+# ```{margin} Under Development
+# This notebook is being developed based on older GLPK example.
+# ```
 # 
 # ![](https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg/1200px-Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg)
 # 
