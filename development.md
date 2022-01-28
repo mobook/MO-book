@@ -2,6 +2,12 @@
 
 This project is maintained using [JupyterBook](https://jupyterbook.org/intro.html).
 
+## Media
+
+Video files need to be save in `_build/html/_static/media` where it can be referenced via the path `../_static/media/`
+
+## Building
+
 After completing routine edits to notebooks, data, or configuration files, open a terminal window and navigate to the directory of the local git repository. 
 
 ```

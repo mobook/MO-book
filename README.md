@@ -1,3 +1,3 @@
-# MO-book
+# Companion Notebooks for Mathmematical Optimization
 
- Mathematical Opimization
+Repository for [Mathematical Optimization]()
