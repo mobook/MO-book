@@ -3,88 +3,129 @@
 
 # # Scenario Analysis: Pop Up Shop
 # 
-# ```{margin} Under Development
-# This notebook is being developed based on older GLPK example.
-# ```
-# 
 # ![](https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg/1200px-Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg)
 # 
 # Kürschner (talk) 17:51, 1 December 2020 (UTC), CC0, via Wikimedia Commons
 
-# ## The Problem
+# ## The problem
 # 
-# You've been offered an opportunity to operate a pop-up shop for events occuring at a famous location. For each event you'll be selling an item unique item. The items you would be selling costs &euro;5 each and you will be able to sell them for 20&euro;. But if they don't sell during the event then you will receive only 2 for each item returned to the supplier.
+# You've been offered an opportunity to operate a pop-up shop to sell a unique commemorative item for each event held at a famous location. The items cost &euro;12 each and you will be able to sell them for 40&euro;. Unsold items can be returned to the supplier but you will receive only &euro;2 due to their commemorative nature.
 # 
 # | Parameter | Symbol | Value |
 # | :---: | :---: | :---: |
-# | sales price | $r$ | &euro;20 |
-# | unit cost | $c$ | &euro;5 |
-# | salvage value | $w$ | &euro;2 |
+# | sales price | $r$ | 40 &euro; |
+# | unit cost | $c$ | 12 &euro; |
+# | salvage value | $w$ | 2 &euro; |
 # 
-# It is clear the more you sell the more profit you will earn. Demand for these items, however, will be high only if the weather is good. Historical data suggests typical scenarios.
-# 
-# | Scenario ($s$) | Demand ($D_s$) | Probability ($p_s$) |
+# The more you sell the more profit you will earn. Demand for these items, however, will be high only if the weather is good. Historical data suggests the following scenarios.
+
+# | Scenario ($s$) | Demand ($d_s$) | Probability ($p_s$) |
 # | :---: | :-----: | :----------: |
-# | Sunny Skies | 500 | 0.25 |
-# | Good Weather | 400 | 0.50 |
-# | Poor Weather | 200 | 0.25 |
+# | Sunny Skies | 650 | 0.10 |
+# | Good Weather | 400 | 0.60 |
+# | Poor Weather | 200 | 0.30 |
 # 
-# The ordering dilemma, of course, is that the weather won't be known until after the order is placed. Order enough items to meet demand for a good weather day results in a  financial penalty on returned goods if the weather is poor. But ordering just enough to satisfy the demand on a poor weather day leaves "money on the table" for good weather days.
-# 
-# What choice would you make?
-# 
-# One possibility to order enough to meet expected demand. The expected demand is given by
-# 
-# $$
-# \begin{align*}
-# \mathbb E[D] & = \sum_{s} p_s D_s \\
-# & = 0.25\times 500 + 0.5\times 400 + 0.25\times 200 \\
-# & = 375
-# \end{align*}
-# $$
-# 
-# A spreadsheet analysis shows an average profit of &euro;5,052 and no scenario shows a loss. This would appear to be a satisfactory outcome.
-# 
-# | Scenario ($s$) | Demand ($D_s$) | Probability ($p_s$) | Ordered ($x$) | Sold ($y_s$) | Salvage ($x - y_s$) | Profit ($f_s$) |
-# | :---: | :-----: | :----------: | :---: | :---: | :---: | :---: | 
-# | Sunny Skies | 500 | 0.30 | 380 | 380 | 0 | &euro;5,700 |
-# | Good Weather | 350 | 0.60 | 380 | 350 | 30 | &euro;5,160 |
-# | Poor Weather | 200 | 0.10 | 380 | 200 | 175 | &euro;2,460 |
-# | **Average** | **375** | | | | | **&euro;5,052** |
-# 
-# Can we find an order resulting in a higher expected profit?
-
-# ## A Model to Maximize Expected Profit
-# 
-# Given the variables defined in the table above, the profit $f_s$ for scenario $s$ is 
-# 
-# $$f_s = \underbrace{r y_s}_\text{sales revenue} + \underbrace{w (D_s - y_s)}_\text{salvage value} - \underbrace{c x}_\text{order cost}$$
-# 
-# The expected profit $\mathbb E[f]$ is given by
-# 
-# $$
-# \begin{align*}
-# \mathbb E[f] & = \sum_s p_s f_s
-# \end{align*}
-# $$
-# 
-# Operationally, $y_s$ can be no larger the number of items ordered, $x$, or the demand under scenario $s$, $D_s$. Putting this together, the problem to be solved is
-# 
-# $$
-# \begin{align*}
-# & \max_{x, y_s} \mathbb E[f] = \sum_{s\in S} p_s f_s \\
-# \text{subject to} \\
-# f_s & = r y_s + w(D_s - y_s) - c x & \forall s \in S\\
-# y_s & \leq x & \forall s \in S \\
-# y_s & \leq D_s & \forall s \in S
-# \end{align*}
-# $$
-# 
-# where $x$ is a non-negative number representing the number of items that will be ordered, and the non-negative variable $y_s$ refers the number of items sold in scenario $s$ in the set $S$ comprising all scenarios under consideration.
-
-# ## Coding the Model in Pyomo
+# Below we create a pandas DataFrame object to store the scenario data.
 
 # In[1]:
+
+
+import numpy as np
+import pandas as pd
+
+# price information
+r = 40
+c = 12
+w = 2
+
+# scenario information
+scenarios = {
+    "sunny skies" : {"prob": 0.10, "demand": 650},
+    "good weather": {"prob": 0.60, "demand": 400},
+    "poor weather": {"prob": 0.30, "demand": 200},
+}
+
+df = pd.DataFrame.from_dict(scenarios).T
+display(df)
+
+
+# The problem is to determine how many items to order for the pop-up shop. The dilemma is that the weather won't be known until after the order is placed. Ordering enough items to meet demand for a good weather day results in a  financial penalty on returned goods if the weather is poor. On the other hand, ordering just enough items to satisfy demand on a poor weather day leaves "money on the table" if the weather is good.
+# 
+# How many items should order for sale at the event?
+
+# ## Expected value for the mean scenario (EVM)
+#  
+# A naive solution to this proc is to place an order equal to the expected demand. The expected demand is given by
+# 
+# \begin{align*}
+# \mathbb E[D] & = \sum_{s\in S} p_s d_s 
+# \end{align*}
+# 
+# Choosing an order size $x = \mathbb E[d]$ results in an expected profit we call the **expected value of the mean scenario (EVM)**. 
+# 
+# Given an order size $x$, $y_s$ will be the number of items sold if scenario $s$ should occur. The amount sold is the lesser of the demand $d_s$ and $x$.
+# 
+# \begin{align*}
+# y_s & = \min(d_s, x) & \forall s \in S
+# \end{align*}
+# 
+# After completing event, the remaining inventory $x - y_s$ will be sold at the salvage price $w$. Taking into account the revenue from sales $r y_s$, the salvage value of the unsold inventory $w(x - y_s)$, and the cost of the order $c x$, the resulting profit $f_s$ for scenario $s$ is given by
+# 
+# \begin{align*}
+# f_s & = r y_s + w (x - y_s) - c  x & \forall s \in S
+# \end{align*}
+# 
+# The average or expected profit is given by
+# 
+# \begin{align*}
+# \text{EVM} = \mathbb E[f] & = \sum_{s\in S} p_s f_s
+# \end{align*}
+# 
+# These calculations can be executed using operations on the pandas dataframe. Let's begin by calculating the expected demand.
+
+# In[2]:
+
+
+expected_demand = sum(df["prob"] * df["demand"])
+print(f"Expected demand = {expected_demand}")
+
+
+# Subsequent calculations can be done directly with pandas dataframe holding the scenario data.
+
+# In[3]:
+
+
+df["order"] = expected_demand
+df["sold"] = df[["demand", "order"]].min(axis=1)
+df["salvage"] = df["order"] - df["sold"]
+df["profit"] = r * df["sold"] + w * df["salvage"] - c * df["order"]
+
+EVM = sum(df["prob"] * df["profit"])
+
+print(f"Mean demand = {expected_demand}")
+print(f"Expected value of the mean demand (EVM) = {EVM}")
+display(df)
+
+
+# ## Expected value of the stochastic solution (EV)
+# 
+# The optimization problem is to find the order size $x$ that maximizes expected profit subject to operational constraints on the decision variables. The variables $x$ and $y_s$ are non-negative, while $f_s$ can take on both positive and negative values. Operationally, the amount of goods sold in scenario $s$ has to be less than the order size $x$ and customer demand $d_s$. 
+# 
+# The problem to be solved is
+# 
+# $$
+# \begin{align*}
+# \text{EV} = & \max_{x, y_s} \mathbb E[F] = \sum_{s\in S} p_s f_s \\
+# \text{subject to:} \\
+# f_s & = r y_s + w(x - y_s) - c x & \forall s \in S\\
+# y_s & \leq x & \forall s \in S \\
+# y_s & \leq d_s & \forall s \in S
+# \end{align*}
+# $$
+# 
+# where $S$ is the set of all scenarios under consideration.
+
+# In[4]:
 
 
 import sys
@@ -100,201 +141,99 @@ if at_colab:
     _ = get_ipython().getoutput('pip install -q xpress')
 
 
-# We begin by encoding the problem data using standard Python objects. The scenario information is stored as nested dictionary ... a commonly used technique in Python to store structured data. Here each scenario is represented by a descriptive key. In turn, the value of each scenario is a dictionary with keys labeling the demand and probability.
-
-# In[2]:
-
-
-# price information
-r = 20
-c = 12
-w = 2
-
-# scenario information
-scenarios = {
-    "sunny skies" : {"demand": 500, "p": 0.30},
-    "good weather": {"demand": 350, "p": 0.60},
-    "poor weather": {"demand": 200, "p": 0.10},
-}
-
-
-# 
-
-# In[51]:
+# In[80]:
 
 
 import pyomo.environ as pyo
+import pandas as pd
+
+# price information
+r = 40
+c = 12
+w = 2  
+
+# scenario information
+scenarios = {
+    "sunny skies" : {"demand": 650, "p": 0.1},
+    "good weather": {"demand": 400, "p": 0.6},
+    "poor weather": {"demand": 200, "p": 0.3},
+}
+
+# specify solver
 solver = pyo.SolverFactory('cbc')
 
 # create model instance
-pm = pyo.ConcreteModel('Pop-up Shop')
+m = pyo.ConcreteModel('Pet Shop')
 
 # decision variables
-pm.x = pyo.Var(within=pyo.NonNegativeReals)
-pm.y = pyo.Var(scenarios, within=pyo.NonNegativeReals)
-pm.f = pyo.Var(scenarios)
+m.S = pyo.Set(initialize=scenarios.keys())
+m.x = pyo.Var(within=pyo.NonNegativeReals)
+m.y = pyo.Var(m.S, within=pyo.NonNegativeReals)
+m.f = pyo.Var(m.S)
 
 # objective
-pm.expected_profit = pyo.Objective(expr=sum([scenarios[s]["p"]*pm.f[s] for s in scenarios.keys()]), 
-                                   sense=pyo.maximize)
+m.EV = pyo.Objective(expr=sum([scenarios[s]["p"]*m.f[s] for s in m.S]), sense=pyo.maximize)
 
 # constraints
-pm.constraints = pyo.ConstraintList()
-for s in scenarios.keys():
-    pm.constraints.add(pm.f[s] == r*pm.y[s] + w*(scenarios[s]["demand"] - pm.y[s]) - c*pm.x)
-    pm.constraints.add(pm.y[s] <= pm.x)
-    pm.constraints.add(pm.y[s] <= scenarios[s]["demand"])
+m.constraints = pyo.ConstraintList()
+for s in m.S:
+    m.constraints.add(m.f[s] == r*m.y[s] + w*(m.x - m.y[s]) - c*m.x)
+    m.constraints.add(m.y[s] <= m.x)
+    m.constraints.add(m.y[s] <= scenarios[s]["demand"])
 
-pm.pprint()
+# solve
+results = solver.solve(m)
 
-
-# In[45]:
-
-
-expected_demand = sum([scenarios[s]["p"]*scenarios[s]["demand"] for s in scenarios.keys()])
-print(f"Expected Demand = {expected_demand}")
-print(f"Order size = {pm.x():0.1f} units")
-print(f"Expected Profit = {pm.expected_profit():0.2f}\n")
-print("Scenario      Probabilty  Demand  Order  Sales Salvage   Profit")
-for s in scenarios.keys():
-    p = scenarios[s]['p']
-    D = scenarios[s]['demand']
-    print(f"{s:12s}        {p:0.2f}     {pm.x():3.0f}    {D:3.0f}  {pm.y[s]():5.0f}   {D - pm.y[s]():5.0f}  {pm.f[s]():5.2f}")
-
-
-# In[4]:
-
-
-print(popup.expected_profit())
-print(popup.x())
-for s in scenarios.keys():
-    print(popup.y[s]())
-
-
-# In[97]:
-
-
-import numpy as np
-
-
-# expected demand
-x = np.sum([s["p"]*s["demand"] for key, s in scenarios.items()])
-print(f"Expected Demand = {x:0.1f} units\n")
-
-for key, s in scenarios.items():
-    y = min(s["demand"], x)
-    s["y"] = y
-    s["profit"] = r*y + w*(x-y) -  c*x
-    print(f"{key} profit = {s['profit']:0.2f}")
+# display solution using Pandas
+print("Solver Termination Condition:", results.solver.termination_condition)
+print("Expected Profit:", m.EV())
+print()
+for s in m.S:
+    scenarios[s]["order"] = m.x()
+    scenarios[s]["sold"] = m.y[s]()
+    scenarios[s]["salvage"] = m.x() - m.y[s]()
+    scenarios[s]["profit"] = m.f[s]()
     
-expected_profit = np.sum([s["p"]*s["profit"] for key, s in scenarios.items()])
-print(f"\nExpected Profit = {expected_profit:0.2f}")
+df = pd.DataFrame.from_dict(scenarios).T
+display(df)
 
 
-# ## Background
+# FINALIZE NARRATIVE IN BOOK, THEN MATCH TO THE BOOK.
 
-# ## Solution
+# Optimizing the expected value of the profit over all scenarios provides an expected profit of 8,920&euro;, an increase of 581&euro; that is the result of placing a larger order. In poor weather conditions there will be more returns and lower profit, but that is more than compensated by the increased profits in good weather conditions. The value of the stochastic solution is the additional profit compared to ordering to meet expected in demand. In this case,
+# 
+# $$\text{VSS} = \text{EV} - \text{EVM} = 8,920 - 8,339 = 581$$
 
-# In[1]:
+# ## Expected value with perfect information (EVPI)
+# 
+# An essential element of the model for maximizing expected profit is the requirement that size of the order be decided before knowing what scenario will unfold. The decision for $x$ has to be made "here and now" with probablistic information about the future, but no specific information which specific future will transpire.
+# 
+# But what if that infomration about the future could be obtained? How much additional profit could be realized if one could travel into the future to determine which scenario will take place, then place today's order accordingly?
+# 
+# To compute the expect profit with perfect information, we will allow the decision varaible $x_s$ to 
+# 
+# $$
+# \begin{align*}
+# \text{EVPI} = & \max_{x_s, y_s} \mathbb E[f] = \sum_{s\in S} p_s f_s \\
+# \text{subject to:} \\
+# f_s & = r y_s + w(x - y_s) - c x & \forall s \in S\\
+# y_s & \leq x_s & \forall s \in S \\
+# y_s & \leq d_s & \forall s \in S
+# \end{align*}
+# $$
+# 
 
-
-get_ipython().run_cell_magic('script', 'glpsol -m /dev/stdin', '\n# Example: Newsvendor.mod\n\n/* Unit Price Data */\nparam r >= 0;                              # Price\nparam c >= 0;                              # Cost\nparam w >= 0;                              # Salvage value\n\n/* Price data makes sense only if  Price > Cost > Salvage */\ncheck: c <= r;\ncheck: w <= c;\n\n/* Probabilistic Demand Forecast */\nset SCENS;                                 # Scenarios\nparam D{SCENS} >= 0;                       # Demand\nparam Pr{SCENS} >= 0;                      # Probability\n\n/* Probabilities must sum to one. */\ncheck: sum{k in SCENS} Pr[k] = 1;\n\n/* Expected Demand */\nparam ExD := sum{k in SCENS} Pr[k]*D[k];\n\n/* Lower Bound on Profit: Expected Value of the Mean Solution */\nparam EVM := -c*ExD + sum{k in SCENS} Pr[k]*(r*min(ExD,D[k])+w*max(ExD-D[k],0));\n\n/* Upper Bound on Profit: Expected Value with Perfect Information */\nparam EVPI := sum{k in SCENS} Pr[k]*(r-c)*D[k];\n\n/* Two Stage Stochastic Programming */\nvar x >= 0;                     # Stage 1 (Here and Now): Order Quqntity\nvar y{SCENS}>= 0;               # Stage 2 (Scenario Dep): Actual Sales\nvar ExProfit;                   # Expected Profit\n\n/* Maximize Expected Profit */\nmaximize OBJ: ExProfit;\n\n/* Goods sold are limited by the order quantities and the demand  */\ns.t. PRFT: ExProfit = -c*x + sum{k in SCENS} Pr[k]*(r*y[k] + w*(x-y[k]));\ns.t. SUPL {k in SCENS}: y[k] <= x;\ns.t. DMND {k in SCENS}: y[k] <= D[k];\n\nsolve;\n\ntable Table_EVM {k in SCENS} OUT "CSV" "evm.csv" "Table":\n   k~Scenario,\n   Pr[k]~Probability, \n   D[k]~Demand, \n   ExD~Order, \n   min(ExD,D[k])~Sold,\n   max(ExD-D[k],0)~Salvage, \n   -c*ExD + r*min(ExD,D[k]) + w*max(ExD-D[k],0)~Profit;\n   \ntable Table_EVPI {k in SCENS} OUT "CSV" "evpi.csv" "Table":\n   k~Scenario,\n   Pr[k]~Probability, \n   D[k]~Demand, \n   D[k]~Order, \n   D[k]~Sold,\n   0~Salvage, \n   -c*D[k] + r*D[k]~Profit;\n   \ntable Table_SP {k in SCENS} OUT "CSV" "evsp.csv" "Table":\n   k~Scenario,\n   Pr[k]~Probability, \n   D[k]~Demand, \n   x~Order, \n   y[k]~Sold,\n   x-y[k]~Salvage, \n   -c*x + r*y[k] + w*(x-y[k])~Profit;\n\ndata;\n\n/* Problem Data corresponds to a hypothetical case of selling programs prior \nto a home football game. */\n\nparam r := 10.00;                         # Unit Price\nparam c :=  6.00;                         # Unit Cost\nparam w :=  2.00;                         # Unit Salvage Value\n\nparam: SCENS:  Pr    D   :=\n       HiDmd   0.25  250\n       MiDmd   0.50  125\n       LoDmd   0.25   75 ;\n\nend;')
-
-
-# ### Expected Value for the Mean Scenario (EVM)
-
-# In[2]:
-
-
-import pandas
-evm = pandas.read_csv("evm.csv")
-display(evm)
-
-ev_evm = sum(evm['Probability']*evm['Profit'])
-print "Expected Value for the Mean Scenario = {:6.2f}".format(ev_evm)
-
-
-# ### Expected Value with Perfect Information (EVPI)
-
-# In[3]:
-
-
-evpi = pandas.read_csv("evpi.csv")
-display(evpi)
-
-ev_evpi = sum(evpi['Probability']*evpi['Profit'])
-print "Expected Value with Perfect Information = {:6.2f}".format(ev_evpi)
+# In[367]:
 
 
-# ### Expected Value by Stochastic Programming
+x = np.linspace(0, 700, 701)
+ep = pd.DataFrame({"order":x, "Expected Profit": [expected_profit(x) for x in x]})
+ax = ep.plot(x="order", title="Expected Profit", grid=True)
 
-# In[4]:
-
-
-evsp = pandas.read_csv("evsp.csv")
-display(evsp)
-
-ev_evsp = sum(evsp['Probability']*evsp['Profit'])
-print "Expected Value by Stochastic Programming = {:6.2f}".format(ev_evsp)
+for s in df.index:
+    x = df.loc[s, "demand"]
+    ax.plot(x, expected_profit(x), 'b.', ms=10)
+    
 
 
-# ### Value of Perfect Information
-
-# In[5]:
-
-
-print "Value of Perfect Information = {:6.2f}".format(ev_evpi-ev_evsp)
-
-
-# ### Value of the Stochastic Solution
-
-# In[6]:
-
-
-print "Value of the Stochastic Solution = {:6.2f}".format(ev_evsp-ev_evm)
-
-
-# In[6]:
-
-
-
-
-
-# In[30]:
-
-
-r = 1.00
-c = 0.60
-w = 0.25
-
-def profit(D,x):
-    return r*min([D,x]) + w*max([0,x-D]) - c*x
-
-
-# In[31]:
-
-
-scenarios = [['Low Demand',75,.25],['High Demand',200,.75]]
-
-
-# In[33]:
-
-
-def exprofit(x):
-    v = 0
-    for s in scenarios:
-        v += s[2]*profit(s[1],x)
-    return profit
-
-x = linspace(0,400,400)
-exprofit(100)
-
-
-# In[23]:
-
-
-x = linspace(0,400,400)
-plot(x,map(exprofit,x))
-xlabel('Order size')
-ylabel('Expected Profit')
-
+# We begin by encoding the problem data using Python objects. The scenario information as a pandas DataFrame ... a commonly used technique in Python to store structured data. The set of scenarios is the index to the dataframe.
