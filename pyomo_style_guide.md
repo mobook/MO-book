@@ -67,6 +67,10 @@ m.pprint()
 
 Pyomo models that are not accompanied by mathematical documentation defining the variables, parameters, constraints, and objectives  should use standard Python naming conventions. Following PEP 8, these names should be lower case with words separated by underscores as necessary to improve readability.
 
+
+
+
+
 ### Use Pyomo Sets for indexing
 
 Pyomo  modeling elements including `Param`,`Var`, `Constraint` should be indexed by Pyomo Sets rather than iterable Python objects.  For example, given a Python dictionary
@@ -88,13 +92,37 @@ Is preferred, rather than
 m.x = pyo.Var(bounds.keys())
 ```
 
-Consistent with conventional mathematical notation in optimization, use of upper-case letters to denote sets is an acceptable deviation from PEP style guidelines. Lower case letters can be used to denote elements of the set. For example,
+Use of upper-case letters to denote sets is an acceptable deviation from PEP style guidelines. Lower case letters can be used to denote elements of the set. For example,
+$$
+f = \min \sum_{b\in B} x_b
+$$
+may be written
 
 ```python
-m.objective = pyo.Objective(expr=sum(m.x[b] for b in m.B))
+m.f = pyo.Objective(expr=sum(m.x[b] for b in m.B))
 ```
 
+mimicking the mathematical notation.
 
+### Use lambda functions to improve readability
+
+Indexed constraints normally require a rule to generate the constraint from problem data. The rule is a Python function that returns a Pyomo equality or inequality expression, or a Python 3-tuple of the form (lb, expr, ub). The function requires a model instance as the first argument, and one additional argument for each index used to specify the constraint.
+
+In some cases rules are simple enough to express in a single line. For these cases a Python lambda expression may be used to improve readability. For example, the constraint
+
+```python
+def c_rule(m, s):
+  return m.x[s] <= m.ub[s]
+m.c = pyo.Constraint(m.S, rule=c_rule)
+```
+
+may be expressed as 
+
+```python
+m.c = pyo.Constraint(m.S, rule=lambda m, s: m.x[s] <= m.ub[s])
+```
+
+for a more succinct and readable specification of an indexed constraint.
 
 ## Working with Data
 
