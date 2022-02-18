@@ -27,6 +27,8 @@ Model and block names should be consistent with PEP 8 naming standards. For read
 ### Variable and Parameter names
 
 Models derived directly from a mathematical formulations in documentation accompanying the Pyomo model can use the same variable and parameter name. For example, a mathematical model written as
+
+
 $$
 \begin{aligned}
 & & f = \max_{x,  y}\quad & 3x + 4y\\
@@ -38,6 +40,8 @@ $$
 x + 2y & \leq 15 \\
 \end{aligned}
 $$
+
+
 
 which can be encoded
 
@@ -67,13 +71,13 @@ Pyomo models that are not accompanied by mathematical documentation defining the
 
 Pyomo  modeling elements including `Param`,`Var`, `Constraint` should be indexed by Pyomo Sets rather than iterable Python objects.  For example, given a Python dictionary
 
-```
+```python
 bounds = {"a": 12, "b": 23, "c": 14}
 ```
 
 The following
 
-```
+```python
 m.B = pyo.Set(initialize=bounds.keys())
 m.x = pyo.Var(m.B)
 ```
@@ -86,7 +90,7 @@ m.x = pyo.Var(bounds.keys())
 
 Consistent with conventional mathematical notation in optimization, use of upper-case letters to denote sets is an acceptable deviation from PEP style guidelines. Lower case letters can be used to denote elements of the set. For example,
 
-```
+```python
 m.objective = pyo.Objective(expr=sum(m.x[b] for b in m.B))
 ```
 
