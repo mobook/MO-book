@@ -1,15 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# <!--NOTEBOOK_HEADER-->
-# *This notebook contains material from the [ND-Pyomo-Cookbook](https://jckantor.github.io/ND-Pyomo-Cookbook) by
-# Jeffrey Kantor (jeff at nd.edu); the content is available [on Github](https://github.com/jckantor/ND-Pyomo-Cookbook.git).
-# *The text is released under the [CC-BY-NC-ND-4.0 license](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode),
-# and code is released under the [MIT license](https://opensource.org/licenses/MIT).*
-
-# <!--NAVIGATION-->
-# < [Job Shop Scheduling](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.02-Job-Shop-Scheduling.ipynb) | [Contents](toc.ipynb) | [Index](index.ipynb) | [Scheduling Multipurpose Batch Processes using State-Task Networks](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.04-Scheduling-Multipurpose-Batch-Processes-using-State-Task_Networks.ipynb) ><p><a href="https://colab.research.google.com/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.03-Maintenance-Planning.ipynb"><img align="left" src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open in Google Colaboratory"></a>
-
 # # Maintenance Planning
 # Keywords: scheduling, cbc usage, gdp, disjunctive programming
 
@@ -366,6 +357,3 @@ plot_schedule(m)
 # 1. Rather than specify how many maintenance periods must be accomodated, modify the model so that the process unit can operate no more than $N$ days without a maintenance shutdown.  (Hint. You may to introduce an additional set of binary variables, $z_t$ to denote the start of an operational period.)
 # 
 # 2. Do a systematic comparison of the Big-M, Convex Hull, and Cutting Plane techniques for implementing the disjunctive constraints. Your comparison should include a measure of complexity (such as the number of decision variables and constraints in the resulting transformed problems), computational effort, and the effect of solver (such as glpk vs cbc).
-
-# <!--NAVIGATION-->
-# < [Job Shop Scheduling](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.02-Job-Shop-Scheduling.ipynb) | [Contents](toc.ipynb) | [Index](index.ipynb) | [Scheduling Multipurpose Batch Processes using State-Task Networks](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.04-Scheduling-Multipurpose-Batch-Processes-using-State-Task_Networks.ipynb) ><p><a href="https://colab.research.google.com/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.03-Maintenance-Planning.ipynb"><img align="left" src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open in Google Colaboratory"></a>

@@ -1,15 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# <!--NOTEBOOK_HEADER-->
-# *This notebook contains material from the [ND-Pyomo-Cookbook](https://jckantor.github.io/ND-Pyomo-Cookbook) by
-# Jeffrey Kantor (jeff at nd.edu); the content is available [on Github](https://github.com/jckantor/ND-Pyomo-Cookbook.git).
-# *The text is released under the [CC-BY-NC-ND-4.0 license](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode),
-# and code is released under the [MIT license](https://opensource.org/licenses/MIT).*
-
-# <!--NAVIGATION-->
-# < [Maintenance Planning](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.03-Maintenance-Planning.ipynb) | [Contents](toc.ipynb) | [Index](index.ipynb) | [Unit Commitment](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.05-Unit-Commitment.ipynb) ><p><a href="https://colab.research.google.com/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.04-Scheduling-Multipurpose-Batch-Processes-using-State-Task_Networks.ipynb"><img align="left" src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open in Google Colaboratory"></a>
-
 # # Scheduling Multipurpose Batch Processes using State-Task Networks
 # 
 # Keywords: cbc usage, state-task networks, gdp, disjunctive programming, batch processes
@@ -574,12 +565,3 @@ print("    Final Inventories:")
 for s in STATES.keys():
         print("        {0:10s}  {1:6.1f} kg".format(s,model.S[s,H]()))
 
-
-# In[ ]:
-
-
-
-
-
-# <!--NAVIGATION-->
-# < [Maintenance Planning](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.03-Maintenance-Planning.ipynb) | [Contents](toc.ipynb) | [Index](index.ipynb) | [Unit Commitment](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.05-Unit-Commitment.ipynb) ><p><a href="https://colab.research.google.com/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.04-Scheduling-Multipurpose-Batch-Processes-using-State-Task_Networks.ipynb"><img align="left" src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open in Google Colaboratory"></a>

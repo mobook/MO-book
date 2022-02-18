@@ -1,15 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# <!--NOTEBOOK_HEADER-->
-# *This notebook contains material from the [ND-Pyomo-Cookbook](https://jckantor.github.io/ND-Pyomo-Cookbook) by
-# Jeffrey Kantor (jeff at nd.edu); the content is available [on Github](https://github.com/jckantor/ND-Pyomo-Cookbook.git).
-# *The text is released under the [CC-BY-NC-ND-4.0 license](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode),
-# and code is released under the [MIT license](https://opensource.org/licenses/MIT).*
-
-# <!--NAVIGATION-->
-# < [Scheduling Multipurpose Batch Processes using State-Task Networks](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.04-Scheduling-Multipurpose-Batch-Processes-using-State-Task_Networks.ipynb) | [Contents](toc.ipynb) | [Index](index.ipynb) | [Simulation](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/05.00-Simulation.ipynb) ><p><a href="https://colab.research.google.com/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.05-Unit-Commitment.ipynb"><img align="left" src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open in Google Colaboratory"></a>
-
 # # Unit Commitment
 # 
 # Keywords: semi-continuous variables, cbc usage, gdp, disjunctive programming
@@ -198,6 +189,3 @@ for n in N:
     for t in T:
         print("n = {0:2d}  t = {1:2d}   {2} {3}  {4:5.2f}".format(n, t, m_gdp.sc1[n,t].indicator_var(), m_gdp.sc2[n,t].indicator_var(), m.x[n,t]()))
 
-
-# <!--NAVIGATION-->
-# < [Scheduling Multipurpose Batch Processes using State-Task Networks](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.04-Scheduling-Multipurpose-Batch-Processes-using-State-Task_Networks.ipynb) | [Contents](toc.ipynb) | [Index](index.ipynb) | [Simulation](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/05.00-Simulation.ipynb) ><p><a href="https://colab.research.google.com/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.05-Unit-Commitment.ipynb"><img align="left" src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open in Google Colaboratory"></a>

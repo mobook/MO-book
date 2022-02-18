@@ -1,15 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# <!--NOTEBOOK_HEADER-->
-# *This notebook contains material from the [ND-Pyomo-Cookbook](https://jckantor.github.io/ND-Pyomo-Cookbook) by
-# Jeffrey Kantor (jeff at nd.edu); the content is available [on Github](https://github.com/jckantor/ND-Pyomo-Cookbook.git).
-# *The text is released under the [CC-BY-NC-ND-4.0 license](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode),
-# and code is released under the [MIT license](https://opensource.org/licenses/MIT).*
-
-# <!--NAVIGATION-->
-# < [Machine Bottleneck](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.01-Machine-Bottleneck.ipynb) | [Contents](toc.ipynb) | [Index](index.ipynb) | [Maintenance Planning](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.03-Maintenance-Planning.ipynb) ><p><a href="https://colab.research.google.com/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.02-Job-Shop-Scheduling.ipynb"><img align="left" src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open in Google Colaboratory"></a>
-
 # # Job Shop Scheduling
 # 
 # Keywords: job shop, scheduling, cbc usage, neos usage, cplex, gdp, disjunctive programming, batch processes
@@ -605,12 +596,3 @@ visualize(results)
 # ### Computational impact of a zero-wait policy
 # 
 # Repeat the benchmark problem calculation, but with a zero-wait policy. Does the execution time increase or descrease as a consequence of specifying zero-wait?
-
-# <!--NAVIGATION-->
-# < [Machine Bottleneck](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.01-Machine-Bottleneck.ipynb) | [Contents](toc.ipynb) | [Index](index.ipynb) | [Maintenance Planning](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.03-Maintenance-Planning.ipynb) ><p><a href="https://colab.research.google.com/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/04.02-Job-Shop-Scheduling.ipynb"><img align="left" src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open in Google Colaboratory"></a>
-
-# In[16]:
-
-
-
-
