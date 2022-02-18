@@ -4,7 +4,7 @@ The goal of this style guide is to standardize the development, presentation, an
 
 ## Pyomo Coding
 
-### Use `pyo` for Pyomo namespace
+### Use `pyo` for the Pyomo namespace
 
 For consistency with Pyomo documentation and the Pyomo book, the preferred namespace convention for Pyomo is `pyo` 
 
@@ -18,11 +18,11 @@ Instances of Pyomo optimization models can be create with `AbstractModel` or `Co
 
 Because Pyomo is embedded within Python, the preferred to method for creating model instances is a Python function or class that accepts parameter values and returns a `ConcreteModel` model instance.
 
-### Shorten model and block names when possible
+### Shorten model and block names when unambiguous
 
 For brevity and clarity, model and block names should be short and consistent with PEP 8 naming standards. A single lower case `m` is acceptable in most instances of a model with a single block. 
 
-### Use Pyomo Sets for indexing
+### Index with Pyomo Sets
 
 Pyomo  modeling elements including `Param`,`Var`, `Constraint` should be indexed by Pyomo Sets rather than utterable Python objects.  For example, given a Python dictionary
 
@@ -40,10 +40,16 @@ m.x = pyo.Var(m.B)
 Is preferred, rather than
 
 ```
-m.x = pyo.Var(boounds.keys())
+m.x = pyo.Var(bounds.keys())
 ```
 
-Consistent with conventional mathematical notation in optimization, use of upper-case letters to denote sets is an acceptable deviation from PEP style guidelines.
+Consistent with conventional mathematical notation in optimization, use of upper-case letters to denote sets is an acceptable deviation from PEP style guidelines. Lower case letters can be used to denote elements of the set. For example,
+
+```
+m.objective = pyo.Objective(expr=sum(m.x[b] for b in m.B))
+```
+
+
 
 ## Working with Data
 
