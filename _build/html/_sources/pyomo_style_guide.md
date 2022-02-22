@@ -1,32 +1,69 @@
-
-
 # Pyomo Style Guide
 
 This style guide supports the development of consistent, readable, and maintainable Pyomo models. These guidelines supplement standard Python style guides conventions, such as PEP 8, with specific recommendations for Pyomo. Comments and suggestions are welcome.
 
-## Pyomo Coding
+## Pyomo Rules
 
 ### Use `pyo` for the Pyomo namespace
 
-For consistency with Pyomo documentation and the Pyomo book, the preferred namespace convention for Pyomo is `pyo` 
+The preferred namespace convention for Pyomo is `pyo` 
 
 ```python
 import pyomo.environ as pyo
 ```
 
+Use of `pyo`  provides consistency with Pyomo [documentation](https://pyomo.readthedocs.io/en/stable/pyomo_overview/abstract_concrete.html) and the Pyomo book.
+
 ### Use `ConcreteModel`  instead of `AbstractModel`
 
-Pyomo provides two methods for creating model instances, `AbstractModel` or `ConcreteModel` as described in the [documentation](https://pyomo.readthedocs.io/en/stable/pyomo_overview/abstract_concrete.html). `AbstractModel` specifies a model with symbolic parameters which can be specified later to define a specific model instance. A `ConcreteModel` requires parameter values to be specified when the model is specified. 
+The preferred method for creating model instances is a Python function or class that accepts parameter values and returns a `ConcreteModel` model instance.
 
-Because Pyomo is embedded within Python, the preferred to method for creating model instances is a Python function or class that accepts parameter values and returns a `ConcreteModel` model instance.
+Pyomo provides two methods for creating model instances, `AbstractModel` or `ConcreteModel` as described in the [documentation](https://pyomo.readthedocs.io/en/stable/pyomo_overview/abstract_concrete.html).  A `ConcreteModel` requires parameter values to be known when the model is specified. `AbstractModel` specifies a model with symbolic parameters which can be specified later to define a specific instance of the generic model. However, because Pyomo is embedded within Python,  ``ConcreteModel` model instances can be created with Python function or class leaving little practical benefit for `AbstractModel`.
 
 ### Prefer short model and block names
 
-Model and block names should be consistent with PEP 8 naming standards. For readability and to avoid excessively long lines, short model names are preferred. A single lower case `m` is acceptable in most instances of a model with a single block. 
+Model and block names should be consistent with PEP 8 naming standards (i.e., all lowercase with words separated by underscore). Short model names are preferred.For readability and to avoid excessively long lines. A single lower case `m` is acceptable in  instances of a model with a single block. 
+
+Complex models may required more descriptive names for readability. Short names and abbreviations are still preferred to avoid excessively long lines.
+
+### Use Pyomo Sets for indexing
+
+Pyomo  modeling elements including `Param`,`Var`, `Constraint` should be indexed by Pyomo Sets rather than iterable Python objects.  For example, for a Python dictionary
+
+```python
+bounds = {"a": 12, "b": 23, "c": 14}
+```
+
+the following
+
+```python
+m.B = pyo.Set(initialize=bounds.keys())
+m.x = pyo.Var(m.B)
+```
+
+is preferred to
+
+```
+m.x = pyo.Var(bounds.keys())
+```
+
+For consistency with standard mathematical conventions, upper-case letters to denotes Pyomo sets is an acceptable deviation from PEP style guidelines. :ower case letters can be used to denote elements of the set. For example,
+$$
+f = \min \sum_{b\in B} x_b
+$$
+may be implemented as
+
+```python
+m.f = pyo.Objective(expr=sum(m.x[b] for b in m.B))
+```
+
+Which closely follows the mathematical notation.
 
 ### Variable and Parameter names
 
-Models derived directly from a mathematical formulations in documentation accompanying the Pyomo model can use the same variable and parameter name. For example, a mathematical model written as
+The choice of variable and parameter names are crucial for readable Pyomo models.
+
+When a formal mathematical formulation accompanies the documentation, Pyomo model may use the same variable and parameter name. For example, a mathematical model written as
 
 
 $$
@@ -41,9 +78,7 @@ x + 2y & \leq 15 \\
 \end{aligned}
 $$
 
-
-
-which can be encoded
+May be encoded
 
 ```python
 import pyomo.environ as pyo
@@ -65,56 +100,128 @@ m.b = pyo.Constraint(expr = m.x + 2*m.y <= 15)
 m.pprint()
 ```
 
-Pyomo models that are not accompanied by mathematical documentation defining the variables, parameters, constraints, and objectives  should use standard Python naming conventions. Following PEP 8, these names should be lower case with words separated by underscores as necessary to improve readability.
+When Pyomo models are not accompanied by mathematical documentation defining the variables, parameters, constraints, and objectives,  then standard Python naming conventions should be used. Following PEP 8, these names should be lower case with words separated by underscores to improve readability.
 
-### Use Pyomo Sets for indexing
+### Use `domain` rather than `within` 
 
-Pyomo  modeling elements including `Param`,`Var`, `Constraint` should be indexed by Pyomo Sets rather than iterable Python objects.  For example, given a Python dictionary
+The `pyomo.Var()` class accepts either `within` or `domain` as a keyword to specify decision variables. Offering options with no functional difference places an unnecessary cognitive burden on new users.   The use of `domain` is preferred because of its consistent use in mathematics to represent the set of all values for which a variable is defined.
 
-```python
-bounds = {"a": 12, "b": 23, "c": 14}
-```
+### Use `bounds` in `Var` when known
 
-The following
+Use of `bounds` is strongly encouraged as a best practice in mathematical optimization.  Providing bounds in `Var` eliminates the need for a constraint, simplifies coding and model display.
 
-```python
-m.B = pyo.Set(initialize=bounds.keys())
-m.x = pyo.Var(m.B)
-```
+### Use lambda functions to improve readability
 
-Is preferred, rather than
+Indexed constraints require a rule to generate the constraint from problem data. A rule is a Python function that returns a Pyomo equality or inequality expression, or a Python 3-tuple of the form (lb, expr, ub). The rule accepts a model instance as the first argument, and one additional argument for each index used to specify the constraint.
 
-```
-m.x = pyo.Var(bounds.keys())
-```
-
-Consistent with conventional mathematical notation in optimization, use of upper-case letters to denote sets is an acceptable deviation from PEP style guidelines. Lower case letters can be used to denote elements of the set. For example,
+In some cases rules are simple enough to express in a single line. For these cases a Python lambda expression may improve readability. For example, the indexed constraint
 
 ```python
-m.objective = pyo.Objective(expr=sum(m.x[b] for b in m.B))
+def new_constraint_rule(m, s):
+  return m.x[s] <= m.ub[s]
+m.new_constraint = pyo.Constraint(m.S, rule=c_rule)
 ```
 
+can be expressed in a single line.
 
+```python
+m.c = pyo.Constraint(m.S, rule=lambda m, s: m.x[s] <= m.ub[s])
+```
+
+Longer expressions can be broken into multi-line statements following PEP 8 guidelines for indentation.
+
+```python
+m.c = pyo.Constraint(m.S, rule=lambda m, s: 
+          m.x[s] <= m.ub[s])
+```
+
+Note that lambda functions are limited to Pyomo expressions that can be expressed in a single line of code.
+
+### Use rule naming conventions
+
+A common Pyomo convention is to name rules by adding`_rule` as a suffix to the name of the associated constraint. 
+
+```python
+ def new_constraint_rule(m, s):
+  return m.x[s] <= m.ub[s]
+m.new_constraint = pyo.Constraint(m.S, rule=c_rule)
+```
+
+### Prefer `Constraint` to `ConstraintList`
+
+The `ConstraintList` object is useful for using to Python coding to create a series of related constraints for which there is no simple indexing. However, it should not be used as a substitute for the use the for the more readable use of`Constraint` and an associated rules.
 
 ## Working with Data
+
+Reading, manipulating, and writing data sets often consumes a considerable amount of time and coding in routine projects. Standardizing on a basic set of principles for organizing data can streamline coding and model development. Below we promote the use of Tidy Data for managing data sets associated with Pyomo models.
 
 ### Use Tidy Data
 
 Tidy data is a semantic model for of organizing data sets. The core principle of Tidy data is that each data set is organized by rows and columns where each entry is a single value. Each column contains all data associated with single variable. Each row contains all values for a single observation. 
 
-Tidy data may be read in multiple ways. Pandas `DataFrame` objects are particularly well suited to Tidy Data and recommended for reading, writing, visualizing, and displaying Tidy Data.
+| senario | demand | Price |
+| ------- | -----: | ----: |
+| high    |    200 |    20 |
+| medium  |    100 |    18 |
+| low     |     50 |    15 |
 
-When using doubly nested Python dictionaries for Tidy Data, the primary keys will provide unique identifiers for each observation. Each observation is a dictionary where  secondary keys label the variables and each entry will consist of a single value.
+Tidy data may be read in multiple ways. Pandas `DataFrame` objects are well suited to Tidy Data and recommended for reading, writing, visualizing, and displaying Tidy Data.
+
+When using doubly nested Python dictionaries, the primary keys should provide unique identifiers for each observation. Each observation is a dictionary. The secondary keys label the variables in the observation, each entry consisting of a single value.
+
+```python
+scenarios = {
+  "high": {"demand": 200, "price": 20},
+  "medium": {"demand": 100, "price": 18},
+  "low": {"demand": 50, "price": 15}
+}
+```
 
 Alternative structures may include nested lists, lists of dictionaries, or numpy arrays. In each case a single data will be referenced as `data[obs][var]` where `obs` identifies a particular observation or slice of observations, and `var` identifies a variable.  
 
-Higher dimensional data structures should encode values as `data[ds][obs][var]` where `ds` identifies a data set composed of Tidy Data.
+### Multi-dimensional or Multi-indexed Data
+
+Pyomo models frequently require $n$-dimensional data, or data with $n$ indices. Following the principles of Tidy Data, variable values should appear in a single column, with additional columns to uniquely index each value.
+
+For example, the following table displays data showing the distance from a set of warehouses to a set of customers.
+
+|             | Customer 1 | Customer 2 | Customer 3 |
+| ----------- | ---------- | ---------- | ---------- |
+| Warehouse A | 254        | 173        | 330        |
+| Warehouse B | 340        | 128        | 220        |
+| Warehouse C | 430        | 250        | 225        |
+| Warehouse D | 135        | 180        | 375        |
+
+The distance variable is distributed among multiple columns. Reorganizing the data using Tidy Data principles results in a table with the all values for the distance variable in a single column.
+
+| Warehouse   | Customer   | Distance |
+| ----------- | ---------- | -------- |
+| Warehouse A | Customer 1 | 254      |
+| Warehouse B | Customer 1 | 340      |
+| Warehouse C | Customer 1 | 430      |
+| Warehouse D | Customer 1 | 135      |
+| Warehouse A | Customer 2 | 173      |
+| Warehouse B | Customer 2 | 128      |
+| Warehouse C | Customer 2 | 250      |
+| Warehouse D | Customer 2 | 180      |
+| Warehouse A | Customer 3 | 330      |
+| Warehouse B | Customer 3 | 220      |
+| Warehouse C | Customer 3 | 225      |
+| Warehouse D | Customer 3 | 375      |
+
+
 
 ### Use Pandas for display and visualization
 
 The Pandas library provides an extensive array of functions for the manipulation, display, and visualization of data sets. 
 
+## Acknowledgements
 
+This document is the result of interactions with students and colleagues over several years. Several individuals reviewed and provided feedback on early drafts. 
+
+* David Woodruff, UC Davis
+
+* Javier Salmeron-Medrano, Naval Postgraduate School
 
 
 
