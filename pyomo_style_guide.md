@@ -12,23 +12,41 @@ The preferred namespace convention for Pyomo is `pyo`
 import pyomo.environ as pyo
 ```
 
-Use of `pyo`  provides consistency with Pyomo [documentation](https://pyomo.readthedocs.io/en/stable/pyomo_overview/abstract_concrete.html) and the Pyomo book.
+Use of `pyo`  provides consistency with Pyomo [documentation](https://pyomo.readthedocs.io/en/stable/pyomo_overview/abstract_concrete.html) and the Pyomo book.  The usage
+
+```python
+# don't do this
+import pyomo.environ as *
+```
+
+Is strongly discouraged. In special cases where a less verbose style is desired, such as presentations or introducing Pyomo to new users, explicitly import the needed Pyomo objects. For example
+
+```python
+# for presentations or teaching examples
+from pyomo.environ import ConcreteModel, Var, Objective, maximize, SolverFactory
+```
+
+
 
 ### Use `ConcreteModel`  instead of `AbstractModel`
 
-The preferred method for creating model instances is a Python function or class that accepts parameter values and returns a `ConcreteModel` model instance.
+The preferred method for creating instances of Pyomo models is to use a Python function or class that accepts parameter values and returns a `ConcreteModel`.
 
-Pyomo provides two methods for creating model instances, `AbstractModel` or `ConcreteModel` as described in the [documentation](https://pyomo.readthedocs.io/en/stable/pyomo_overview/abstract_concrete.html).  A `ConcreteModel` requires parameter values to be known when the model is specified. `AbstractModel` specifies a model with symbolic parameters which can be specified later to define a specific instance of the generic model. However, because Pyomo is embedded within Python,  ``ConcreteModel` model instances can be created with Python function or class leaving little practical benefit for `AbstractModel`.
+Pyomo provides two methods for creating model instances, `AbstractModel` or `ConcreteModel`.  A `ConcreteModel` requires parameter values to be known when the model is specified. `AbstractModel` specifies a model with symbolic parameters which can be specified later to define a specific instance of the generic model. However, because Pyomo is embedded within Python,  ``ConcreteModel` model instances can be created in Python function or class using the full range of language features. For this reason, there is  little practical need or benefit for `AbstractModel`.
 
 ### Prefer short model and block names
 
-Model and block names should be consistent with PEP 8 naming standards (i.e., all lowercase with words separated by underscore). Short model names are preferred.For readability and to avoid excessively long lines. A single lower case `m` is acceptable in  instances of a model with a single block. 
+Model and block names should be consistent with PEP 8 naming standards (i.e., all lowercase with words separated by underscore). Short model names are preferred for readability and to avoid excessively long lines. A single lower case `m` is acceptable in  instances of a model with a single block. 
 
-Complex models may required more descriptive names for readability. Short names and abbreviations are still preferred to avoid excessively long lines.
+Complex models may require more descriptive names for readability. 
 
-### Use Pyomo Sets for indexing
+### Indexing with Pyomo Set and RangeSet
 
-Pyomo  modeling elements including `Param`,`Var`, `Constraint` should be indexed by Pyomo Sets rather than iterable Python objects.  For example, for a Python dictionary
+Pyomo model objects created with  `Param`,`Var`, `Constraint` that can be indexed by elements from a Pyomo Set or from iterable Python objects such as sets, lists, and dictionaries. 
+
+A Pyomo Set or RangeSet is preferred for most circumstances. Consistent use of Pyomo Set provides a  consistent expression of models which enhances readability. Use of Pyomo Set provides a clear interface between data "wrangling" and model creation making it easier to identify run-time bugs and refactor code. Pyomo Set also provides additional features useful  model building and deployment, including filtering and validation data.
+
+For a Python dictionary
 
 ```python
 bounds = {"a": 12, "b": 23, "c": 14}
@@ -47,7 +65,7 @@ is preferred to
 m.x = pyo.Var(bounds.keys())
 ```
 
-For consistency with standard mathematical conventions, upper-case letters to denotes Pyomo sets is an acceptable deviation from PEP style guidelines. :ower case letters can be used to denote elements of the set. For example,
+For consistency with standard mathematical conventions, upper-case letters to denotes Pyomo sets is an acceptable deviation from PEP style guidelines. Lower case letters can be used to denote elements of the set. For example, the objective
 $$
 f = \min \sum_{b\in B} x_b
 $$
@@ -57,7 +75,11 @@ may be implemented as
 m.f = pyo.Objective(expr=sum(m.x[b] for b in m.B))
 ```
 
-Which closely follows the mathematical notation.
+
+
+### Indexing with Python iterables
+
+Pyomo model objects may use of iterable Python objects, including Python generators, for indexing.  This may be preferred to the use of Pyomo Set and RangeSet for models indexed by large data sets. Python iterables, iterators, and generators can reduce the memory footprint and speed up model generation.  For model maintenance, care should be taken to document the rational behind these design decisions.
 
 ### Variable and Parameter names
 
@@ -139,7 +161,7 @@ Note that lambda functions are limited to Pyomo expressions that can be expresse
 
 ### Use rule naming conventions
 
-A common Pyomo convention is to name rules by adding`_rule` as a suffix to the name of the associated constraint. 
+A common Pyomo convention is to name rules by adding`_rule` as a suffix to the name of the associated constraint.
 
 ```python
  def new_constraint_rule(m, s):
@@ -209,7 +231,7 @@ The distance variable is distributed among multiple columns. Reorganizing the da
 | Warehouse C | Customer 3 | 225      |
 | Warehouse D | Customer 3 | 375      |
 
-
+When working with multi-dimensional data, or other complex data structures, special care should be taken to factor "data wrangling" from model building. 
 
 ### Use Pandas for display and visualization
 
