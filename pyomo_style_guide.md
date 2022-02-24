@@ -32,7 +32,7 @@ from pyomo.environ import ConcreteModel, Var, Objective, maximize, SolverFactory
 
 The preferred method for creating instances of Pyomo models is to use a Python function or class that accepts parameter values and returns a `ConcreteModel`.
 
-Pyomo provides two methods for creating model instances, `AbstractModel` or `ConcreteModel`.  A `ConcreteModel` requires parameter values to be known when the model is specified. `AbstractModel` specifies a model with symbolic parameters which can be specified later to define a specific instance of the generic model. However, because Pyomo is embedded within Python,  ``ConcreteModel` model instances can be created in Python function or class using the full range of language features. For this reason, there is  little practical need or benefit for `AbstractModel`.
+Pyomo provides two methods for creating model instances, `AbstractModel` or `ConcreteModel`.  A `ConcreteModel` requires parameter values to be known when the model is specified. `AbstractModel` specifies a model with symbolic parameters which can be specified later to define a specific instance of the generic model. However, because Pyomo is embedded within Python,  `ConcreteModel` model instances can be created in Python function or class using the full range of language features. For this reason, there is  little practical need or benefit for  `AbstractModel`.
 
 ### Prefer short model and block names
 
@@ -201,7 +201,7 @@ scenarios = {
 
 Alternative structures may include nested lists, lists of dictionaries, or numpy arrays. In each case a single data will be referenced as `data[obs][var]` where `obs` identifies a particular observation or slice of observations, and `var` identifies a variable.  
 
-### Multi-dimensional or Multi-indexed Data
+## Multi-dimensional or Multi-indexed Data
 
 Pyomo models frequently require $n$-dimensional data, or data with $n$ indices. Following the principles of Tidy Data, variable values should appear in a single column, with additional columns to uniquely index each value.
 
