@@ -2,6 +2,15 @@
 
 This style guide supports the development of consistent, readable, and maintainable Pyomo models. These guidelines supplement standard Python style guides conventions, such as PEP 8, with specific recommendations for Pyomo. Comments and suggestions are welcome.
 
+## Organizing a Pyomo Project
+
+An optimization calculation typically involve a sequence of discrete steps:
+
+1. **Data Preprocessing**. Retrieve and validate application data, wrangle data in preparation for model building. Intermingling data preprocessing and model building is to be avoided. To the practical extent possible, data preprocessing should be isolated from model building through the use of semantic organization (c.f., "Tidy Data" and "Tsibble"), Python data structures to organize data (c.f., nest dictionaries and Pandas), and use of Pyomo Set. 
+2. Creating a Model Instance.
+3. Solving a Model Instance.
+4. Post processing a model solution.
+
 ## Pyomo Rules
 
 ### Use `pyo` for the Pyomo namespace
