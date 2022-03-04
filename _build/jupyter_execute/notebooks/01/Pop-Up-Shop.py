@@ -141,7 +141,7 @@ if at_colab:
     _ = get_ipython().getoutput('pip install -q xpress')
 
 
-# In[80]:
+# In[7]:
 
 
 import pyomo.environ as pyo
@@ -160,7 +160,7 @@ scenarios = {
 }
 
 # specify solver
-solver = pyo.SolverFactory('cbc')
+solver = pyo.SolverFactory('gurobi', solver_io="python")
 
 # create model instance
 m = pyo.ConcreteModel('Pet Shop')
@@ -223,10 +223,13 @@ display(df)
 # $$
 # 
 
-# In[367]:
+# COMPLETE FUNCTION TO COMPUTE EVPI, THEN PLOT. NEEDS TO BE MORE READABLE.
+
+# In[8]:
 
 
 x = np.linspace(0, 700, 701)
+
 ep = pd.DataFrame({"order":x, "Expected Profit": [expected_profit(x) for x in x]})
 ax = ep.plot(x="order", title="Expected Profit", grid=True)
 
