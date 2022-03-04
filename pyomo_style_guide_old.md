@@ -1,18 +1,15 @@
 # Pyomo Style Guide
 
-This style guide supports the development and deployment of consistent, readable, and maintainable Pyomo code for modeling and optimization. These guidelines supplement standard Python style guides conventions, such as [PEP 8](https://www.python.org/dev/peps/pep-0008/), with specific recommendations for Pyomo. Comments and suggestions are welcome.
+This style guide supports the development of consistent, readable, and maintainable Pyomo models. These guidelines supplement standard Python style guides conventions, such as PEP 8, with specific recommendations for Pyomo. Comments and suggestions are welcome.
 
-## Pyomo Workflows
+## Organizing a Pyomo Project
 
-A typical development workflow comprises:
+An optimization calculation typically involve a sequence of discrete steps:
 
-* Collection and pre-processing of representative application data.
-* Pyomo model development
-* Computing a solution
-* Post-processing and analysis of solution data
-* Model testing and validation
-
-A typical deployment omits the model development and validation steps, but may integrate the remaining elements into existing application workflows. This style guide support these workflows emphasizing modularity and clean interfaces between successive steps. 
+1. **Data Preprocessing**. Retrieve and validate application data, wrangle data in preparation for model building. Intermingling data preprocessing and model building is to be avoided. To the practical extent possible, data preprocessing should be isolated from model building through the use of semantic organization (c.f., "Tidy Data" and "Tsibble"), Python data structures to organize data (c.f., nest dictionaries and Pandas), and use of Pyomo Set. 
+2. Creating a Model Instance.
+3. Solving a Model Instance.
+4. Post processing a model solution.
 
 ## Pyomo Rules
 
@@ -38,11 +35,13 @@ Is strongly discouraged. In special cases where a less verbose style is desired,
 from pyomo.environ import ConcreteModel, Var, Objective, maximize, SolverFactory
 ```
 
+
+
 ### Use `ConcreteModel`  instead of `AbstractModel`
 
-The preferred method for creating instances of Pyomo models is a Python function or class that accepts parameter values and returns a `ConcreteModel`.
+The preferred method for creating instances of Pyomo models is to use a Python function or class that accepts parameter values and returns a `ConcreteModel`.
 
-Pyomo provides two methods for creating model instances, `AbstractModel` or `ConcreteModel`.  A `ConcreteModel` requires parameter values to be known when the model is created. `AbstractModel` specifies a model with symbolic parameters which can be specified later to define an instance of the  model. However, because Pyomo is integrated within Python,  `ConcreteModel` model instances can be created with a Python function or class using the full range of language features. For this reason, there is  little benefit for  `AbstractModel`.
+Pyomo provides two methods for creating model instances, `AbstractModel` or `ConcreteModel`.  A `ConcreteModel` requires parameter values to be known when the model is specified. `AbstractModel` specifies a model with symbolic parameters which can be specified later to define a specific instance of the generic model. However, because Pyomo is embedded within Python,  `ConcreteModel` model instances can be created in Python function or class using the full range of language features. For this reason, there is  little practical need or benefit for  `AbstractModel`.
 
 ### Prefer short model and block names
 
@@ -52,17 +51,11 @@ Complex models may require more descriptive names for readability.
 
 ### Indexing with Pyomo Set and RangeSet
 
-Pyomo model objects created with `Param`,`Var`, and `Constraint` can be indexed by elements from a Pyomo Set or RangeSet. Alternatively, Pyomo model objects can be indexed with iterable Python objects such as sets, lists, dictionaries, and generators.
+Pyomo model objects created with  `Param`,`Var`, `Constraint` that can be indexed by elements from a Pyomo Set or from iterable Python objects such as sets, lists, and dictionaries. 
 
-A Pyomo Set or RangeSet is preferred for most circumstances.  There several reasons why:
+A Pyomo Set or RangeSet is preferred for most circumstances. Consistent use of Pyomo Set provides a  consistent expression of models which enhances readability. Use of Pyomo Set provides a clear interface between data "wrangling" and model creation making it easier to identify run-time bugs and refactor code. Pyomo Set also provides additional features useful  model building and deployment, including filtering and validation data.
 
-* Pyomo Set and RangeSet provides a clear and uniform separation between data pre-processing and model creation. 
-* Consistent use of Pyomo Set and RangeSet enhances readability by providing a  consistent expression of models.
-* Pyomo Set provides additional features for  model building and deployment, including filtering and data validation.
-* Internally, Pyomo can use Pyomo Sets and RangeSets to trace model dependencies which provides better error reporting and more accurate sensitivity calculations.
-* Pyomo creates an associated internal Pyomo Set each time Python iterables are used to create indexed model objects.  Creation of multiple objects with the same iterable results in redundant internal sets.
-
- Given a Python dictionary
+For a Python dictionary
 
 ```python
 bounds = {"a": 12, "b": 23, "c": 14}
@@ -81,31 +74,25 @@ is preferred to
 m.x = pyo.Var(bounds.keys())
 ```
 
-### Set and RangeSet names
-
-For consistency with standard mathematical conventions, upper-case names to denote Pyomo sets is an acceptable deviation from PEP style guidelines. Lower case  name can be used to denote elements of the set. For example, the objective
+For consistency with standard mathematical conventions, upper-case letters to denotes Pyomo sets is an acceptable deviation from PEP style guidelines. Lower case letters can be used to denote elements of the set. For example, the objective
 $$
-\tau^\text{total} = \min \sum_{\text{machine} \in \text{MACHINES}} \tau^\text{finish}_\text{machine}
+f = \min \sum_{b\in B} x_b
 $$
 may be implemented as
 
 ```python
-import pyomo.environ as pyo
-
-m = pyo.ConcreteModel()
-m.MACHINES = pyo.Set(initialize=["A", "B", "C"])
-m.finish = pyo.Var(m.MACHINES, domain=pyo.NonNegativeReals)
-m.total = pyo.Objective(expr=sum(m.finish[machine] for machine in m.MACHINES),
-                        sense=pyo.minimize)
+m.f = pyo.Objective(expr=sum(m.x[b] for b in m.B))
 ```
 
-### Constraint and Variable names
-
-The choice of constraint and variables names is crucial for readable Pyomo models. Normal practice is to use descriptive lower case names with words separated by underscores consistent with PEP 8 recommendations.
-
-Py
 
 
+### Indexing with Python iterables
+
+Pyomo model objects may use of iterable Python objects, including Python generators, for indexing.  This may be preferred to the use of Pyomo Set and RangeSet for models indexed by large data sets. Python iterables, iterators, and generators can reduce the memory footprint and speed up model generation.  For model maintenance, care should be taken to document the rational behind these design decisions.
+
+### Variable and Parameter names
+
+The choice of variable and parameter names are crucial for readable Pyomo models.
 
 When a formal mathematical formulation accompanies the documentation, Pyomo model may use the same variable and parameter name. For example, a mathematical model written as
 
@@ -152,9 +139,7 @@ The `pyomo.Var()` class accepts either `within` or `domain` as a keyword to spec
 
 ### Use `bounds` in `Var` when known
 
-Use of `bounds` is  encouraged as a best practice in mathematical optimization.  Providing bounds in `Var` reduces the number of explicit constraints in the model and may simplify coding and model display.
-
-Note, however, the
+Use of `bounds` is strongly encouraged as a best practice in mathematical optimization.  Providing bounds in `Var` eliminates the need for a constraint, simplifies coding and model display.
 
 ### Use lambda functions to improve readability
 
