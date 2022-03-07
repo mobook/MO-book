@@ -21,9 +21,9 @@
 
 - [5 problems from Airbus Quantum Computing Challenge](https://www.airbus.com/en/innovation/disruptive-concepts/quantum-technologies/airbus-quantum-computing-challenge) - cons: too much physics? Too hard problems?
 
-- [Alireza Soroudi: The Art of Optimal Decision Making in Python: Pyomo Package](https://www.youtube.com/watch?v=oivo-XAvum8) 
+- [(Youtube) Alireza Soroudi: The Art of Optimal Decision Making in Python: Pyomo Package](https://www.youtube.com/watch?v=oivo-XAvum8) 
 
-- [Alireza Soroudi: Application of Commercial and Open Source Tools in Power System Optimization](https://www.youtube.com/watch?app=desktop&v=VxYCI8Crr-w)
+- [(Youtube) Alireza Soroudi: Application of Commercial and Open Source Tools in Power System Optimization](https://www.youtube.com/watch?app=desktop&v=VxYCI8Crr-w)
 
 - **[Curated list of Linkedin's Alireza Soroudi's posts](https://www.linkedin.com/pulse/applications-pyomo-optimal-decision-making-alireza-soroudi/)**
 
