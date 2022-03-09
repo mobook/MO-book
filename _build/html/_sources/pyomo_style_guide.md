@@ -2,7 +2,7 @@
 
 This style guide supports the development and deployment of consistent, readable, and maintainable Pyomo code for modeling and optimization. These guidelines supplement standard Python style guides conventions, such as [PEP 8](https://www.python.org/dev/peps/pep-0008/), with specific recommendations for Pyomo. Comments and suggestions are welcome.
 
-## Pyomo Workflows
+## Workflows
 
 A typical development workflow comprises:
 
@@ -14,7 +14,7 @@ A typical development workflow comprises:
 
 A typical deployment omits the model development and validation steps, but may integrate the remaining elements into existing application workflows. This style guide support these workflows emphasizing modularity and clean interfaces between successive steps. 
 
-## Pyomo Rules
+## Coding Conventions
 
 ### Use `pyo` for the Pyomo namespace
 
@@ -50,16 +50,16 @@ Model and block names should be consistent with PEP 8 naming standards (i.e., al
 
 Complex models may require more descriptive names for readability. 
 
-### Indexing with Pyomo Set and RangeSet
+### Index with Pyomo Set and RangeSet
 
 Pyomo model objects created with `Param`,`Var`, and `Constraint` can be indexed by elements from a Pyomo Set or RangeSet. Alternatively, Pyomo model objects can be indexed with iterable Python objects such as sets, lists, dictionaries, and generators.
 
-A Pyomo Set or RangeSet is preferred for most circumstances.  There several reasons why:
+Indexing with a Pyomo Set or RangeSet is preferred for most circumstances.  There several reasons why:
 
 * Pyomo Set and RangeSet provides a clear and uniform separation between data pre-processing and model creation. 
 * Consistent use of Pyomo Set and RangeSet enhances readability by providing a  consistent expression of models.
 * Pyomo Set provides additional features for  model building and deployment, including filtering and data validation.
-* Internally, Pyomo can use Pyomo Sets and RangeSets to trace model dependencies which provides better error reporting and more accurate sensitivity calculations.
+* Pyomo uses Sets and RangeSets to trace model dependencies which provides better error reporting and sensitivity calculations.
 * Pyomo creates an associated internal Pyomo Set each time Python iterables are used to create indexed model objects.  Creation of multiple objects with the same iterable results in redundant internal sets.
 
  Given a Python dictionary
@@ -81,9 +81,70 @@ is preferred to
 m.x = pyo.Var(bounds.keys())
 ```
 
-### Set and RangeSet names
+### Parameters
 
-For consistency with standard mathematical conventions, upper-case names to denote Pyomo sets is an acceptable deviation from PEP style guidelines. Lower case  name can be used to denote elements of the set. For example, the objective
+Pyomo modelers may prefer to use native Python data structures rather declare and use instances of parameters created using the `pyomo.Param()` class. However, there are circumstances when Pyomo parameters are preferred. Pyomo parameters should be used 
+
+* with `mutuable=True` should be used when a model will be solved for multiple parameter values.
+* when the use of native Python data structures would reduce readability.
+* when developing more complex model requiring  clear interfaces among modules that document model data, provide default values and validation.
+
+### Variables
+
+#### Use `domain` rather than `within` 
+
+The `pyomo.Var()` class accepts either `within` or `domain` as a keyword to specify decision variables. Offering options with no functional difference places an unnecessary cognitive burden on new users.   Consistent use of `domain` is preferred because of its common use in mathematics to represent the set of all values for which a variable is defined.
+
+#### Use `bounds` when known and fixed
+
+When known and fixed, use of `bounds` when creating a variable is a best practice in mathematical optimization.  Providing bounds in `Var` reduces the number of explicit constraints in the model simplifies coding and model display. 
+
+If, however, variable bounds may change during the course of problem solving, then explicit constraints should be used.
+
+### Constraints and Objective
+
+#### Prefer `Constraint` to `ConstraintList`
+
+The `pyomo.ConstraintList()` class is useful for creating a collection of constraints for which there is no simple indexing,  such as implementing algorithms featuring constraint generation. However, ConstraintList should not be used as a substitute for the more structured and readable use of`pyomo.Constraint()`. 
+
+#### Use decorators to improve readability
+
+A recent innovation in Pyomo is the use of Python decorators to create Constraint, Objective, and Disjunction objects. The use of decorators eliminates redundancy and improves readability.
+
+The syntax is straightforward for objectives and simple constraints. Keywords are included in the decorator.
+
+````python
+@model.Constraint()
+def demand_constraint(model):
+  return model.x + model.y <= 40
+
+@model.Objective(sense=pyo.maximize)
+def profit(model):
+  return 3*model.x + 4*model.y
+````
+
+Indices are also included in the decorator for indexed objects.
+
+```python
+@model.Constraint(model.SOURCES)
+def capacity_constraint(model, src):
+  return sum(model.ship[src, dst] for dst in model.DESTINATIONS) <= model.CAPACITY[src]
+
+@model.Constraint(model.DESTINATIONS)
+def demand_constraint(model, dst):
+  return sum(model.ship[src, dst] for dst in model.SOURCES) <= model.DEMAND[dst]
+
+```
+
+## Naming Conventions
+
+The choice of constraint and variables names is important for readable Pyomo models. Good practice is to use descriptive lower case names with words separated by underscores consistent with PEP 8 recommendations. 
+
+Pyomo models commonly use alternative conventions to enhance readability by visually distinguishing components of a model.
+
+### Set and RangeSet names may be all caps
+
+Consistent with common mathematical conventions in optimization modeling, use of upper-case names to denote Pyomo sets is an acceptable deviation from PEP style guidelines. Corresponding lower case  name can then be used to denote elements of the set. For example, the objective
 $$
 \tau^\text{total} = \min \sum_{\text{machine} \in \text{MACHINES}} \tau^\text{finish}_\text{machine}
 $$
@@ -94,20 +155,22 @@ import pyomo.environ as pyo
 
 m = pyo.ConcreteModel()
 m.MACHINES = pyo.Set(initialize=["A", "B", "C"])
-m.finish = pyo.Var(m.MACHINES, domain=pyo.NonNegativeReals)
-m.total = pyo.Objective(expr=sum(m.finish[machine] for machine in m.MACHINES),
-                        sense=pyo.minimize)
+m.finish_time = pyo.Var(m.MACHINES, domain=pyo.NonNegativeReals)
+
+@m.Objective(sense=pyo.minimize)
+def total_time(model):
+  return sum(m.finish_time[machine] for machine in m.MACHINES),
 ```
 
-### Constraint and Variable names
+### Parameter names may be capitalized
 
-The choice of constraint and variables names is crucial for readable Pyomo models. Normal practice is to use descriptive lower case names with words separated by underscores consistent with PEP 8 recommendations.
+Parameter names, especially mutable parameters intended for use in parametric studies, may use capitalized words (i.e.,  "CamelCase").
 
-Py
+### Use descriptive Constraint and Variable names
 
+Objectives, constraints, variables, disjuncts, and disjunctions should use descriptive names following PEP 8 guidelines with lower case words separated by underscore (i.e, "snake_case").  
 
-
-When a formal mathematical formulation accompanies the documentation, Pyomo model may use the same variable and parameter name. For example, a mathematical model written as
+As an exception for small tutorial examples where mathematical formulation accompanies the model,  the corresponding Pyomo model may use the same variable and parameter name. For example, a mathematical model written as
 
 
 $$
@@ -144,48 +207,34 @@ m.b = pyo.Constraint(expr = m.x + 2*m.y <= 15)
 m.pprint()
 ```
 
-When Pyomo models are not accompanied by mathematical documentation defining the variables, parameters, constraints, and objectives,  then standard Python naming conventions should be used. Following PEP 8, these names should be lower case with words separated by underscores to improve readability.
-
-### Use `domain` rather than `within` 
-
-The `pyomo.Var()` class accepts either `within` or `domain` as a keyword to specify decision variables. Offering options with no functional difference places an unnecessary cognitive burden on new users.   The use of `domain` is preferred because of its consistent use in mathematics to represent the set of all values for which a variable is defined.
-
-### Use `bounds` in `Var` when known
-
-Use of `bounds` is  encouraged as a best practice in mathematical optimization.  Providing bounds in `Var` reduces the number of explicit constraints in the model and may simplify coding and model display.
-
-Note, however, the
-
-### Use lambda functions to improve readability
-
-Indexed constraints require a rule to generate the constraint from problem data. A rule is a Python function that returns a Pyomo equality or inequality expression, or a Python 3-tuple of the form (lb, expr, ub). The rule accepts a model instance as the first argument, and one additional argument for each index used to specify the constraint.
-
-In some cases rules are simple enough to express in a single line. For these cases a Python lambda expression may improve readability. For example, the indexed constraint
+This practice is generally discouraged. However, because the resulting models are not easily read without reference to the accompanying mathematical notes. Pyomo includes a `.doc`  attribute that can be used to document relationships between the Pyomo model and any reference materials.
 
 ```python
-def new_constraint_rule(m, s):
-  return m.x[s] <= m.ub[s]
-m.new_constraint = pyo.Constraint(m.S, rule=c_rule)
+import pyomo.environ as pyo
+
+# create model instance
+m = pyo.ConcreteModel()
+
+# decision variables
+m.production_x = pyo.Var(domain=pyo.NonNegativeReals, doc="x")
+m.production_y = pyo.Var(domain=pyo.NonNegativeReals, doc="y")
+
+# objective
+m.profit = pyo.Objective(expr = 40*m.production_x + 30*m.production_y, sense=pyo.maximize)
+m.profit.doc = "f"
+
+# declare constraints
+m.labor_a = pyo.Constraint(expr = 2*m.production_x + m.production_y <= 10, doc="A")
+m.labor_b = pyo.Constraint(expr = m.production_x + 2*m.production_y <= 15, doc="B")
+
+m.pprint()
+
 ```
 
-can be expressed in a single line.
+### Rule naming conventions
 
-```python
-m.c = pyo.Constraint(m.S, rule=lambda m, s: m.x[s] <= m.ub[s])
-```
+Indexed Pyomo constraints are constructed by a rule. When using decorators, the rule is constructed automatically.  When using `pyomo.Constraint()`  rules should named by adding`_rule` as a suffix to the name of the associated constraint.
 
-Longer expressions can be broken into multi-line statements following PEP 8 guidelines for indentation.
-
-```python
-m.c = pyo.Constraint(m.S, rule=lambda m, s: 
-          m.x[s] <= m.ub[s])
-```
-
-Note that lambda functions are limited to Pyomo expressions that can be expressed in a single line of code.
-
-### Use rule naming conventions
-
-A common Pyomo convention is to name rules by adding`_rule` as a suffix to the name of the associated constraint.
 
 ```python
  def new_constraint_rule(m, s):
@@ -193,11 +242,8 @@ A common Pyomo convention is to name rules by adding`_rule` as a suffix to the n
 m.new_constraint = pyo.Constraint(m.S, rule=c_rule)
 ```
 
-### Prefer `Constraint` to `ConstraintList`
 
-The `ConstraintList` object is useful for using to Python coding to create a series of related constraints for which there is no simple indexing. However, it should not be used as a substitute for the use the for the more readable use of`Constraint` and an associated rules.
-
-## Working with Data
+## Data Styles and Conventions
 
 Reading, manipulating, and writing data sets often consumes a considerable amount of time and coding in routine projects. Standardizing on a basic set of principles for organizing data can streamline coding and model development. Below we promote the use of Tidy Data for managing data sets associated with Pyomo models.
 
@@ -263,11 +309,11 @@ The Pandas library provides an extensive array of functions for the manipulation
 
 ## Acknowledgements
 
-This document is the result of interactions with students and colleagues over several years. Several individuals reviewed and provided feedback on early drafts. 
+This document is the result of interactions with students and colleagues over several years. Several individuals reviewed and provided feedback on early drafts and are acknowledged here.
 
 * David Woodruff, UC Davis
-
 * Javier Salmeron-Medrano, Naval Postgraduate School
+* Pyomo development team
 
 
 
