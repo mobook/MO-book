@@ -3,14 +3,14 @@
 
 # # Machine Scheduling
 # 
-# "Which job should be done next?" is a key questions one face in modern life, whether for a busy student working on course assignments, a courier delivering packages, a server waiting on tables in a busy restaurant, a computer processing threads, or machine on a complex assembly line. There are many empirical answers to this question, among them "first in, first  out", or "last  in, first out", or "shortest job first".  What we consider in this noteboked is the modeling and solution to this problem using optimiziation techniques.
+# "Which job should be done next?" is a questiona one face in modern life, whetherfor a busy student working on course assignments, a courier delivering packages, a server waiting on tables in a busy restaurant, a computer processing threads, or a machine on a complex assembly line. There are empirical answers to this question, among them "first in, first  out", "last  in, first out", or "shortest job first".  
 # 
-# This notebook demonstrates the formulation and solution of the a machine scheduling (sometimes called bottleneck) problem using disjuctive programming in Pyomo. The problem is to schedule a set of jobs on a single machine given the release time, duration, and due time for each job. Date for the example problem is from Christelle Gueret, Christian Prins, Marc Sevaux, "Applications of Optimization with Xpress-MP," Chapter 5, Dash Optimization, 2000.
+# What we consider in this notebook is the modeling finding solutions to this class of problem using optimiziation techniques. This notebook demonstrates the formulation of a model for scheduling a single machine scheduling using disjuctive programming in Pyomo. The problem is to schedule a set of jobs on a single machine given the release time, duration, and due time for each job. Date for the example problem is from Christelle Gueret, Christian Prins, Marc Sevaux, "Applications of Optimization with Xpress-MP," Chapter 5, Dash Optimization, 2000.
 
 # ## Learning Goals
 # 
-# * Optimal machine scheduling
-# * Use of Pyomo Disjunction
+# * Optimal scheduling for a single machine
+# * Disjuctive programming in Pyomo
 
 # ## Example
 # 
@@ -109,24 +109,31 @@ gantt(jobs)
 # 
 # Depending on application and circumstances, one could entertain many different choices for objective function. Minimizing the number of past due jobs, or minimizing the maximum past due, or the total amount of time past due would all be appropriate objectives. The following Pyomo model minimizes the total time past due, that is
 # 
-# $$\min \sum_j \text{past}_j$$
+# $$
+# \min \sum_j \text{past}_j
+# $$
 # 
 # The constraints describe the relationships amomg the decision variables. For example, a job cannot start until it is released for processing
 # 
+# $$
 # \begin{align*}
 # \text{start}_{j} & \geq \text{release}_{j}\\
 # \end{align*}
+# $$
 # 
 # Once started the processing continues until the job is finished. The finish time is compared to the due time, and the result stored the $\text{past}_j$ decision variable. These decision variables are needed to handle cases where it might not be possible to complete all jobs by the time they are due.
 # 
+# $$
 # \begin{align*}
 # \text{finish}_j & = \text{start}_j + \text{duration}_j \\
 # \text{past}_{j} & \geq \text{finish}_j - \text{due}_{j} \\
 # \text{past}_{j} & \geq 0
 # \end{align*}
+# $$
 # 
 # The final set of constraints require that no pair of jobs be operating on the same machine at the same time. For this purpose, we consider each unique pair ($i$, $j$) where the constraint $i < j$ to imposed to avoid considering the same pair twice. Then for any unique pair $i$ and $j$,  either $i$ finishes before $j$ starts, or $j$ finishes before $i$ starts. This is expressed as the family of disjuctions 
 # 
+# $$
 # \begin{align*}
 # \begin{bmatrix}
 # \text{finish}_i \leq \text{start}_j
@@ -137,6 +144,7 @@ gantt(jobs)
 # \end{bmatrix}
 # & \forall i < j
 # \end{align*}
+# $$
 # 
 # This model and constraints can be directly translated to Pyomo.
 
