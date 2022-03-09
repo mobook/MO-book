@@ -245,7 +245,7 @@ m.new_constraint = pyo.Constraint(m.S, rule=c_rule)
 
 ## Data Styles and Conventions
 
-Reading, manipulating, and writing data sets often consumes a considerable amount of time and coding in routine projects. Standardizing on a basic set of principles for organizing data can streamline coding and model development. Below we promote the use of Tidy Data for managing data sets associated with Pyomo models.
+Reading, manipulating, and writing data sets often consumes a considerable amount of time and coding in routine projects. Standardizing on a basic set of principles for organizing data can streamline coding and model development. Below we promote the use of [Tidy Data](https://vita.had.co.nz/papers/tidy-data.html) for managing data sets associated with Pyomo models.
 
 ### Use Tidy Data
 
