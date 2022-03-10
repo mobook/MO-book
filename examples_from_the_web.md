@@ -6,6 +6,8 @@
 
 - [Pyomo Bootcamp: Python Optimization from Beginner to Advance](https://www.udemy.com/course/optimization-in-python/) -- lots of contents, but not for free.
 
+- [Cornell University Computational Optimization Open Textbook](https://optimization.cbe.cornell.edu/index.php?title=Main_Page) lots of examples divided per topic, no code provided.
+
 - [CSPLib: A problem library for constraints](https://github.com/csplib/csplib) -- one of them is really meant for/solved in Python, but could still be a source of inspiration.
 
 - [NEOS case studies](https://neos-guide.org/Case-Studies) very concrete and relevant problems, arranged by topics
