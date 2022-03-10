@@ -1,293 +1,514 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Portfolio Optimization
+# # MAD Portfolio Optimization
 
-# ## Background
-# 
-# Konno and Yamazaki (1990) proposed a linear programming model for portfolio optimization in which the risk measure is mean absolute deviation (MAD). This model computes a portfolio minimizing MAD subject to a lower bound on return.
-# 
-# In contrast to the classical Markowitz portfolio, the MAD criterion requires a data set consisting of returns on the investment assets. The data set may be an historical record or samples from a multivariate statistical model of portfolio returns.  The MAD criterion produces portfolios with properties not shared by the Markowitz portfolio, including second degree stochastic dominance.
-# 
-# The rest of the formulation is adapted from "Optimization Methods in Finance" by Gerald Curnuejols and Reha Tutuncu (2007) which, in turn, follows an implementation due to Fienstein and Thapa (1993).  
-
-# ## Mean Absolute Deviation
-# 
-# Portfolio optimization refers to the allocation of investment capital among a set of financial assets to achieve a desired tradeoff between risk and return. The classical Markowitz approach to portfolio optimization measures risk using the expected variance of the portfolio return. The Markowitz approach results in a quadratic program for the relative weights of assets for the optimal portfolio. 
-# 
-# In 1991, Konno and Yamazaki <ref>{{Cite journal | last1 = Konno | first1 = Hiroshi | last2 = Yamazaki | first2 = Hiroaki | title = Mean-absolute deviation portfolio optimization model and its applications to Tokyo stock market | journal = Management Science | volume = 37 | pages = 519-531 | date = 1991}}</ref> proposed a linear programming model for portfolio optimization when risk is measured by the mean absolute deviation (MAD) from the expected return.  Using MAD as the risk metric produces portfolios with several desirable properties not shared by the Markowitz portfolio, including [[w:Stochastic_dominance|second order stochastic dominance]].
-# 
-# As originally formulated by Konno and Yamazaki, one starts with a history of returns $R_i(t_n)$ for every asset in a set $S$ of assets. The return at time $t_n$ is determined by the change in price of the asset, 
-# 
-# $$R_i(t_n)= {(P_i(t_n)-P_i(t_{n-1}))}/{P_i(t_{n-1})}$$
-# 
-# For each asset, the expected return is estimated by 
-# 
-# $$\bar{R}_i \approx \frac{1}{N}\sum_{n=1}^NR_i(t_n)$$
-# 
-# The investor specifies a minimum required return $R_{p}$.  The portfolio optimization problem is to determine the fraction of the total investment allocated to each asset, $w_i$,  that minimizes the mean absolution deviation from the mean
-# 
-# $$\min_{w_i} \frac{1}{N}\sum_{n=1}^N\lvert\sum_{i \in S} w_i(R_i(t_n)-\bar{R}_i)\rvert$$
-# 
-# subject to the required return and a fixed total investment:
-# 
-# $$
-# \begin{array}{rcl}
-# \sum_{i \in S} w_i\bar{R}_i & \geq & R_{p}  \\
-# \quad \\
-# \sum_{i \in S} w_i & = & 1
-# \end{array}
-# $$
-# 
-# The value of the minimum required return, $R_p$ expresses the investor's risk tolerance. A smaller value for $R_p$ increases the feasible solution space, resulting in portfolios with lower values of the MAD risk metric. Increasing $R_p$ results in portfolios with higher risk. The relationship between risk and return is a fundamental principle of investment theory. 
-# 
-# This formulation doesn't place individual bounds on the weights $w_i$. In particular, $w_i < 0$ corresponds to short selling of the associated asset.  Constraints can be added if the investor imposes limits on short-selling, on the maximum amount that can be invested in a single asset, or other requirements for portfolio diversification.  Depending on the set of available investment opportunities, additional constraints can lead to infeasible investment problems.
-
-# Investment portfolios are collections of investments that are managed for overall investment return.  Compared to investing all of your capital into a single asset, maintaining a portfolio of investments allows you to manage risk through diversification.
-
-# ### Reduce Risk through Law of Large Numbers
-
-# Suppose there are a set of independent investment opportunities that will pay back between 0 and 300% of your original investment, and that all outcomes in that range are equally likely. You have $100,000 to invest.  If the pay is 0% then you lose all of your investment.
-# 
-# Should you put it all in one opportunity? Here we simulate the outcomes of 1000 trials where we place all the money into a sigle investment of $100,000.
-
-# In[14]:
+# In[304]:
 
 
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-import random
 import numpy as np
-
-w0 = 100000.00
-n_trials = 10000
-
-# create trials
-profit = [w0 * random.uniform(0, 3.00) - w0 for n in range(n_trials)]
-
-plt.figure(figsize=(10, 4))
-plt.hist(profit, bins=100);
-plt.xlabel('Profit')
-plt.ylabel('Frequency')
-
-print("Average Profit = ${:.0f}".format(np.mean(profit)))
-
-
-# The average profit is close to $50,000, or 50%, which would be very appealing to many investors. But, as you can see from the histogram of simulated results, about 1/3 of the time there is a loss, and about 2/3 of the time there is a profit. Is this a risk worth tanking for the chance of large investment outcome?
-# 
-# Let's see what happens if the $100,000 investment over a small number of equal sized investments.
-
-# In[62]:
-
-
-w0 = 100000.00
-n_trials = 10000
-n_investments = 5
-
-Profit = list()
-for n in range(0, n_trials):
-     = sum([(W0/Ninvestments)*random.uniform(0,3.00) for _ in range(0,Ninvestments)])
-    Profit.append(W1-W0)
-
-figure(figsize=(10,4))
-hist(Profit,bins=100);
-xlim(-W0,2*W0)
-xlabel('Profit')
-ylabel('Frequency')
-
-print "Average Profit = ${:.0f}".format(mean(Profit))
-
-
-# Even a modest degree of diversification reduces downside risk.
-
-# In[60]:
-
-
-from statsmodels.distributions import ECDF
-
-ecdf = ECDF(Profit)
-
-x = linspace(min(Profit),max(Profit))
-
-figure(figsize=(10,4))
-plot(x,ecdf(x))
-xlabel('Profit')
-ylabel('Cumulative Probability')
-grid();
-
-
-# ## Download Historical Stock Price Data
-
-# !pip install pandas_datareader
-
-# In[220]:
-
-
 import pandas as pd
-import datetime
-from pandas_datareader import data, wb, DataReader
-import matplotlib.pyplot as plt
-
-asset_symbols = ['AXP', 'AAPL', 'AMGN', 'BA', 'CAT', 'CRM', 'CSCO', 'CVX', 'DIS', 'DOW',                  'GS', 'HD', 'IBM', 'INTC', 'JNJ', 'JPM', 'KO', 'MCD', 'MMM', 'MRK',                  'MSFT', 'NKE', 'PG','TRV', 'UNH', 'V','VZ', 'WBA', 'WMT','XOM']
-
-# historical period
-end_date = datetime.datetime.today().date()
-start_date = end_date - datetime.timedelta(3*365)
-
-# get daily price data
-assets = pd.DataFrame()
-for s in asset_symbols:
-    data = DataReader(s, "yahoo", start_date, end_date)
-    print(f"{s}({len(data):d}), ", end="")
-    assets[s] = data['Adj Close']
-
-
-# In[221]:
-
-
-# fill missing data
-assets.fillna(method="bfill", inplace=True)
-assets.fillna(method="ffill", inplace=True)
-
-# display a plot of the raw price data
-assets.plot(logy=True, figsize=(12,8), ylabel="Adjusted Close", 
-                 title = 'Asset prices', grid=True)
-plt.legend(bbox_to_anchor=(1.0, 1.0))
-
-
-# ## Performance of an Equally Weighted Portfolio
-# 
-# The performance of an equally weighted portfolio will provide a standard for evaluating alternative investment strategies.
-
-# In[223]:
-
-
-assets_scaled = 100.0*assets.div(asset_price.iloc[0])
-
-n = len(portfolio)
-equal_portfolio_weights = pd.DataFrame([1/n]*n, index=stock_price.columns)
-equal_portfolio_value = assets_scaled.dot(equal_portfolio_weights)
-
-ax = assets_scaled.plot(figsize=(12,8), ylabel="Adjusted Close", title = 'Gross Return for All Assets', grid=True, lw=0.4)
-equal_portfolio_value.plot(lw=4, ax=ax, grid=True, title="Equally Weighted Portfolio")
-plt.legend(bbox_to_anchor=(1.0, 1.0))
-
-
-# ## Compute Component Returns
-
-# Arithmetic returns are required because subsequent calculations will be combining returns across components of a portfolio.
-
-# In[224]:
-
-
-returns = assets.diff()[1:]/asset_price[1:]
-returns_mean = returns.mean()
-mad = abs(returns - returns_mean).mean()
-
-fig, ax = plt.subplots(1, 2, figsize = (12, 0.35*len(returns.columns)))
-returns_mean.plot(kind='barh', ax=ax[0], title="Mean Returns")
-ax[0].invert_yaxis()
-mad.plot(kind='barh', ax=ax[1], title='Mean Absolute Difference');
-ax[1].invert_yaxis()
-
-
-# In[225]:
-
-
-fig, ax = plt.subplots(1, 1, figsize=(10,6))
-for s in assets.keys():
-    ax.plot(mad[s], returns_mean[s],'s')
-    ax.text(mad[s]*1.03, returns_mean[s],s)
-
-ax.set_xlim(0, 1.1*max(mad))
-ax.axhline(0, color='r', linestyle='--')
-
-returns_equal = equal_portfolio_value.diff()[1:]/equal_portfolio_value[1:]
-returns_equal_mean = returns_equal.mean()
-mad_equal_mean = abs(returns_equal - returns_equal_mean).mean()
-
-ax.plot(mad_equal_mean, returns_equal_mean, 'ro', ms=15)
-
-ax.set_title('Risk/Return for an Equally Weighted Portfolio')
-ax.set_xlabel('Mean Absolute Deviation in Daily Returns')
-ax.set_ylabel('Mean Daily Return')
-ax.grid(True)
-
-
-# ## MAD Porfolio
-
-# The linear program is formulated and solved using the pulp package. 
-
-# In[302]:
-
+import random
+import scipy.stats as stats
 
 import pyomo.environ as pyo
 
-def mad_portfolio(assets):
+
+# ## Investment objectives
+# 
+# * Maximize returns
+# * Reduce Risk through diversification
+
+# What we observe is that even a small amount of diversification can dramatically reduce the downside risk of experiencing a loss. We also see the upside potential has been reduced. What hasn't changed is the that average profit remains at \$50,000. Whether or not the loss of upside potential in order to reduce downside risk is an acceptable tradeoff depends on your individual attitude towards risk. 
+
+# ### Value at risk (VaR)
+# 
+# [Value at risk (VaR)](https://en.wikipedia.org/wiki/Value_at_risk) is a measure of investment risk. Given a histogram of possible outcomes for the profit of a portfolio, VaR corresponds to negative value of the 5th percentile. That is, 5% of all outcomes would have a lower outcome, and 95% would have a larger outcome. 
+# 
+# The [conditional value at risk](https://en.wikipedia.org/wiki/Expected_shortfall) (also called the expected shortfall (ES), average value at risk (aVaR), and the expected tail loss (ETL)) is the negative of the average value of the lowest 5% of outcomes. 
+# 
+# The following cell provides an interactive demonstration. Use the slider to determine how to break up the total available capital into a number of smaller investments in order to reduce the value at risk to an acceptable (to you) level.  If you can accept only a 5% probability of a loss in your portfolio, how many individual investments would be needed?
+
+# In[5]:
+
+
+#@title Value at Risk (VaR) Demo { run: "auto", vertical-output: true }
+Ninvestments = 8 #@param {type:"slider", min:1, max:20, step:1}
+
+from statsmodels.distributions import ECDF
+
+W0 = 100000.00
+Ntrials = 10000
+
+def sim(Ninvestments = 5):
+
+    Profit = list()
+    for n in range(0, Ntrials):
+        W1 = sum([(W0/Ninvestments)*random.uniform(0,3.00) for _ in range(0,Ninvestments)])
+        Profit.append(W1-W0)
+        
+    print('Average Profit = ${:.0f}'.format(np.mean(Profit)).replace('$-','-$'))
+
+    VaR = -sorted(Profit)[int(0.05*Ntrials)]
+    print('Value at Risk (95%) = ${:.0f}'.format(VaR).replace('$-','-$'))
     
-    returns = assets.diff()[1:]/assets[1:]
-    returns_mean = returns.mean()
+    cVaR = -sum(sorted(Profit)[0:int(0.05*Ntrials)])/(0.05*Ntrials)
+    print('Conditional Value at Risk (95%) = ${:.0f}'.format(cVaR).replace('$-','-$'))
+
+    plt.figure(figsize=(10,6))
+    plt.subplot(2, 1, 1)
+    plt.hist(Profit, bins=100)
+    plt.xlim(-100000, 200000)
+    plt.plot([-VaR, -VaR], plt.ylim())
+    plt.xlabel('Profit')
+    plt.ylabel('Frequency')
+
+    plt.subplot(2, 1, 2)
+    ecdf = ECDF(Profit)
+    x = np.linspace(min(Profit), max(Profit))
+    plt.plot(x, ecdf(x))
+    plt.xlim(-100000, 200000)
+    plt.ylim(0,1)
+    plt.plot([-VaR, -VaR], plt.ylim())
+    plt.plot(plt.xlim(), [0.05, 0.05])
+    plt.xlabel('Profit')
+    plt.ylabel('Cumulative Probability');
     
-    m = pyo.ConcreteModel()
+sim(Ninvestments)
 
-    m.Rp = pyo.Param(mutable=True, default=0.0)
 
-    m.INDEX = pyo.RangeSet(len(returns.index))
-    m.ASSETS = pyo.Set(initialize=assets.keys())
+# ## Import historical stock price data
+
+# In[42]:
+
+
+S_hist = pd.read_csv('data/Historical_Adjusted_Close.csv', index_col=0)
+
+S_hist.dropna(axis=1, how='any', inplace=True)
+S_hist.index = pd.DatetimeIndex(S_hist.index)
+
+portfolio = list(S_hist.columns)
+print(portfolio)
+S_hist.tail()
+
+
+# ## Select a recent subperiod of the historical data
+
+# In[43]:
+
+
+nYears = 1.5
+start = S_hist.index[-int(nYears*252)]
+end = S_hist.index[-1]
+
+print('Start Date:', start)
+print('  End Date:', end)
+
+S = S_hist.loc[start:end]
+S.head()
+
+
+# In[44]:
+
+
+fig, ax = plt.subplots(figsize=(14,9))
+S.plot(ax=ax, logy=True)
+
+ax.xaxis.set_major_locator(mdates.YearLocator())
+ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%Y'))
+plt.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+plt.grid(True)
+
+
+# ## Return on a portfolio
+# 
+# Given a portfolio with value $W_t$ at time $t$, return on the portfolio at $t_{t +\delta t}$ is defined as
+# 
+# \begin{align*}
+# r_{t + \delta t} & = \frac{W_{t + \delta t} - W_{t}}{W_{t}}
+# \end{align*}
+# 
+# For the period from $[t, t+\delta t)$ we assume there are $n_{j,t}$ shares of asset $j$ with a starting value of $S_{j,t}$ per share. The initial and final values of the portfolio are then 
+# 
+# \begin{align*}
+# W_t & = \sum_{j=1}^J n_{j,t}S_{j,t} \\
+# W_{t+\delta t} & = \sum_{j=1}^J n_{j,t}S_{j,t + \delta t}
+# \end{align*}
+# 
+# The return of the portfolio is given by
+# 
+# \begin{align*}
+# r_{t+\delta t} & = \frac{W_{t + \delta t} - W_{t}}{W_{t}} \\
+# & = \frac{\sum_{j=1}^Jn_{j,t}S_{j,t+\delta t} - \sum_{j=1}^J n_{j,t}S_{j,t}}{W_{t}} \\
+# & = \frac{\sum_{j=1}^J n_{j,t}S_{j,t}r_{j, t+\delta t}}{W_{t}} \\
+# & = \sum_{j=1}^J \frac{n_{j,t}S_{j,t}}{W_{t}} r_{j, t+\delta t}
+# \end{align*}
+# 
+# where $r_{j,t+\delta t}$ is the return on asset $j$ at time $t+\delta t$. 
+# 
+# Defining $W_{j,t} = n_{j,t}S_{j,t}$ as the wealth invested in asset $j$ at time $t$, then $w_{j,t} = n_{j,t}S_{j,t}/W_{t}$ is the fraction of total wealth invested in asset $j$ at time $t$. The portfolio return is then given by 
+# 
+# \begin{align*}
+# r_{t+\delta t} & = \sum_{j=1}^J w_{j,t} r_{j, t+\delta t} 
+# \end{align*}
+# 
+# on a single interval extending from $t$ to $t + \delta t$.
+
+# ### Equally weighted portfolio
+# 
+# An equally weighted portfolio allocates an equal amount of capital to each component of the portfolio. The allocation can be done once and held fixed thereafter, or could be reallocated periodically as asset prices change in relation to one another.
+
+# #### Constant fixed allocation
+# 
+# If the initial allocation among $J$ assets takes place at $t=0$, then
+# 
+# $$w_{j,0} = \frac{1}{J} = \frac{n_{j,0} S_{j, t=0}}{W_{0}}$$
+# 
+# The number of assets of type $j$ included in the portfolio is given by
+# 
+# $$n_{j,0} = \frac{W_0}{J S_{j,0}} $$
+# 
+# which is then fixed for all later times $t > 0$. The value of the portfolio is given by
+# 
+# \begin{align*}
+# W_t & = \sum_{j=1}^J n_{j,0}S_{j,t} \\
+# & = \frac{W_{0}}{J} \sum_{j=1}^J \frac{S_{j,t}}{S_{j,0}}
+# \end{align*}
+# 
+# Note that this portfolio is guaranteed to be equally weighted only at $t=0$. Changes in the relative prices of assets cause the relative weights of assets in the portfolio to change over time.
+
+# #### Continually rebalanced
+# 
+# Maitaining an equally weighted portfolio requires buying and selling of component assests as prices change relative to each other. To maintain an equally portfolio comprised of $J$ assets where the weights are constant in time,
+# 
+# \begin{align*}
+# w_{j,t} & = \frac{1}{J} = \frac{n_{j,t}S_{j,t}}{W_t} & \forall j, t
+# \end{align*}
+# 
+# Assuming the rebalancing occurs at fixed points in time $t_k$ separated by time steps $\delta t$, then on each half-closed interval $[t_k, t_k+\delta t)$
+# 
+# \begin{align*}
+# n_{j,t} & = \frac{W_{t_k}}{J S_{j,t_k}} \\
+# \end{align*}
+# 
+# The portfolio
+# 
+# \begin{align*}
+# W_{t_k + \delta t} & = \sum_{j=1}^J n_{j,t_k} S_{j, t_k + \delta t}
+# \end{align*}
+# 
+# \begin{align*}
+# W_{t_k + \delta t} & = W_{t_k} \sum_{j=1}^J  \frac{S_{j, t_k + \delta t}}{J S_{j,t_k}}
+# \end{align*}
+# 
+# Letting $t_{k+1} = t_k + \delta t$, then the following recursion describes the dynamics of an equally weighted,  continually rebalanced portfolio at the time steps $t_0, t_1, \ldots$. Starting with values $W_{t_0}$ and $S_{j, t_0}$, 
+# 
+# \begin{align*}
+# n_{j,t_k} & = \frac{W_{t_k}}{J S_{j,t_k}} \\
+# W_{t_{k+1}} & = \sum_{j=1}^J  n_{j,t_k} S_{j, t_{k+1}}
+# \end{align*}
+# 
+# which can be simulated as a single equation
+# 
+# \begin{align*}
+# W_{t_{k+1}} & = W_{t_k} \sum_{j=1}^J  \frac{S_{j, t_{k+1}}}{J S_{j,t_k}}
+# \end{align*}
+# 
+# or in closed-form
+# 
+# \begin{align*}
+# W_{t_{K}} & = W_{0} \prod_{k=0}^{K-1} \sum_{j=1}^J  \frac{S_{j, t_{k+1}}}{J S_{j,t_k}}
+# \end{align*}
+
+# In[45]:
+
+
+plt.figure(figsize=(12,6))
+
+portfolio = S.columns
+J = len(portfolio)
+
+# equal weight with no rebalancing
+n = 100.0/S.iloc[0]/J
+W_fixed = sum(n[s]*S[s] for s in portfolio)
+W_fixed.plot(color='r',lw=4)
+
+# equal weighting with continual rebalancing
+R = (S[1:]/S.shift(1)[1:]).sum(axis=1)/len(portfolio)
+W_rebal = 100*R.cumprod()
+W_rebal.plot(color='b', lw=4)
+
+# individual assets
+for s in portfolio:
+    (100.0*S[s]/S[s][0]).plot(lw=0.4)
     
-    m.weight = pyo.Var(m.ASSETS)
+plt.legend(['Fixed Allocation','Continually Rebalanced'])
+plt.ylabel('Value');
+plt.title('Value of an equally weighted portfolio')
+plt.grid(True)
 
-    m.r_pos = pyo.Var(m.INDEX, m.ASSETS, domain=pyo.NonNegativeReals)
-    m.r_neg = pyo.Var(m.INDEX, m.ASSETS, domain=pyo.NonNegativeReals)
 
-    @m.Constraint()
-    def sum_of_weights(m):
-        return sum(m.weight[s] for s in m.ASSETS) == 1.0
+# In[49]:
+
+
+plt.figure(figsize=(10,6))
+
+plt.subplot(2,1,1)
+W_fixed.plot()
+W_rebal.plot()
+plt.legend(['Fixed Allocation','Continually Rebalanced'])
+plt.ylabel('Value')
+plt.title('Comparing a Fixed and Continually Rebalanced Portfolio')
+plt.grid(True)
+
+plt.subplot(2,1,2)
+(100.0*(W_rebal-W_fixed)/W_fixed).plot()
+plt.title('Added value of a Rebalanced Portfolio relative to a Fixed Portfolio')
+plt.ylabel('percent')
+plt.grid(True)
+
+plt.tight_layout()
+
+
+# ### Component returns
+# 
+# Given data on the prices for a set of assets over an historical period $t_0, t_1, \ldots, t_K$, an estimate the mean arithmetic return is given by the mean value
+# 
+# \begin{align*}
+# \hat{r}_{j,t_K} & = \frac{1}{K}\sum_{k=1}^{K} r_{t_k} \\
+# & = \sum_{k=1}^{K} \frac{S_{j,t_{k}}-S_{j,t_{k-1}}}{S_{j,t_{k-1}}}
+# \end{align*}
+# 
+# At any point in time, $t_k$, a mean return can be computed using the previous $H$ intervals
+# 
+# \begin{align*}
+# \hat{r}^H_{j,t_k} & = \frac{1}{H}\sum_{h=0}^{H-1} r_{t_{k-h}} \\
+# & = \frac{1}{H} \sum_{h=0}^{H-1}\frac{S_{j,t_{k-h}} - S_{j,t_{k-h-1}}}{S_{j,t_{k-h-1}}}
+# \end{align*}
+# 
+# Arithmetic returns are computed so that subsequent calculations combine returns across components of a portfolio.
+
+# ## Measuring deviation in component returns
+
+# ### Mean absolute deviation
+
+# In[30]:
+
+
+def roll(H):
+    """Plot mean returns, mean absolute deviation, and standard deviation for last H days."""
+    K = len(S.index)
+    R = S[K-H-1:K].diff()[1:]/S[K-H-1:K].shift(1)[1:]
+    AD = abs(R - R.mean())
     
-    @m.Constraint(m.INDEX, m.ASSETS)
-    def weighted_returns(m, i, s):
-        date = returns.index[i-1]
-        return m.r_pos[i, s] - m.r_neg[i, s] == m.weight[s] * (returns.loc[date, s] - returns_mean[s])
-
-    @m.Objective(sense=pyo.minimize)
-    def minimum_mad(m):
-        return sum(sum(m.r_pos[i, s] + m.r_neg[i, s] for s in m.ASSETS) for i in m.INDEX)/len(m.INDEX)
+    plt.figure(figsize = (12, 0.35*len(R.columns)))
+    ax = [plt.subplot(1,3,i+1) for i in range(0,3)]
     
-    @m.Constraint()
-    def minimum_return(m):
-        return sum(m.weight[s] * returns_mean[s] for s in m.ASSETS) >= m.Rp
+    idx = R.columns.argsort()[::-1]
+
+    R.mean().iloc[idx].plot(ax=ax[0], kind='barh')
+    ax[0].set_title('Mean Returns');
     
-    return m
+    AD.mean().iloc[idx].plot(ax=ax[1], kind='barh')
+    ax[1].set_title('Mean Absolute Difference')
+
+    R.std().iloc[idx].plot(ax=ax[2], kind='barh')
+    ax[2].set_title('Standard Deviation')
+    
+    for a in ax: a.grid(True)
+    plt.tight_layout()
+
+roll(500)
 
 
-# In[303]:
+# ### Comparing mean absolute deviation to standard deviation
+
+# In[51]:
 
 
-m = mad_portfolio(assets)
-m.Rp = 0.0004
-pyo.SolverFactory('cbc').solve(m)
+R = (S.diff()[1:]/S.shift(1)[1:]).dropna(axis=0, how='all')
+AD = abs(R - R.mean())
 
-fig, ax = plt.subplots(1, 1, figsize=(10,6))
-for s in assets.keys():
-    ax.plot(mad[s], returns_mean[s],'s')
-    ax.text(mad[s]*1.03, returns_mean[s],s)
+plt.plot(R.std(), AD.mean(), 'o')
+plt.xlabel('Standard Deviation')
+plt.ylabel('Mean Absolute Deviation')
 
-ax.set_xlim(0, 1.1*max(mad))
-ax.axhline(0, color='r', linestyle='--')
-
-returns_equal = equal_portfolio_value.diff()[1:]/equal_portfolio_value[1:]
-returns_equal_mean = returns_equal.mean()
-mad_equal_mean = abs(returns_equal - returns_equal_mean).mean()
-
-ax.plot(mad_equal_mean, returns_equal_mean, 'ro', ms=15)
-ax.plot(m.minimum_mad(), m.Rp(), 'go', ms=15)
-
-ax.set_title('Risk/Return for an Equally Weighted Portfolio')
-ax.set_xlabel('Mean Absolute Deviation in Daily Returns')
-ax.set_ylabel('Mean Daily Return')
-ax.grid(True)
+plt.plot([0,R.std().max()],[0,np.sqrt(2.0/np.pi)*R.std().max()])
+plt.legend(['Portfolio Components','sqrt(2/np.pi)'],loc='best')
+plt.grid(True)
 
 
-# In[194]:
+# ### Return versus mean absolute deviation for an equally weighted continually rebalanced portfolio
+
+# In[52]:
+
+
+plt.figure(figsize=(10,6))
+for s in portfolio:
+    plt.plot(AD[s].mean(), R[s].mean(),'s')
+    plt.text(AD[s].mean()*1.03, R[s].mean(), s)
+    
+R_equal = W_rebal.diff()[1:]/W_rebal[1:]
+M_equal = abs(R_equal-R_equal.mean()).mean()
+
+plt.plot(M_equal, R_equal.mean(), 'ro', ms=15)
+
+plt.xlim(0, 1.1*max(AD.mean()))
+plt.ylim(min(0, 1.1*min(R.mean())), 1.1*max(R.mean()))
+plt.plot(plt.xlim(),[0,0],'r--');
+plt.title('Risk/Return for an Equally Weighted Portfolio')
+plt.xlabel('Mean Absolute Deviation')
+plt.ylabel('Mean Daily Return');
+plt.grid(True)
+
+
+# ## MAD porfolio
+
+# The linear program is formulated and solved using the pulp package. 
+
+# In[15]:
+
+
+R.head()
+
+
+# The decision variables will be indexed by date/time.  The pandas dataframes containing the returns data are indexed by timestamps that include characters that cannot be used by the GLPK solver. Therefore we create a dictionary to translate the pandas timestamps to strings that can be read as members of a GLPK set. The strings denote seconds in the current epoch as defined by python.
+
+# In[16]:
+
+
+a = R - R.mean()
+a.head()
+
+
+# In[17]:
+
+
+from pyomo.environ import *
+
+a = R - R.mean()
+
+m = ConcreteModel()
+
+m.w = Var(R.columns, domain=NonNegativeReals)
+m.y = Var(R.index, domain=NonNegativeReals)
+
+m.MAD = Objective(expr=sum(m.y[t] for t in R.index)/len(R.index), sense=minimize)
+
+m.c1 = Constraint(R.index, rule = lambda m, t: m.y[t] + sum(a.loc[t,s]*m.w[s] for s in R.columns) >= 0)
+m.c2 = Constraint(R.index, rule = lambda m, t: m.y[t] - sum(a.loc[t,s]*m.w[s] for s in R.columns) >= 0)
+m.c3 = Constraint(expr=sum(R[s].mean()*m.w[s] for s in R.columns) >= R_equal.mean())
+m.c4 = Constraint(expr=sum(m.w[s] for s in R.columns)==1)
+
+SolverFactory('glpk').solve(m)
+
+w = {s: m.w[s]() for s in R.columns}
+
+plt.figure(figsize = (15,0.35*len(R.columns)))
+
+plt.subplot(1,3,1)
+pd.Series(w).plot(kind='barh')
+plt.title('Porfolio Weight');
+
+plt.subplot(1,3,2)
+R.mean().plot(kind='barh')
+plt.title('Mean Returns');
+
+plt.subplot(1,3,3)
+AD.mean().plot(kind='barh')
+plt.title('Mean Absolute Difference');
+
+
+# In[54]:
+
+
+P_mad = pd.Series(0, index=S.index)
+for s in portfolio:
+    P_mad += 100.0*w[s]*S[s]/S[s][0]
+    
+plt.figure(figsize=(12,6))
+P_mad.plot()
+W_rebal.plot()
+plt.legend(['MAD','Equal'],loc='best')
+plt.ylabel('Unit Value')
+plt.grid(True)
+
+
+# In[19]:
+
+
+plt.figure(figsize=(10,6))
+for s in portfolio:
+    plt.plot(AD[s].mean(), R[s].mean(),'s')
+    plt.text(AD[s].mean()*1.03, R[s].mean(), s)
+    
+#R_equal = P_equal.diff()[1:]/P_equal[1:]
+R_equal = np.log(W_rebal/W_rebal.shift(+1))
+M_equal = abs(R_equal-R_equal.mean()).mean()
+
+plt.plot(M_equal, R_equal.mean(), 'ro', ms=15)
+
+#R_mad = P_mad.diff()[1:]/P_mad[1:]
+R_mad = np.log(P_mad/P_mad.shift(+1))
+M_mad = abs(R_mad-R_mad.mean()).mean()
+
+plt.plot(M_mad, R_mad.mean(), 'go', ms=15)
+
+for s in portfolio:
+    if w[s] >= 0.0001:
+        plt.plot([M_mad, AD[s].mean()],[R_mad.mean(), R[s].mean()],'g--')
+    if w[s] <= -0.0001:
+        plt.plot([M_mad, AD[s].mean()],[R_mad.mean(), R[s].mean()],'r--')
+
+plt.xlim(0, 1.1*max(AD.mean()))
+plt.ylim(min(0, 1.1*min(R.mean())), 1.1*max(R.mean()))
+plt.plot(plt.xlim(),[0,0],'r--');
+plt.title('Risk/Return for an Equally Weighted Portfolio')
+plt.xlabel('Mean Absolute Deviation')
+plt.ylabel('Mean Daily Return')
+
+
+# In[53]:
+
+
+import pulp
+
+# mean absolute deviation for the portfolio
+m = pulp.LpVariable('m', lowBound = 0)
+
+# dictionary of portfolio weights
+w = pulp.LpVariable.dicts('w', portfolio, lowBound = 0)
+
+# dictionary of absolute deviations of portfolio returns
+y = pulp.LpVariable.dicts('y', t.values(), lowBound = 0)
+z = pulp.LpVariable.dicts('z', t.values(), lowBound = 0)
+
+# create problem instance
+lp = pulp.LpProblem('MAD Portfolio',pulp.LpMinimize)
+
+# add objective
+lp += m
+
+# calculate mean absolute deviation of portfolio returns
+lp += m == pulp.lpSum([(y[k] + z[k]) for k in t.values()])/float(len(t))
+
+# relate the absolute deviations to deviations in the portfolio returns
+for ts in returns.index:
+    lp += y[t[ts]] - z[t[ts]] == pulp.lpSum([w[s]*(returns[s][ts]-returns[s].mean()) for s in portfolio]) 
+    
+# portfolio weights
+lp += pulp.lpSum([w[s] for s in portfolio]) == 1.0
+
+# bound on average portfolio return
+lp += pulp.lpSum([w[s]*(returns[s].mean()) for s in portfolio]) >= 0*R_equal.mean()
+
+lp.solve()
+print(pulp.LpStatus[lp.status])
+
+
+# In[ ]:
 
 
 figure(figsize = (15,0.35*len(returns.columns)))
@@ -307,7 +528,7 @@ abs(returns-returns.mean()).mean().plot(kind='barh')
 title('Mean Absolute Difference');
 
 
-# In[195]:
+# In[ ]:
 
 
 P_mad = pd.Series(0,index=adjclose.index)
@@ -321,7 +542,7 @@ legend(['MAD','Equal'],loc='best')
 ylabel('Unit Value')
 
 
-# In[196]:
+# In[ ]:
 
 
 figure(figsize=(10,6))
@@ -355,3 +576,44 @@ ylabel('Mean Return')
 
 grid();
 
+
+# ## Problem 1: Solve for dominating MAD portfolio
+
+# In[21]:
+
+
+lp = pulp.LpProblem('MAD Portfolio',pulp.LpMinimize)
+lp += m    
+lp += m == pulp.lpSum([(y[t] + z[t])/float(len(returns.index)) for t in tmap.values()])
+lp += pulp.lpSum([w[s] for s in symbols]) == 1.0
+
+for t in returns.index:
+    lp += y[tsec[t]] - z[tsec[t]] == pulp.lpSum([w[s]*(returns[s][t]-rmean[s]) for s in symbols]) 
+        
+lp.solve()
+m_min = m.varValue
+m_min
+
+
+# In[ ]:
+
+
+# Solve for maximum return at minimum MAD
+
+r = pulp.LpVariable('r',lowBound = 0)
+
+lp = pulp.LpProblem('MAD Portfolio',pulp.LpMaximize)
+lp += r
+lp += r == pulp.lpSum([w[s]*rmean[s] for s in symbols])
+lp += m_min == pulp.lpSum([(y[t] + z[t])/float(len(returns.index)) for t in tmap.values()])
+lp += pulp.lpSum([w[s] for s in symbols]) == 1.0
+for t in returns.index:
+    lp += y[tsec[t]] - z[tsec[t]] == pulp.lpSum([w[s]*(returns[s][t]-rmean[s]) for s in symbols]) 
+        
+lp.solve()
+r_min = r.varValue
+w_min = pd.Series([pulp.value(w[s]) for s in symbols], index= symbols)
+
+
+# <!--NAVIGATION-->
+# < [Binomial Model for Pricing Options](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/08.03-Binomial-Model-for-Pricing-Options.ipynb) | [Contents](toc.ipynb) | [Index](index.ipynb) | [Real Options](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/08.05-Real-Options.ipynb) ><p><a href="https://colab.research.google.com/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/08.04-MAD-Portfolio-Optimization.ipynb"><img align="left" src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open in Google Colaboratory"></a>
