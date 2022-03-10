@@ -3,20 +3,22 @@
 
 # # Strip Packing: Placing Boxes on a Shelf
 # 
-# *Strip packing* (SP) refers to the problem of packing rectanges onto a two dimensional strip of fixed width. Many variants of this problem have been studied, the most basic is to perform the packing without rotation of the rectangles onto the shortest possible strip. Other variants allow rotation of the rectangles, require a packing that allows cutting the rectanges out of the strip with edge-to-edge cuts (guillotine packing), extends the strip to three dimensions, or extends the packing to non-rectangular shapes.
+# *Strip packing* (SP) refers to the problem of packing rectanges onto a two dimensional strip of fixed width. 
 # 
-# The extensive study of strip packing problem and its variants are motivated to their many industrial applications, including
+# Many variants of this problem have been studied, the most basic is the pack a set of rectangles onto the shortest possible strip without rotation. Other variants allow rotation of the rectangles, require a packing that allows cutting the rectanges out of the strip with edge-to-edge cuts (guillotine packing), extends the strip to three dimensions, or extends the packing to non-rectangular shapes.
+# 
+# The extensive study of strip packing problems is motivated by their many industrial applications including
 # 
 # * placement of macro cells in semiconductor layouts,
 # * wood and textile cutting operations,
 # * laying out workstations in manufacturing facilities,
-# * bandwidth allocation between two endpoints,
-# * planning and scheduling $CO_2$ capture and utilization for enhanced oil recovery,
+# * allocating communications bandwidth between two endpoints,
+# * planning and scheduling $CO_2$ utilization for enhanced oil recovery,
 # * scheduling allocations of a common resource.
 # 
-# Finding optimial solutions to strip packing problems is combinatorially difficult. Strip packing belongs to a class of problems called "NP-hard" for which known solution algorithms require effort that grows exponentially with problem size. For that reason, much research on strip packing has been directed towards practical heurestic algorithms for finding good, though not optimal, for industrial applications.
+# Finding optimial solutions to strip packing problems is combinatorially difficult. Strip packing belongs to a class of problems called "NP-hard" for which known solution algorithms require effort that grows exponentially with problem size. For that reason much research on strip packing has been directed towards practical heurestic algorithms for finding good, though not optimal, for industrial applications.
 # 
-# Here we consider we develop Pyomo models to find optimal solutions to smaller but economically relevant problems. 
+# Here we consider we develop Pyomo models to find optimal solutions to smaller but economically relevant problems. We use the problem of packing boxes onto shortest possible shelf of fixed width.
 
 # ## Problem Statment
 # 
