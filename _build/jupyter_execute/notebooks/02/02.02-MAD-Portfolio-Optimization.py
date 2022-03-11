@@ -587,7 +587,7 @@ plt.grid(True)
 
 # ## MAD porfolio
 
-# The linear program is formulated and solved using the pulp package. 
+# The linear program is formulated and solved using Pyomo. 
 
 # In[15]:
 
