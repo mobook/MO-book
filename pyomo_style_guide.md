@@ -326,7 +326,8 @@ This document is the result of interactions with students and colleagues over se
 * David Woodruff, UC Davis
 * Javier Salmeron-Medrano, Naval Postgraduate School
 * Pyomo development team
-* Jasper M. H. van Doom
+* Jasper M. H. van Doorn
+* Leon Lan
 
 
 
