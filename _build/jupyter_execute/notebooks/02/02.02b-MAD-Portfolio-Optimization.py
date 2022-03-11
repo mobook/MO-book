@@ -25,69 +25,17 @@ import pyomo.environ as pyo
 
 # What we observe is that even a small amount of diversification can dramatically reduce the downside risk of experiencing a loss. We also see the upside potential has been reduced. What hasn't changed is the that average profit remains at \$50,000. Whether or not the loss of upside potential in order to reduce downside risk is an acceptable tradeoff depends on your individual attitude towards risk. 
 
-# ### Value at risk (VaR)
+# ## Read historical asset prices
 # 
-# [Value at risk (VaR)](https://en.wikipedia.org/wiki/Value_at_risk) is a measure of investment risk. Given a histogram of possible outcomes for the profit of a portfolio, VaR corresponds to negative value of the 5th percentile. That is, 5% of all outcomes would have a lower outcome, and 95% would have a larger outcome. 
-# 
-# The [conditional value at risk](https://en.wikipedia.org/wiki/Expected_shortfall) (also called the expected shortfall (ES), average value at risk (aVaR), and the expected tail loss (ETL)) is the negative of the average value of the lowest 5% of outcomes. 
-# 
-# The following cell provides an interactive demonstration. Use the slider to determine how to break up the total available capital into a number of smaller investments in order to reduce the value at risk to an acceptable (to you) level.  If you can accept only a 5% probability of a loss in your portfolio, how many individual investments would be needed?
+# READ DATA PREVIOUSLY IMPORTED.
 
-# In[5]:
+# In[4]:
 
 
-#@title Value at Risk (VaR) Demo { run: "auto", vertical-output: true }
-Ninvestments = 8 #@param {type:"slider", min:1, max:20, step:1}
+# read historical asset prices
 
-from statsmodels.distributions import ECDF
-
-W0 = 100000.00
-Ntrials = 10000
-
-def sim(Ninvestments = 5):
-
-    Profit = list()
-    for n in range(0, Ntrials):
-        W1 = sum([(W0/Ninvestments)*random.uniform(0,3.00) for _ in range(0,Ninvestments)])
-        Profit.append(W1-W0)
-        
-    print('Average Profit = ${:.0f}'.format(np.mean(Profit)).replace('$-','-$'))
-
-    VaR = -sorted(Profit)[int(0.05*Ntrials)]
-    print('Value at Risk (95%) = ${:.0f}'.format(VaR).replace('$-','-$'))
-    
-    cVaR = -sum(sorted(Profit)[0:int(0.05*Ntrials)])/(0.05*Ntrials)
-    print('Conditional Value at Risk (95%) = ${:.0f}'.format(cVaR).replace('$-','-$'))
-
-    plt.figure(figsize=(10,6))
-    plt.subplot(2, 1, 1)
-    plt.hist(Profit, bins=100)
-    plt.xlim(-100000, 200000)
-    plt.plot([-VaR, -VaR], plt.ylim())
-    plt.xlabel('Profit')
-    plt.ylabel('Frequency')
-
-    plt.subplot(2, 1, 2)
-    ecdf = ECDF(Profit)
-    x = np.linspace(min(Profit), max(Profit))
-    plt.plot(x, ecdf(x))
-    plt.xlim(-100000, 200000)
-    plt.ylim(0,1)
-    plt.plot([-VaR, -VaR], plt.ylim())
-    plt.plot(plt.xlim(), [0.05, 0.05])
-    plt.xlabel('Profit')
-    plt.ylabel('Cumulative Probability');
-    
-sim(Ninvestments)
-
-
-# ## Import historical asset prices
-
-# In[393]:
-
-
-# import historical asset prices
-
+import matplotlib.pyplot as plt
+import pandas as pd
 import os
 import glob
 
@@ -107,7 +55,7 @@ assets.plot(logy=True, figsize=(12, 8), grid=True, lw=1, title="Adjusted Close")
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 
 
-# In[394]:
+# In[5]:
 
 
 # scaled asset prices
@@ -117,7 +65,7 @@ assets_scaled.plot(figsize=(12, 8), grid=True, lw=1, title="Adjusted Close: Scal
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 
 
-# In[395]:
+# In[6]:
 
 
 # daily returns
@@ -133,7 +81,7 @@ for a, s in zip(ax.flatten(), sorted(daily_returns.columns)):
 plt.tight_layout()
 
 
-# In[398]:
+# In[7]:
 
 
 # distributions of returns
@@ -156,7 +104,7 @@ for a, s in zip(ax.flatten(), daily_returns.columns):
 plt.tight_layout()
 
 
-# In[400]:
+# In[8]:
 
 
 # bar charts of mean return and mean absolute deviation in returns
@@ -172,7 +120,7 @@ mean_absolute_deviation.plot(kind='barh', ax=ax[1], title='Mean Absolute Deviati
 ax[1].invert_yaxis()
 
 
-# In[405]:
+# In[9]:
 
 
 # plot return vs risk
@@ -207,7 +155,7 @@ ax.grid(True)
 # 
 # where $r_{t, a}$ is the return on asset $a$ at time $t$, $\bar{r}_a$ is the mean return for asset $a$, and $w_a$ is the fraction of the total portfolio that is invested in asset $a$.
 
-# In[476]:
+# In[15]:
 
 
 import pyomo.environ as pyo
@@ -220,7 +168,7 @@ def mad_portfolio(assets):
     m = pyo.ConcreteModel()
     
     m.Rp = pyo.Param(mutable=True, default=0)
-    m.W_lb = pyo.Param(mutable=True, default=0)
+    m.W_lb = pyo.Param(mutable=True, default=-10)
     
     m.ASSETS = pyo.Set(initialize=assets.columns)
     m.TIME = pyo.RangeSet(len(daily_returns.index))
@@ -265,7 +213,7 @@ mean_absolute_deviation.plot(kind='barh', ax=ax[2], title='Mean Absolute Deviati
 ax[2].invert_yaxis()
 
 
-# In[481]:
+# In[18]:
 
 
 # plot return vs risk
@@ -279,7 +227,7 @@ for s in assets.keys():
     ax.plot(mean_absolute_deviation[s], mean_return[s], 's', ms=8)
     ax.text(mean_absolute_deviation[s]*1.03, mean_return[s], s)
     
-ax.set_xlim(0, 1.1*max(mad))
+ax.set_xlim(0, 1.1*max(mean_absolute_deviation))
 ax.axhline(0, color='r', linestyle='--')
 ax.set_title('Return vs Risk')
 ax.set_xlabel('Mean Absolute Deviation in Daily Returns')
@@ -288,8 +236,8 @@ ax.grid(True)
 
 import numpy as np
 
-m.W_lb = 0
-for Rp in np.linspace(-0.0003, 0.0020, 20):
+m.W_lb = -100
+for Rp in np.linspace(0, 0.0020, 20):
     m.Rp = Rp
     pyo.SolverFactory('cbc').solve(m)
     mad_portfolio_weights = pd.DataFrame([m.w[a]() for a in sorted(m.ASSETS)], index=sorted(m.ASSETS))
@@ -302,7 +250,7 @@ for Rp in np.linspace(-0.0003, 0.0020, 20):
 
 # ## Statistics of daily asset returns
 
-# In[478]:
+# In[14]:
 
 
 S_hist = pd.read_csv('data/Historical_Adjusted_Close.csv', index_col=0)
