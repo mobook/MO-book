@@ -28,7 +28,7 @@ Use of `pyo`  provides consistency with Pyomo [documentation](https://pyomo.read
 
 ```python
 # don't do this
-import pyomo.environ as *
+from pyomo.environ import *
 ```
 
 Is strongly discouraged. In special cases where a less verbose style is desired, such as presentations or introducing Pyomo to new users, explicitly import the needed Pyomo objects. For example
@@ -43,12 +43,6 @@ from pyomo.environ import ConcreteModel, Var, Objective, maximize, SolverFactory
 The preferred method for creating instances of Pyomo models is a Python function or class that accepts parameter values and returns a `ConcreteModel`.
 
 Pyomo provides two methods for creating model instances, `AbstractModel` or `ConcreteModel`.  A `ConcreteModel` requires parameter values to be known when the model is created. `AbstractModel` specifies a model with symbolic parameters which can be specified later to define an instance of the  model. However, because Pyomo is integrated within Python,  `ConcreteModel` model instances can be created with a Python function or class using the full range of language features. For this reason, there is  little benefit for  `AbstractModel`.
-
-### Prefer short model and block names
-
-Model and block names should be consistent with PEP 8 naming standards (i.e., all lowercase with words separated by underscore). Short model names are preferred for readability and to avoid excessively long lines. A single lower case `m` is acceptable in  instances of a model with a single block. 
-
-Complex models may require more descriptive names for readability. 
 
 ### Index with Pyomo Set and RangeSet
 
@@ -71,6 +65,7 @@ bounds = {"a": 12, "b": 23, "c": 14}
 the following
 
 ```python
+m = pyo.ConcreteModel()
 m.B = pyo.Set(initialize=bounds.keys())
 m.x = pyo.Var(m.B)
 ```
@@ -78,16 +73,21 @@ m.x = pyo.Var(m.B)
 is preferred to
 
 ```
+m = pyo.ConcreteModel()
 m.x = pyo.Var(bounds.keys())
 ```
 
 ### Parameters
 
-Pyomo modelers may prefer to use native Python data structures rather declare and use instances of parameters created using the `pyomo.Param()` class. However, there are circumstances when Pyomo parameters are preferred. Pyomo parameters should be used 
+Pyomo modelers may prefer to use native Python data structures rather declare and use instances of parameters created using the `pyomo.Param()` class.  Use of Pyomo parameters, however, is encouraged for  particular circumstances.  
 
-* with `mutuable=True` should be used when a model will be solved for multiple parameter values.
+By default, Pyomo parameters are immutable which can prevent inadvertent changes to key model parameters. Parameters that define the size of index sets, or establish fixed upper or lower bounds on variables, are examples where defining an immutable Pyomo parameter is good practice.
+
+Pyomo parameters should also be used 
+
+* with `mutuable=True`  when a model will be solved for multiple parameter values. 
 * when the use of native Python data structures would reduce readability.
-* when developing more complex model requiring  clear interfaces among modules that document model data, provide default values and validation.
+* when developing complex model requiring  clear interfaces among modules that document model data, provide default values and validation.
 
 ### Variables
 
@@ -97,9 +97,11 @@ The `pyomo.Var()` class accepts either `within` or `domain` as a keyword to spec
 
 #### Use `bounds` when known and fixed
 
-When known and fixed, use of `bounds` when creating a variable is a best practice in mathematical optimization.  Providing bounds in `Var` reduces the number of explicit constraints in the model simplifies coding and model display. 
+A Pyomo model can place bounds on decision variables with either the `bounds`  keyword in the argument to `pyomo.Var`, or as explicit constraints in the model. 
 
-If, however, variable bounds may change during the course of problem solving, then explicit constraints should be used.
+When upper or lower bounds for a variable are known and fixed, use of `bounds` when creating the variable is a best practice in mathematical optimization.  This practice can reduce the number of explicit constraints in the model and simplify coding and model display. 
+
+If, however, variable bounds may be subject to change during the course of problem solving, then explicit constraints should be used.
 
 ### Constraints and Objective
 
@@ -133,14 +135,21 @@ def capacity_constraint(model, src):
 @model.Constraint(model.DESTINATIONS)
 def demand_constraint(model, dst):
   return sum(model.ship[src, dst] for dst in model.SOURCES) <= model.DEMAND[dst]
-
 ```
+
+
 
 ## Naming Conventions
 
 The choice of constraint and variables names is important for readable Pyomo models. Good practice is to use descriptive lower case names with words separated by underscores consistent with PEP 8 recommendations. 
 
 Pyomo models commonly use alternative conventions to enhance readability by visually distinguishing components of a model.
+
+### Prefer short model and block names
+
+Model and block names should be consistent with PEP 8 naming standards (i.e., all lowercase with words separated by underscore). Short model names are preferred for readability and to avoid excessively long lines. A single lower case `m` is acceptable in  instances of a model with a single block. 
+
+Complex models may require more descriptive names for readability. 
 
 ### Set and RangeSet names may be all caps
 
@@ -158,8 +167,8 @@ m.MACHINES = pyo.Set(initialize=["A", "B", "C"])
 m.finish_time = pyo.Var(m.MACHINES, domain=pyo.NonNegativeReals)
 
 @m.Objective(sense=pyo.minimize)
-def total_time(model):
-  return sum(m.finish_time[machine] for machine in m.MACHINES),
+def total_time(m):
+  return sum(m.finish_time[machine] for machine in m.MACHINES)
 ```
 
 ### Parameter names may be capitalized

@@ -2,6 +2,8 @@
 # coding: utf-8
 
 # # MAD Portfolio Optimization
+# 
+# NOTE: THIS IS IN EARLY DEVELOPMENT.  STILL NEED TO FINALIZE MODEL, TEST, AND REVISE NARRATIVE.  PRIORITY IS TO FINISH BY 3/18.
 
 # In[304]:
 
@@ -79,9 +81,228 @@ def sim(Ninvestments = 5):
 sim(Ninvestments)
 
 
-# ## Import historical stock price data
+# ## Import historical asset prices
 
-# In[42]:
+# In[393]:
+
+
+# import historical asset prices
+
+import os
+import glob
+
+data_path = os.path.join("data", "stocks")
+files = glob.glob(os.path.join(data_path, "*.csv"))
+
+assets = pd.DataFrame()
+for filename in sorted(files):
+    data = pd.read_csv(filename, index_col=0)
+    sym = filename.split("/")[-1].split(".")[0]
+    assets[sym] = data["Adj Close"]
+    
+assets.fillna(method="bfill", inplace=True)
+assets.fillna(method="ffill", inplace=True)
+    
+assets.plot(logy=True, figsize=(12, 8), grid=True, lw=1, title="Adjusted Close")
+plt.legend(bbox_to_anchor=(1.0, 1.0))
+
+
+# In[394]:
+
+
+# scaled asset prices
+
+assets_scaled = assets.div(assets.iloc[0])
+assets_scaled.plot(figsize=(12, 8), grid=True, lw=1, title="Adjusted Close: Scaled")
+plt.legend(bbox_to_anchor=(1.0, 1.0))
+
+
+# In[395]:
+
+
+# daily returns
+
+daily_returns = assets.diff()[1:]/assets.shift(1)[1:]
+
+fig, ax = plt.subplots(6, 5, figsize=(12, 10), sharex=True, sharey=True)
+ax = ax.flatten()
+
+for a, s in zip(ax.flatten(), sorted(daily_returns.columns)):
+    daily_returns[s].plot(ax=a, lw=1, title=s, grid=True)
+    
+plt.tight_layout()
+
+
+# In[398]:
+
+
+# distributions of returns
+
+daily_returns = assets.diff()[1:]/assets.shift(1)[1:]
+
+fig, ax = plt.subplots(6, 5, figsize=(12, 10), sharex=True, sharey=True)
+ax = ax.flatten()
+
+for a, s in zip(ax.flatten(), daily_returns.columns):
+    daily_returns[s].hist(ax=a, lw=1, grid=True, bins=50)
+    mean_return = daily_returns[s].mean()
+    mean_absolute_deviation = abs((daily_returns[s] - mean_return)).mean()
+    a.set_title(f"{s} = {mean_return:0.5f}")
+    a.set_xlim(-0.08, 0.08)
+    a.axvline(mean_return, color='r', linestyle="--")
+    a.axvline(mean_return + mean_absolute_deviation, color='g', linestyle='--')
+    a.axvline(mean_return - mean_absolute_deviation, color='g', linestyle='--')
+    
+plt.tight_layout()
+
+
+# In[400]:
+
+
+# bar charts of mean return and mean absolute deviation in returns
+
+daily_returns = assets.diff()[1:]/assets.shift(1)[1:]
+mean_return = daily_returns.mean()
+mean_absolute_deviation = abs(daily_returns - mean_return).mean()
+
+fig, ax = plt.subplots(1, 2, figsize = (12, 0.35*len(daily_returns.columns)))
+mean_return.plot(kind='barh', ax=ax[0], title="Mean Return")
+ax[0].invert_yaxis()
+mean_absolute_deviation.plot(kind='barh', ax=ax[1], title='Mean Absolute Deviation');
+ax[1].invert_yaxis()
+
+
+# In[405]:
+
+
+# plot return vs risk
+
+daily_returns = assets.diff()[1:]/assets.shift(1)[1:]
+mean_return = daily_returns.mean()
+mean_absolute_deviation = abs(daily_returns - mean_return).mean()
+
+fig, ax = plt.subplots(1, 1, figsize=(10,6))
+for s in assets.keys():
+    ax.plot(mean_absolute_deviation[s], mean_return[s], 's', ms=8)
+    ax.text(mean_absolute_deviation[s]*1.03, mean_return[s], s)
+
+ax.set_xlim(0, 1.1*max(mad))
+ax.axhline(0, color='r', linestyle='--')
+ax.set_title('Return vs Risk')
+ax.set_xlabel('Mean Absolute Deviation in Daily Returns')
+ax.set_ylabel('Mean Daily Return')
+ax.grid(True)
+
+
+# ## Porfolio
+# 
+# The return on a portfolio with weights $w_a$ for asset $a$ is 
+# 
+# 
+# $$
+# \begin{align*}
+# MAD  = \min \frac{1}{T} \sum_{t\in TIME} \left| \sum_{a\in ASSETS} w_a (r_{t, a} - \bar{r}_a) \right|
+# \end{align*}
+# $$
+# 
+# where $r_{t, a}$ is the return on asset $a$ at time $t$, $\bar{r}_a$ is the mean return for asset $a$, and $w_a$ is the fraction of the total portfolio that is invested in asset $a$.
+
+# In[476]:
+
+
+import pyomo.environ as pyo
+
+def mad_portfolio(assets):
+    
+    daily_returns = assets.diff()[1:]/assets.shift(1)[1:]
+    mean_return = daily_returns.mean()
+
+    m = pyo.ConcreteModel()
+    
+    m.Rp = pyo.Param(mutable=True, default=0)
+    m.W_lb = pyo.Param(mutable=True, default=0)
+    
+    m.ASSETS = pyo.Set(initialize=assets.columns)
+    m.TIME = pyo.RangeSet(len(daily_returns.index))
+    
+    m.w = pyo.Var(m.ASSETS, bounds=(m.W_lb, 10))
+    m.r_pos = pyo.Var(m.TIME, domain=pyo.NonNegativeReals)
+    m.r_neg = pyo.Var(m.TIME, domain=pyo.NonNegativeReals)
+    
+    @m.Constraint(m.TIME)
+    def portfolio_returns(m, t):
+        date = daily_returns.index[t-1]
+        return m.r_pos[t] - m.r_neg[t] == sum(m.w[a]*(daily_returns.loc[date, a] - mean_return[a]) for a in m.ASSETS)
+    
+    @m.Objective(sense=pyo.minimize)
+    def mad(m):
+        return sum(m.r_pos[t] + m.r_neg[t] for t in m.TIME)/len(m.TIME)
+    
+    @m.Constraint()
+    def sum_of_weights(m):
+        return 1 == sum(m.w[a] for a in m.ASSETS)
+    
+    @m.Constraint()
+    def mean_portfolio_return(m):
+        return sum(m.w[a] * mean_return[a] for a in m.ASSETS) == m.Rp
+    
+    return m
+    
+m = mad_portfolio(assets)
+pyo.SolverFactory('cbc').solve(m)
+
+daily_returns = assets.diff()[1:]/assets.shift(1)[1:]
+mean_return = daily_returns.mean()
+mean_absolute_deviation = abs(daily_returns - mean_return).mean()
+mad_portfolio_weights = pd.DataFrame([m.w[a]() for a in sorted(m.ASSETS)], index=sorted(m.ASSETS))
+
+fig, ax = plt.subplots(1, 3, figsize = (12, 0.35*len(daily_returns.columns)))
+mad_portfolio_weights.plot(kind='barh', ax=ax[0], title="MAD Portfolio Weights")
+ax[0].invert_yaxis()
+mean_return.plot(kind='barh', ax=ax[1], title="Mean Return")
+ax[1].invert_yaxis()
+mean_absolute_deviation.plot(kind='barh', ax=ax[2], title='Mean Absolute Deviation');
+ax[2].invert_yaxis()
+
+
+# In[481]:
+
+
+# plot return vs risk
+
+daily_returns = assets.diff()[1:]/assets.shift(1)[1:]
+mean_return = daily_returns.mean()
+mean_absolute_deviation = abs(daily_returns - mean_return).mean()
+
+fig, ax = plt.subplots(1, 1, figsize=(10,6))
+for s in assets.keys():
+    ax.plot(mean_absolute_deviation[s], mean_return[s], 's', ms=8)
+    ax.text(mean_absolute_deviation[s]*1.03, mean_return[s], s)
+    
+ax.set_xlim(0, 1.1*max(mad))
+ax.axhline(0, color='r', linestyle='--')
+ax.set_title('Return vs Risk')
+ax.set_xlabel('Mean Absolute Deviation in Daily Returns')
+ax.set_ylabel('Mean Daily Return')
+ax.grid(True)
+
+import numpy as np
+
+m.W_lb = 0
+for Rp in np.linspace(-0.0003, 0.0020, 20):
+    m.Rp = Rp
+    pyo.SolverFactory('cbc').solve(m)
+    mad_portfolio_weights = pd.DataFrame([m.w[a]() for a in sorted(m.ASSETS)], index=sorted(m.ASSETS))
+
+    portfolio_returns = daily_returns.dot(mad_portfolio_weights)
+    portfolio_mean_return = portfolio_returns.mean()
+    portfolio_mean_absolute_deviation = abs(portfolio_returns - portfolio_mean_return).mean()
+    ax.plot(portfolio_mean_absolute_deviation, portfolio_mean_return, 'ro', ms=10)
+
+
+# ## Statistics of daily asset returns
+
+# In[478]:
 
 
 S_hist = pd.read_csv('data/Historical_Adjusted_Close.csv', index_col=0)
@@ -383,6 +604,14 @@ a = R - R.mean()
 a.head()
 
 
+# In[ ]:
+
+
+
+
+
+# ## Minimizing MAD for a portfolio
+
 # In[17]:
 
 
@@ -576,44 +805,3 @@ ylabel('Mean Return')
 
 grid();
 
-
-# ## Problem 1: Solve for dominating MAD portfolio
-
-# In[21]:
-
-
-lp = pulp.LpProblem('MAD Portfolio',pulp.LpMinimize)
-lp += m    
-lp += m == pulp.lpSum([(y[t] + z[t])/float(len(returns.index)) for t in tmap.values()])
-lp += pulp.lpSum([w[s] for s in symbols]) == 1.0
-
-for t in returns.index:
-    lp += y[tsec[t]] - z[tsec[t]] == pulp.lpSum([w[s]*(returns[s][t]-rmean[s]) for s in symbols]) 
-        
-lp.solve()
-m_min = m.varValue
-m_min
-
-
-# In[ ]:
-
-
-# Solve for maximum return at minimum MAD
-
-r = pulp.LpVariable('r',lowBound = 0)
-
-lp = pulp.LpProblem('MAD Portfolio',pulp.LpMaximize)
-lp += r
-lp += r == pulp.lpSum([w[s]*rmean[s] for s in symbols])
-lp += m_min == pulp.lpSum([(y[t] + z[t])/float(len(returns.index)) for t in tmap.values()])
-lp += pulp.lpSum([w[s] for s in symbols]) == 1.0
-for t in returns.index:
-    lp += y[tsec[t]] - z[tsec[t]] == pulp.lpSum([w[s]*(returns[s][t]-rmean[s]) for s in symbols]) 
-        
-lp.solve()
-r_min = r.varValue
-w_min = pd.Series([pulp.value(w[s]) for s in symbols], index= symbols)
-
-
-# <!--NAVIGATION-->
-# < [Binomial Model for Pricing Options](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/08.03-Binomial-Model-for-Pricing-Options.ipynb) | [Contents](toc.ipynb) | [Index](index.ipynb) | [Real Options](http://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/08.05-Real-Options.ipynb) ><p><a href="https://colab.research.google.com/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/08.04-MAD-Portfolio-Optimization.ipynb"><img align="left" src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open in Google Colaboratory"></a>
