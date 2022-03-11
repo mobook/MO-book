@@ -111,9 +111,25 @@ The `pyomo.ConstraintList()` class is useful for creating a collection of constr
 
 #### Use decorators to improve readability
 
-A recent innovation in Pyomo is the use of Python decorators to create Constraint, Objective, and Disjunction objects. The use of decorators eliminates redundancy and improves readability.
+Indexed Pyomo constraints are constructed by a rule.  When using `pyomo.Constraint()`  rules are normally named by adding`_rule` as a suffix to the name of the associated constraint. For example, assuming model `m`  and the associated sets, parameters, and variables have been previously defined, 
 
-The syntax is straightforward for objectives and simple constraints. Keywords are included in the decorator.
+```python
+def new_constraint_rule(m, s):
+  return m.x[s] <= m.ub[s]
+m.new_constraint = pyo.Constraint(m.S, rule=new_constraint_rule)
+```
+
+A recent innovation in Pyomo is the use of Python decorators to create Constraint, Objective, and Disjunction objects. Using decorators, the above example is written as
+
+```python
+@m.Constraint(m.S)
+def new_constraint_rule(m, s):
+  return m.x[s] <= m.ub[s]
+```
+
+The use of decorators improves readability by eliminating the need for the `rule`  keyword and writing multiple versions of the constraint name. 
+
+The decorator syntax is straightforward for objectives and simple constraints. Keywords are included in the decorator. 
 
 ````python
 @model.Constraint()
@@ -136,8 +152,6 @@ def capacity_constraint(model, src):
 def demand_constraint(model, dst):
   return sum(model.ship[src, dst] for dst in model.SOURCES) <= model.DEMAND[dst]
 ```
-
-
 
 ## Naming Conventions
 
@@ -238,17 +252,6 @@ m.labor_b = pyo.Constraint(expr = m.production_x + 2*m.production_y <= 15, doc="
 
 m.pprint()
 
-```
-
-### Rule naming conventions
-
-Indexed Pyomo constraints are constructed by a rule. When using decorators, the rule is constructed automatically.  When using `pyomo.Constraint()`  rules should named by adding`_rule` as a suffix to the name of the associated constraint.
-
-
-```python
- def new_constraint_rule(m, s):
-  return m.x[s] <= m.ub[s]
-m.new_constraint = pyo.Constraint(m.S, rule=c_rule)
 ```
 
 
