@@ -4,7 +4,7 @@ This style guide supports the development and deployment of consistent, readable
 
 ## Workflows
 
-A typical development workflow comprises:
+A typical development workflow for Pyomo applications comprises:
 
 * Collection and pre-processing of representative application data.
 * Pyomo model development
@@ -12,26 +12,26 @@ A typical development workflow comprises:
 * Post-processing and analysis of solution data
 * Model testing and validation
 
-A typical deployment omits the model development and validation steps, but may integrate the remaining elements into existing application workflows. This style guide support these workflows emphasizing modularity and clean interfaces between successive steps. 
+Subsequent  deployment of Pyomo model will omit the development and validation steps, but may integrate the remaining elements into existing application workflows. This style guide support by development and deployment  workflows by emphasizing modularity and clean interfaces between successive steps. 
 
 ## Coding Conventions
 
 ### Use `pyo` for the Pyomo namespace
 
-The preferred namespace convention for Pyomo is `pyo` 
+For consistency with Pyomo [documentation](https://pyomo.readthedocs.io/en/stable/pyomo_overview/abstract_concrete.html) and the Pyomo book, the preferred namespace convention for Pyomo is `pyo` 
 
 ```python
 import pyomo.environ as pyo
 ```
 
-Use of `pyo`  provides consistency with Pyomo [documentation](https://pyomo.readthedocs.io/en/stable/pyomo_overview/abstract_concrete.html) and the Pyomo book.  The usage
+The usage
 
 ```python
 # don't do this
 from pyomo.environ import *
 ```
 
-Is strongly discouraged. In special cases where a less verbose style is desired, such as presentations or introducing Pyomo to new users, explicitly import the needed Pyomo objects. For example
+Is strongly discouraged For special cases where a less verbose style is needed, such as presentations or introducing Pyomo to new users, a better practice is to explicitly import the needed Pyomo objects as shown in this example:
 
 ```python
 # for presentations or teaching examples
