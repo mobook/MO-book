@@ -27,7 +27,7 @@
 # 
 # We'll start by creating a function to generate a table of $N$ boxes. For concreteness, we assume the dimensions are in millimeters.
 
-# In[122]:
+# In[5]:
 
 
 import random
@@ -46,36 +46,47 @@ N = 8
 boxes = generate_boxes(8)
 display(boxes)
 
+# set shelf width as a multiple of the deepest box
 D = 2*boxes["d"].max()
 print("Shelf Depth = ", D)
 
 
-# ## Version 0: Line up the boxes on the shelf
+# ## Modeling Strategy
 # 
-# The first solution is simply to line up the boxes on the shelf. For comparison purposes, a lower bound on the needed width is easy to compute.
+# At this point the reader may have some ideas on how to efficiently pack boxes on the shelf. For example, one might start by placing the larger boxes to left edge of the shelf, then rotating and placing the smaller boxes with a goal of minimized the occupied with of the shelf. 
+# 
+# Modeling for optimization takes a different approach. The strategy is to describe constraints that must be satisified for any solution to the problem, then let the solver find the a choice for the decision variables that minimizes width. The constaints include:
+# 
+# * The bounding boxes must fit within the boundaries of the shelf, and to the left of vertical line drawn at $x = W$.
+# * The boxes can be rotated 90 degrees.
+# * The boxes must not overlap in either the $x$ or $y$ dimensions.
+
+# ## A lower and upper bounds on shelf width
+# 
+# A lower bound on the shelf width is established by from the area required to place all boxes on the shelf.
 # 
 # $$W_{lb} = \frac{1}{D}\sum_{i=0}^{N-1} w_i d_i$$
 # 
-# The position of the rectange on the shelf is defined by bounding box $(x_{i,1}, y_{i,1})$ and $(x_{i,2}, y_{i,2})$ extending from the lower left corncer to the upper right corner. 
+# An upper bound is established by aligning the boxes along the front of the shelf without rotation. To set the stage for later calculations, the position of the rectange on the shelf is defined by bounding box $(x_{i,1}, y_{i,1})$ and $(x_{i,2}, y_{i,2})$ extending from the lower left corner to the upper right corner. 
 # 
 # $$
 # \begin{align*}
 # x_{i,2} & = x_{i,1} + w_i \\
-# y_{i,2} & = y_{i,2} + d_i \\
+# y_{i,2} & = y_{i,1} + d_i \\
 # \end{align*}
 # $$
 # 
-# An additional binary variable $r_i$ designates whether the rectangle has been rotated.
+# An additional binary variable $r_i$ designates whether the rectangle has been rotated. The following cell performs these calculations to create and display a dataframe showing the bounding boxes.
 
-# In[123]:
+# In[7]:
 
 
 def pack_boxes_V0(boxes):
     soln = boxes.copy()
     soln["x1"] = soln["w"].cumsum() - soln["w"]
-    soln["x2"] = soln["x1"] + soln["w"]
+    soln["x2"] = soln["w"].cumsum()
     soln["y1"] = 0
-    soln["y2"] = soln["y1"] + soln["d"]
+    soln["y2"] = soln["d"]
     soln["r"] = 0
     return soln
 
@@ -110,7 +121,7 @@ show_boxes(soln, D)
 
 # ## Version 1: A Pyomo model to line up the boxes
 # 
-# For this first Pyomo model, we simply look to reproduce a lineup of the boxes on the shelf. In the case the problem is minimize $W$ where
+# For this first Pyomo model we look to reproduce a lineup of the boxes on the shelf. In the case the problem is to minimize $W$ where
 # 
 # $$
 # \begin{align*}
@@ -125,9 +136,9 @@ show_boxes(soln, D)
 # \end{align*}
 # $$
 # 
-# The disjuctive constraints prevent overlapping positions of boxes on the shelf.
+# This first model does not consider rotation or placement of the boxes in the $y$ dimension, so those decisions are not included. The disjuctive constraints specify relationships between $x_{i,1}$ and $x_{i,2}$ to prevent overlapping positions of boxes on the shelf.
 # 
-# The corresponding Pyomo model is a direct implementation of this model. One feature of the implementation is the use of a set `m.PAIRS` to identify the disjunctions. Defining this set simplifies coding the corresponding disjunction.
+# The corresponding Pyomo model is a direct implementation of this model. One feature of the implementation is the use of a set `m.PAIRS` to identify the disjunctions. Defining this set simplifies coding for the corresponding disjunction.
 # 
 
 # In[124]:
@@ -185,7 +196,7 @@ show_boxes(soln, D)
 
 # ## Version 2: Rotating boxes
 # 
-# Rotating the boxes is an allowed action in this shelf packing application. This introduces an additional disjuction to determine the orientation of the bounding box. We include a binary indicator variable $r_i$ that will be used to track which boxes were rotated.
+# Rotating the boxes is an allowed action in this shelf packing application. This introduces an additional disjunction to determine the orientation of the bounding box. We include a binary indicator variable $r_i$ that will be used to track which boxes were rotated.
 # 
 # $$
 # \begin{align*}
