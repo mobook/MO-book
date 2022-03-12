@@ -27,7 +27,7 @@
 # 
 # We'll start by creating a function to generate a table of $N$ boxes. For concreteness, we assume the dimensions are in millimeters.
 
-# In[5]:
+# In[1]:
 
 
 import random
@@ -78,7 +78,7 @@ print("Shelf Depth = ", D)
 # 
 # An additional binary variable $r_i$ designates whether the rectangle has been rotated. The following cell performs these calculations to create and display a dataframe showing the bounding boxes.
 
-# In[7]:
+# In[2]:
 
 
 def pack_boxes_V0(boxes):
@@ -103,12 +103,14 @@ def show_boxes(boxes, D):
                     fontsize=12, ha="center", va="center")
         
     W_lb = (boxes["w"]*boxes["d"]).sum()/D
-    ax.set_xlim(0, boxes["w"].sum())
+    ax.set_xlim(0, 1.1*boxes["w"].sum())
     ax.set_ylim(0, D*1.1)
-    ax.axhline(D, label="$D$")
-    ax.axvline(W_lb, label="$W_{lb}$")
+    ax.axhline(D, label="shelf width $D$")
+    ax.axvline(W_lb, label="lower bound $W_{lb}$", color="r", lw=0.3)
+    ax.axvline(boxes["x2"].max(), label="shelf width $W$", color="r")
     ax.fill_between([W_lb, ax.get_xlim()[1]], [D, D], color="b", alpha=0.1)
     ax.fill_between([0, W_lb], [D, D], color="y", alpha=0.1)
+    ax.set_title(f"Shelf Width $W$ = {boxes['x2'].max():.0f}")
     ax.set_xlabel("width")
     ax.set_ylabel("depth")
     ax.set_aspect('equal')
@@ -136,12 +138,14 @@ show_boxes(soln, D)
 # \end{align*}
 # $$
 # 
-# This first model does not consider rotation or placement of the boxes in the $y$ dimension, so those decisions are not included. The disjuctive constraints specify relationships between $x_{i,1}$ and $x_{i,2}$ to prevent overlapping positions of boxes on the shelf.
+# This first model does not consider rotation or placement of the boxes in the $y$ dimension, so those decisions are not included. 
+# 
+# The disjunctive constraints specify relationships between $x_{i,1}$ and $x_{i,2}$ to prevent overlapping positions of boxes on the shelf. The disjunctions require that either that box $i$ is to the left of box $j$ or that box $j$ is the left of box $i$. This is specified as an exclusive or disjunction because both conditions can be true at the same time. This disjuctive relationship must hold for every pair of boxes that are different from each other, but specifying $i$ doesn't overlap with $j$ assures $j$ doesn't overlap $i$. So it is only necessary to specify disjunctions for all pairs $i, j$ where $i < j$.
 # 
 # The corresponding Pyomo model is a direct implementation of this model. One feature of the implementation is the use of a set `m.PAIRS` to identify the disjunctions. Defining this set simplifies coding for the corresponding disjunction.
 # 
 
-# In[124]:
+# In[3]:
 
 
 import pyomo.environ as pyo
@@ -149,6 +153,7 @@ import pyomo.gdp as gdp
 
 def pack_boxes_V1(boxes):
     
+    # a simple upper bound on shelf width
     W_ub = boxes["w"].sum()
 
     m = pyo.ConcreteModel()
@@ -172,7 +177,7 @@ def pack_boxes_V1(boxes):
     def width(m, i):
         return m.x2[i] <= m.W
 
-    @m.Disjunction(m.PAIRS)
+    @m.Disjunction(m.PAIRS, xor=True)
     def no_overlap(m, i, j):
         return [m.x2[i] <= m.x1[j],
                 m.x2[j] <= m.x1[i]]
@@ -223,7 +228,7 @@ show_boxes(soln, D)
 # 
 # The Pyomo model implementation now adds the decision variables for rotation and $y$ position.
 
-# In[125]:
+# In[4]:
 
 
 import pyomo.environ as pyo
@@ -335,7 +340,7 @@ show_boxes(soln, D)
 # $$
 # 
 
-# In[144]:
+# In[5]:
 
 
 import pyomo.environ as pyo
@@ -417,7 +422,7 @@ show_boxes(soln, D)
 # Trespalacios, F., & Grossmann, I. E. (2017). Symmetry breaking for generalized disjunctive programming formulation of the strip packing problem. Annals of Operations Research, 258(2), 747-759.
 # 
 
-# In[153]:
+# In[6]:
 
 
 import pyomo.environ as pyo
@@ -494,4 +499,10 @@ def pack_boxes_V4(boxes, D):
 soln = pack_boxes_V4(boxes, D)
 display(soln)
 show_boxes(soln, D)
+
+
+# In[ ]:
+
+
+
 
