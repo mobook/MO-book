@@ -31,7 +31,7 @@ The usage
 from pyomo.environ import *
 ```
 
-Is strongly discouraged For special cases where a less verbose style is needed, such as presentations or introducing Pyomo to new users, a better practice is to explicitly import the needed Pyomo objects as shown in this example:
+Is strongly discouraged. For special cases where a less verbose style is needed, such as presentations or introducing Pyomo to new users, a better practice is to explicitly import the needed Pyomo objects as shown in this example:
 
 ```python
 # for presentations or teaching examples
