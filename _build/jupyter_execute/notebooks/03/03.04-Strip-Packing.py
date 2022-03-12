@@ -35,6 +35,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
+# random seed
+random.seed(1842)
+
 # generate boxes
 def generate_boxes(N, max_width=200, max_depth=200):
     boxes = pd.DataFrame()
@@ -50,16 +53,6 @@ display(boxes)
 D = 2*boxes["d"].max()
 print("Shelf Depth = ", D)
 
-
-# ## Modeling Strategy
-# 
-# At this point the reader may have some ideas on how to efficiently pack boxes on the shelf. For example, one might start by placing the larger boxes to left edge of the shelf, then rotating and placing the smaller boxes with a goal of minimized the occupied with of the shelf. 
-# 
-# Modeling for optimization takes a different approach. The strategy is to describe constraints that must be satisified for any solution to the problem, then let the solver find the a choice for the decision variables that minimizes width. The constaints include:
-# 
-# * The bounding boxes must fit within the boundaries of the shelf, and to the left of vertical line drawn at $x = W$.
-# * The boxes can be rotated 90 degrees.
-# * The boxes must not overlap in either the $x$ or $y$ dimensions.
 
 # ## A lower and upper bounds on shelf width
 # 
@@ -90,27 +83,27 @@ def pack_boxes_V0(boxes):
     soln["r"] = 0
     return soln
 
-def show_boxes(boxes, D):
-    fig, ax = plt.subplots(1, 1, figsize=(12, 3))
-    for i, x, y, w, h, r in zip(boxes.index, boxes["x1"], boxes["y1"], 
-                                boxes["w"], boxes["d"], boxes["r"]):
+def show_boxes(soln, D):
+    """Show bounding boxes on a diagram of the shelf."""
+    fig, ax = plt.subplots(1, 1, figsize=(14, 4))
+    for i, x, y, w, h, r in zip(soln.index, soln["x1"], soln["y1"], soln["w"], soln["d"], soln["r"]):
         c = "g"
         if r == 1:
             h, w = w, h
             c = "r"
         ax.add_patch(Rectangle((x, y), w, h, edgecolor="k", facecolor=c, alpha=0.6))
-        ax.annotate(i, (x + w/2, y + h/2), color="w", weight="bold", 
-                    fontsize=12, ha="center", va="center")
+        xc = x + w/2
+        yc = y + h/2
+        ax.annotate(i, (xc, yc), color="w", weight="bold", fontsize=12, ha="center", va="center")
         
-    W_lb = (boxes["w"]*boxes["d"]).sum()/D
-    ax.set_xlim(0, 1.1*boxes["w"].sum())
+    W_lb = (soln["w"]*soln["d"]).sum()/D
+    ax.set_xlim(0, 1.1*soln["w"].sum())
     ax.set_ylim(0, D*1.1)
-    ax.axhline(D, label="shelf width $D$")
-    ax.axvline(W_lb, label="lower bound $W_{lb}$", color="r", lw=0.3)
-    ax.axvline(boxes["x2"].max(), label="shelf width $W$", color="r")
-    ax.fill_between([W_lb, ax.get_xlim()[1]], [D, D], color="b", alpha=0.1)
-    ax.fill_between([0, W_lb], [D, D], color="y", alpha=0.1)
-    ax.set_title(f"Shelf Width $W$ = {boxes['x2'].max():.0f}")
+    ax.axhline(D, label="shelf width $D$", lw=0.8)
+    ax.axvline(W_lb, label="lower bound $W_{lb}$", color="g", lw=0.8)
+    ax.axvline(soln["x2"].max(), label="shelf width $W$", color="r", lw=0.8)
+    ax.fill_between([0, ax.get_xlim()[1]], [D, D], color="b", alpha=0.1)
+    ax.set_title(f"Shelf Width $W$ = {soln['x2'].max():.0f}")
     ax.set_xlabel("width")
     ax.set_ylabel("depth")
     ax.set_aspect('equal')
@@ -120,6 +113,16 @@ soln = pack_boxes_V0(boxes)
 display(soln)
 show_boxes(soln, D)
 
+
+# ## Modeling Strategy
+# 
+# At this point the reader may have some ideas on how to efficiently pack boxes on the shelf. For example, one might start by placing the larger boxes to left edge of the shelf, then rotating and placing the smaller boxes with a goal of minimized the occupied with of the shelf. 
+# 
+# Modeling for optimization takes a different approach. The strategy is to describe constraints that must be satisified for any solution to the problem, then let the solver find the a choice for the decision variables that minimizes width. The constaints include:
+# 
+# * The bounding boxes must fit within the boundaries of the shelf, and to the left of vertical line drawn at $x = W$.
+# * The boxes can be rotated 90 degrees.
+# * The boxes must not overlap in either the $x$ or $y$ dimensions.
 
 # ## Version 1: A Pyomo model to line up the boxes
 # 
@@ -201,7 +204,7 @@ show_boxes(soln, D)
 
 # ## Version 2: Rotating boxes
 # 
-# Rotating the boxes is an allowed action in this shelf packing application. This introduces an additional disjunction to determine the orientation of the bounding box. We include a binary indicator variable $r_i$ that will be used to track which boxes were rotated.
+# Rotating the boxes is an option for packing the boxes more tightly on the shelf. The boxes can be placed either in their original orientation or in a rotated orientation. This introduces a second exclusive or disjuction to the model that determines the orientation of the bounding box. A binary indicator variable $r_i$ tracks which boxes were rotated which is used in the `show_boxes` function to show which boxes have been rotated.
 # 
 # $$
 # \begin{align*}
@@ -226,7 +229,7 @@ show_boxes(soln, D)
 # \end{align*}
 # $$
 # 
-# The Pyomo model implementation now adds the decision variables for rotation and $y$ position.
+# For this version of the model the boxes will be lined up against the edge of the shelf with $y_{i,1} = 0$. Decision variables are now included in the model for rotation $r$ to the $y$ dimension of the bounding boxes.
 
 # In[4]:
 
@@ -287,7 +290,7 @@ def pack_boxes_V2(boxes):
     soln["x2"] = [m.x2[i]() for i in boxes.index]
     soln["y1"] = [m.y1[i]() for i in boxes.index]
     soln["y2"] = [m.y2[i]() for i in boxes.index]
-    soln["r"] = [m.r[i]() for i in boxes.index]
+    soln["r"] = [round(m.r[i]()) for i in boxes.index]
     
     return soln
 
@@ -403,7 +406,7 @@ def pack_boxes_V3(boxes, D):
     soln["x2"] = [m.x2[i]() for i in boxes.index]
     soln["y1"] = [m.y1[i]() for i in boxes.index]
     soln["y2"] = [m.y2[i]() for i in boxes.index]
-    soln["r"] = [m.r[i]() for i in boxes.index]
+    soln["r"] = [round(m.r[i]()) for i in boxes.index]
     return soln
 
 soln = pack_boxes_V3(boxes, D)
@@ -493,7 +496,7 @@ def pack_boxes_V4(boxes, D):
     soln["x2"] = [m.x2[i]() for i in boxes.index]
     soln["y1"] = [m.y1[i]() for i in boxes.index]
     soln["y2"] = [m.y2[i]() for i in boxes.index]
-    soln["r"] = [m.r[i]() for i in boxes.index]
+    soln["r"] = [round(m.r[i]()) for i in boxes.index]
     return soln
 
 soln = pack_boxes_V4(boxes, D)
