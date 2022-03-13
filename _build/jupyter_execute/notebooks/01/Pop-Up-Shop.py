@@ -9,7 +9,7 @@
 
 # ## The problem
 # 
-# You've been offered an opportunity to operate a pop-up shop to sell a unique commemorative item for each event held at a famous location. The items cost &euro;12 each and you will be able to sell them for 40&euro;. Unsold items can be returned to the supplier but you will receive only &euro;2 due to their commemorative nature.
+# You've been offered an opportunity to operate a pop-up shop to sell a unique commemorative item for each event held at a famous location. The items cost 12 &euro; each and you will be able to sell them for 40 &euro;. Unsold items can be returned to the supplier but you will receive only 2 &euro; due to their commemorative nature.
 # 
 # | Parameter | Symbol | Value |
 # | :---: | :---: | :---: |
@@ -40,9 +40,9 @@ w = 2
 
 # scenario information
 scenarios = {
-    "sunny skies" : {"prob": 0.10, "demand": 650},
-    "good weather": {"prob": 0.60, "demand": 400},
-    "poor weather": {"prob": 0.30, "demand": 200},
+    "sunny skies" : {"probability": 0.10, "demand": 650},
+    "good weather": {"probability": 0.60, "demand": 400},
+    "poor weather": {"probability": 0.30, "demand": 200},
 }
 
 df = pd.DataFrame.from_dict(scenarios).T
@@ -57,40 +57,48 @@ display(df)
 #  
 # A naive solution to this proc is to place an order equal to the expected demand. The expected demand is given by
 # 
+# $$
 # \begin{align*}
 # \mathbb E[D] & = \sum_{s\in S} p_s d_s 
 # \end{align*}
+# $$
 # 
 # Choosing an order size $x = \mathbb E[d]$ results in an expected profit we call the **expected value of the mean scenario (EVM)**. 
 # 
 # Given an order size $x$, $y_s$ will be the number of items sold if scenario $s$ should occur. The amount sold is the lesser of the demand $d_s$ and $x$.
 # 
+# $$
 # \begin{align*}
 # y_s & = \min(d_s, x) & \forall s \in S
 # \end{align*}
+# $$
 # 
 # After completing event, the remaining inventory $x - y_s$ will be sold at the salvage price $w$. Taking into account the revenue from sales $r y_s$, the salvage value of the unsold inventory $w(x - y_s)$, and the cost of the order $c x$, the resulting profit $f_s$ for scenario $s$ is given by
 # 
+# $$
 # \begin{align*}
 # f_s & = r y_s + w (x - y_s) - c  x & \forall s \in S
 # \end{align*}
+# $$
 # 
 # The average or expected profit is given by
 # 
+# $$
 # \begin{align*}
 # \text{EVM} = \mathbb E[f] & = \sum_{s\in S} p_s f_s
 # \end{align*}
+# $$
 # 
 # These calculations can be executed using operations on the pandas dataframe. Let's begin by calculating the expected demand.
 
 # In[2]:
 
 
-expected_demand = sum(df["prob"] * df["demand"])
+expected_demand = sum(df["probability"] * df["demand"])
 print(f"Expected demand = {expected_demand}")
 
 
-# Subsequent calculations can be done directly with pandas dataframe holding the scenario data.
+# Subsequent calculations can be done directly withthe  pandas dataframe holding the scenario data.
 
 # In[3]:
 
@@ -100,14 +108,14 @@ df["sold"] = df[["demand", "order"]].min(axis=1)
 df["salvage"] = df["order"] - df["sold"]
 df["profit"] = r * df["sold"] + w * df["salvage"] - c * df["order"]
 
-EVM = sum(df["prob"] * df["profit"])
+EVM = sum(df["probability"] * df["profit"])
 
 print(f"Mean demand = {expected_demand}")
 print(f"Expected value of the mean demand (EVM) = {EVM}")
 display(df)
 
 
-# ## Expected value of the stochastic solution (EV)
+# ## Expected value of the stochastic solution (EVSS)
 # 
 # The optimization problem is to find the order size $x$ that maximizes expected profit subject to operational constraints on the decision variables. The variables $x$ and $y_s$ are non-negative, while $f_s$ can take on both positive and negative values. Operationally, the amount of goods sold in scenario $s$ has to be less than the order size $x$ and customer demand $d_s$. 
 # 
@@ -141,7 +149,7 @@ if at_colab:
     _ = get_ipython().getoutput('pip install -q xpress')
 
 
-# In[7]:
+# In[5]:
 
 
 import pyomo.environ as pyo
@@ -154,34 +162,42 @@ w = 2
 
 # scenario information
 scenarios = {
-    "sunny skies" : {"demand": 650, "p": 0.1},
-    "good weather": {"demand": 400, "p": 0.6},
-    "poor weather": {"demand": 200, "p": 0.3},
+    "sunny skies" : {"demand": 650, "probability": 0.1},
+    "good weather": {"demand": 400, "probability": 0.6},
+    "poor weather": {"demand": 200, "probability": 0.3},
 }
-
-# specify solver
-solver = pyo.SolverFactory('gurobi', solver_io="python")
 
 # create model instance
 m = pyo.ConcreteModel('Pet Shop')
 
-# decision variables
+# set of scenarios
 m.S = pyo.Set(initialize=scenarios.keys())
+
+# decision variables
 m.x = pyo.Var(within=pyo.NonNegativeReals)
 m.y = pyo.Var(m.S, within=pyo.NonNegativeReals)
 m.f = pyo.Var(m.S)
 
 # objective
-m.EV = pyo.Objective(expr=sum([scenarios[s]["p"]*m.f[s] for s in m.S]), sense=pyo.maximize)
+@m.Objective(sense=pyo.maximize)
+def EV(m):
+    return sum([scenarios[s]["probability"]*m.f[s] for s in m.S])
 
 # constraints
-m.constraints = pyo.ConstraintList()
-for s in m.S:
-    m.constraints.add(m.f[s] == r*m.y[s] + w*(m.x - m.y[s]) - c*m.x)
-    m.constraints.add(m.y[s] <= m.x)
-    m.constraints.add(m.y[s] <= scenarios[s]["demand"])
+@m.Constraint(m.S)
+def profit(m, s):
+    return m.f[s] == r*m.y[s] + w*(m.x - m.y[s]) - c*m.x
+
+@m.Constraint(m.S)
+def sales_less_than_order(m, s):
+    return m.y[s] <= m.x
+
+@m.Constraint(m.S)
+def sales_less_than_demand(m, s):
+    return m.y[s] <= scenarios[s]["demand"]
 
 # solve
+solver = pyo.SolverFactory('gurobi', solver_io="python")
 results = solver.solve(m)
 
 # display solution using Pandas
@@ -198,45 +214,125 @@ df = pd.DataFrame.from_dict(scenarios).T
 display(df)
 
 
-# FINALIZE NARRATIVE IN BOOK, THEN MATCH TO THE BOOK.
-
-# Optimizing the expected value of the profit over all scenarios provides an expected profit of 8,920&euro;, an increase of 581&euro; that is the result of placing a larger order. In poor weather conditions there will be more returns and lower profit, but that is more than compensated by the increased profits in good weather conditions. The value of the stochastic solution is the additional profit compared to ordering to meet expected in demand. In this case,
+# Optimizing the expected value of the profit over all scenarios provides an expected profit of 8,920 &euro;, an increase of 581 &euro; over the base case of simply ordering the expected number of items sold. The new solution places a larger order. In poor weather conditions there will be more returns and lower profit, but that is more than compensated by the increased profits in good weather conditions. 
+# 
+# The addtional value that results from solve of this planning problem is called the **Value of the Stochastic Solution (VSS)**. The value of the stochastic solution is the additional profit compared to ordering to meet expected in demand. In this case,
 # 
 # $$\text{VSS} = \text{EV} - \text{EVM} = 8,920 - 8,339 = 581$$
 
 # ## Expected value with perfect information (EVPI)
 # 
-# An essential element of the model for maximizing expected profit is the requirement that size of the order be decided before knowing what scenario will unfold. The decision for $x$ has to be made "here and now" with probablistic information about the future, but no specific information which specific future will transpire.
+# Maximizing expected profit requires the size of the order be decided before knowing what scenario will unfold. The decision for $x$ has to be made "here and now" with probablistic information about the future, but no specific information on which specific future will transpire.
 # 
-# But what if that infomration about the future could be obtained? How much additional profit could be realized if one could travel into the future to determine which scenario will take place, then place today's order accordingly?
+# But we can perform the hypothetic calculation of what profit could be realized if we knew the future. We are still subject to the variability of weather, what is different is we know what the weather will be at the time the order is placed. The result value of expected profit is called the **Expected Value of Perfect Information (EVPI)**.  The difference EVPI - EV is the extra expected profit due to having perfect knowledge of the future.
 # 
-# To compute the expect profit with perfect information, we will allow the decision varaible $x_s$ to 
+# To compute the expect profit with perfect information we let the order variable $x$ be indexed by the subsequent scenario that will unfold. Given decision varaible $x_s$, the model for EVPI becomes
 # 
 # $$
 # \begin{align*}
 # \text{EVPI} = & \max_{x_s, y_s} \mathbb E[f] = \sum_{s\in S} p_s f_s \\
 # \text{subject to:} \\
-# f_s & = r y_s + w(x - y_s) - c x & \forall s \in S\\
+# f_s & = r y_s + w(x_s - y_s) - c x_s & \forall s \in S\\
 # y_s & \leq x_s & \forall s \in S \\
 # y_s & \leq d_s & \forall s \in S
 # \end{align*}
 # $$
 # 
+# The following implementation is a variation of the prior cell.
 
-# COMPLETE FUNCTION TO COMPUTE EVPI, THEN PLOT. NEEDS TO BE MORE READABLE.
-
-# In[8]:
+# In[6]:
 
 
-x = np.linspace(0, 700, 701)
+import pyomo.environ as pyo
+import pandas as pd
 
-ep = pd.DataFrame({"order":x, "Expected Profit": [expected_profit(x) for x in x]})
-ax = ep.plot(x="order", title="Expected Profit", grid=True)
+# price information
+r = 40
+c = 12
+w = 2  
 
-for s in df.index:
-    x = df.loc[s, "demand"]
-    ax.plot(x, expected_profit(x), 'b.', ms=10)
+# scenario information
+scenarios = {
+    "sunny skies" : {"demand": 650, "probability": 0.1},
+    "good weather": {"demand": 400, "probability": 0.6},
+    "poor weather": {"demand": 200, "probability": 0.3},
+}
+
+# create model instance
+m = pyo.ConcreteModel('Pet Shop')
+
+# set of scenarios
+m.S = pyo.Set(initialize=scenarios.keys())
+
+# decision variables
+m.x = pyo.Var(m.S, within=pyo.NonNegativeReals)
+m.y = pyo.Var(m.S, within=pyo.NonNegativeReals)
+m.f = pyo.Var(m.S)
+
+# objective
+@m.Objective(sense=pyo.maximize)
+def EV(m):
+    return sum([scenarios[s]["probability"]*m.f[s] for s in m.S])
+
+# constraints
+@m.Constraint(m.S)
+def profit(m, s):
+    return m.f[s] == r*m.y[s] + w*(m.x[s] - m.y[s]) - c*m.x[s]
+
+@m.Constraint(m.S)
+def sales_less_than_order(m, s):
+    return m.y[s] <= m.x[s]
+
+@m.Constraint(m.S)
+def sales_less_than_demand(m, s):
+    return m.y[s] <= scenarios[s]["demand"]
+
+# solve
+solver = pyo.SolverFactory('gurobi', solver_io="python")
+results = solver.solve(m)
+
+# display solution using Pandas
+print("Solver Termination Condition:", results.solver.termination_condition)
+print("Expected Profit:", m.EV())
+print()
+for s in m.S:
+    scenarios[s]["order"] = m.x[s]()
+    scenarios[s]["sold"] = m.y[s]()
+    scenarios[s]["salvage"] = m.x[s]() - m.y[s]()
+    scenarios[s]["profit"] = m.f[s]()
     
+df = pd.DataFrame.from_dict(scenarios).T
+display(df)
 
 
-# We begin by encoding the problem data using Python objects. The scenario information as a pandas DataFrame ... a commonly used technique in Python to store structured data. The set of scenarios is the index to the dataframe.
+# ## Summary
+# 
+# To summarize, have computed three different solutions to the problem of order size:
+# 
+# * The expected value of the mean solution (EVM) is the expected profit resulting from ordering the number of items expected to sold under all scenarios. 
+# 
+# * The expected value of the stochastic solution (EVSS) is the expected profit found by solving an two-state optimization problem where the order size was the "here and now" decision without specific knowledge of which future scenario would transpire.
+# 
+# * The expected value of perfect information (EVPI) is the result of a hypotherical case where knowledge of the future scenario was somehow available when then order had to be placed.  
+# 
+# For this example we found
+# 
+# | Solution | Value (&euro;) |
+# | :------  | ----: |
+# | Expected Value of the Mean Solution (EVM) | 8,399.0 | 
+# | Expected Value of the Stochastic Solution (EVSS) | 8,920.0 |
+# | Expected Value of Perfect Information (EVPI) | 10,220.0 |
+# 
+# These results verify our expectation that
+# 
+# $$EVM \leq EVSS \leq EVPI$$
+# 
+# The value of the stochastic solution 
+# 
+# $$ VSS = EVSS - EVM = 581 $$
+# 
+# The value of perfect information
+# 
+# $$ VPI = EVPI - EVSS = 1,300 $$
+# 
+# As one might expect, there is a cost that results from lack of knowledge about an uncertain future.
