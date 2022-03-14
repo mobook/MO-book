@@ -8,7 +8,7 @@ if __name__ == "__main__":
     print("starting install")
     for module in sys.modules:
         print(module)
-    if "google.colab" in sys.modules:
+    if "google" in sys.modules:
         print("google colab detected")
         pip_install("pyomo")
         pip_install("gurobipy")
