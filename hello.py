@@ -10,6 +10,6 @@ if __name__ == "__main__":
     pip_install("cplex")
     pip_install("xpress")
     subprocess.run(["apt-get", "install", "-y", "-q", "coinor-cbc"])
-    subprocess.run(["wget", "-N", "-q", '"https://ampl.com/dl/open/ipopt/ipopt-linux64.zip"'])
+    subprocess.run(["wget", "-N", "-q", "https://ampl.com/dl/open/ipopt/ipopt-linux64.zip"])
     subprocess.run(["unzip", "-o", "-q", "ipopt-linux64"])
     
