@@ -99,11 +99,11 @@ def show_boxes(soln, D):
     W_lb = (soln["w"]*soln["d"]).sum()/D
     ax.set_xlim(0, 1.1*soln["w"].sum())
     ax.set_ylim(0, D*1.1)
-    ax.axhline(D, label="shelf width $D$", lw=0.8)
+    ax.axhline(D, label="shelf depth $D$", lw=0.8)
     ax.axvline(W_lb, label="lower bound $W_{lb}$", color="g", lw=0.8)
     ax.axvline(soln["x2"].max(), label="shelf width $W$", color="r", lw=0.8)
     ax.fill_between([0, ax.get_xlim()[1]], [D, D], color="b", alpha=0.1)
-    ax.set_title(f"Shelf Width $W$ = {soln['x2'].max():.0f}")
+    ax.set_title(f"shelf width $W$ = {soln['x2'].max():.0f}")
     ax.set_xlabel("width")
     ax.set_ylabel("depth")
     ax.set_aspect('equal')
