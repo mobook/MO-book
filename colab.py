@@ -10,7 +10,7 @@ if __name__ == "__main__":
         IN_COLAB = True
     except:
         IN_COLAB = False
-    
+    print(IN_COLAB)
     print("starting install")
     for module in sys.modules:
         print(module)
