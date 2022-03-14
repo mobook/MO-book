@@ -38,15 +38,15 @@ is strongly discouraged. For special cases where a less verbose style is needed,
 from pyomo.environ import ConcreteModel, Var, Objective, maximize, SolverFactory
 ```
 
-### Use `ConcreteModel`  instead of `AbstractModel`
+### Use `pyo.ConcreteModel`  instead of `pyo.AbstractModel`
 
-The preferred method for creating instances of Pyomo models is a Python function or class that accepts parameter values and returns a `ConcreteModel`.
+The preferred method for creating instances of Pyomo models is a Python function or class that accepts parameter values and returns a `pyo.ConcreteModel`.
 
-Pyomo provides two methods for creating model instances, `AbstractModel` or `ConcreteModel`.  A `ConcreteModel` requires parameter values to be known when the model is created. `AbstractModel` specifies a model with symbolic parameters which can be specified later to define an instance of the  model. However, because Pyomo is integrated within Python,  `ConcreteModel` model instances can be created with a Python function or class using the full range of language features. For this reason, there is  little benefit for  `AbstractModel`.
+Pyomo provides two methods for creating model instances, `pyo.AbstractModel` or `pyo.ConcreteModel`.  A `pyo.ConcreteModel` requires parameter values to be known when the model is created. `pyo.AbstractModel` specifies a model with symbolic parameters which can be specified later to define an instance of the  model. However, because Pyomo is integrated within Python,  `pyo.ConcreteModel` model instances can be created with a Python function or class using the full range of language features. For this reason, there is  little benefit for  `pyo.AbstractModel`.
 
 ### Index with Pyomo Set and RangeSet
 
-Pyomo model objects created with `Param`, `Var`, and `Constraint` can be indexed by elements from a Pyomo Set or RangeSet. Alternatively, Pyomo model objects can be indexed with iterable Python objects such as sets, lists, dictionaries, and generators.
+Pyomo model objects created with `pyo.Param`, `pyo.Var`, and `pyo.Constraint` can be indexed by elements from a Pyomo Set or RangeSet. Alternatively, Pyomo model objects can be indexed with iterable Python objects such as sets, lists, dictionaries, and generators.
 
 Indexing with a Pyomo Set or RangeSet is preferred for most circumstances. There are several reasons why:
 
@@ -79,7 +79,7 @@ m.x = pyo.Var(bounds.keys())
 
 ### Parameters
 
-Pyomo modelers may prefer to use native Python data structures rather declare and use instances of parameters created using the `pyomo.Param()` class.  Use of Pyomo parameters, however, is encouraged for  particular circumstances.  
+Pyomo modelers may prefer to use native Python data structures rather declare and use instances of parameters created using the `pyo.Param()` class.  Use of Pyomo parameters, however, is encouraged for  particular circumstances.  
 
 By default, Pyomo parameters are immutable which can prevent inadvertent changes to key model parameters. Parameters that define the size of index sets, or establish fixed upper or lower bounds on variables, are examples where defining an immutable Pyomo parameter is good practice.
 
@@ -93,11 +93,11 @@ Pyomo parameters should also be used
 
 #### Use `domain` rather than `within` 
 
-The `pyomo.Var()` class accepts either `within` or `domain` as a keyword to specify decision variables. Offering options with no functional difference places an unnecessary cognitive burden on new users.   Consistent use of `domain` is preferred because of its common use in mathematics to represent the set of all values for which a variable is defined.
+The `pyo.Var()` class accepts either `within` or `domain` as a keyword to specify decision variables. Offering options with no functional difference places an unnecessary cognitive burden on new users.   Consistent use of `domain` is preferred because of its common use in mathematics to represent the set of all values for which a variable is defined.
 
 #### Use `bounds` when known and fixed
 
-A Pyomo model can place bounds on decision variables with either the `bounds`  keyword in the argument to `pyomo.Var`, or as explicit constraints in the model. 
+A Pyomo model can place bounds on decision variables with either the `bounds`  keyword in the argument to `pyo.Var`, or as explicit constraints in the model. 
 
 When upper or lower bounds for a variable are known and fixed, use of `bounds` when creating the variable is a best practice in mathematical optimization.  This practice can reduce the number of explicit constraints in the model and simplify coding and model display. 
 
@@ -105,13 +105,13 @@ If, however, variable bounds may be subject to change during the course of probl
 
 ### Constraints and Objective
 
-#### Prefer `Constraint` to `ConstraintList`
+#### Prefer `pyo.Constraint` to `pyo.ConstraintList`
 
-The `pyomo.ConstraintList()` class is useful for creating a collection of constraints for which there is no simple indexing,  such as implementing algorithms featuring constraint generation. However, ConstraintList should not be used as a substitute for the more structured and readable use of`pyomo.Constraint()`. 
+The `pyo.ConstraintList()` class is useful for creating a collection of constraints for which there is no simple indexing,  such as implementing algorithms featuring constraint generation. However, ConstraintList should not be used as a substitute for the more structured and readable use of `pyo.Constraint()`. 
 
 #### Use decorators to improve readability
 
-Indexed Pyomo constraints are constructed by a rule.  When using `pyomo.Constraint()`  rules are normally named by adding`_rule` as a suffix to the name of the associated constraint. For example, assuming model `m`  and the associated sets, parameters, and variables have been previously defined, 
+Indexed Pyomo constraints are constructed by a rule.  When using `pyo.Constraint()`  rules are normally named by adding `_rule` as a suffix to the name of the associated constraint. For example, assuming model `m`  and the associated sets, parameters, and variables have been previously defined, 
 
 ```python
 def new_constraint_rule(m, s):
