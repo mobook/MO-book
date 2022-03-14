@@ -5,10 +5,16 @@ def pip_install(package):
     subprocess.run(["pip", "-qq", "install", package])
     
 if __name__ == "__main__":
+    try:
+        import google.colab
+        IN_COLAB = True
+    except:
+        IN_COLAB = False
+    
     print("starting install")
     for module in sys.modules:
         print(module)
-    if "google" in sys.modules:
+    if IN_COLAB:
         print("google colab detected")
         pip_install("pyomo")
         pip_install("gurobipy")
