@@ -9,7 +9,7 @@ if __name__ == "__main__":
     pip_install("gurobipy")
     pip_install("cplex")
     pip_install("xpress")
-    subprocess(["apt-get", "install", "-y", "-q", "coinor-cbc"])
-    subprocess(["wget", "-N", "-q", '"https://ampl.com/dl/open/ipopt/ipopt-linux64.zip"'])
-    subprocess(["unzip", "-o", "-q", "ipopt-linux64"])
+    subprocess.run(["apt-get", "install", "-y", "-q", "coinor-cbc"])
+    subprocess.run(["wget", "-N", "-q", '"https://ampl.com/dl/open/ipopt/ipopt-linux64.zip"'])
+    subprocess.run(["unzip", "-o", "-q", "ipopt-linux64"])
     
