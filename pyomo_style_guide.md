@@ -12,7 +12,7 @@ A typical development workflow for Pyomo applications comprises:
 * Post-processing and analysis of solution data
 * Model testing and validation
 
-Subsequent  deployment of Pyomo model will omit the development and validation steps, but may integrate the remaining elements into existing application workflows. This style guide support by development and deployment  workflows by emphasizing modularity and clean interfaces between successive steps. 
+Subsequent deployment of Pyomo model will omit the development and validation steps, but may integrate the remaining elements into existing application workflows. This style guide supports development and deployment workflows by emphasizing modularity and clean interfaces between successive steps. 
 
 ## Coding Conventions
 
@@ -31,7 +31,7 @@ The usage
 from pyomo.environ import *
 ```
 
-Is strongly discouraged. For special cases where a less verbose style is needed, such as presentations or introducing Pyomo to new users, a better practice is to explicitly import the needed Pyomo objects as shown in this example:
+is strongly discouraged. For special cases where a less verbose style is needed, such as presentations or introducing Pyomo to new users, a better practice is to explicitly import the needed Pyomo objects as shown in this example:
 
 ```python
 # for presentations or teaching examples
@@ -46,9 +46,9 @@ Pyomo provides two methods for creating model instances, `AbstractModel` or `Con
 
 ### Index with Pyomo Set and RangeSet
 
-Pyomo model objects created with `Param`,`Var`, and `Constraint` can be indexed by elements from a Pyomo Set or RangeSet. Alternatively, Pyomo model objects can be indexed with iterable Python objects such as sets, lists, dictionaries, and generators.
+Pyomo model objects created with `Param`, `Var`, and `Constraint` can be indexed by elements from a Pyomo Set or RangeSet. Alternatively, Pyomo model objects can be indexed with iterable Python objects such as sets, lists, dictionaries, and generators.
 
-Indexing with a Pyomo Set or RangeSet is preferred for most circumstances.  There several reasons why:
+Indexing with a Pyomo Set or RangeSet is preferred for most circumstances. There are several reasons why:
 
 * Pyomo Set and RangeSet provides a clear and uniform separation between data pre-processing and model creation. 
 * Consistent use of Pyomo Set and RangeSet enhances readability by providing a  consistent expression of models.
@@ -85,9 +85,9 @@ By default, Pyomo parameters are immutable which can prevent inadvertent changes
 
 Pyomo parameters should also be used 
 
-* with `mutuable=True`  when a model will be solved for multiple parameter values. 
+* with `mutable=True`  when a model will be solved for multiple parameter values. 
 * when the use of native Python data structures would reduce readability.
-* when developing complex model requiring  clear interfaces among modules that document model data, provide default values and validation.
+* when developing complex model requiring clear interfaces among modules that document model data, provide default values and validation.
 
 ### Variables
 
@@ -127,7 +127,7 @@ def new_constraint_rule(m, s):
   return m.x[s] <= m.ub[s]
 ```
 
-The use of decorators improves readability by eliminating the need for the `rule`  keyword and writing multiple versions of the constraint name. 
+The use of decorators improves readability by eliminating the need for the `rule` keyword and writing multiple versions of the constraint name. 
 
 The decorator syntax is straightforward for objectives and simple constraints. Keywords are included in the decorator. 
 
@@ -161,13 +161,13 @@ Pyomo models commonly use alternative conventions to enhance readability by visu
 
 ### Prefer short model and block names
 
-Model and block names should be consistent with PEP 8 naming standards (i.e., all lowercase with words separated by underscore). Short model names are preferred for readability and to avoid excessively long lines. A single lower case `m` is acceptable in  instances of a model with a single block. 
+Model and block names should be consistent with PEP 8 naming standards (i.e., all lowercase with words separated by underscore). Short model names are preferred for readability and to avoid excessively long lines. A single lower case `m` is acceptable in instances of a model with a single block. 
 
 Complex models may require more descriptive names for readability. 
 
 ### Set and RangeSet names may be all caps
 
-Consistent with common mathematical conventions in optimization modeling, use of upper-case names to denote Pyomo sets is an acceptable deviation from PEP style guidelines. Corresponding lower case  name can then be used to denote elements of the set. For example, the objective
+Consistent with common mathematical conventions in optimization modeling, use of upper-case names to denote Pyomo sets is an acceptable deviation from PEP style guidelines. Corresponding lower case name can then be used to denote elements of the set. For example, the objective
 $$
 \tau^\text{total} = \min \sum_{\text{machine} \in \text{MACHINES}} \tau^\text{finish}_\text{machine}
 $$
@@ -187,14 +187,13 @@ def total_time(m):
 
 ### Parameter names may be capitalized
 
-Parameter names, especially mutable parameters intended for use in parametric studies, may use capitalized words (i.e.,  "CamelCase").
+Parameter names, especially mutable parameters intended for use in parametric studies, may use capitalized words (i.e., "CamelCase").
 
 ### Use descriptive Constraint and Variable names
 
 Objectives, constraints, variables, disjuncts, and disjunctions should use descriptive names following PEP 8 guidelines with lower case words separated by underscore (i.e, "snake_case").  
 
 As an exception for small tutorial examples where mathematical formulation accompanies the model,  the corresponding Pyomo model may use the same variable and parameter name. For example, a mathematical model written as
-
 
 $$
 \begin{aligned}
@@ -208,7 +207,7 @@ x + 2y & \leq 15 \\
 \end{aligned}
 $$
 
-May be encoded
+may be encoded as
 
 ```python
 import pyomo.environ as pyo
@@ -263,7 +262,7 @@ Reading, manipulating, and writing data sets often consumes a considerable amoun
 
 Tidy data is a semantic model for of organizing data sets. The core principle of Tidy data is that each data set is organized by rows and columns where each entry is a single value. Each column contains all data associated with single variable. Each row contains all values for a single observation. 
 
-| senario | demand | Price |
+| scenario | demand | Price |
 | ------- | -----: | ----: |
 | high    |    200 |    20 |
 | medium  |    100 |    18 |
