@@ -262,7 +262,7 @@ Reading, manipulating, and writing data sets often consumes a considerable amoun
 
 Tidy data is a semantic model for of organizing data sets. The core principle of Tidy data is that each data set is organized by rows and columns where each entry is a single value. Each column contains all data associated with single variable. Each row contains all values for a single observation. 
 
-| senario | demand | Price |
+| scenario | demand | Price |
 | ------- | -----: | ----: |
 | high    |    200 |    20 |
 | medium  |    100 |    18 |
