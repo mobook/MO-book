@@ -6,6 +6,7 @@ def pip_install(package):
     
 if __name__ == "__main__":
     print("starting install")
+    print(sys.modules)
     if "google.colab" in sys.modules:
         print("google colab detected")
         pip_install("pyomo")
