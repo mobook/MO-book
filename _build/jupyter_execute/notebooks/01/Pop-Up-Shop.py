@@ -7,6 +7,16 @@
 # 
 # Kürschner (talk) 17:51, 1 December 2020 (UTC), CC0, via Wikimedia Commons
 
+# In[4]:
+
+
+# Import Pyomo and solvers for Google Colab
+import sys
+if "google.colab" in sys.modules:
+    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/colab.py ')
+    get_ipython().run_line_magic('run', 'colab.py')
+
+
 # ## The problem
 # 
 # You've been offered an opportunity to operate a pop-up shop to sell a unique commemorative item for each event held at a famous location. The items cost 12 &euro; each and you will be able to sell them for 40 &euro;. Unsold items can be returned to the supplier but you will receive only 2 &euro; due to their commemorative nature.
@@ -132,15 +142,6 @@ display(df)
 # $$
 # 
 # where $S$ is the set of all scenarios under consideration.
-
-# In[2]:
-
-
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/colab.py ')
-    get_ipython().run_line_magic('run', 'colab.py')
-
 
 # In[5]:
 
