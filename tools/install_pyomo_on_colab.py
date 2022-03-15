@@ -1,6 +1,5 @@
 import sys
 import subprocess
-import urllib.request
 
 class PyomoOnGoogleColab():
 
