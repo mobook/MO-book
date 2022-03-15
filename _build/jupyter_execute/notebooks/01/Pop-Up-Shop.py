@@ -133,20 +133,13 @@ display(df)
 # 
 # where $S$ is the set of all scenarios under consideration.
 
-# In[4]:
+# In[2]:
 
 
 import sys
-at_colab = "google.colab" in sys.modules
-
-if at_colab:
-    _ = get_ipython().getoutput('pip install -q pyomo')
-    _ = get_ipython().getoutput('wget -N -q "https://ampl.com/dl/open/ipopt/ipopt-linux64.zip"')
-    _ = get_ipython().getoutput('unzip -o -q ipopt-linux64')
-    _ = get_ipython().getoutput('apt-get install -y -q coinor-cbc')
-    _ = get_ipython().getoutput('pip install -q cplex')
-    _ = get_ipython().getoutput('pip install -q gurobipy')
-    _ = get_ipython().getoutput('pip install -q xpress')
+if "google.colab" in sys.modules:
+    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/colab.py ')
+    get_ipython().run_line_magic('run', 'colab.py')
 
 
 # In[5]:
