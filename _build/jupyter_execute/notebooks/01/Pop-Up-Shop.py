@@ -7,7 +7,7 @@
 # 
 # Kürschner (talk) 17:51, 1 December 2020 (UTC), CC0, via Wikimedia Commons
 
-# In[4]:
+# In[1]:
 
 
 # Import Pyomo and solvers for Google Colab
@@ -37,7 +37,7 @@ if "google.colab" in sys.modules:
 # 
 # Below we create a pandas DataFrame object to store the scenario data.
 
-# In[1]:
+# In[2]:
 
 
 import numpy as np
@@ -101,7 +101,7 @@ display(df)
 # 
 # These calculations can be executed using operations on the pandas dataframe. Let's begin by calculating the expected demand.
 
-# In[2]:
+# In[3]:
 
 
 expected_demand = sum(df["probability"] * df["demand"])
@@ -110,7 +110,7 @@ print(f"Expected demand = {expected_demand}")
 
 # Subsequent calculations can be done directly withthe  pandas dataframe holding the scenario data.
 
-# In[3]:
+# In[4]:
 
 
 df["order"] = expected_demand
@@ -191,7 +191,7 @@ def sales_less_than_demand(m, s):
     return m.y[s] <= scenarios[s]["demand"]
 
 # solve
-solver = pyo.SolverFactory('gurobi', solver_io="python")
+solver = pyo.SolverFactory('cbc')
 results = solver.solve(m)
 
 # display solution using Pandas
@@ -282,7 +282,7 @@ def sales_less_than_demand(m, s):
     return m.y[s] <= scenarios[s]["demand"]
 
 # solve
-solver = pyo.SolverFactory('gurobi', solver_io="python")
+solver = pyo.SolverFactory('cbc')
 results = solver.solve(m)
 
 # display solution using Pandas
