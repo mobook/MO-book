@@ -187,6 +187,8 @@ def total_time(m):
 
 ### Parameter names may be capitalized
 
+JCK: ADD NOTES ON LIMITING SCOPE OF PARAMETERS
+
 Parameter names, especially mutable parameters intended for use in parametric studies, may use capitalized words (i.e., "CamelCase").
 
 ### Use descriptive Constraint and Variable names
