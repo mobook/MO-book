@@ -79,15 +79,13 @@ m.x = pyo.Var(bounds.keys())
 
 ### Parameters
 
-Pyomo modelers may prefer to use native Python data structures rather declare and use instances of parameters created using the `pyo.Param()` class.  Use of Pyomo parameters, however, is encouraged for  particular circumstances.  
+Consistent with good programming practice, non-constant global parameters should be avoided in Pyomo models. Non-constant global parameters lead to inconsistent state in the code, and complicate understanding of models when parameters can be defined, and redefined, in remote places in the code.
 
-By default, Pyomo parameters are immutable which can prevent inadvertent changes to key model parameters. Parameters that define the size of index sets, or establish fixed upper or lower bounds on variables, are examples where defining an immutable Pyomo parameter is good practice.
+Pyomo modelers may prefer to use native Python data structures rather declare and use instances of parameters created with the `pyo.Param()` class. In these cases, best practice is to limit the scope of parameters by constructing the model within a Python function, using the arguments of the function to provide a clear interface to the global scope.
 
-Pyomo parameters should also be used 
+Pyomo parameter created with `pyo.Param()` localize parameter values to a specific model or block. By default, Pyomo parameters are immutable which assures their values will be consistent throughout the model construction and transformations. Parameters determining the size of index sets, or fixed upper and lower bounds on decision variables, are examples where using an immutable Pyomo is good practice.
 
-* with `mutable=True`  when a model will be solved for multiple parameter values. 
-* when the use of native Python data structures would reduce readability.
-* when developing complex model requiring clear interfaces among modules that document model data, provide default values and validation.
+Pyomo parameters created with `mutable=True` are used to build models that can be re-solved for parametric or sensitivity analysis.
 
 ### Variables
 
@@ -127,9 +125,9 @@ def new_constraint_rule(m, s):
   return m.x[s] <= m.ub[s]
 ```
 
-The use of decorators improves readability by eliminating the need for the `rule` keyword and writing multiple versions of the constraint name. 
+The use of decorators improves readability by eliminating the need for the `rule` keyword and the need for writing multiple versions of the same constraint name. 
 
-The decorator syntax is straightforward for objectives and simple constraints. Keywords are included in the decorator. 
+The decorator syntax is straightforward for objectives and simple constraints. For Python users unfamiliar with decorators, decorators can be described as a way to 'tag' functions that are to be incorporated into the Pyomo model. Indices and keywords are used modify the extend to the bahavior of the decorator. 
 
 ````python
 @model.Constraint()
@@ -186,8 +184,6 @@ def total_time(m):
 ```
 
 ### Parameter names may be capitalized
-
-JCK: ADD NOTES ON LIMITING SCOPE OF PARAMETERS
 
 Parameter names, especially mutable parameters intended for use in parametric studies, may use capitalized words (i.e., "CamelCase").
 
