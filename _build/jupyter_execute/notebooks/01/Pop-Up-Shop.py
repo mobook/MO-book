@@ -14,7 +14,7 @@
 import sys
 if "google.colab" in sys.modules:
     get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_pyomo_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_pyomo_on_colab.py "cbc"')
+    get_ipython().run_line_magic('run', 'install_pyomo_on_colab.py "glpk"')
 
 
 # ## The problem
@@ -191,7 +191,7 @@ def sales_less_than_demand(m, s):
     return m.y[s] <= scenarios[s]["demand"]
 
 # solve
-solver = pyo.SolverFactory('cbc')
+solver = pyo.SolverFactory('glpk')
 results = solver.solve(m)
 
 # display solution using Pandas
@@ -282,7 +282,7 @@ def sales_less_than_demand(m, s):
     return m.y[s] <= scenarios[s]["demand"]
 
 # solve
-solver = pyo.SolverFactory('cbc')
+solver = pyo.SolverFactory('glpk')
 results = solver.solve(m)
 
 # display solution using Pandas
