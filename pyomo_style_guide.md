@@ -144,11 +144,11 @@ Indices are also included in the decorator for indexed objects.
 ```python
 @model.Constraint(model.SOURCES)
 def capacity_constraint(model, src):
-  return sum(model.ship[src, dst] for dst in model.DESTINATIONS) <= model.CAPACITY[src]
+  return sum(model.ship[src, dst] for dst in model.DESTINATIONS) <= model.capacity[src]
 
 @model.Constraint(model.DESTINATIONS)
 def demand_constraint(model, dst):
-  return sum(model.ship[src, dst] for dst in model.SOURCES) <= model.DEMAND[dst]
+  return sum(model.ship[src, dst] for dst in model.SOURCES) <= model.demand[dst]
 ```
 
 ## Naming Conventions
@@ -250,7 +250,6 @@ m.labor_b = pyo.Constraint(expr = m.production_x + 2*m.production_y <= 15, doc="
 m.pprint()
 
 ```
-
 
 ## Data Styles and Conventions
 
