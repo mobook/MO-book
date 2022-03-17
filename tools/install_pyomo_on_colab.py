@@ -4,7 +4,7 @@ import subprocess
 class PyomoOnGoogleColab():
 
     packages = {
-        'gurobi_direct': {'package': 'gurobipy', 'method': 'pip'},
+        'gurobi': {'package': 'gurobipy', 'method': 'pip'},
 #        'cplex': {'package': 'cplex', 'method': 'pip'},
         'xpress': {'package': 'xpress', 'method': 'pip'},
 
