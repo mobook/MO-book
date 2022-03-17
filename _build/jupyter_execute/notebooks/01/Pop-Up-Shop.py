@@ -13,8 +13,8 @@
 # Import Pyomo and solvers for Google Colab
 import sys
 if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_pyomo_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_pyomo_on_colab.py "glpk"')
+    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
+    get_ipython().run_line_magic('run', 'install_on_colab.py')
 
 
 # ## The problem
