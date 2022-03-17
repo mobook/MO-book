@@ -16,42 +16,56 @@ async def run(cmd: str):
     return proc.returncode
 
 async def pip(pkg:str, solver:str):
-    returncode = await run(f'pip3 install -q {pkg}')
-    if not returncode:
-        print(f"{solver} installed")
+    if not await run(f'pip3 install -q {pkg}'):
+        test_solver(solver)
     else:
-        print(f"{solver} not installed")
+        print(f". {solver} not installed")
 
 async def apt(pkg:str, solver:str):
-    returncode = await run(f'apt-get install -y -q {pkg}')
-    if not returncode:
-        print(f"{solver} installed")
+    if not await run(f'apt-get install -y -q {pkg}'):
+        test_solver(solver)
     else:
-        print(f"{solver} not installed")
+        print(f". {solver} not installed")
 
 async def ampl(pkg:str, solver:str):
     await run(f'wget -N -q https://ampl.com/dl/open/{pkg}/{pkg}-linux64.zip')
-    returncode = await run(f'unzip -o -q {pkg}-linux64')
-    if not returncode:
-        print(f"{solver} installed")
+    if not await run(f'unzip -o -q {pkg}-linux64'):
+        test_solver(solver)
     else:
-        print(f"{solver} not installed")
+        print(f". {solver} not installed")
+
+def test_solver(solver):
+        import pyomo.environ as pyo
+        model = pyo.ConcreteModel()
+        model.x = pyo.Var()
+        model.c = pyo.Constraint(expr=model.x >= 0)
+        model.obj = pyo.Objective(expr=model.x)
+        try:
+            pyo.SolverFactory(solver).solve(model)
+            print(f". {solver}")
+        except:
+            print(f". {solver} test failed")
 
 async def install_pyomo():
-    await pip("pyomo", "pyomo")
-    await apt("glpk-utils", "glpk"),
-    await asyncio.gather(
-        pip("gurobipy", "gurobi_direct"),
-        pip("xpress", "xpress"),
-        pip("cplex", "cplex"),
-        apt("coinor-cbc", "cbc"),
-        ampl("ipopt", "ipopt"),
-        ampl("bonmin", "bonmin"),
-        ampl("couenne", "couenne"),
-        ampl("gecode", "gecode"),
-        ampl("jacop", "jacop")
-    )
-    print("--- Installation complete")
+    returncode = await run("pip3 install -q pyomo")
+    if returncode:
+        print("pyomo failed to install")
+    else:
+        print("pyomo installed")
+        print("installing solvers")
+        await apt("glpk-utils", "glpk"),
+        await asyncio.gather(
+            pip("gurobipy", "gurobi_direct"),
+            pip("xpress", "xpress"),
+            #pip("cplex", "cplex"),
+            apt("coinor-cbc", "cbc"),
+            ampl("ipopt", "ipopt"),
+            ampl("bonmin", "bonmin"),
+            ampl("couenne", "couenne"),
+            #ampl("gecode", "gecode"),
+            #ampl("jacop", "jacop")
+        )
+    print("installation complete")
 
 nest_asyncio.apply()
 asyncio.run(install_pyomo())
