@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # FOREX Arbitrage
+# # Forex Arbitrage
 # 
-# IN DEVELOPMENT
+# Exchanging one currency for another is among the most common banking transactions. Currencies are normally priced relative to each other such that any set of transactions will result in a fee paid to the bank at the expense of the currency trader.  Occasionally, however, changes in the relative pricing occur that allow for a sequence of trades result in a net profit to the trader. 
+# 
+# These are *arbitrage* opportunities and the subject of intense interest by traders in the foreign exchange (forex) markets around the globe, and more recently in the crypto-currency markets.
+# 
+# <p><a href="https://commons.wikimedia.org/wiki/File:Triangular-arbitrage.svg#/media/File:Triangular-arbitrage.svg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Triangular-arbitrage.svg/1200px-Triangular-arbitrage.svg.png" alt="Triangular-arbitrage.svg"></a><br>By &lt;a href="//commons.wikimedia.org/wiki/User:John_Shandy%60" title="User:John Shandy`"&gt;John Shandy`&lt;/a&gt; - &lt;span class="int-own-work" lang="en"&gt;Own work&lt;/span&gt;, <a href="https://creativecommons.org/licenses/by-sa/3.0" title="Creative Commons Attribution-Share Alike 3.0">CC BY-SA 3.0</a>, <a href="https://commons.wikimedia.org/w/index.php?curid=15743307">Link</a></p>
+# 
 
-# In[1]:
+# In[15]:
 
 
 # Import Pyomo and solvers for Google Colab
@@ -15,11 +20,36 @@ if "google.colab" in sys.modules:
     get_ipython().run_line_magic('run', 'install_on_colab.py')
 
 
-# ## Cross-currency matrix
+# ## Simple Demonstration of Triangular Arbitrage
 # 
-# https://www.bloomberg.com/markets/currencies/cross-rates
+# Consider the following cross-currency matrix. 
+# 
+# | i <- J | USD | EUR | JPY |
+# | :--- | :---: | :---: | :---: |
+# | USD | 1.0 | 2.0 | 0.01 |
+# | EUR | 0.5 | 1.0 | 0.0075 |
+# | JPY | 100.0 | 133 1/3 | 1.0 |
+# 
+# 
+# 
+# 
+# Entry $a_{m, n}$ is the number units of currency $m$ received in exchange for one unit of currency $n$.  We use the notation 
+# 
+# $$a_{m, n} = a_{m \leftarrow n}$$
+# 
+# as reminder of what the entries denote. 
+# 
+# For this given data there are no two way arbitrage opportunities. We check this by explicitly computing all two-way currency exchanges
+# 
+# $$I \rightarrow J \rightarrow I$$
+# 
+# by computing
+# 
+# $$ a_{i \leftarrow j} \times a_{j \leftarrow i}$$
+# 
+# This particular example shows no net cost and no arbitrage for conversion from one currency to another and back again.
 
-# In[14]:
+# In[20]:
 
 
 df = pd.DataFrame([[1.0, 0.5, 100], [2.0, 1.0, 1/0.0075], [0.01, 0.0075, 1.0]],
@@ -27,18 +57,6 @@ df = pd.DataFrame([[1.0, 0.5, 100], [2.0, 1.0, 1/0.0075], [0.01, 0.0075, 1.0]],
                   index = ['USD', 'EUR', 'JPY']).T
 
 display(df)
-
-
-# ## Simple Demonstration of Triangular Arbitrage
-# 
-# Consider the following cross-currency matrix. Entry $a_{m, n}$ is the number units of currency $m$ received in exchange for one unit of currency $n$.  We use the notation 
-# 
-# $$a_{m, n} = a_{m \leftarrow n}$$
-# 
-# as reminder of what the entries denote.
-
-# In[3]:
-
 
 # USD -> EUR -> USD
 print(df.loc['USD', 'EUR'] * df.loc['EUR', 'USD'])
@@ -50,16 +68,6 @@ print(df.loc['USD', 'JPY'] * df.loc['JPY', 'USD'])
 print(df.loc['EUR', 'JPY'] * df.loc['JPY', 'EUR'])
 
 
-# There are no two way arbitrage opportunities. We check this by explicitly computing the exchange 
-# 
-# $$I \rightarrow J \rightarrow I$$
-# 
-# by computing
-# 
-# $$ a_{i \leftarrow j} \times a_{j \leftarrow i}$$
-# 
-# This particular example shows no net cost and no arbitrage for conversion from one currency to another and back again.
-# 
 # Now consider a three-way exchange
 # 
 # $$ I \rightarrow J \rightarrow K \rightarrow I $$
@@ -68,7 +76,7 @@ print(df.loc['EUR', 'JPY'] * df.loc['JPY', 'EUR'])
 # 
 # $$ a_{i \leftarrow k} \times a_{k \leftarrow j} \times a_{j \leftarrow i} $$
 # 
-# By direct caculation we see there is a three-way, or **triangular** arbitrage opportunity.
+# By direct caculation we see there is a three-way **triangular** arbitrage opportunity.
 
 # In[4]:
 
@@ -79,6 +87,8 @@ K = 'EUR'
 
 print(df.loc[I, K] * df.loc[K, J] * df.loc[J, I])
 
+
+# Our challenge is create a model that can identify complex arbitrage opporunities that may exist in cross-currency forex markets.
 
 # ## Modeling
 # 
@@ -100,14 +110,13 @@ print(df.loc[I, K] * df.loc[K, J] * df.loc[J, I])
 # 
 # 
 
-# In[11]:
+# In[38]:
 
 
 import pyomo.environ as pyo
 import numpy as np
 
-
-def arbitrage(T, df):
+def arbitrage(T, df, R='EUR'):
 
     m = pyo.ConcreteModel()
 
@@ -123,36 +132,32 @@ def arbitrage(T, df):
     # paths between currency nodes i -> j
     m.ARCS = pyo.Set(initialize = m.NODES * m.NODES, filter = lambda arb, i, j: i != j)
 
-    # w[i, t] amount of currency n on hand at time t
+    # w[i, t] amount of currency i on hand after transaction t
     m.w = pyo.Var(m.NODES, m.T0, domain=pyo.NonNegativeReals)
 
-    # x[m, n, t] amount of currency m converted to currency n in step t
+    # x[m, n, t] amount of currency m converted to currency n in transaction t t
     m.x = pyo.Var(m.ARCS, m.T1, domain=pyo.NonNegativeReals)
-
-    # start with 100 units of a reserve currency in each currency account
-    #@m.Constraint(m.NODES)
-    #def initial_conditions(m, i):
-    #    return m.w[i, 0] == 100.0/df.loc['USD', i]
     
-    @m.Constraint()
-    def initial_condition(m):
-        return sum(m.w[j, 0] * df.loc['USD', j] for j in m.NODES) == 100.0
+    # start with assignment of 100 units of a selected reserve currency
+    @m.Constraint(m.NODES)
+    def initial_condition(m, i):
+        if i == R:
+            return m.w[i, 0] == 100.0
+        return m.w[i, 0] == 0
 
+    # no shorting constraint
     @m.Constraint(m.NODES, m.T1)
     def max_trade(m, j, t):
         return m.w[j, t-1] >= sum(m.x[i, j, t] for i in m.NODES if i != j)
 
+    # one round of transactions
     @m.Constraint(m.NODES, m.T1)
     def balances(m, j, t):
         return m.w[j, t] == m.w[j, t-1] - sum(m.x[i, j, t] for i in m.NODES if i != j)                                + sum(df.loc[j, i]*m.x[j, i, t] for i in m.NODES if i != j)
 
-    @m.Constraint(m.NODES)
-    def arb_condition(m, j):
-        return m.w[j, T] >= m.w[j, 0]
-
     @m.Objective(sense=pyo.maximize)
     def wealth(m):
-        return sum(m.w[j, T] * df.loc['USD', j] for j in m.NODES)
+        return m.w[R, T]
 
     solver = pyo.SolverFactory('gurobi_direct')
     solver.solve(m)
@@ -168,16 +173,17 @@ def arbitrage(T, df):
         for n in m.NODES:
             print(f"w[{n},{t}] = {m.w[n, t]():9.2f} ")
             
-arbitrage(3, df)
+arbitrage(3, df, 'EUR')
 
 
 # ## Bloomberg FOREX data
+# 
+# https://www.bloomberg.com/markets/currencies/cross-rates
 
-# In[12]:
+# In[28]:
 
 
-import pandas as pd
-import io
+# data extracted 2022-03-17
 
 bloomberg = """
 	USD	EUR	JPY	GBP	CHF	CAD	AUD	HKD
@@ -191,14 +197,17 @@ AUD	1.3557	1.5043	0.0114	1.7825	1.4475	1.0731	-	0.1734
 HKD	7.8175	8.6743	0.0659	10.2784	8.3467	6.1877	5.7662	-
 """
 
+import pandas as pd
+import io
+
 df = pd.read_csv(io.StringIO(bloomberg.replace('-', '1.0')), sep='\t', index_col=0)
 display(df)
 
 
-# In[13]:
+# In[37]:
 
 
-arbitrage(5, df)
+arbitrage(10, df, 'USD')
 
 
 # In[ ]:
