@@ -42,9 +42,9 @@ def test_solver(solver):
         model.obj = pyo.Objective(expr=model.x)
         try:
             pyo.SolverFactory(solver).solve(model)
-            print(f". {solver}")
+            print(f". {solver}", end="")
         except:
-            print(f". {solver} test failed")
+            print(f". {solver} test failed", end="")
 
 async def install_pyomo():
     print("installing pyomo ... ", end="")
