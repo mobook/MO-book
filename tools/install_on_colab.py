@@ -39,7 +39,7 @@ async def pip_install(pkg:str, solver:str, test=lp_test):
         print(f"{solver} not installed ") 
         return
     test(solver)
-    print(f"{solver}")
+    print(f"   {solver}")
     return
 
 async def apt_install(pkg:str, solver:str, test=lp_test):
@@ -47,7 +47,7 @@ async def apt_install(pkg:str, solver:str, test=lp_test):
         print(f"{solver} not installed . ", end="")
         return
     test(solver)
-    print(f"{solver}")
+    print(f"   {solver}")
     return
 
 async def ampl_install(pkg:str, solver:str, test=lp_test):
@@ -58,7 +58,7 @@ async def ampl_install(pkg:str, solver:str, test=lp_test):
         print(f"{pkg} failed to unzip . ", end="")
         return  
     test(solver) 
-    print(f"{solver}")
+    print(f"   {solver}")
     return
         
 async def install_pyomo():
@@ -67,7 +67,7 @@ async def install_pyomo():
         print("pyomo failed to install")
         return
     print("pyomo installed")
-    print("installing and testing solvers")
+    print("installing and testing solvers ...")
     await apt_install("glpk-utils", "glpk"),
     await asyncio.gather(
         pip_install("gurobipy", "gurobi_direct"),
@@ -81,7 +81,7 @@ async def install_pyomo():
         #pip_install("cplex", "cplex"),
         #ampl_install("jacop", "jacop")
         )
-    print("installation and testing complete")
+    print("... installation and testing complete")
 
 nest_asyncio.apply()
 asyncio.run(install_pyomo())
