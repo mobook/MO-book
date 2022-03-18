@@ -47,6 +47,7 @@ def test_solver(solver):
             print(f". {solver} test failed")
 
 async def install_pyomo():
+    print("installing pyomo ... ", end="")
     returncode = await run("pip3 install -q pyomo")
     if returncode:
         print("pyomo failed to install")
@@ -56,7 +57,7 @@ async def install_pyomo():
         await apt("glpk-utils", "glpk"),
         await asyncio.gather(
             pip("gurobipy", "gurobi_direct"),
-            pip("xpress", "xpress"),
+            #pip("xpress", "xpress"),
             #pip("cplex", "cplex"),
             apt("coinor-cbc", "cbc"),
             ampl("ipopt", "ipopt"),
