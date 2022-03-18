@@ -25,14 +25,14 @@ async def apt(pkg:str, solver:str):
     if not await run(f'apt-get install -y -q {pkg}'):
         test_solver(solver)
     else:
-        print(f"{solver} not installed ... ")
+        print(f"{solver} not installed . ")
 
 async def ampl(pkg:str, solver:str):
     await run(f'wget -N -q https://ampl.com/dl/open/{pkg}/{pkg}-linux64.zip')
     if not await run(f'unzip -o -q {pkg}-linux64'):
         test_solver(solver)
     else:
-        print(f"{solver} failed download ... ")
+        print(f"{solver} failed download . ")
 
 def test_solver(solver):
         import pyomo.environ as pyo
@@ -42,9 +42,9 @@ def test_solver(solver):
         model.obj = pyo.Objective(expr=model.x)
         try:
             pyo.SolverFactory(solver).solve(model)
-            print(f"{solver} ... ", end="")
+            print(f"{solver} . ", end="")
         except:
-            print(f"{solver} test failed ... ", end="")
+            print(f"{solver} test failed . ", end="")
 
 async def install_pyomo():
     print("installing pyomo ... ", end="")
@@ -53,7 +53,7 @@ async def install_pyomo():
         print("pyomo failed to install")
     else:
         print("pyomo installed")
-        print("installing solvers ... ", end="")
+        print("installing solvers . ", end="")
         await apt("glpk-utils", "glpk"),
         await asyncio.gather(
             pip("gurobipy", "gurobi_direct"),
