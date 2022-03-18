@@ -81,7 +81,7 @@ async def install_pyomo():
         #pip_install("cplex", "cplex"),
         #ampl_install("jacop", "jacop")
         )
-    print("... installation and testing complete")
+    print("installation and testing complete")
 
 nest_asyncio.apply()
 asyncio.run(install_pyomo())
