@@ -47,7 +47,6 @@ async def run(cmd: str):
     return proc.returncode
 
 async def pip_install(pkg:str, solver:str, test=lp_test):
-    print(installing, pkg, solver, test)
     if await run(f'pip3 install -q {pkg}'):
         print(f"{solver} not installed . ", ) 
         return
@@ -55,10 +54,13 @@ async def pip_install(pkg:str, solver:str, test=lp_test):
     return
 
 async def apt_install(pkg:str, solver:str, test=lp_test):
+    print(pkg, solver, test)
     if await run(f'apt-get install -y -q {pkg}'):
         print(f"{solver} not installed . ")
         return
+    print(pkg, solver, test)
     test(solver)
+    print(pkg, solver, test)
     return
 
 async def ampl_install(pkg:str, solver:str, test=lp_test):
