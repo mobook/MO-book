@@ -63,7 +63,7 @@ async def install_pyomo():
             ampl("ipopt", "ipopt"),
             ampl("bonmin", "bonmin"),
             ampl("couenne", "couenne"),
-            #ampl("gecode", "gecode"),
+            ampl("gecode", "gecode"),
             #ampl("jacop", "jacop")
         )
     print("installation complete")
