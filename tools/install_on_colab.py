@@ -25,14 +25,14 @@ async def apt(pkg:str, solver:str):
     if not await run(f'apt-get install -y -q {pkg}'):
         test_solver(solver)
     else:
-        print(f". {solver} not installed")
+        print(f"{solver} not installed ... ")
 
 async def ampl(pkg:str, solver:str):
     await run(f'wget -N -q https://ampl.com/dl/open/{pkg}/{pkg}-linux64.zip')
     if not await run(f'unzip -o -q {pkg}-linux64'):
         test_solver(solver)
     else:
-        print(f". {solver} failed download")
+        print(f"{solver} failed download ... ")
 
 def test_solver(solver):
         import pyomo.environ as pyo
