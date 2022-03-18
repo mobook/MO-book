@@ -48,29 +48,29 @@ async def run(cmd: str):
 
 async def pip_install(pkg:str, solver:str, test=lp_test):
     if await run(f'pip3 install -q {pkg}'):
-        print(f"{solver} not installed . ", ) 
+        print(f"{solver} not installed . ", end="") 
         return
     test(solver)
+    print(f"{solver} . ", end="")
     return
 
 async def apt_install(pkg:str, solver:str, test=lp_test):
-    print(pkg, solver, test)
     if await run(f'apt-get install -y -q {pkg}'):
-        print(f"{solver} not installed . ")
+        print(f"{solver} not installed . ", end="")
         return
-    print(pkg, solver, test)
     test(solver)
-    print(pkg, solver, test)
+    print(f"{solver} . ", end="")
     return
 
 async def ampl_install(pkg:str, solver:str, test=lp_test):
     if await run(f'wget -N -q https://ampl.com/dl/open/{pkg}/{pkg}-linux64.zip'):
-        print(f"{pkg} failed to download . ")
+        print(f"{pkg} failed to download . ", end="")
         return
     if await run(f'unzip -o -q {pkg}-linux64'):
-        print(f"{pkg} failed to unzip . ")
+        print(f"{pkg} failed to unzip . ", end="")
         return  
     test(solver) 
+    print(f"{solver} . ", end="")
     return
         
 async def install_pyomo():
