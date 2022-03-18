@@ -1,6 +1,40 @@
 import asyncio
 import nest_asyncio
 
+def lp_test(solver):
+    import pyomo.environ as pyo
+    model = pyo.ConcreteModel()
+    model.x = pyo.Var()
+    model.c = pyo.Constraint(expr=model.x >= 0)
+    model.obj = pyo.Objective(expr=model.x)
+    try:
+        pyo.SolverFactory(solver).solve(model)
+    except:
+        print(f"{solver} failed test . ")
+    
+def ip_test(solver):
+    import pyomo.environ as pyo
+    model = pyo.ConcreteModel()
+    model.x = pyo.Var(domain=pyo.Integers)
+    model.c = pyo.Constraint(expr=model.x >= 0)
+    model.obj = pyo.Objective(expr=model.x)
+    try:
+        pyo.SolverFactory(solver).solve(model)
+    except:
+        print(f"{solver} failed test . ")
+
+def test_solver(solver, test=lp_test):
+        import pyomo.environ as pyo
+        model = pyo.ConcreteModel()
+        model.x = pyo.Var()
+        model.c = pyo.Constraint(expr=model.x >= 0)
+        model.obj = pyo.Objective(expr=model.x)
+        try:
+            pyo.SolverFactory(solver).solve(model)
+            print(f"{solver} . ", end="")
+        except:
+            print(f"{solver} test failed . ", end="")
+
 async def run(cmd: str):
     proc = await asyncio.create_subprocess_shell(
         cmd,
@@ -36,39 +70,6 @@ async def ampl_install(pkg:str, solver:str, test=lp_test):
     test(solver) 
     return
         
-def lp_test(solver):
-    import pyomo.environ as pyo
-    model = pyo.ConcreteModel()
-    model.x = pyo.Var()
-    model.c = pyo.Constraint(expr=model.x >= 0)
-    model.obj = pyo.Objective(expr=model.x)
-    try:
-        pyo.SolverFactory(solver).solve(model)
-    except:
-        print(f"{solver} failed test . ")
-    
-def ip_test(solver):
-    import pyomo.environ as pyo
-    model = pyo.ConcreteModel()
-    model.x = pyo.Var(domain=pyo.Integers)
-    model.c = pyo.Constraint(expr=model.x >= 0)
-    model.obj = pyo.Objective(expr=model.x)
-    try:
-        pyo.SolverFactory(solver).solve(model)
-    except:
-        print(f"{solver} failed test . ")
-
-def test_solver(solver, test=lp_test):
-        import pyomo.environ as pyo
-        model = pyo.ConcreteModel()
-        model.x = pyo.Var()
-        model.c = pyo.Constraint(expr=model.x >= 0)
-        model.obj = pyo.Objective(expr=model.x)
-        try:
-            pyo.SolverFactory(solver).solve(model)
-            print(f"{solver} . ", end="")
-        except:
-            print(f"{solver} test failed . ", end="")
 
 async def install_pyomo():
     print("installing pyomo . ", end="")
