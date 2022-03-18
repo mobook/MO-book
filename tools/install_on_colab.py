@@ -10,7 +10,7 @@ def lp_test(solver):
     try:
         pyo.SolverFactory(solver).solve(model)
     except:
-        print(f"{solver} failed test . ")
+        print(f"{solver} failed test")
     
 def ip_test(solver):
     import pyomo.environ as pyo
@@ -21,7 +21,7 @@ def ip_test(solver):
     try:
         pyo.SolverFactory(solver).solve(model)
     except:
-        print(f"{solver} failed test . ")
+        print(f"{solver} failed test")
 
 async def run(cmd: str):
     proc = await asyncio.create_subprocess_shell(
@@ -36,10 +36,10 @@ async def run(cmd: str):
 
 async def pip_install(pkg:str, solver:str, test=lp_test):
     if await run(f'pip3 install -q {pkg}'):
-        print(f"{solver} not installed . ", end="") 
+        print(f"{solver} not installed ") 
         return
     test(solver)
-    print(f"{solver} . ", end="")
+    print(f"{solver}")
     return
 
 async def apt_install(pkg:str, solver:str, test=lp_test):
@@ -47,7 +47,7 @@ async def apt_install(pkg:str, solver:str, test=lp_test):
         print(f"{solver} not installed . ", end="")
         return
     test(solver)
-    print(f"{solver} . ", end="")
+    print(f"{solver}")
     return
 
 async def ampl_install(pkg:str, solver:str, test=lp_test):
@@ -58,7 +58,7 @@ async def ampl_install(pkg:str, solver:str, test=lp_test):
         print(f"{pkg} failed to unzip . ", end="")
         return  
     test(solver) 
-    print(f"{solver} . ", end="")
+    print(f"{solver}")
     return
         
 async def install_pyomo():
@@ -67,7 +67,7 @@ async def install_pyomo():
         print("pyomo failed to install")
         return
     print("pyomo installed")
-    print("installing solvers . ", end="")
+    print("installing solvers")
     await apt_install("glpk-utils", "glpk"),
     await asyncio.gather(
         pip_install("gurobipy", "gurobi_direct"),
