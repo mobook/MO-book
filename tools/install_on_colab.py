@@ -39,7 +39,7 @@ async def pip_install(pkg:str, solver:str, test=lp_test):
         print(f"{solver} not installed ") 
         return
     test(solver)
-    print(f"   {solver}")
+    print(f"\t{solver}")
     return
 
 async def apt_install(pkg:str, solver:str, test=lp_test):
@@ -47,7 +47,7 @@ async def apt_install(pkg:str, solver:str, test=lp_test):
         print(f"{solver} not installed . ", end="")
         return
     test(solver)
-    print(f"   {solver}")
+    print(f"\t{solver}")
     return
 
 async def ampl_install(pkg:str, solver:str, test=lp_test):
@@ -58,7 +58,7 @@ async def ampl_install(pkg:str, solver:str, test=lp_test):
         print(f"{pkg} failed to unzip . ", end="")
         return  
     test(solver) 
-    print(f"   {solver}")
+    print(f"\t{solver}")
     return
         
 async def install_pyomo():
