@@ -42,9 +42,9 @@ def test_solver(solver):
         model.obj = pyo.Objective(expr=model.x)
         try:
             pyo.SolverFactory(solver).solve(model)
-            print(f". {solver}", end="")
+            print(f"{solver} ... ", end="")
         except:
-            print(f". {solver} test failed", end="")
+            print(f"{solver} test failed ... ", end="")
 
 async def install_pyomo():
     print("installing pyomo ... ", end="")
@@ -53,7 +53,7 @@ async def install_pyomo():
         print("pyomo failed to install")
     else:
         print("pyomo installed")
-        print("installing solvers")
+        print("installing solvers ... ", end="")
         await apt("glpk-utils", "glpk"),
         await asyncio.gather(
             pip("gurobipy", "gurobi_direct"),
