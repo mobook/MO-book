@@ -67,7 +67,7 @@ async def install_pyomo():
         print("pyomo failed to install")
         return
     print("pyomo installed")
-    print("installing solvers")
+    print("installing and testing solvers")
     await apt_install("glpk-utils", "glpk"),
     await asyncio.gather(
         pip_install("gurobipy", "gurobi_direct"),
@@ -81,7 +81,7 @@ async def install_pyomo():
         #pip_install("cplex", "cplex"),
         #ampl_install("jacop", "jacop")
         )
-    print("installation complete")
+    print("installation and testing complete")
 
 nest_asyncio.apply()
 asyncio.run(install_pyomo())
