@@ -351,6 +351,11 @@
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#display-graph">
+   Display graph
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#bloomberg-forex-data">
    Bloomberg FOREX data
   </a>
@@ -386,6 +391,11 @@
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#display-graph">
+   Display graph
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#bloomberg-forex-data">
    Bloomberg FOREX data
   </a>
@@ -403,7 +413,6 @@
 <h1>Forex Arbitrage<a class="headerlink" href="#forex-arbitrage" title="Permalink to this headline">¶</a></h1>
 <p>Exchanging one currency for another is among the most common banking transactions. Currencies are normally priced relative to each other such that any set of transactions will result in a fee paid to the bank at the expense of the currency trader.  Occasionally, however, changes in the relative pricing occur that allow for a sequence of trades result in a net profit to the trader.</p>
 <p>These are <em>arbitrage</em> opportunities and the subject of intense interest by traders in the foreign exchange (forex) markets around the globe, and more recently in the crypto-currency markets.</p>
-<p><a href="https://commons.wikimedia.org/wiki/File:Triangular-arbitrage.svg#/media/File:Triangular-arbitrage.svg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Triangular-arbitrage.svg/1200px-Triangular-arbitrage.svg.png" alt="Triangular-arbitrage.svg"></a><br>By &lt;a href="//commons.wikimedia.org/wiki/User:John_Shandy%60" title="User:John Shandy`"&gt;John Shandy`&lt;/a&gt; - &lt;span class="int-own-work" lang="en"&gt;Own work&lt;/span&gt;, <a href="https://creativecommons.org/licenses/by-sa/3.0" title="Creative Commons Attribution-Share Alike 3.0">CC BY-SA 3.0</a>, <a href="https://commons.wikimedia.org/w/index.php?curid=15743307">Link</a></p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import Pyomo and solvers for Google Colab</span>
@@ -411,6 +420,21 @@
 <span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="o">!</span>wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py 
     <span class="o">%</span><span class="k">run</span> install_on_colab.py
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo installed
+installing solvers
+. glpk
+. ipopt
+. bonmin
+. couenne
+. gurobi_direct
+. cbc
+
+. xpress
+installation complete
 </pre></div>
 </div>
 </div>
@@ -457,7 +481,9 @@
 <p>This particular example shows no net cost and no arbitrage for conversion from one currency to another and back again.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span> <span class="p">[</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="mf">0.0075</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.0075</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]],</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span> <span class="p">[</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="mf">0.0075</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.0075</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]],</span>
                   <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;USD&#39;</span><span class="p">,</span> <span class="s1">&#39;EUR&#39;</span><span class="p">,</span> <span class="s1">&#39;JPY&#39;</span><span class="p">],</span>
                   <span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;USD&#39;</span><span class="p">,</span> <span class="s1">&#39;EUR&#39;</span><span class="p">,</span> <span class="s1">&#39;JPY&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
 
@@ -475,7 +501,10 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_html"><div>
+<div class="output text_html">
+  <div id="df-0c1c3a25-94c2-4ac2-acba-0d6fe2105cef">
+    <div class="colab-df-container">
+      <div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -519,7 +548,83 @@
     </tr>
   </tbody>
 </table>
-</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.0
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-0c1c3a25-94c2-4ac2-acba-0d6fe2105cef')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-0c1c3a25-94c2-4ac2-acba-0d6fe2105cef button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-0c1c3a25-94c2-4ac2-acba-0d6fe2105cef');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+</div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>1.0
 1.0
 1.0
 </pre></div>
@@ -553,19 +658,19 @@
 </div>
 <div class="section" id="modeling">
 <h2>Modeling<a class="headerlink" href="#modeling" title="Permalink to this headline">¶</a></h2>
-<p>The cross-currency table <span class="math notranslate nohighlight">\(A\)</span> provides exchanges rates among currencies. The entry <span class="math notranslate nohighlight">\(a_{i,j}\)</span> in row <span class="math notranslate nohighlight">\(i\)</span>, column <span class="math notranslate nohighlight">\(j\)</span> tells us how many units of currency <span class="math notranslate nohighlight">\(i\)</span> are received in exchange for one unit of currency <span class="math notranslate nohighlight">\(j\)</span>. We’ll use the notation <span class="math notranslate nohighlight">\(a_{i,j} = a_{i\leftarrow j}\)</span> to indicate this relationship.</p>
-<p>We start with <span class="math notranslate nohighlight">\(w_j(0)\)</span> units of currency <span class="math notranslate nohighlight">\(j \in N\)</span>. In the first phase of a transaction, an amount <span class="math notranslate nohighlight">\(x_{i\leftarrow j}(t)\)</span>  is committed to an exchange for currency <span class="math notranslate nohighlight">\(i\)</span>. After the commitment the unencumbered balance is</p>
+<p>The cross-currency table <span class="math notranslate nohighlight">\(A\)</span> provides exchange rates among currencies. Entry <span class="math notranslate nohighlight">\(a_{i,j}\)</span> in row <span class="math notranslate nohighlight">\(i\)</span>, column <span class="math notranslate nohighlight">\(j\)</span> tells us how many units of currency <span class="math notranslate nohighlight">\(i\)</span> are received in exchange for one unit of currency <span class="math notranslate nohighlight">\(j\)</span>. We’ll use the notation <span class="math notranslate nohighlight">\(a_{i, j} = a_{i\leftarrow j}\)</span> to remind ourselves of this relationship.</p>
+<p>We start with <span class="math notranslate nohighlight">\(w_j(0)\)</span> units of currency <span class="math notranslate nohighlight">\(j \in N\)</span>. In the first phase of a transaction, an amount <span class="math notranslate nohighlight">\(x_{i\leftarrow j}(t)\)</span>  is committed for exchange to currency <span class="math notranslate nohighlight">\(i\)</span>. After the commitment the unencumbered balance is</p>
 <div class="math notranslate nohighlight">
 \[w_j(t-1) - \sum_{i\ne j} x_{i\leftarrow j}(t) \geq 0\]</div>
-<p>which assumes no borrowing is allowed.</p>
-<p>The transaction is completed when the exchange credits accounts in the new currencies</p>
+<p>This constraint prohibits shorting one currency to buy another. The transaction is completed when the exchange credits accounts in the new currencies</p>
 <div class="math notranslate nohighlight">
 \[ w_j(t) = w_j(t-1) - \underbrace{\sum_{i\ne j} x_{i\leftarrow j}(t)}_{\text{outgoing}} + \underbrace{\sum_{i\ne j} a_{j\leftarrow i}x_{j\leftarrow i}(t)}_{\text{incoming}} \]</div>
-<p>The goal of this calculation is to find a set of transactions <span class="math notranslate nohighlight">\(x_{i\leftarrow j}(t) \geq 0\)</span> such that <span class="math notranslate nohighlight">\(w_j(T) \geq w_j(0)\)</span>.</p>
+<p>The goal of this calculation is to find a set of transactions <span class="math notranslate nohighlight">\(x_{i\leftarrow j}(t) \geq 0\)</span> to maximize the value of portfolio at a later time <span class="math notranslate nohighlight">\(T\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">graphviz</span> <span class="kn">import</span> <span class="n">Digraph</span>
 
 <span class="k">def</span> <span class="nf">arbitrage</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="s1">&#39;EUR&#39;</span><span class="p">):</span>
 
@@ -611,7 +716,7 @@
     <span class="k">def</span> <span class="nf">wealth</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">R</span><span class="p">,</span> <span class="n">T</span><span class="p">]</span>
 
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;gurobi_direct&#39;</span><span class="p">)</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;glpk&#39;</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T0</span><span class="p">:</span>
@@ -621,11 +726,14 @@
                 <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">t</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">j</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">  Convert </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]()</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">j</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">t</span><span class="p">]()</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">()</span>
-
-        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;w[</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">] = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="n">t</span><span class="p">]()</span><span class="si">:</span><span class="s2">9.2f</span><span class="si">}</span><span class="s2"> &quot;</span><span class="p">)</span>
             
-<span class="n">arbitrage</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="s1">&#39;EUR&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;w[</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">] = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]()</span><span class="si">:</span><span class="s2">9.2f</span><span class="si">}</span><span class="s2"> &quot;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">m</span>
+            
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">arbitrage</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="s1">&#39;EUR&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -635,53 +743,56 @@
 w[USD,0] =      0.00 
 w[EUR,0] =    100.00 
 w[JPY,0] =      0.00 
-w[GBP,0] =      0.00 
-w[CHF,0] =      0.00 
-w[CAD,0] =      0.00 
-w[AUD,0] =      0.00 
-w[HKD,0] =      0.00 
 
 t = 1
 
-EUR -&gt; JPY  Convert 100.0 EUR to 13160.970000000001 JPY
+EUR -&gt; USD  Convert 100.0 EUR to 200.0 USD
 
-w[USD,1] =      0.00 
+w[USD,1] =    200.00 
 w[EUR,1] =      0.00 
-w[JPY,1] =  13160.97 
-w[GBP,1] =      0.00 
-w[CHF,1] =      0.00 
-w[CAD,1] =      0.00 
-w[AUD,1] =      0.00 
-w[HKD,1] =      0.00 
+w[JPY,1] =      0.00 
 
 t = 2
 
-JPY -&gt; CAD  Convert 13160.970000000001 JPY to 140.822379 CAD
+USD -&gt; JPY  Convert 200.0 USD to 20000.0 JPY
 
 w[USD,2] =      0.00 
 w[EUR,2] =      0.00 
-w[JPY,2] =      0.00 
-w[GBP,2] =      0.00 
-w[CHF,2] =      0.00 
-w[CAD,2] =    140.82 
-w[AUD,2] =      0.00 
-w[HKD,2] =      0.00 
+w[JPY,2] =  20000.00 
 
 t = 3
 
-CAD -&gt; EUR  Convert 140.822379 CAD to 100.44860294070001 EUR
+JPY -&gt; EUR  Convert 20000.0 JPY to 150.0 EUR
 
 w[USD,3] =      0.00 
-w[EUR,3] =    100.45 
+w[EUR,3] =    150.00 
 w[JPY,3] =      0.00 
-w[GBP,3] =      0.00 
-w[CHF,3] =      0.00 
-w[CAD,3] =      0.00 
-w[AUD,3] =      0.00 
-w[HKD,3] =      0.00 
 </pre></div>
 </div>
 </div>
+</div>
+</div>
+<div class="section" id="display-graph">
+<h2>Display graph<a class="headerlink" href="#display-graph" title="Permalink to this headline">¶</a></h2>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">graph</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="n">dot</span> <span class="o">=</span> <span class="n">Digraph</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span><span class="p">:</span>
+        <span class="n">dot</span><span class="o">.</span><span class="n">node</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T1</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">ARCS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">:</span>
+                <span class="n">dot</span><span class="o">.</span><span class="n">edge</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dot</span>
+    
+<span class="n">graph</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../../_images/forex-arbitrage_10_0.svg" src="../../_images/forex-arbitrage_10_0.svg" /></div>
 </div>
 </div>
 <div class="section" id="bloomberg-forex-data">
@@ -712,7 +823,10 @@ w[HKD,3] =      0.00
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_html"><div>
+<div class="output text_html">
+  <div id="df-2a7f6ac8-ca6a-44ea-bf05-d5fb13effb9c">
+    <div class="colab-df-container">
+      <div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -831,11 +945,88 @@ w[HKD,3] =      0.00
     </tr>
   </tbody>
 </table>
-</div></div></div>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-2a7f6ac8-ca6a-44ea-bf05-d5fb13effb9c')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-2a7f6ac8-ca6a-44ea-bf05-d5fb13effb9c button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-2a7f6ac8-ca6a-44ea-bf05-d5fb13effb9c');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+</div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">arbitrage</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="s1">&#39;USD&#39;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">arbitrage</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="s1">&#39;USD&#39;</span><span class="p">)</span>
+<span class="n">graph</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -853,12 +1044,12 @@ w[HKD,0] =      0.00
 
 t = 1
 
-USD -&gt; GBP  Convert 100.00000000000001 USD to 76.06000000000002 GBP
+USD -&gt; JPY  Convert 100.0 USD to 11861.0 JPY
 
 w[USD,1] =      0.00 
 w[EUR,1] =      0.00 
-w[JPY,1] =      0.00 
-w[GBP,1] =     76.06 
+w[JPY,1] =  11861.00 
+w[GBP,1] =      0.00 
 w[CHF,1] =      0.00 
 w[CAD,1] =      0.00 
 w[AUD,1] =      0.00 
@@ -866,123 +1057,34 @@ w[HKD,1] =      0.00
 
 t = 2
 
-GBP -&gt; JPY  Convert 76.06000000000002 GBP to 11861.435304000002 JPY
+GBP -&gt; USD  Convert 1.46676560635998e-14 GBP to 1.928503419242102e-14 USD
+JPY -&gt; CHF  Convert 2.28642127880772e-12 JPY to 1.806272810258099e-14 CHF
+JPY -&gt; CAD  Convert 11861.0 JPY to 126.91269999999999 CAD
 
 w[USD,2] =      0.00 
 w[EUR,2] =      0.00 
-w[JPY,2] =  11861.44 
+w[JPY,2] =      0.00 
 w[GBP,2] =      0.00 
-w[CHF,2] =      0.00 
-w[CAD,2] =      0.00 
+w[CHF,2] =     -0.00 
+w[CAD,2] =    126.91 
 w[AUD,2] =      0.00 
 w[HKD,2] =      0.00 
 
 t = 3
 
-JPY -&gt; CAD  Convert 11861.435304000002 JPY to 126.91735775280002 CAD
+CAD -&gt; USD  Convert 126.9127 CAD to 100.45140205 USD
 
-w[USD,3] =      0.00 
+w[USD,3] =    100.45 
 w[EUR,3] =      0.00 
 w[JPY,3] =      0.00 
 w[GBP,3] =      0.00 
-w[CHF,3] =      0.00 
-w[CAD,3] =    126.92 
+w[CHF,3] =     -0.00 
+w[CAD,3] =      0.00 
 w[AUD,3] =      0.00 
 w[HKD,3] =      0.00 
-
-t = 4
-
-CAD -&gt; JPY  Convert 126.91735775280002 CAD to 11915.20461360527 JPY
-
-w[USD,4] =      0.00 
-w[EUR,4] =      0.00 
-w[JPY,4] =  11915.20 
-w[GBP,4] =      0.00 
-w[CHF,4] =      0.00 
-w[CAD,4] =      0.00 
-w[AUD,4] =      0.00 
-w[HKD,4] =      0.00 
-
-t = 5
-
-JPY -&gt; CAD  Convert 11915.20461360527 JPY to 127.49268936557638 CAD
-
-w[USD,5] =      0.00 
-w[EUR,5] =      0.00 
-w[JPY,5] =      0.00 
-w[GBP,5] =      0.00 
-w[CHF,5] =      0.00 
-w[CAD,5] =    127.49 
-w[AUD,5] =      0.00 
-w[HKD,5] =      0.00 
-
-t = 6
-
-CAD -&gt; JPY  Convert 127.49268936557638 CAD to 11969.217665943297 JPY
-
-w[USD,6] =      0.00 
-w[EUR,6] =      0.00 
-w[JPY,6] =  11969.22 
-w[GBP,6] =      0.00 
-w[CHF,6] =      0.00 
-w[CAD,6] =      0.00 
-w[AUD,6] =      0.00 
-w[HKD,6] =      0.00 
-
-t = 7
-
-JPY -&gt; CAD  Convert 11969.217665943297 JPY to 128.07062902559326 CAD
-
-w[USD,7] =      0.00 
-w[EUR,7] =      0.00 
-w[JPY,7] =      0.00 
-w[GBP,7] =      0.00 
-w[CHF,7] =      0.00 
-w[CAD,7] =    128.07 
-w[AUD,7] =      0.00 
-w[HKD,7] =      0.00 
-
-t = 8
-
-CAD -&gt; JPY  Convert 128.07062902559326 CAD to 12023.475565929137 JPY
-
-w[USD,8] =      0.00 
-w[EUR,8] =      0.00 
-w[JPY,8] =  12023.48 
-w[GBP,8] =      0.00 
-w[CHF,8] =      0.00 
-w[CAD,8] =      0.00 
-w[AUD,8] =      0.00 
-w[HKD,8] =      0.00 
-
-t = 9
-
-JPY -&gt; CAD  Convert 12023.475565929137 JPY to 128.65118855544176 CAD
-
-w[USD,9] =      0.00 
-w[EUR,9] =      0.00 
-w[JPY,9] =      0.00 
-w[GBP,9] =      0.00 
-w[CHF,9] =      0.00 
-w[CAD,9] =    128.65 
-w[AUD,9] =      0.00 
-w[HKD,9] =      0.00 
-
-t = 10
-
-CAD -&gt; USD  Convert 128.65118855544176 CAD to 101.82741574163215 USD
-
-w[USD,10] =    101.83 
-w[EUR,10] =      0.00 
-w[JPY,10] =      0.00 
-w[GBP,10] =      0.00 
-w[CHF,10] =      0.00 
-w[CAD,10] =      0.00 
-w[AUD,10] =      0.00 
-w[HKD,10] =      0.00 
 </pre></div>
 </div>
-</div>
+<img alt="../../_images/forex-arbitrage_13_1.svg" src="../../_images/forex-arbitrage_13_1.svg" /></div>
 </div>
 </div>
 </div>
