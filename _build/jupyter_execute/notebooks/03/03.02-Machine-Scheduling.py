@@ -7,6 +7,16 @@
 # 
 # What we consider in this notebook is the modeling finding solutions to this class of problem using optimiziation techniques. This notebook demonstrates the formulation of a model for scheduling a single machine scheduling using disjuctive programming in Pyomo. The problem is to schedule a set of jobs on a single machine given the release time, duration, and due time for each job. Date for the example problem is from Christelle Gueret, Christian Prins, Marc Sevaux, "Applications of Optimization with Xpress-MP," Chapter 5, Dash Optimization, 2000.
 
+# In[1]:
+
+
+# Import Pyomo and solvers for Google Colab
+import sys
+if "google.colab" in sys.modules:
+    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
+    get_ipython().run_line_magic('run', 'install_on_colab.py')
+
+
 # ## Learning Goals
 # 
 # * Optimal scheduling for a single machine

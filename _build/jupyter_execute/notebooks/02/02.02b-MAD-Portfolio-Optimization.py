@@ -5,7 +5,17 @@
 # 
 # NOTE: THIS IS IN EARLY DEVELOPMENT.  STILL NEED TO FINALIZE MODEL, TEST, AND REVISE NARRATIVE.  PRIORITY IS TO FINISH BY 3/18.
 
-# In[304]:
+# In[1]:
+
+
+# Import Pyomo and solvers for Google Colab
+import sys
+if "google.colab" in sys.modules:
+    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
+    get_ipython().run_line_magic('run', 'install_on_colab.py')
+
+
+# In[2]:
 
 
 import matplotlib.dates as mdates
@@ -29,7 +39,7 @@ import pyomo.environ as pyo
 # 
 # READ DATA PREVIOUSLY IMPORTED.
 
-# In[4]:
+# In[3]:
 
 
 # read historical asset prices
@@ -55,7 +65,7 @@ assets.plot(logy=True, figsize=(12, 8), grid=True, lw=1, title="Adjusted Close")
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 
 
-# In[5]:
+# In[4]:
 
 
 # scaled asset prices
@@ -65,7 +75,7 @@ assets_scaled.plot(figsize=(12, 8), grid=True, lw=1, title="Adjusted Close: Scal
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 
 
-# In[6]:
+# In[5]:
 
 
 # daily returns
@@ -81,7 +91,7 @@ for a, s in zip(ax.flatten(), sorted(daily_returns.columns)):
 plt.tight_layout()
 
 
-# In[7]:
+# In[6]:
 
 
 # distributions of returns
@@ -104,7 +114,7 @@ for a, s in zip(ax.flatten(), daily_returns.columns):
 plt.tight_layout()
 
 
-# In[8]:
+# In[7]:
 
 
 # bar charts of mean return and mean absolute deviation in returns
@@ -120,7 +130,7 @@ mean_absolute_deviation.plot(kind='barh', ax=ax[1], title='Mean Absolute Deviati
 ax[1].invert_yaxis()
 
 
-# In[9]:
+# In[8]:
 
 
 # plot return vs risk
