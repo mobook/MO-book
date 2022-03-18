@@ -47,7 +47,7 @@ def test_solver(solver):
             print(f"{solver} test failed . ", end="")
 
 async def install_pyomo():
-    print("installing pyomo ... ", end="")
+    print("installing pyomo . ", end="")
     returncode = await run("pip3 install -q pyomo")
     if returncode:
         print("pyomo failed to install")
@@ -66,7 +66,7 @@ async def install_pyomo():
             #ampl("gecode", "gecode"),
             #ampl("jacop", "jacop")
         )
-    print("\ninstallation complete")
+    print("installation complete")
 
 nest_asyncio.apply()
 asyncio.run(install_pyomo())
