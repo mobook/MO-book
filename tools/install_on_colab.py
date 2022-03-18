@@ -66,7 +66,7 @@ async def install_pyomo():
             #ampl("gecode", "gecode"),
             #ampl("jacop", "jacop")
         )
-    print("installation complete")
+    print("\ninstallation complete")
 
 nest_asyncio.apply()
 asyncio.run(install_pyomo())
