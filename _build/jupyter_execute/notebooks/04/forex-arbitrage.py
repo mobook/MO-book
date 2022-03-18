@@ -3,15 +3,23 @@
 
 # # Forex Arbitrage
 # 
-# Exchanging one currency for another is among the most common banking transactions. Currencies are normally priced relative to each other such that any set of transactions will result in a fee paid to the bank at the expense of the currency trader.  Occasionally, however, changes in the relative pricing occur that allow for a sequence of trades result in a net profit to the trader. 
+# Exchanging one currency for another is among the most common of all banking transactions. Currencies are normally priced relative to each other. 
 # 
-# These are *arbitrage* opportunities and the subject of intense interest by traders in the foreign exchange (forex) markets around the globe, and more recently in the crypto-currency markets.
+# At this moment of this writing, for example, the Japanese yen (symbol JPY) is priced at 0.00761 relative to the euro (symbol EUR). At this price 100 euros would purchase 100/0.00761 = 13,140.6 yen. Conversely, EUR is priced at 131.585 yen.  The 'round-trip' of 100 euros from EUR to JPY and back to EUR results in
+# 
+# $$100 \text{ EUR} \stackrel{\times \frac{1}{0.00761}}{\longrightarrow} 12,140.6 \text{ JPY} \stackrel{\times\frac{1}{131.585}}{\longrightarrow} 99.9954\text{ EUR}$$
+# 
+# The small loss in this round-trip transaction is the fee collected by the brokers and banking system to provide these services. 
+# 
+# Needless to say, if a simple round-trip transaction like this reliably produced a net gain then there would many eager traders ready to take advantage of the situation. Trading situations offering a net gain with no risk are called arbitrage, and are the subject of intense interest by traders in the foreign exchange (forex) and crypto-currency markets around the globe.
+# 
+# As one might expect, arbitrage opportunities involving a simple round-trip between a pair of currencies are almost non-existent in real-world markets. When the do appear, they are easily detected and rapid and automted trading  quickly exploit the situation. More complex arbitrage opportunities, however, can arise when working with three more currencies and a table of cross-currency exchange rates.
 # 
 
-# In[1]:
+# In[27]:
 
 
-# Import Pyomo and solvers for Google Colab
+# install Pyomo and solvers for Google Colab
 import sys
 if "google.colab" in sys.modules:
     get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
@@ -47,7 +55,7 @@ if "google.colab" in sys.modules:
 # 
 # This particular example shows no net cost and no arbitrage for conversion from one currency to another and back again.
 
-# In[2]:
+# In[ ]:
 
 
 import pandas as pd
@@ -78,7 +86,7 @@ print(df.loc['EUR', 'JPY'] * df.loc['JPY', 'EUR'])
 # 
 # By direct caculation we see there is a three-way **triangular** arbitrage opportunity.
 
-# In[3]:
+# In[ ]:
 
 
 I = 'USD'
@@ -105,7 +113,7 @@ print(df.loc[I, K] * df.loc[K, J] * df.loc[J, I])
 # The goal of this calculation is to find a set of transactions $x_{i\leftarrow j}(t) \geq 0$ to maximize the value of portfolio at a later time $T$.
 # 
 
-# In[4]:
+# In[ ]:
 
 
 import pyomo.environ as pyo
@@ -177,7 +185,7 @@ m = arbitrage(3, df, 'EUR')
 
 # ## Display graph
 
-# In[5]:
+# In[ ]:
 
 
 def graph(m):
@@ -188,17 +196,21 @@ def graph(m):
     for t in m.T1:
         for i, j in m.ARCS:
             if m.x[i, j, t]() > 0.1:
-                dot.edge(i, j)
+                y = m.w[j,t-1]()
+                x = m.w[i,t]()
+                dot.edge(i, j) # label=f"{m.x[i, j, t]():0.1f}")
     return dot
-    
+
 graph(m)
 
 
-# ## Bloomberg FOREX data
+# ## FOREX data
 # 
 # https://www.bloomberg.com/markets/currencies/cross-rates
+# 
+# https://www.tradingview.com/markets/currencies/cross-rates-overview-prices/
 
-# In[6]:
+# In[ ]:
 
 
 # data extracted 2022-03-17
@@ -222,9 +234,15 @@ df = pd.read_csv(io.StringIO(bloomberg.replace('-', '1.0')), sep='\t', index_col
 display(df)
 
 
-# In[7]:
+# In[ ]:
 
 
 m = arbitrage(3, df, 'USD')
 graph(m)
+
+
+# In[ ]:
+
+
+
 
