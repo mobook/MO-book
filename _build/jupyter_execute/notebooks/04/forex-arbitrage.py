@@ -15,6 +15,8 @@
 # 
 # As one might expect, arbitrage opportunities involving a simple round-trip between a pair of currencies are almost non-existent in real-world markets. When the do appear, they are easily detected and rapid and automted trading  quickly exploit the situation. More complex arbitrage opportunities, however, can arise when working with three more currencies and a table of cross-currency exchange rates.
 # 
+# https://github.com/hzjken/crypto-arbitrage-framework
+# 
 
 # In[27]:
 

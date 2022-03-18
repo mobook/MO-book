@@ -134,6 +134,11 @@
   </label>
   <ul>
    <li class="toctree-l2">
+    <a class="reference internal" href="../02/fit_absolute.html">
+     Example of minimizing a sum of absolute values
+    </a>
+   </li>
+   <li class="toctree-l2">
     <a class="reference internal" href="../02/02.02a-Obtaining-Historical-Stock.html">
      Download Historical Stock Data
     </a>
@@ -218,7 +223,12 @@
    <i class="fas fa-chevron-down">
    </i>
   </label>
-  <ul class="simple">
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../08/EF_RO.html">
+     Companion notebook to EF’s training on optimization with data uncertainty
+    </a>
+   </li>
   </ul>
  </li>
  <li class="toctree-l1">
@@ -351,8 +361,8 @@
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#suggest-exercises">
-   Suggest exercises
+  <a class="reference internal nav-link" href="#suggested-exercises">
+   Suggested exercises
   </a>
  </li>
 </ul>
@@ -381,8 +391,8 @@
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#suggest-exercises">
-   Suggest exercises
+  <a class="reference internal nav-link" href="#suggested-exercises">
+   Suggested exercises
   </a>
  </li>
 </ul>
@@ -406,11 +416,11 @@
 <p>This notebook demonstrates a solution to this puzzle using Pyomo disjuctions and the <code class="docutils literal notranslate"><span class="pre">gecode</span></code> solver, a constraint solving package written in C++. This same puzzle is used in the <code class="docutils literal notranslate"><span class="pre">gecode</span></code> documentation, so this notebook may provide a useful contrast between Pyomo modeling and use of a native C++ API.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span># install Pyomo and solvers for Google Colab
-import sys
-if &quot;google.colab&quot; in sys.modules:
-    !wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py 
-    %run install_on_colab.py
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers for Google Colab</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py 
+    <span class="o">%</span><span class="k">run</span> install_on_colab.py
 </pre></div>
 </div>
 </div>
@@ -433,13 +443,16 @@ installation and testing complete
 <h2>Modeling and Solution<a class="headerlink" href="#modeling-and-solution" title="Permalink to this headline">¶</a></h2>
 <p>There are several possible approaches to modeling this puzzle in Pyomo.</p>
 <p><a class="reference external" href="https://stackoverflow.com/questions/67456379/pyomo-model-constraint-programming-for-sendmore-money-task">One approach</a>  would be to using a matrix of binary variables <span class="math notranslate nohighlight">\(x_{a,d}\)</span> indexed by letter <span class="math notranslate nohighlight">\(a\)</span> and digit <span class="math notranslate nohighlight">\(d\)</span> such that <span class="math notranslate nohighlight">\(x_{a,d} = 1\)</span> designates the corresponding assignment. The problem constraints can then be implemented by summing the binary variables along the two axes. The arithmetic constraint becomes a more challenging.</p>
-<p><a class="reference external" href="https://www.gecode.org/doc/6.0.1/MPG.pdf">Another approach</a> is to use Pyomo integer variables indexed by letters, then setup an linear expression to represent the puzzle following the scheme</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>             1000 S + 100 E + 10 N + D
-           + 1000 M + 100 O + 19 R + E
-== 10000 M + 1000 O + 100 N + 10 E + Y
-</pre></div>
-</div>
-<p>The requirement that no two letters be assigned the same digit could, in principle, be implemented with an inequality constraint.  A more robust approach is to use a disjunction. Letting <span class="math notranslate nohighlight">\(n_a\)</span> and <span class="math notranslate nohighlight">\(n_b\)</span> denote the integers assigned to letters <span class="math notranslate nohighlight">\(a\)</span> and <span class="math notranslate nohighlight">\(b\)</span>, the disjuction becomes</p>
+<p><a class="reference external" href="https://www.gecode.org/doc/6.0.1/MPG.pdf">Another approach</a> is to use Pyomo integer variables indexed by letters, then setup an linear expression to represent the puzzle. If we use the notation <span class="math notranslate nohighlight">\(n_a\)</span> to represent the digit assigned to letter <span class="math notranslate nohighlight">\(a\)</span>, the algebraic constraint becomes</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+1000 n_s + 100 n_e + 10 n_n + n_d \\
++ 1000 n_m + 100 n_o + 10 n_r + n_e \\ 
+= 10000 n_m + 1000 n_o + 100 n_n + 10 n_e + n_y
+\end{align*}
+\end{split}\]</div>
+<p>The requirement that no two letters be assigned the same digit can be represented as a \ disjunction. Letting <span class="math notranslate nohighlight">\(n_a\)</span> and <span class="math notranslate nohighlight">\(n_b\)</span> denote the integers assigned to letters <span class="math notranslate nohighlight">\(a\)</span> and <span class="math notranslate nohighlight">\(b\)</span>, the disjuction becomes</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
@@ -451,7 +464,7 @@ installation and testing complete
 <p>Here we use the <code class="docutils literal notranslate"><span class="pre">gecode</span></code> solver which is well suited to problems integer, logic, and binary variables and disjunctive constraints.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 <span class="kn">import</span> <span class="nn">pyomo.gdp</span> <span class="k">as</span> <span class="nn">gdp</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
@@ -500,10 +513,10 @@ installation and testing complete
 </div>
 </div>
 </div>
-<div class="section" id="suggest-exercises">
-<h2>Suggest exercises<a class="headerlink" href="#suggest-exercises" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="suggested-exercises">
+<h2>Suggested exercises<a class="headerlink" href="#suggested-exercises" title="Permalink to this headline">¶</a></h2>
 <ol class="simple">
-<li><p>Pyomo includes a logic-based solver <code class="docutils literal notranslate"><span class="pre">GDPopt</span></code> for generalized disjunctive programming problems. Implement and test <code class="docutils literal notranslate"><span class="pre">GDPopt</span></code> using various combinations of solution strategies and MIP solvers, and compare the performance to the constraint solver <code class="docutils literal notranslate"><span class="pre">gecode</span></code>.</p></li>
+<li><p>Pyomo includes a logic-based solver <code class="docutils literal notranslate"><span class="pre">GDPopt</span></code> for generalized disjunctive programming problems. Implement and test <code class="docutils literal notranslate"><span class="pre">GDPopt</span></code> using combinations of solution strategies and MIP solvers. Compare the performance of <code class="docutils literal notranslate"><span class="pre">GDPopt</span></code> to the constraint solver <code class="docutils literal notranslate"><span class="pre">gecode</span></code>.</p></li>
 <li><p>There are <a class="reference external" href="http://cryptarithms.awardspace.us/puzzles.html">many more examples</a> this puzzles. Refactor this code and create a function that can be used to solve generic puzzles of this type.</p></li>
 </ol>
 </div>
