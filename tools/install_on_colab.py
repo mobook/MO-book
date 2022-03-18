@@ -58,7 +58,7 @@ def ip_test(solver):
     except:
         print(f"{solver} failed test . ")
 
-def test_solver(solver, test=):
+def test_solver(solver, test=lp_test):
         import pyomo.environ as pyo
         model = pyo.ConcreteModel()
         model.x = pyo.Var()
