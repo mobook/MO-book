@@ -47,6 +47,7 @@ async def run(cmd: str):
     return proc.returncode
 
 async def pip_install(pkg:str, solver:str, test=lp_test):
+    print(installing, pkg, solver, test)
     if await run(f'pip3 install -q {pkg}'):
         print(f"{solver} not installed . ", ) 
         return
@@ -70,7 +71,6 @@ async def ampl_install(pkg:str, solver:str, test=lp_test):
     test(solver) 
     return
         
-
 async def install_pyomo():
     print("installing pyomo . ", end="")
     if await run("pip3 install -q pyomo"):
