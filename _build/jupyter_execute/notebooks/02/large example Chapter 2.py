@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# 
-# ## Caroline's raw material planning
+# # Caroline's raw material planning
 # 
 # <img align='right' src='https://drive.google.com/uc?export=view&id=1FYTs46ptGHrOaUMEi5BzePH9Gl3YM_2C' width=200>
 # 
