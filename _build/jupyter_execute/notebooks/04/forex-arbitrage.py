@@ -7,7 +7,7 @@
 # 
 # At this moment of this writing, for example, the Japanese yen (symbol JPY) is priced at 0.00761 relative to the euro (symbol EUR). At this price 100 euros would purchase 100/0.00761 = 13,140.6 yen. Conversely, EUR is priced at 131.585 yen.  The 'round-trip' of 100 euros from EUR to JPY and back to EUR results in
 # 
-# $$100 \text{ EUR} \stackrel{\times \frac{1}{0.00761}}{\longrightarrow} 12,140.6 \text{ JPY} \stackrel{\times\frac{1}{131.585}}{\longrightarrow} 99.9954\text{ EUR}$$
+# $$100 \text{ EUR} \times \frac{1\text{ JPY}}{0.00761\text{ EUR}} {\quad\longrightarrow\quad} 12,140.6 \text{ JPY} \times\frac{1\text{ EUR}}{131.585\text{ JPY}} {\quad\longrightarrow\quad} 99.9954\text{ EUR}$$
 # 
 # The small loss in this round-trip transaction is the fee collected by the brokers and banking system to provide these services. 
 # 
