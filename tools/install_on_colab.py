@@ -10,7 +10,7 @@ def lp_test(solver):
     try:
         pyo.SolverFactory(solver).solve(model)
     except:
-        print(f"{solver} failed test")
+        print(f".. {solver} failed lp_test")
     
 def ip_test(solver):
     import pyomo.environ as pyo
@@ -21,7 +21,7 @@ def ip_test(solver):
     try:
         pyo.SolverFactory(solver).solve(model)
     except:
-        print(f"{solver} failed test")
+        print(f".. {solver} failed ip_test")
 
 async def run(cmd: str):
     proc = await asyncio.create_subprocess_shell(
@@ -36,26 +36,26 @@ async def run(cmd: str):
 
 async def pip_install(pkg:str, solver:str, test=lp_test):
     if await run(f'pip3 install -q {pkg}'):
-        print(f"{solver} not installed ") 
+        print(f".. {solver} not installed") 
         return
     test(solver)
-    print(f".. {solver}")
+    print(f".. {solver} installed")
     return
 
 async def apt_install(pkg:str, solver:str, test=lp_test):
     if await run(f'apt-get install -y -q {pkg}'):
-        print(f"{solver} not installed . ", end="")
+        print(f".. {solver} not installed")
         return
     test(solver)
-    print(f".. {solver}")
+    print(f".. {solver} installed")
     return
 
 async def ampl_install(pkg:str, solver:str, test=lp_test):
     if await run(f'wget -N -q https://ampl.com/dl/open/{pkg}/{pkg}-linux64.zip'):
-        print(f"{pkg} failed to download . ", end="")
+        print(f".. {pkg} failed to download")
         return
     if await run(f'unzip -o -q {pkg}-linux64'):
-        print(f"{pkg} failed to unzip . ", end="")
+        print(f".. {pkg} failed to unzip")
         return  
     test(solver) 
     print(f".. {solver}")
