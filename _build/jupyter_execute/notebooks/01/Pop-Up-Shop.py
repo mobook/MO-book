@@ -10,7 +10,7 @@
 # In[1]:
 
 
-# Import Pyomo and solvers for Google Colab
+# install Pyomo and solvers for Google Colab
 import sys
 if "google.colab" in sys.modules:
     get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')

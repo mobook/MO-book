@@ -5,6 +5,10 @@
 # 
 # NOTE: THIS IS IN EARLY DEVELOPMENT.  STILL NEED TO FINALIZE MODEL, TEST, AND REVISE NARRATIVE.  PRIORITY IS TO FINISH BY 3/18.
 
+# ## Reference articles
+# 
+# * [Riskfolio-lib](https://medium.com/@tzjy/a-great-tool-to-portfolio-optimization-riskfolio-lib-python-code-included-d4e4d503541c)
+
 # In[1]:
 
 
