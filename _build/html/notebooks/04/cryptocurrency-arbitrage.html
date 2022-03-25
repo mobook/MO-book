@@ -37,20 +37,22 @@
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
     <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/togglebutton.js"></script>
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
     <script src="../../_static/sphinx-book-theme.d59cb220de22ca1c485ebbdc042f0030.js"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"
+const thebe_selector = ".thebe,.cell"
+const thebe_selector_input = "pre"
+const thebe_selector_output = ".output, .cell_output"
+</script>
+    <script async="async" src="../../_static/sphinx-thebe.js"></script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script async="async" src="https://unpkg.com/thebe@0.5.1/lib/index.js"></script>
-    <script>
-        const thebe_selector = ".thebe"
-        const thebe_selector_input = "pre"
-        const thebe_selector_output = ".output"
-    </script>
-    <script async="async" src="../../_static/sphinx-thebe.js"></script>
     <script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
     <script>mermaid.initialize({startOnLoad:true});</script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -136,6 +138,11 @@
    <li class="toctree-l2">
     <a class="reference internal" href="../02/fit_absolute.html">
      Minimizing a sum of absolute values
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../02/Transportation.html">
+     Transportation Models
     </a>
    </li>
    <li class="toctree-l2">
@@ -479,6 +486,7 @@
 <p><a class="reference external" href="https://anilpai.medium.com/currency-arbitrage-using-bellman-ford-algorithm-8938dcea56ea">https://anilpai.medium.com/currency-arbitrage-using-bellman-ford-algorithm-8938dcea56ea</a></p>
 <div class="section" id="installations-and-imports">
 <h2>Installations and Imports<a class="headerlink" href="#installations-and-imports" title="Permalink to this headline">¶</a></h2>
+<p>This notebook requires multiple libraries. The following cell performs the required installations for Google Colab. To operate your own device you will need to install the <code class="docutils literal notranslate"><span class="pre">pyomo</span></code>,<code class="docutils literal notranslate"><span class="pre">ccxt</span></code>, and <code class="docutils literal notranslate"><span class="pre">graphviz</span></code> python libraries, the graphviz executables, and a linear solver for Pyomo.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
@@ -489,43 +497,55 @@
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>     |████████████████████████████████| 2.5 MB 6.6 MB/s 
-     |████████████████████████████████| 1.1 MB 52.9 MB/s 
-     |████████████████████████████████| 1.1 MB 49.1 MB/s 
-     |████████████████████████████████| 271 kB 54.1 MB/s 
-     |████████████████████████████████| 3.6 MB 53.1 MB/s 
-     |████████████████████████████████| 94 kB 3.4 MB/s 
-     |████████████████████████████████| 291 kB 50.4 MB/s 
-     |████████████████████████████████| 144 kB 53.4 MB/s 
-<span class=" -Color -Color-Red">ERROR: pip&#39;s dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.</span>
-<span class=" -Color -Color-Red">tensorflow 2.8.0 requires tf-estimator-nightly==2.8.0.dev2021122109, which is not installed.</span>
-<span class=" -Color -Color-Red">datascience 0.10.6 requires folium==0.2.1, but you have folium 0.8.3 which is incompatible.</span>
-?25hinstalling pyomo . pyomo installed
-installing and testing solvers ...
-.. glpk installed
-.. ipopt
-.. gecode
-.. couenne
-.. bonmin
-.. gurobi_direct installed
-.. cbc installed
-installation and testing complete
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
+
+<span class="kn">import</span> <span class="nn">ccxt</span>
+<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+<span class="kn">from</span> <span class="nn">graphviz</span> <span class="kn">import</span> <span class="n">Digraph</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ccxt</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
 
-<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
-<span class="kn">from</span> <span class="nn">timeit</span> <span class="kn">import</span> <span class="n">default_timer</span> <span class="k">as</span> <span class="n">timer</span>
-<span class="kn">from</span> <span class="nn">graphviz</span> <span class="kn">import</span> <span class="n">Digraph</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;/Users/jeff/opt/anaconda3/bin:/Users/jeff/opt/anaconda3/condabin:/usr/bin:/bin:/usr/sbin:/sbin&#39;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span>dot
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/bin/bash: dot: command not found
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span><span class="nb">echo</span> <span class="nv">$PATH</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/Users/jeff/opt/anaconda3/bin:/Users/jeff/opt/anaconda3/condabin:/usr/bin:/bin:/usr/sbin:/sbin
 </pre></div>
 </div>
 </div>
@@ -535,11 +555,19 @@ installation and testing complete
 <h2>Select an exchange and load available symbols<a class="headerlink" href="#select-an-exchange-and-load-available-symbols" title="Permalink to this headline">¶</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># set the exchange ... careful of generators here</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span><span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span>#PATH:/usr/local/bin
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># global variables used in subsequent cells</span>
 <span class="n">exchange</span> <span class="o">=</span> <span class="n">ccxt</span><span class="o">.</span><span class="n">binanceus</span><span class="p">()</span>
 <span class="n">markets</span> <span class="o">=</span> <span class="n">exchange</span><span class="o">.</span><span class="n">load_markets</span><span class="p">()</span>
+
+<span class="c1"># list  of all currency trades available on the exchange</span>
 <span class="n">symbols</span> <span class="o">=</span> <span class="n">exchange</span><span class="o">.</span><span class="n">symbols</span>
-<span class="n">exch</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">exchange</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -547,17 +575,27 @@ installation and testing complete
 </div>
 <div class="section" id="interpreting-trading-symbols-as-directed-graphs">
 <h2>Interpreting Trading Symbols as Directed Graphs<a class="headerlink" href="#interpreting-trading-symbols-as-directed-graphs" title="Permalink to this headline">¶</a></h2>
-<p>Each market symbol on an exchange describes currency transactions that we’ll characterize with a source/destination pair. The exchange symbol</p>
+<p>Each market symbol on an exchange describes two currency transactions that we will characterize as a source/destination pairs. The generic exchange symbol</p>
 <div class="math notranslate nohighlight">
 \[SRC/DST\]</div>
 <p>describes two potential transactions:</p>
 <ul class="simple">
-<li><p><span class="math notranslate nohighlight">\(SRC \rightarrow DST\)</span> converts one unit <span class="math notranslate nohighlight">\(SRC\)</span> on that exchange to multiple units of <span class="math notranslate nohighlight">\(DST\)</span> equal to ‘bid’ price on that exchange, and</p></li>
+<li><p><span class="math notranslate nohighlight">\(SRC \rightarrow DST\)</span> converts one unit of the currency desigated by <span class="math notranslate nohighlight">\(SRC\)</span> on the exchange to multiple units of the currency designated <span class="math notranslate nohighlight">\(DST\)</span> at the ‘bid’ price.</p></li>
 <li><p><span class="math notranslate nohighlight">\(DST \rightarrow SRC\)</span> converts one unit of <span class="math notranslate nohighlight">\(DST\)</span> on to multiple units of <span class="math notranslate nohighlight">\(SRC\)</span> at the inverse of the ‘ask’ price.</p></li>
 </ul>
-<p>The transactions are specific to the associated exchange.</p>
-<p>Here we represent the transcations using nodes and edges from graph theory. Each</p>
-<p>From the sources and destinations we create a set of nodes that will be indexed by (EXCH, CURR).</p>
+<p>Here we represent the transcations using nodes and edges from graph theory. Each node is designates a currency trading on the exchange. Each edge corresponds to a currency transaction comprised of a source and destination node. Here we assume all currencies are being traded on the same exchange. This notation can be extended to multi-exchange trading by designating nodes as (exchange, currency) pairs.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span>/usr/local/bin/dot
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>^C
+</pre></div>
+</div>
+</div>
+</div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># split symbols into SRC -&gt; DST arcs and create list of currencies</span>
@@ -593,14 +631,14 @@ ZEC      2
 ZEN      2
 ZIL      2
 ZRX      2
-Length: 86, dtype: int64
+Length: 87, dtype: int64
 
 Currencies appearing one more times as DST
 BTC     19
 BUSD    21
-USD     83
+USD     84
 USDC     2
-USDT    69
+USDT    70
 dtype: int64
 </pre></div>
 </div>
@@ -619,8 +657,8 @@ dtype: int64
 <span class="n">src_dst_nodes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">src_nodes</span> <span class="o">+</span> <span class="n">dst_nodes</span><span class="p">))</span>
 
 <span class="c1"># plot a directed graph from the edges and nodes</span>
-<span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">exch</span><span class="si">}</span><span class="se">\n</span><span class="s2">trading symbols with </span><span class="si">{</span><span class="n">N</span><span class="si">}</span><span class="s2"> or more base currencies</span><span class="se">\n</span><span class="s2"> &quot;</span>
-<span class="n">dg</span> <span class="o">=</span> <span class="n">Digraph</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">exch</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> 
+<span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">exchange</span><span class="si">}</span><span class="se">\n</span><span class="s2">trading symbols with </span><span class="si">{</span><span class="n">N</span><span class="si">}</span><span class="s2"> or more base currencies</span><span class="se">\n</span><span class="s2"> &quot;</span>
+<span class="n">dg</span> <span class="o">=</span> <span class="n">Digraph</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">exchange</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> 
              <span class="n">graph_attr</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span> <span class="s1">&#39;fontsize&#39;</span><span class="p">:</span> <span class="s1">&#39;15&#39;</span><span class="p">,</span> <span class="s1">&#39;labelloc&#39;</span><span class="p">:</span> <span class="s1">&#39;t&#39;</span><span class="p">},</span>
              <span class="n">node_attr</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;fontsize&#39;</span><span class="p">:</span> <span class="s1">&#39;12&#39;</span><span class="p">},</span>
              <span class="n">edge_attr</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;fontsize&#39;</span><span class="p">:</span> <span class="s1">&#39;10&#39;</span><span class="p">})</span>
@@ -646,7 +684,23 @@ dtype: int64
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/cryptocurrency-arbitrage_9_0.svg" src="../../_images/cryptocurrency-arbitrage_9_0.svg" /><div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;exchange-symbol-map.png&#39;
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">folders</span><span class="o">/</span><span class="n">cm</span><span class="o">/</span><span class="n">z3t28j296f98jdp1vqyplkz00000gn</span><span class="o">/</span><span class="n">T</span><span class="o">/</span><span class="n">ipykernel_24492</span><span class="o">/</span><span class="mf">3641684233.</span><span class="n">py</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
+<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="n">N</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="g g-Whitespace">      </span><span class="mi">5</span> 
+<span class="ne">----&gt; </span><span class="mi">6</span> <span class="n">src_nodes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">src_count</span><span class="p">[</span><span class="n">src_count</span><span class="o">&gt;</span><span class="n">N</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="n">dst_nodes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dst_count</span><span class="p">[</span><span class="n">dst_count</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">8</span> <span class="n">src_dst_nodes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">src_nodes</span> <span class="o">+</span> <span class="n">dst_nodes</span><span class="p">))</span>
+
+<span class="ne">NameError</span>: name &#39;src_count&#39; is not defined
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span><span class="nb">echo</span> <span class="nv">$PATH</span>
 </pre></div>
 </div>
 </div>
@@ -1024,7 +1078,7 @@ dtype: int64
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/cryptocurrency-arbitrage_16_0.svg" src="../../_images/cryptocurrency-arbitrage_16_0.svg" /><div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;exchange-dag.png&#39;
+<img alt="../../_images/cryptocurrency-arbitrage_22_0.svg" src="../../_images/cryptocurrency-arbitrage_22_0.svg" /><div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;exchange-dag.png&#39;
 </pre></div>
 </div>
 </div>
@@ -1089,7 +1143,7 @@ dtype: int64
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/cryptocurrency-arbitrage_18_0.svg" src="../../_images/cryptocurrency-arbitrage_18_0.svg" /><div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;exchange-dag.png&#39;
+<img alt="../../_images/cryptocurrency-arbitrage_24_0.svg" src="../../_images/cryptocurrency-arbitrage_24_0.svg" /><div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&#39;exchange-dag.png&#39;
 </pre></div>
 </div>
 </div>
@@ -1321,7 +1375,7 @@ USDC     -&gt; USD-DST : 0.00000000
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/cryptocurrency-arbitrage_20_0.svg" src="../../_images/cryptocurrency-arbitrage_20_0.svg" /></div>
+<img alt="../../_images/cryptocurrency-arbitrage_26_0.svg" src="../../_images/cryptocurrency-arbitrage_26_0.svg" /></div>
 </div>
 </div>
 <div class="section" id="appendix-asynchronous-downloads-of-order-book-data">

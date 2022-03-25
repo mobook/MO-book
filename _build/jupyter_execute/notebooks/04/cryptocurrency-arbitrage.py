@@ -6,8 +6,10 @@
 # https://anilpai.medium.com/currency-arbitrage-using-bellman-ford-algorithm-8938dcea56ea
 
 # ## Installations and Imports
+# 
+# This notebook requires multiple libraries. The following cell performs the required installations for Google Colab. To operate your own device you will need to install the `pyomo`,`ccxt`, and `graphviz` python libraries, the graphviz executables, and a linear solver for Pyomo.
 
-# In[ ]:
+# In[12]:
 
 
 import sys
@@ -17,52 +19,80 @@ if "google.colab" in sys.modules:
     get_ipython().run_line_magic('run', 'install_on_colab.py')
 
 
-# In[ ]:
+# In[1]:
 
 
-import ccxt
 import pandas as pd
 import numpy as np
 import os
-import pyomo.environ as pyo
-
 from time import time
-from timeit import default_timer as timer
+
+import ccxt
+import pyomo.environ as pyo
 from graphviz import Digraph
+
+
+# In[6]:
+
+
+import os
+
+os.environ['PATH']
+
+
+# In[7]:
+
+
+get_ipython().system('dot')
+
+
+# In[3]:
+
+
+get_ipython().system('echo $PATH')
 
 
 # ## Select an exchange and load available symbols
 
-# In[ ]:
+# In[8]:
 
 
-# set the exchange ... careful of generators here
+get_ipython().system('export PATH=#PATH:/usr/local/bin')
+
+
+# In[2]:
+
+
+# global variables used in subsequent cells
 exchange = ccxt.binanceus()
 markets = exchange.load_markets()
+
+# list  of all currency trades available on the exchange
 symbols = exchange.symbols
-exch = str(exchange)
 
 
 # ## Interpreting Trading Symbols as Directed Graphs
 # 
-# Each market symbol on an exchange describes currency transactions that we'll characterize with a source/destination pair. The exchange symbol
+# Each market symbol on an exchange describes two currency transactions that we will characterize as a source/destination pairs. The generic exchange symbol
 # 
 # $$SRC/DST$$
 # 
 # describes two potential transactions:
 # 
-# * $SRC \rightarrow DST$ converts one unit $SRC$ on that exchange to multiple units of $DST$ equal to 'bid' price on that exchange, and
+# * $SRC \rightarrow DST$ converts one unit of the currency desigated by $SRC$ on the exchange to multiple units of the currency designated $DST$ at the 'bid' price.
 # * $DST \rightarrow SRC$ converts one unit of $DST$ on to multiple units of $SRC$ at the inverse of the 'ask' price.
 # 
-# The transactions are specific to the associated exchange.
-# 
-# Here we represent the transcations using nodes and edges from graph theory. Each 
-# 
-# From the sources and destinations we create a set of nodes that will be indexed by (EXCH, CURR).
+# Here we represent the transcations using nodes and edges from graph theory. Each node is designates a currency trading on the exchange. Each edge corresponds to a currency transaction comprised of a source and destination node. Here we assume all currencies are being traded on the same exchange. This notation can be extended to multi-exchange trading by designating nodes as (exchange, currency) pairs.
 # 
 # 
 
-# In[ ]:
+# In[3]:
+
+
+get_ipython().system('/usr/local/bin/dot')
+
+
+# In[6]:
 
 
 # split symbols into SRC -> DST arcs and create list of currencies
@@ -86,7 +116,7 @@ print(dst_count[dst_count >= 1])
 
 # We seek ways of restricting the graph to the most traded or most liquid currencies. Here we identify the "base" currencies as those appearing in the destination list, and keep source currencies that are traded in $N$ or more base currencies.
 
-# In[ ]:
+# In[5]:
 
 
 # trim currencies to those that appears as DST, or are N or more SRC
@@ -99,8 +129,8 @@ dst_nodes = list(dst_count[dst_count>1].index)
 src_dst_nodes = list(set(src_nodes + dst_nodes))
 
 # plot a directed graph from the edges and nodes
-label = f"{exch}\ntrading symbols with {N} or more base currencies\n "
-dg = Digraph(f"{exch}", 
+label = f"{exchange}\ntrading symbols with {N} or more base currencies\n "
+dg = Digraph(f"{exchange}", 
              graph_attr={'label': label, 'fontsize': '15', 'labelloc': 't'},
              node_attr={'fontsize': '12'},
              edge_attr={'fontsize': '10'})
@@ -122,6 +152,12 @@ for src, dst in trade_edges:
 display(dg)
 dg.format = "png"
 dg.view("exchange-symbol-map")
+
+
+# In[ ]:
+
+
+get_ipython().system('echo $PATH')
 
 
 # ## Order Book
