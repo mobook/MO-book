@@ -14,9 +14,11 @@ if "google.colab" in sys.modules:
 
 # ## Application: Distributing Gasoline to Franchise Operators
 # 
-# YaYa Gas-n-Grub operates a network of eight regional convenience selling gasoline and convenience items. The gasoline is replenshed from a regional distribution terminal. The stores an average of about 4,000 gallons daily for an average profit of about \\$100 for the franchise owners, but sales vary widely based on location. Gasoline is distributed by truck from the distribution terminals, each truck carrying 8,000 gallons. Under the current business agreement, the gasoline is delivered at a fixed charge of \\$700 per delivery, or 11.43 cents per gallon. The franchise owners are eager to reduce delivery costs to boost profits, but the distributor claims a lower price would be unsustainable.
+# YaYa Gas-n-Grub is franchiser and operator for a network of regional convenience stores selling gasoline and convenience items. Each store is individually owned by a YaYa Gas-n-Grub franchisee who pays a fixed fee to the franchisor for services.
 # 
-# YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, "A" and "B" to supply the franchise operators. They each provide delivery pricing based on location. Since they already have existing customers, can only provide a limited amount of gasoline to new customers, 100,000 and 150,000 gallons respectively. The only difference between the new suppliers and the incumbant is the delivery charge, the actual cost of gasoline is determined on the pipeline market is the same among the distributors. 
+# Gasoline is delivered to each store by truck from a regional distribution terminal. The stores sell an average of about 4,000 gallons daily for an average profit of about \\$100 for the franchise owners, but sales vary widely based on location. Each delivery truck carrys 8,000 gallons. Under the current business agreement, the gasoline is delivered at a fixed charge of \\$700 per delivery, or 11.43 cents per gallon. The franchise owners are eager to reduce delivery costs to boost profits, but the current distributor claims a lower price would be unsustainable.
+# 
+# YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, "A" and "B", to supply the franchise operators. They each provide delivery pricing based on location. Since they already have existing customers, "A" and "B" can only provide a limited amount of gasoline to new customers, 100,000 and 150,000 gallons respectively. The only difference between the new suppliers and the incumbant is the delivery charge, the cost of gasoline is determined on the pipeline market is the same among the distributors. 
 # 
 # The following chart shows the pricing of gasoline delivery in cents/gallon.
 # 
@@ -38,7 +40,7 @@ if "google.colab" in sys.modules:
 # 
 # ### Analysis
 # 
-# A majority of the franchise owners must agree with the new contract in order to proceed. Will the franchise owers agree?  Who might object to the new arrangment?
+# A majority of the franchise owners must agree with the new contract in order to proceed. Will the franchise owers agree?  Who might object to the new arrangment, and why?
 # 
 
 # In[2]:
@@ -259,7 +261,7 @@ import sys
 if "google.colab" in sys.modules:
 
     dot = Digraph(
-        node_attr = {"fontsize": "10", "shape": "square", "style": "filled"},
+        node_attr = {"fontsize": "10", "shape": "rectangle", "style": "filled"},
         edge_attr = {"fontsize": "10"}
     )
 
@@ -273,13 +275,13 @@ if "google.colab" in sys.modules:
 
     for src in m.SOURCES:
         for dst in m.DESTINATIONS:
-            if m.x[src, dst]() > 0:
+            if m.x[dst, src]() > 0:
                 dot.edge(src, dst, f"rate = {rates.loc[dst, src]}\nshipped = {m.x[dst, src]()}")
 
-    dot
+    display(dot)
 
 
-# In[ ]:
+# In[15]:
 
 
 
