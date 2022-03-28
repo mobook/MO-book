@@ -9,7 +9,7 @@
 # 
 # This notebook requires multiple libraries. The following cell performs the required installations for Google Colab. To operate your own device you will need to install the `pyomo`,`ccxt`, and `graphviz` python libraries, the graphviz executables, and a linear solver for Pyomo.
 
-# In[12]:
+# In[1]:
 
 
 import sys
@@ -19,48 +19,23 @@ if "google.colab" in sys.modules:
     get_ipython().run_line_magic('run', 'install_on_colab.py')
 
 
-# In[1]:
+# In[2]:
 
 
 import pandas as pd
 import numpy as np
 import os
 from time import time
+from timeit import default_timer as timer
 
 import ccxt
 import pyomo.environ as pyo
 from graphviz import Digraph
 
 
-# In[6]:
-
-
-import os
-
-os.environ['PATH']
-
-
-# In[7]:
-
-
-get_ipython().system('dot')
-
-
-# In[3]:
-
-
-get_ipython().system('echo $PATH')
-
-
 # ## Select an exchange and load available symbols
 
-# In[8]:
-
-
-get_ipython().system('export PATH=#PATH:/usr/local/bin')
-
-
-# In[2]:
+# In[3]:
 
 
 # global variables used in subsequent cells
@@ -86,13 +61,13 @@ symbols = exchange.symbols
 # 
 # 
 
-# In[3]:
+# In[4]:
 
 
 get_ipython().system('/usr/local/bin/dot')
 
 
-# In[6]:
+# In[5]:
 
 
 # split symbols into SRC -> DST arcs and create list of currencies
@@ -116,13 +91,13 @@ print(dst_count[dst_count >= 1])
 
 # We seek ways of restricting the graph to the most traded or most liquid currencies. Here we identify the "base" currencies as those appearing in the destination list, and keep source currencies that are traded in $N$ or more base currencies.
 
-# In[5]:
+# In[6]:
 
 
 # trim currencies to those that appears as DST, or are N or more SRC
 
 # all currencies trading in N or more base currencies
-N = 1
+N = 4
 
 src_nodes = list(src_count[src_count>N].index)
 dst_nodes = list(dst_count[dst_count>1].index)
@@ -154,15 +129,9 @@ dg.format = "png"
 dg.view("exchange-symbol-map")
 
 
-# In[ ]:
-
-
-get_ipython().system('echo $PATH')
-
-
 # ## Order Book
 
-# In[ ]:
+# In[7]:
 
 
 trade_symbols = ['/'.join(edge) for edge in trade_edges]
@@ -197,7 +166,7 @@ order_book
 
 # ## Create directed graph of the order book
 
-# In[ ]:
+# In[8]:
 
 
 # dictionary of currencies
@@ -206,7 +175,7 @@ nodes.update({node: {"type": "src"} for node in src_nodes})
 nodes.update({node: {"type": "dst"} for node in dst_nodes})
 
 
-# In[ ]:
+# In[9]:
 
 
 
@@ -242,7 +211,7 @@ edges.update(asks)
 # https://graphviz.readthedocs.io/en/stable/
 # 
 
-# In[ ]:
+# In[10]:
 
 
 # plot a directed graph from the edges and nodes
@@ -250,7 +219,7 @@ edges.update(asks)
 timestamp_min = order_book['timestamp'].min()
 timestamp_max = order_book['timestamp'].max()
 
-label = f"{exch} \nBest Bid/Ask Order Book\n{timestamp_min} - {timestamp_max}" +         "\nCurrencies trading on {N} or more base currencies" +         "\nEdges labeled with log base 10 of conversion" +         "\n "
+label = f"{exchange} \nBest Bid/Ask Order Book\n{timestamp_min} - {timestamp_max}" +         "\nCurrencies trading on {N} or more base currencies" +         "\nEdges labeled with log base 10 of conversion" +         "\n "
 dot = Digraph(
         graph_attr={'label': label, 'fontsize': '15', 'labelloc': 't'},
         node_attr={'fontsize': '10'},
@@ -277,7 +246,7 @@ dot.format = "png"
 dot.view("exchange-dag")
 
 
-# In[ ]:
+# In[11]:
 
 
 # split the graph on USD ... 
@@ -302,12 +271,12 @@ for edge in list(edges.keys()):
         edges.pop(edge)
 
 
-# In[ ]:
+# In[12]:
 
 
 
 
-label = f"{exch} \nBest Bid/Ask Order Book\n{timestamp_min} - {timestamp_max}" +         f"\nCurrencies trading on {N} or more base currencies" +         "\nEdges labeled with log base 10 of conversion" +         "\n "
+label = f"{exchange} \nBest Bid/Ask Order Book\n{timestamp_min} - {timestamp_max}" +         f"\nCurrencies trading on {N} or more base currencies" +         "\nEdges labeled with log base 10 of conversion" +         "\n "
 dot = Digraph(
         graph_attr={'label': label, 'fontsize': '15', 'labelloc': 't'},
         node_attr={'fontsize': '10'},
@@ -334,14 +303,14 @@ dot.format = "png"
 dot.view("exchange-dag")
 
 
-# In[ ]:
+# In[13]:
 
 
 import pyomo.environ as pyo
 
 T = 10
 
-m  = pyo.ConcreteModel(f"{exch} arbitrage")
+m  = pyo.ConcreteModel(f"{exchange} arbitrage")
 
 # length of the trading chain
 m.T0 = pyo.RangeSet(0, T)
@@ -400,7 +369,7 @@ for t in m.T1:
     print()
 
 
-# In[ ]:
+# In[14]:
 
 
 import math
@@ -443,13 +412,13 @@ visualize(bf)
 # 
 # Preliminary testing shows little or no advantage to `asyncio` when working with a single exchange. That may change when the above code is adapted to multi-exchange arbitrage, and therefore this code is retained below for future testing.
 
-# In[ ]:
+# In[15]:
 
 
 get_ipython().run_cell_magic('script', 'echo skipping', "\nfrom timeit import default_timer as timer\n\n# asynchronous implementation\nimport asyncio\nimport nest_asyncio\n\nmy_symbols = ['/'.join(edge) for edge in edges]\n\nasync def afetch_order_book(symbol, limit=1, exchange=exchange):\n    start_time = timer()\n    result = exchange.fetch_order_book(symbol, limit)\n    run_time = timer() - start_time\n    return result\n\nasync def get_data():\n    coroutines = [afetch_order_book(symbol) for symbol in my_symbols]\n    await asyncio.gather(*coroutines)\n\nstart = timer()\nnest_asyncio.apply()\nasyncio.run(get_data())\nrun_time = timer() - start\n\nprint(run_time)")
 
 
-# In[ ]:
+# In[15]:
 
 
 

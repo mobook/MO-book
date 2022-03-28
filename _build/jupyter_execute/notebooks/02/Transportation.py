@@ -12,7 +12,7 @@ if "google.colab" in sys.modules:
     get_ipython().run_line_magic('run', 'install_on_colab.py')
 
 
-# ## Application: Distributing Gasoline to Franchise Operators
+# ## Distributing Gasoline to Franchise Operators
 # 
 # YaYa Gas-n-Grub is franchiser and operator for a network of regional convenience stores selling gasoline and convenience items. Each store is individually owned by a YaYa Gas-n-Grub franchisee who pays a fixed fee to the franchisor for services.
 # 
