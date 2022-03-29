@@ -49,10 +49,8 @@ if "google.colab" in sys.modules:
 # & \forall a \lt b
 # \end{align*}$$
 # 
-# Here we use the `gecode` solver which is well suited to problems integer, logic, and binary variables and disjunctive constraints.
-# 
 
-# In[ ]:
+# In[33]:
 
 
 import pyomo.environ as pyo
@@ -61,6 +59,7 @@ import pyomo.gdp as gdp
 m = pyo.ConcreteModel()
 
 m.LETTERS = pyo.Set(initialize=['S', 'E', 'N', 'D', 'M', 'O', 'R', 'Y'])
+m.PAIRS = pyo.Set(initialize=m.LETTERS * m.LETTERS, filter = lambda m, a, b: a < b)
 m.n = pyo.Var(m.LETTERS, domain=pyo.Integers, bounds=(0, 9))
 
 @m.Constraint()
@@ -73,22 +72,26 @@ def leading_digit_nonzero(m):
     return m.n['M'] >= 1
 
 # assign a different number to each letter
-@m.Disjunction(m.LETTERS, m.LETTERS)
+@m.Disjunction(m.PAIRS)
 def unique_assignment(m, a, b):
-    if a < b:
-        return [m.n[a] >= m.n[b] + 1,
-                m.n[b] >= m.n[a] + 1]
-    else:
-        return gdp.Disjunction.Skip
+    return [m.n[a] >= m.n[b] + 1, m.n[b] >= m.n[a] + 1]
+
+# assign a "dummy" objective to avoid solver errors
+@m.Objective()
+def dummy_objective(m):
+    return m.n['M']
 
 pyo.TransformationFactory('gdp.bigm').apply_to(m)
-solver = pyo.SolverFactory('gecode')
+solver = pyo.SolverFactory('cbc')
 solver.solve(m)
 
-print(f"    {int(m.n['S']())} {int(m.n['E']())} {int(m.n['N']())} {int(m.n['D']())}")
-print(f"  + {int(m.n['M']())} {int(m.n['O']())} {int(m.n['R']())} {int(m.n['E']())}")
-print(f"  ---------")
-print(f"= {int(m.n['M']())} {int(m.n['O']())} {int(m.n['N']())} {int(m.n['E']())} {int(m.n['Y']())}")
+def letters2num(s):
+    return ' '.join(map(lambda s: f"{int(m.n[s]())}", list(s)))
+
+print("    ", letters2num('SEND'))
+print("  + ", letters2num('MORE'))
+print("  ----------")
+print("= ", letters2num('MONEY'))
 
 
 # ## Suggested exercises
