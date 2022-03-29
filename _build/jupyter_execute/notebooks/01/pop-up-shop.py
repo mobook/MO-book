@@ -3,7 +3,7 @@
 
 # # Scenario Analysis: Pop Up Shop
 # 
-# ![](https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg/1200px-Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg)
+# ![](https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg/400px-Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg)
 # 
 # Kürschner (talk) 17:51, 1 December 2020 (UTC), CC0, via Wikimedia Commons
 
@@ -19,7 +19,7 @@ if "google.colab" in sys.modules:
 
 # ## The problem
 # 
-# You've been offered an opportunity to operate a pop-up shop to sell a unique commemorative item for each event held at a famous location. The items cost 12 &euro; each and you will be able to sell them for 40 &euro;. Unsold items can be returned to the supplier but you will receive only 2 &euro; due to their commemorative nature.
+# There is an opportunity to operate a pop-up shop to sell a unique commemorative item for events held at a famous location. The items cost 12 &euro; each and will selL for 40 &euro;. Unsold items can be returned to the supplier at a value of only 2 &euro; due to their commemorative nature.
 # 
 # | Parameter | Symbol | Value |
 # | :---: | :---: | :---: |
@@ -27,7 +27,7 @@ if "google.colab" in sys.modules:
 # | unit cost | $c$ | 12 &euro; |
 # | salvage value | $w$ | 2 &euro; |
 # 
-# The more you sell the more profit you will earn. Demand for these items, however, will be high only if the weather is good. Historical data suggests the following scenarios.
+# Profit will increase with sales. Demand for these items, however, will be high only if the weather is good. Historical data suggests the following scenarios.
 
 # | Scenario ($s$) | Demand ($d_s$) | Probability ($p_s$) |
 # | :---: | :-----: | :----------: |
@@ -35,9 +35,53 @@ if "google.colab" in sys.modules:
 # | Good Weather | 400 | 0.60 |
 # | Poor Weather | 200 | 0.30 |
 # 
+# The problem is to determine how many items to order for the pop-up shop. 
+# 
+# The dilemma is that the weather won't be known until after the order is placed. Ordering enough items to meet demand for a good weather day results in a  financial penalty on returned goods if the weather is poor. But ordering just enough items to satisfy demand on a poor weather day leaves "money on the table" if the weather is good.
+# 
+# How many items should be ordered for sale?
+
+# ## Expected value for the mean scenario (EVM)
+#  
+# A naive solution to this problem is to place an order equal to the expected demand. The expected demand is given by
+# 
+# $$
+# \begin{align*}
+# \mathbb E[D] & = \sum_{s\in S} p_s d_s 
+# \end{align*}
+# $$
+# 
+# Choosing an order size $x = \mathbb E[d]$ results in an expected profit we call the **expected value of the mean scenario (EVM)**. 
+# 
+# Variable $y_s$ is the actual number of items sold if scenario $s$ should occur. The number sold is the lesser of the demand $d_s$ and the order size $x$.
+# 
+# $$
+# \begin{align*}
+# y_s & = \min(d_s, x) & \forall s \in S
+# \end{align*}
+# $$
+# 
+# Any unsold inventory $x - y_s$ remaining after the event will be sold at the salvage price $w$. Taking into account the revenue from sales $r y_s$, the salvage value of the unsold inventory $w(x - y_s)$, and the cost of the order $c x$, the profit $f_s$ for scenario $s$ is given by
+# 
+# $$
+# \begin{align*}
+# f_s & = r y_s + w (x - y_s) - c  x & \forall s \in S
+# \end{align*}
+# $$
+# 
+# The average or expected profit is given by
+# 
+# $$
+# \begin{align*}
+# \text{EVM} = \mathbb E[f] & = \sum_{s\in S} p_s f_s
+# \end{align*}
+# $$
+# 
+# These calculations can be executed using operations on the pandas dataframe. Let's begin by calculating the expected demand.
+# 
 # Below we create a pandas DataFrame object to store the scenario data.
 
-# In[2]:
+# In[7]:
 
 
 import numpy as np
@@ -59,49 +103,7 @@ df = pd.DataFrame.from_dict(scenarios).T
 display(df)
 
 
-# The problem is to determine how many items to order for the pop-up shop. The dilemma is that the weather won't be known until after the order is placed. Ordering enough items to meet demand for a good weather day results in a  financial penalty on returned goods if the weather is poor. On the other hand, ordering just enough items to satisfy demand on a poor weather day leaves "money on the table" if the weather is good.
-# 
-# How many items should order for sale at the event?
-
-# ## Expected value for the mean scenario (EVM)
-#  
-# A naive solution to this proc is to place an order equal to the expected demand. The expected demand is given by
-# 
-# $$
-# \begin{align*}
-# \mathbb E[D] & = \sum_{s\in S} p_s d_s 
-# \end{align*}
-# $$
-# 
-# Choosing an order size $x = \mathbb E[d]$ results in an expected profit we call the **expected value of the mean scenario (EVM)**. 
-# 
-# Given an order size $x$, $y_s$ will be the number of items sold if scenario $s$ should occur. The amount sold is the lesser of the demand $d_s$ and $x$.
-# 
-# $$
-# \begin{align*}
-# y_s & = \min(d_s, x) & \forall s \in S
-# \end{align*}
-# $$
-# 
-# After completing event, the remaining inventory $x - y_s$ will be sold at the salvage price $w$. Taking into account the revenue from sales $r y_s$, the salvage value of the unsold inventory $w(x - y_s)$, and the cost of the order $c x$, the resulting profit $f_s$ for scenario $s$ is given by
-# 
-# $$
-# \begin{align*}
-# f_s & = r y_s + w (x - y_s) - c  x & \forall s \in S
-# \end{align*}
-# $$
-# 
-# The average or expected profit is given by
-# 
-# $$
-# \begin{align*}
-# \text{EVM} = \mathbb E[f] & = \sum_{s\in S} p_s f_s
-# \end{align*}
-# $$
-# 
-# These calculations can be executed using operations on the pandas dataframe. Let's begin by calculating the expected demand.
-
-# In[3]:
+# In[8]:
 
 
 expected_demand = sum(df["probability"] * df["demand"])
@@ -110,7 +112,7 @@ print(f"Expected demand = {expected_demand}")
 
 # Subsequent calculations can be done directly withthe  pandas dataframe holding the scenario data.
 
-# In[4]:
+# In[9]:
 
 
 df["order"] = expected_demand
@@ -127,7 +129,7 @@ display(df)
 
 # ## Expected value of the stochastic solution (EVSS)
 # 
-# The optimization problem is to find the order size $x$ that maximizes expected profit subject to operational constraints on the decision variables. The variables $x$ and $y_s$ are non-negative, while $f_s$ can take on both positive and negative values. Operationally, the amount of goods sold in scenario $s$ has to be less than the order size $x$ and customer demand $d_s$. 
+# The optimization problem is to find the order size $x$ that maximizes expected profit subject to operational constraints on the decision variables. The variables $x$ and $y_s$ are non-negative integers, while $f_s$ is a real number that can take either positive and negative values. The number of goods sold in scenario $s$ has to be less than the order size $x$ and customer demand $d_s$. 
 # 
 # The problem to be solved is
 # 
@@ -162,15 +164,15 @@ scenarios = {
 }
 
 # create model instance
-m = pyo.ConcreteModel('Pet Shop')
+m = pyo.ConcreteModel('Pop-up Shop')
 
 # set of scenarios
 m.S = pyo.Set(initialize=scenarios.keys())
 
 # decision variables
-m.x = pyo.Var(within=pyo.NonNegativeReals)
-m.y = pyo.Var(m.S, within=pyo.NonNegativeReals)
-m.f = pyo.Var(m.S)
+m.x = pyo.Var(domain=pyo.NonNegativeIntegers)
+m.y = pyo.Var(m.S, domain=pyo.NonNegativeIntegers)
+m.f = pyo.Var(m.S, domain=pyo.Reals)
 
 # objective
 @m.Objective(sense=pyo.maximize)
@@ -208,7 +210,7 @@ df = pd.DataFrame.from_dict(scenarios).T
 display(df)
 
 
-# Optimizing the expected value of the profit over all scenarios provides an expected profit of 8,920 &euro;, an increase of 581 &euro; over the base case of simply ordering the expected number of items sold. The new solution places a larger order. In poor weather conditions there will be more returns and lower profit, but that is more than compensated by the increased profits in good weather conditions. 
+# Optimizing over all scenarios provides an expected profit of 8,920 &euro;, an increase of 581 &euro; over the base case of simply ordering the expected number of items sold. The new solution places a larger order. In poor weather conditions there will be more returns and lower profit that is more than compensated by the increased profits in good weather conditions. 
 # 
 # The addtional value that results from solve of this planning problem is called the **Value of the Stochastic Solution (VSS)**. The value of the stochastic solution is the additional profit compared to ordering to meet expected in demand. In this case,
 # 
@@ -216,11 +218,13 @@ display(df)
 
 # ## Expected value with perfect information (EVPI)
 # 
-# Maximizing expected profit requires the size of the order be decided before knowing what scenario will unfold. The decision for $x$ has to be made "here and now" with probablistic information about the future, but no specific information on which specific future will transpire.
+# Maximizing expected profit requires the size of the order be decided before knowing what scenario will unfold. The decision for $x$ has to be made "here and now" with probablistic information about the future, but without specific information on which future will actually transpire.
 # 
-# But we can perform the hypothetic calculation of what profit could be realized if we knew the future. We are still subject to the variability of weather, what is different is we know what the weather will be at the time the order is placed. The result value of expected profit is called the **Expected Value of Perfect Information (EVPI)**.  The difference EVPI - EV is the extra expected profit due to having perfect knowledge of the future.
+# Nevertheless, we can perform the hypothetical calculation of what profit would be realized if we could know the future. We are still subject to the variability of weather, what is different is we know what the weather will be at the time the order is placed. 
 # 
-# To compute the expect profit with perfect information we let the order variable $x$ be indexed by the subsequent scenario that will unfold. Given decision varaible $x_s$, the model for EVPI becomes
+# The resulting value for the expected profit is called the **Expected Value of Perfect Information (EVPI)**.  The difference EVPI - EV is the extra profit due to having perfect knowledge of the future.
+# 
+# To compute the expected profit with perfect information, we let the order variable $x$ be indexed by the subsequent scenario that will unfold. Given decision varaible $x_s$, the model for EVPI becomes
 # 
 # $$
 # \begin{align*}
@@ -253,15 +257,15 @@ scenarios = {
 }
 
 # create model instance
-m = pyo.ConcreteModel('Pet Shop')
+m = pyo.ConcreteModel('Pop-up Shop')
 
 # set of scenarios
 m.S = pyo.Set(initialize=scenarios.keys())
 
 # decision variables
-m.x = pyo.Var(m.S, within=pyo.NonNegativeReals)
-m.y = pyo.Var(m.S, within=pyo.NonNegativeReals)
-m.f = pyo.Var(m.S)
+m.x = pyo.Var(m.S, domain=pyo.NonNegativeIntegers)
+m.y = pyo.Var(m.S, domain=pyo.NonNegativeIntegers)
+m.f = pyo.Var(m.S, domain=pyo.Reals)
 
 # objective
 @m.Objective(sense=pyo.maximize)
@@ -319,14 +323,27 @@ display(df)
 # 
 # These results verify our expectation that
 # 
-# $$EVM \leq EVSS \leq EVPI$$
+# $$
+# \begin{align*}
+# EVM \leq EVSS \leq EVPI
+# \end{align*}
+# $$
 # 
 # The value of the stochastic solution 
 # 
-# $$ VSS = EVSS - EVM = 581 $$
+# $$
+# \begin{align*}
+# VSS = EVSS - EVM = 581
+# \end{align*}
+# $$
 # 
 # The value of perfect information
 # 
-# $$ VPI = EVPI - EVSS = 1,300 $$
+# $$
+# \begin{align*}
+# VPI = EVPI - EVSS = 1,300
+# \end{align*}
+# $$
+# 
 # 
 # As one might expect, there is a cost that results from lack of knowledge about an uncertain future.

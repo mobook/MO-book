@@ -5,6 +5,16 @@
 # 
 # Whether it is to visit family, take a sightseeing tour or call on business associates, planning a road trip is a familiar and routine task. Here we consider a road trip on a pre-determined route for which need to plan rest and recharging stops. This example demonstrates use of Pyomo disjunctions to model the decisions on where to stop. 
 
+# In[1]:
+
+
+# install Pyomo and solvers for Google Colab
+import sys
+if "google.colab" in sys.modules:
+    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
+    get_ipython().run_line_magic('run', 'install_on_colab.py')
+
+
 # ## Problem Statement
 # 
 # The distances to the charging stations are measured relative to an arbitrary location. Given the current location $x$, battery charge $c$, and planning horizon $D$, the task is to plan a series of recharging and rest stops. The objective is to drive from location $x$ to location $x + D$ in as little time as possible subject to the following constraints:
@@ -92,7 +102,7 @@
 
 # ## Charging Station Information
 
-# In[1]:
+# In[2]:
 
 
 import numpy as np
@@ -119,7 +129,7 @@ display(stations)
 
 # ## Route Information
 
-# In[5]:
+# In[3]:
 
 
 # current location (km) and charge (kw)
@@ -154,7 +164,7 @@ plot_stations(stations, x, D)
 
 # ## Car Information
 
-# In[6]:
+# In[4]:
 
 
 # charge limits (kw)
@@ -176,7 +186,7 @@ r_max = 3
 
 # ## Pyomo Model
 
-# In[12]:
+# In[5]:
 
 
 import pyomo.environ as pyo
@@ -290,7 +300,7 @@ results["t_stop"] = results["t_dep"] - results["t_arr"]
 display(results)
 
 
-# In[31]:
+# In[6]:
 
 
 # visualize

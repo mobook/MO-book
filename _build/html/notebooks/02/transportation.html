@@ -198,7 +198,7 @@ const thebe_selector_output = ".output, .cell_output"
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="../03/simple-production-model-gdp.html">
-     Production
+     Production Model with Disjuncts
     </a>
    </li>
    <li class="toctree-l2">
@@ -429,24 +429,37 @@ const thebe_selector_output = ".output, .cell_output"
   </ul>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#pyomo-solution-reports">
-   Pyomo solution reports
+  <a class="reference internal nav-link" href="#reporting-solutions">
+   Reporting Solutions
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#manually-formatted-reports">
-   Manually formatted reports
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#pandas">
-   Pandas
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#graphviz">
-   Graphviz
-  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#pyomo-display-method">
+     Pyomo
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       .display()
+      </span>
+     </code>
+     method
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#manually-formatted-reports">
+     Manually formatted reports
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#pandas">
+     Pandas
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#graphviz">
+     Graphviz
+    </a>
+   </li>
+  </ul>
  </li>
 </ul>
 
@@ -486,24 +499,37 @@ const thebe_selector_output = ".output, .cell_output"
   </ul>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#pyomo-solution-reports">
-   Pyomo solution reports
+  <a class="reference internal nav-link" href="#reporting-solutions">
+   Reporting Solutions
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#manually-formatted-reports">
-   Manually formatted reports
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#pandas">
-   Pandas
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#graphviz">
-   Graphviz
-  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#pyomo-display-method">
+     Pyomo
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       .display()
+      </span>
+     </code>
+     method
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#manually-formatted-reports">
+     Manually formatted reports
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#pandas">
+     Pandas
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#graphviz">
+     Graphviz
+    </a>
+   </li>
+  </ul>
  </li>
 </ul>
 
@@ -516,6 +542,20 @@ const thebe_selector_output = ".output, .cell_output"
                 
   <section class="tex2jax_ignore mathjax_ignore" id="transportation-models">
 <h1>Transportation Models<a class="headerlink" href="#transportation-models" title="Permalink to this headline">¶</a></h1>
+<p>This notebook presents a transportation model to optimally allocate the delivery of a commodity from multiple sources to multiple destinations. The notebook also presents techniques for Pyomo modeling and reporting including:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pyo.Expression</span></code> decorator</p></li>
+<li><p>Accessing the duals (i.e., shadow prices)</p></li>
+<li><p>Methods for reporting the solution and duals.</p>
+<ul>
+<li><p>Pyomo <code class="docutils literal notranslate"><span class="pre">.display()</span></code> method for Pyomo objects</p></li>
+<li><p>Manually formatted reports</p></li>
+<li><p>Pandas</p></li>
+<li><p>Graphviz for display of results as a directed graph.</p></li>
+</ul>
+</li>
+</ul>
+<p>The model invites a discussion of the pitfalls in optimizing a global objective for customers who may have an uneven share of the resulting benefits.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
@@ -525,34 +565,20 @@ const thebe_selector_output = ".output, .cell_output"
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>installing pyomo . pyomo installed
-installing and testing solvers ...
-.. glpk installed
-.. gecode
-.. ipopt
-.. bonmin
-.. couenne
-.. gurobi_direct installed
-.. cbc installed
-installation and testing complete
-</pre></div>
-</div>
-</div>
 </div>
 <section id="distributing-gasoline-to-franchise-operators">
 <h2>Distributing Gasoline to Franchise Operators<a class="headerlink" href="#distributing-gasoline-to-franchise-operators" title="Permalink to this headline">¶</a></h2>
-<p>YaYa Gas-n-Grub is franchisor and operator for a network of regional convenience stores selling gasoline and convenience items. Each store is individually owned by a YaYa Gas-n-Grub franchisee who pays a fixed fee to the franchisor for services.</p>
-<p>Gasoline is delivered to each store by truck from a regional distribution terminal. The stores sell an average of about 4,000 gallons daily for an average profit of about $100 for the franchise owners, but sales vary widely based on location. Each delivery truck carrys 8,000 gallons. Under the current business agreement, the gasoline is delivered at a fixed charge of $700 per delivery, or 11.43 cents per gallon. The franchise owners are eager to reduce delivery costs to boost profits, but the current distributor claims a lower price would be unsustainable.</p>
-<p>YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, “A” and “B”, to supply the franchise operators. They each provide delivery pricing based on location. Since they already have existing customers, “A” and “B” can only provide a limited amount of gasoline to new customers, 100,000 and 150,000 gallons respectively. The only difference between the new suppliers and the incumbant is the delivery charge, the cost of gasoline is determined on the pipeline market is the same among the distributors.</p>
+<p>YaYa Gas-n-Grub is franchisor and operator for a network of regional convenience stores selling gasoline and convenience items in the United States. Each store is individually owned by a YaYa Gas-n-Grub franchisee who pays a fixed fee to the franchisor for services.</p>
+<p>Gasoline is delivered by truck from regional distribution terminals. Each delivery truck carrys 8,000 gallons delivered at a fixed charge of 700 dollars per delivery, or 8.75 cents per gallon. The franchise owners are eager to reduce delivery costs to boost profits.</p>
+<p>YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, “A” and “B”, to supply the franchise operators. They each provide delivery pricing based on location. Since they already have existing customers, “A” and “B” can only provide a limited amount of gasoline to new customers, 100,000 and 150,000 gallons respectively. The only difference between the new suppliers and the current supplier is the delivery charge.</p>
 <p>The following chart shows the pricing of gasoline delivery in cents/gallon.</p>
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="text-align:left head"><p>Store Owner</p></th>
 <th class="text-align:right head"><p>Demand</p></th>
-<th class="text-align:right head"><p>Termina A</p></th>
+<th class="text-align:right head"><p>Terminal A</p></th>
 <th class="text-align:right head"><p>Terminal B</p></th>
-<th class="text-align:right head"><p>Incumbant</p></th>
+<th class="text-align:right head"><p>Current Supplier</p></th>
 </tr>
 </thead>
 <tbody>
@@ -618,21 +644,21 @@ installation and testing complete
 </section>
 <section id="analysis">
 <h3>Analysis<a class="headerlink" href="#analysis" title="Permalink to this headline">¶</a></h3>
-<p>A majority of the franchise owners must agree with the new contract in order to proceed. Will the franchise owers agree?  Who might object to the new arrangment, and why?</p>
+<p>The following model presents a global objective to minimize the total cost of delivery to all franchise owners. But there is no guarantee that each owner will benefit equally or at all. Suppose, for example, that a majority of the franchise owners must agree with the new contract in order to proceed. Will the franchise owers agree?  Who might object to the new arrangment? Could the model be modified to assure that each operator gains at least some share of the global objective?</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
 <span class="n">rates</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-    <span class="s2">&quot;Alice&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">8.3</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">10.2</span><span class="p">,</span> <span class="s2">&quot;Incumbant&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
-    <span class="s2">&quot;Badri&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">8.1</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">12.0</span><span class="p">,</span> <span class="s2">&quot;Incumbant&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
-    <span class="s2">&quot;Cara&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">8.3</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;Incumbant&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
-    <span class="s2">&quot;Dan&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">9.3</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">8.0</span><span class="p">,</span> <span class="s2">&quot;Incumbant&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
-    <span class="s2">&quot;Emma&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">10.1</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> <span class="s2">&quot;Incumbant&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
-    <span class="s2">&quot;Fujita&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">9.8</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> <span class="s2">&quot;Incumbant&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
-    <span class="s2">&quot;Grace&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">8.0</span><span class="p">,</span> <span class="s2">&quot;Incumbant&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
-    <span class="s2">&quot;Helen&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">7.5</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> <span class="s2">&quot;Incumbant&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">}})</span><span class="o">.</span><span class="n">T</span>
+    <span class="s2">&quot;Alice&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">8.3</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">10.2</span><span class="p">,</span> <span class="s2">&quot;Current Supplier&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
+    <span class="s2">&quot;Badri&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">8.1</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">12.0</span><span class="p">,</span> <span class="s2">&quot;Current Supplier&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
+    <span class="s2">&quot;Cara&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">8.3</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;Current Supplier&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
+    <span class="s2">&quot;Dan&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">9.3</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">8.0</span><span class="p">,</span> <span class="s2">&quot;Current Supplier&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
+    <span class="s2">&quot;Emma&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">10.1</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> <span class="s2">&quot;Current Supplier&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
+    <span class="s2">&quot;Fujita&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">9.8</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> <span class="s2">&quot;Current Supplier&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
+    <span class="s2">&quot;Grace&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">8.0</span><span class="p">,</span> <span class="s2">&quot;Current Supplier&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">},</span>
+    <span class="s2">&quot;Helen&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mf">7.5</span><span class="p">,</span> <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> <span class="s2">&quot;Current Supplier&quot;</span><span class="p">:</span> <span class="mf">8.75</span><span class="p">}})</span><span class="o">.</span><span class="n">T</span>
 
 <span class="n">display</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span>
 
@@ -649,7 +675,7 @@ installation and testing complete
 <span class="n">supply</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span>
     <span class="s2">&quot;Terminal A&quot;</span><span class="p">:</span> <span class="mi">100000</span><span class="p">,</span>
     <span class="s2">&quot;Terminal B&quot;</span><span class="p">:</span> <span class="mi">80000</span><span class="p">,</span>
-    <span class="s2">&quot;Incumbant&quot;</span><span class="p">:</span> <span class="mi">500000</span><span class="p">})</span>
+    <span class="s2">&quot;Current Supplier&quot;</span><span class="p">:</span> <span class="mi">500000</span><span class="p">})</span>
 
 <span class="n">fix</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 <span class="n">demand</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Demand = </span><span class="si">{</span><span class="n">demand</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -659,10 +685,7 @@ installation and testing complete
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_html">
-  <div id="df-0872ebb5-5b79-41a7-a15b-6bd59f7ab319">
-    <div class="colab-df-container">
-      <div>
+<div class="output text_html"><div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -682,7 +705,7 @@ installation and testing complete
       <th></th>
       <th>Terminal A</th>
       <th>Terminal B</th>
-      <th>Incumbant</th>
+      <th>Current Supplier</th>
     </tr>
   </thead>
   <tbody>
@@ -736,83 +759,7 @@ installation and testing complete
     </tr>
   </tbody>
 </table>
-</div>
-      <button class="colab-df-convert" onclick="convertToInteractive('df-0872ebb5-5b79-41a7-a15b-6bd59f7ab319')"
-              title="Convert this dataframe to an interactive table."
-              style="display:none;">
-
-  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
-       width="24px">
-    <path d="M0 0h24v24H0V0z" fill="none"/>
-    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
-  </svg>
-      </button>
-
-  <style>
-    .colab-df-container {
-      display:flex;
-      flex-wrap:wrap;
-      gap: 12px;
-    }
-
-    .colab-df-convert {
-      background-color: #E8F0FE;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      display: none;
-      fill: #1967D2;
-      height: 32px;
-      padding: 0 0 0 0;
-      width: 32px;
-    }
-
-    .colab-df-convert:hover {
-      background-color: #E2EBFA;
-      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
-      fill: #174EA6;
-    }
-
-    [theme=dark] .colab-df-convert {
-      background-color: #3B4455;
-      fill: #D2E3FC;
-    }
-
-    [theme=dark] .colab-df-convert:hover {
-      background-color: #434B5C;
-      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
-      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
-      fill: #FFFFFF;
-    }
-  </style>
-
-      <script>
-        const buttonEl =
-          document.querySelector('#df-0872ebb5-5b79-41a7-a15b-6bd59f7ab319 button.colab-df-convert');
-        buttonEl.style.display =
-          google.colab.kernel.accessAllowed ? 'block' : 'none';
-
-        async function convertToInteractive(key) {
-          const element = document.querySelector('#df-0872ebb5-5b79-41a7-a15b-6bd59f7ab319');
-          const dataTable =
-            await google.colab.kernel.invokeFunction('convertToInteractive',
-                                                     [key], {});
-          if (!dataTable) return;
-
-          const docLinkHtml = 'Like what you see? Visit the ' +
-            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
-            + ' to learn more about interactive tables.';
-          element.innerHTML = '';
-          dataTable['output_type'] = 'display_data';
-          await google.colab.output.renderOutput(dataTable, element);
-          const docLink = document.createElement('div');
-          docLink.innerHTML = docLinkHtml;
-          element.appendChild(docLink);
-        }
-      </script>
-    </div>
-  </div>
-</div><img alt="../../_images/transportation_3_1.png" src="../../_images/transportation_3_1.png" />
+</div></div><img alt="../../_images/transportation_3_1.png" src="../../_images/transportation_3_1.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -879,10 +826,7 @@ installation and testing complete
 New Delivery Costs = $ 26113.5
 </pre></div>
 </div>
-<div class="output text_html">
-  <div id="df-30ffda00-84c4-401f-81bd-cb5de700a8e5">
-    <div class="colab-df-container">
-      <div>
+<div class="output text_html"><div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -902,7 +846,7 @@ New Delivery Costs = $ 26113.5
       <th></th>
       <th>Terminal A</th>
       <th>Terminal B</th>
-      <th>Incumbant</th>
+      <th>Current Supplier</th>
       <th>current costs</th>
       <th>contract costs</th>
       <th>savings</th>
@@ -992,110 +936,30 @@ New Delivery Costs = $ 26113.5
     </tr>
   </tbody>
 </table>
-</div>
-      <button class="colab-df-convert" onclick="convertToInteractive('df-30ffda00-84c4-401f-81bd-cb5de700a8e5')"
-              title="Convert this dataframe to an interactive table."
-              style="display:none;">
-
-  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
-       width="24px">
-    <path d="M0 0h24v24H0V0z" fill="none"/>
-    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
-  </svg>
-      </button>
-
-  <style>
-    .colab-df-container {
-      display:flex;
-      flex-wrap:wrap;
-      gap: 12px;
-    }
-
-    .colab-df-convert {
-      background-color: #E8F0FE;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      display: none;
-      fill: #1967D2;
-      height: 32px;
-      padding: 0 0 0 0;
-      width: 32px;
-    }
-
-    .colab-df-convert:hover {
-      background-color: #E2EBFA;
-      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
-      fill: #174EA6;
-    }
-
-    [theme=dark] .colab-df-convert {
-      background-color: #3B4455;
-      fill: #D2E3FC;
-    }
-
-    [theme=dark] .colab-df-convert:hover {
-      background-color: #434B5C;
-      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
-      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
-      fill: #FFFFFF;
-    }
-  </style>
-
-      <script>
-        const buttonEl =
-          document.querySelector('#df-30ffda00-84c4-401f-81bd-cb5de700a8e5 button.colab-df-convert');
-        buttonEl.style.display =
-          google.colab.kernel.accessAllowed ? 'block' : 'none';
-
-        async function convertToInteractive(key) {
-          const element = document.querySelector('#df-30ffda00-84c4-401f-81bd-cb5de700a8e5');
-          const dataTable =
-            await google.colab.kernel.invokeFunction('convertToInteractive',
-                                                     [key], {});
-          if (!dataTable) return;
-
-          const docLinkHtml = 'Like what you see? Visit the ' +
-            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
-            + ' to learn more about interactive tables.';
-          element.innerHTML = '';
-          dataTable['output_type'] = 'display_data';
-          await google.colab.output.renderOutput(dataTable, element);
-          const docLink = document.createElement('div');
-          docLink.innerHTML = docLinkHtml;
-          element.appendChild(docLink);
-        }
-      </script>
-    </div>
-  </div>
-</div></div>
+</div></div></div>
 </div>
 </section>
 </section>
-<section id="pyomo-solution-reports">
-<h2>Pyomo solution reports<a class="headerlink" href="#pyomo-solution-reports" title="Permalink to this headline">¶</a></h2>
+<section id="reporting-solutions">
+<h2>Reporting Solutions<a class="headerlink" href="#reporting-solutions" title="Permalink to this headline">¶</a></h2>
+<p>Pyomo models can produce considerable amounts of data that must be summarized and presented for analysis and decision making. In this application, for example, the individual franchise owners receive differing amounts of savings which is certain to result in considerable discussion and possibly negotiation with the franchisor.</p>
+<p>The following cells demonstrate techniques for extracting and displaying information generated by a Pyomo model.</p>
+<section id="pyomo-display-method">
+<h3>Pyomo <code class="docutils literal notranslate"><span class="pre">.display()</span></code> method<a class="headerlink" href="#pyomo-display-method" title="Permalink to this headline">¶</a></h3>
+<p>Pyomo provides a default <code class="docutils literal notranslate"><span class="pre">.display()</span></code> method for most Pyomo objects. The default display is often sufficient for model reporting requirements, particularly when initially developing a new application.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># display elements of sets</span>
+<span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>SOURCES : Size=1, Index=None, Ordered=Insertion
     Key  : Dimen : Domain : Size : Members
-    None :     1 :    Any :    3 : {&#39;Terminal A&#39;, &#39;Terminal B&#39;, &#39;Incumbant&#39;}
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>DESTINATIONS : Size=1, Index=None, Ordered=Insertion
+    None :     1 :    Any :    3 : {&#39;Terminal A&#39;, &#39;Terminal B&#39;, &#39;Current Supplier&#39;}
+DESTINATIONS : Size=1, Index=None, Ordered=Insertion
     Key  : Dimen : Domain : Size : Members
     None :     1 :    Any :    8 : {&#39;Alice&#39;, &#39;Badri&#39;, &#39;Cara&#39;, &#39;Dan&#39;, &#39;Emma&#39;, &#39;Fujita&#39;, &#39;Grace&#39;, &#39;Helen&#39;}
 </pre></div>
@@ -1104,44 +968,46 @@ New Delivery Costs = $ 26113.5
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">Rates</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># display elements of an indexed parameter</span>
+<span class="n">m</span><span class="o">.</span><span class="n">Rates</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Rates : Size=24, Index=Rates_index, Domain=Any, Default=None, Mutable=False
-    Key                      : Value
-      (&#39;Alice&#39;, &#39;Incumbant&#39;) :              0.0875
-     (&#39;Alice&#39;, &#39;Terminal A&#39;) :               0.083
-     (&#39;Alice&#39;, &#39;Terminal B&#39;) :               0.102
-      (&#39;Badri&#39;, &#39;Incumbant&#39;) :              0.0875
-     (&#39;Badri&#39;, &#39;Terminal A&#39;) :               0.081
-     (&#39;Badri&#39;, &#39;Terminal B&#39;) :                0.12
-       (&#39;Cara&#39;, &#39;Incumbant&#39;) :              0.0875
-      (&#39;Cara&#39;, &#39;Terminal A&#39;) :               0.083
-      (&#39;Cara&#39;, &#39;Terminal B&#39;) :                 1.0
-        (&#39;Dan&#39;, &#39;Incumbant&#39;) :              0.0875
-       (&#39;Dan&#39;, &#39;Terminal A&#39;) : 0.09300000000000001
-       (&#39;Dan&#39;, &#39;Terminal B&#39;) :                0.08
-       (&#39;Emma&#39;, &#39;Incumbant&#39;) :              0.0875
-      (&#39;Emma&#39;, &#39;Terminal A&#39;) : 0.10099999999999999
-      (&#39;Emma&#39;, &#39;Terminal B&#39;) :                 0.1
-     (&#39;Fujita&#39;, &#39;Incumbant&#39;) :              0.0875
-    (&#39;Fujita&#39;, &#39;Terminal A&#39;) :               0.098
-    (&#39;Fujita&#39;, &#39;Terminal B&#39;) :                 0.1
-      (&#39;Grace&#39;, &#39;Incumbant&#39;) :              0.0875
-     (&#39;Grace&#39;, &#39;Terminal A&#39;) :                 1.0
-     (&#39;Grace&#39;, &#39;Terminal B&#39;) :                0.08
-      (&#39;Helen&#39;, &#39;Incumbant&#39;) :              0.0875
-     (&#39;Helen&#39;, &#39;Terminal A&#39;) :               0.075
-     (&#39;Helen&#39;, &#39;Terminal B&#39;) :                 0.1
+    Key                            : Value
+     (&#39;Alice&#39;, &#39;Current Supplier&#39;) :              0.0875
+           (&#39;Alice&#39;, &#39;Terminal A&#39;) :               0.083
+           (&#39;Alice&#39;, &#39;Terminal B&#39;) :               0.102
+     (&#39;Badri&#39;, &#39;Current Supplier&#39;) :              0.0875
+           (&#39;Badri&#39;, &#39;Terminal A&#39;) :               0.081
+           (&#39;Badri&#39;, &#39;Terminal B&#39;) :                0.12
+      (&#39;Cara&#39;, &#39;Current Supplier&#39;) :              0.0875
+            (&#39;Cara&#39;, &#39;Terminal A&#39;) :               0.083
+            (&#39;Cara&#39;, &#39;Terminal B&#39;) :                 1.0
+       (&#39;Dan&#39;, &#39;Current Supplier&#39;) :              0.0875
+             (&#39;Dan&#39;, &#39;Terminal A&#39;) : 0.09300000000000001
+             (&#39;Dan&#39;, &#39;Terminal B&#39;) :                0.08
+      (&#39;Emma&#39;, &#39;Current Supplier&#39;) :              0.0875
+            (&#39;Emma&#39;, &#39;Terminal A&#39;) : 0.10099999999999999
+            (&#39;Emma&#39;, &#39;Terminal B&#39;) :                 0.1
+    (&#39;Fujita&#39;, &#39;Current Supplier&#39;) :              0.0875
+          (&#39;Fujita&#39;, &#39;Terminal A&#39;) :               0.098
+          (&#39;Fujita&#39;, &#39;Terminal B&#39;) :                 0.1
+     (&#39;Grace&#39;, &#39;Current Supplier&#39;) :              0.0875
+           (&#39;Grace&#39;, &#39;Terminal A&#39;) :                 1.0
+           (&#39;Grace&#39;, &#39;Terminal B&#39;) :                0.08
+     (&#39;Helen&#39;, &#39;Current Supplier&#39;) :              0.0875
+           (&#39;Helen&#39;, &#39;Terminal A&#39;) :               0.075
+           (&#39;Helen&#39;, &#39;Terminal B&#39;) :                 0.1
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">shipped_to</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># display elements of Pyomo Expression</span>
+<span class="n">m</span><span class="o">.</span><span class="n">shipped_to</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -1168,17 +1034,18 @@ New Delivery Costs = $ 26113.5
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>shipped_from : Size=3
-    Key        : Value
-     Incumbant : 133000.0
-    Terminal A : 100000.0
-    Terminal B :  80000.0
+    Key              : Value
+    Current Supplier : 133000.0
+          Terminal A : 100000.0
+          Terminal B :  80000.0
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># display Pyomo Objective</span>
+<span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -1192,28 +1059,19 @@ New Delivery Costs = $ 26113.5
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">supply_constraint</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># display indexed Pyomo Constraint</span>
+<span class="n">m</span><span class="o">.</span><span class="n">supply_constraint</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">demand_constraint</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>supply_constraint : Size=3
-    Key        : Lower : Body     : Upper
-     Incumbant :  None : 133000.0 : 500000.0
-    Terminal A :  None : 100000.0 : 100000.0
-    Terminal B :  None :  80000.0 :  80000.0
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">demand_constraint</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>demand_constraint : Size=8
+    Key              : Lower : Body     : Upper
+    Current Supplier :  None : 133000.0 : 500000.0
+          Terminal A :  None : 100000.0 : 100000.0
+          Terminal B :  None :  80000.0 :  80000.0
+demand_constraint : Size=8
     Key    : Lower   : Body    : Upper
      Alice : 30000.0 : 30000.0 :  None
      Badri : 40000.0 : 40000.0 :  None
@@ -1229,44 +1087,46 @@ New Delivery Costs = $ 26113.5
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># display Pyomo decision variables</span>
+<span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>x : Size=24, Index=x_index
-    Key                      : Lower : Value   : Upper : Fixed : Stale : Domain
-      (&#39;Alice&#39;, &#39;Incumbant&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-     (&#39;Alice&#39;, &#39;Terminal A&#39;) :     0 : 30000.0 :  None : False : False : NonNegativeReals
-     (&#39;Alice&#39;, &#39;Terminal B&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-      (&#39;Badri&#39;, &#39;Incumbant&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-     (&#39;Badri&#39;, &#39;Terminal A&#39;) :     0 : 40000.0 :  None : False : False : NonNegativeReals
-     (&#39;Badri&#39;, &#39;Terminal B&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-       (&#39;Cara&#39;, &#39;Incumbant&#39;) :     0 : 38000.0 :  None : False : False : NonNegativeReals
-      (&#39;Cara&#39;, &#39;Terminal A&#39;) :     0 : 12000.0 :  None : False : False : NonNegativeReals
-      (&#39;Cara&#39;, &#39;Terminal B&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-        (&#39;Dan&#39;, &#39;Incumbant&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-       (&#39;Dan&#39;, &#39;Terminal A&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-       (&#39;Dan&#39;, &#39;Terminal B&#39;) :     0 : 20000.0 :  None : False : False : NonNegativeReals
-       (&#39;Emma&#39;, &#39;Incumbant&#39;) :     0 : 30000.0 :  None : False : False : NonNegativeReals
-      (&#39;Emma&#39;, &#39;Terminal A&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-      (&#39;Emma&#39;, &#39;Terminal B&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-     (&#39;Fujita&#39;, &#39;Incumbant&#39;) :     0 : 45000.0 :  None : False : False : NonNegativeReals
-    (&#39;Fujita&#39;, &#39;Terminal A&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-    (&#39;Fujita&#39;, &#39;Terminal B&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-      (&#39;Grace&#39;, &#39;Incumbant&#39;) :     0 : 20000.0 :  None : False : False : NonNegativeReals
-     (&#39;Grace&#39;, &#39;Terminal A&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-     (&#39;Grace&#39;, &#39;Terminal B&#39;) :     0 : 60000.0 :  None : False : False : NonNegativeReals
-      (&#39;Helen&#39;, &#39;Incumbant&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
-     (&#39;Helen&#39;, &#39;Terminal A&#39;) :     0 : 18000.0 :  None : False : False : NonNegativeReals
-     (&#39;Helen&#39;, &#39;Terminal B&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+    Key                            : Lower : Value   : Upper : Fixed : Stale : Domain
+     (&#39;Alice&#39;, &#39;Current Supplier&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+           (&#39;Alice&#39;, &#39;Terminal A&#39;) :     0 : 30000.0 :  None : False : False : NonNegativeReals
+           (&#39;Alice&#39;, &#39;Terminal B&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+     (&#39;Badri&#39;, &#39;Current Supplier&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+           (&#39;Badri&#39;, &#39;Terminal A&#39;) :     0 : 40000.0 :  None : False : False : NonNegativeReals
+           (&#39;Badri&#39;, &#39;Terminal B&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+      (&#39;Cara&#39;, &#39;Current Supplier&#39;) :     0 : 38000.0 :  None : False : False : NonNegativeReals
+            (&#39;Cara&#39;, &#39;Terminal A&#39;) :     0 : 12000.0 :  None : False : False : NonNegativeReals
+            (&#39;Cara&#39;, &#39;Terminal B&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+       (&#39;Dan&#39;, &#39;Current Supplier&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+             (&#39;Dan&#39;, &#39;Terminal A&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+             (&#39;Dan&#39;, &#39;Terminal B&#39;) :     0 : 20000.0 :  None : False : False : NonNegativeReals
+      (&#39;Emma&#39;, &#39;Current Supplier&#39;) :     0 : 30000.0 :  None : False : False : NonNegativeReals
+            (&#39;Emma&#39;, &#39;Terminal A&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+            (&#39;Emma&#39;, &#39;Terminal B&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+    (&#39;Fujita&#39;, &#39;Current Supplier&#39;) :     0 : 45000.0 :  None : False : False : NonNegativeReals
+          (&#39;Fujita&#39;, &#39;Terminal A&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+          (&#39;Fujita&#39;, &#39;Terminal B&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+     (&#39;Grace&#39;, &#39;Current Supplier&#39;) :     0 : 20000.0 :  None : False : False : NonNegativeReals
+           (&#39;Grace&#39;, &#39;Terminal A&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+           (&#39;Grace&#39;, &#39;Terminal B&#39;) :     0 : 60000.0 :  None : False : False : NonNegativeReals
+     (&#39;Helen&#39;, &#39;Current Supplier&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
+           (&#39;Helen&#39;, &#39;Terminal A&#39;) :     0 : 18000.0 :  None : False : False : NonNegativeReals
+           (&#39;Helen&#39;, &#39;Terminal B&#39;) :     0 :     0.0 :  None : False : False : NonNegativeReals
 </pre></div>
 </div>
 </div>
 </div>
 </section>
 <section id="manually-formatted-reports">
-<h2>Manually formatted reports<a class="headerlink" href="#manually-formatted-reports" title="Permalink to this headline">¶</a></h2>
+<h3>Manually formatted reports<a class="headerlink" href="#manually-formatted-reports" title="Permalink to this headline">¶</a></h3>
+<p>Following solution, the value associated with Pyomo objects are returned by calling the object as a function. The following cell demonstrates the construction of a custom report using Python f-strings and Pyomo methods.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Objective report</span>
@@ -1298,7 +1158,7 @@ cost = 26113.5
 Constraint: supply_constraint
 Terminal A    100000.00     -0.00
 Terminal B    80000.00     -0.01
-Incumbant     133000.00      0.00
+Current Supplier  133000.00      0.00
 
 Constraint: demand_constraint
 Alice         30000.00      0.09
@@ -1329,21 +1189,22 @@ Terminal B   -&gt; Fujita            0.00
 Terminal B   -&gt; Grace         60000.00
 Terminal B   -&gt; Helen             0.00
 
-Incumbant    -&gt; Alice             0.00
-Incumbant    -&gt; Badri             0.00
-Incumbant    -&gt; Cara          38000.00
-Incumbant    -&gt; Dan               0.00
-Incumbant    -&gt; Emma          30000.00
-Incumbant    -&gt; Fujita        45000.00
-Incumbant    -&gt; Grace         20000.00
-Incumbant    -&gt; Helen             0.00
+Current Supplier -&gt; Alice             0.00
+Current Supplier -&gt; Badri             0.00
+Current Supplier -&gt; Cara          38000.00
+Current Supplier -&gt; Dan               0.00
+Current Supplier -&gt; Emma          30000.00
+Current Supplier -&gt; Fujita        45000.00
+Current Supplier -&gt; Grace         20000.00
+Current Supplier -&gt; Helen             0.00
 </pre></div>
 </div>
 </div>
 </div>
 </section>
 <section id="pandas">
-<h2>Pandas<a class="headerlink" href="#pandas" title="Permalink to this headline">¶</a></h2>
+<h3>Pandas<a class="headerlink" href="#pandas" title="Permalink to this headline">¶</a></h3>
+<p>The Python Pandas library provides a highly flexible framework for data science applications. The next cell demonstrates the translation of Pyomo object values to Pandas DataFrames</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">suppliers</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="n">src</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;supply&quot;</span><span class="p">:</span> <span class="n">supply</span><span class="p">[</span><span class="n">src</span><span class="p">],</span> 
@@ -1367,10 +1228,7 @@ Incumbant    -&gt; Helen             0.00
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_html">
-  <div id="df-0eff5855-0544-4968-b248-7769428a42f6">
-    <div class="colab-df-container">
-      <div>
+<div class="output text_html"><div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1407,93 +1265,14 @@ Incumbant    -&gt; Helen             0.00
       <td>-0.0075</td>
     </tr>
     <tr>
-      <th>Incumbant</th>
+      <th>Current Supplier</th>
       <td>500000.0</td>
       <td>133000.0</td>
       <td>0.0000</td>
     </tr>
   </tbody>
 </table>
-</div>
-      <button class="colab-df-convert" onclick="convertToInteractive('df-0eff5855-0544-4968-b248-7769428a42f6')"
-              title="Convert this dataframe to an interactive table."
-              style="display:none;">
-
-  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
-       width="24px">
-    <path d="M0 0h24v24H0V0z" fill="none"/>
-    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
-  </svg>
-      </button>
-
-  <style>
-    .colab-df-container {
-      display:flex;
-      flex-wrap:wrap;
-      gap: 12px;
-    }
-
-    .colab-df-convert {
-      background-color: #E8F0FE;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      display: none;
-      fill: #1967D2;
-      height: 32px;
-      padding: 0 0 0 0;
-      width: 32px;
-    }
-
-    .colab-df-convert:hover {
-      background-color: #E2EBFA;
-      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
-      fill: #174EA6;
-    }
-
-    [theme=dark] .colab-df-convert {
-      background-color: #3B4455;
-      fill: #D2E3FC;
-    }
-
-    [theme=dark] .colab-df-convert:hover {
-      background-color: #434B5C;
-      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
-      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
-      fill: #FFFFFF;
-    }
-  </style>
-
-      <script>
-        const buttonEl =
-          document.querySelector('#df-0eff5855-0544-4968-b248-7769428a42f6 button.colab-df-convert');
-        buttonEl.style.display =
-          google.colab.kernel.accessAllowed ? 'block' : 'none';
-
-        async function convertToInteractive(key) {
-          const element = document.querySelector('#df-0eff5855-0544-4968-b248-7769428a42f6');
-          const dataTable =
-            await google.colab.kernel.invokeFunction('convertToInteractive',
-                                                     [key], {});
-          if (!dataTable) return;
-
-          const docLinkHtml = 'Like what you see? Visit the ' +
-            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
-            + ' to learn more about interactive tables.';
-          element.innerHTML = '';
-          dataTable['output_type'] = 'display_data';
-          await google.colab.output.renderOutput(dataTable, element);
-          const docLink = document.createElement('div');
-          docLink.innerHTML = docLinkHtml;
-          element.appendChild(docLink);
-        }
-      </script>
-    </div>
-  </div>
-</div><div class="output text_html">
-  <div id="df-337a7c3b-b423-4de4-ad4a-c798181cb27d">
-    <div class="colab-df-container">
-      <div>
+</div></div><div class="output text_html"><div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1567,86 +1346,7 @@ Incumbant    -&gt; Helen             0.00
     </tr>
   </tbody>
 </table>
-</div>
-      <button class="colab-df-convert" onclick="convertToInteractive('df-337a7c3b-b423-4de4-ad4a-c798181cb27d')"
-              title="Convert this dataframe to an interactive table."
-              style="display:none;">
-
-  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
-       width="24px">
-    <path d="M0 0h24v24H0V0z" fill="none"/>
-    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
-  </svg>
-      </button>
-
-  <style>
-    .colab-df-container {
-      display:flex;
-      flex-wrap:wrap;
-      gap: 12px;
-    }
-
-    .colab-df-convert {
-      background-color: #E8F0FE;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      display: none;
-      fill: #1967D2;
-      height: 32px;
-      padding: 0 0 0 0;
-      width: 32px;
-    }
-
-    .colab-df-convert:hover {
-      background-color: #E2EBFA;
-      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
-      fill: #174EA6;
-    }
-
-    [theme=dark] .colab-df-convert {
-      background-color: #3B4455;
-      fill: #D2E3FC;
-    }
-
-    [theme=dark] .colab-df-convert:hover {
-      background-color: #434B5C;
-      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
-      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
-      fill: #FFFFFF;
-    }
-  </style>
-
-      <script>
-        const buttonEl =
-          document.querySelector('#df-337a7c3b-b423-4de4-ad4a-c798181cb27d button.colab-df-convert');
-        buttonEl.style.display =
-          google.colab.kernel.accessAllowed ? 'block' : 'none';
-
-        async function convertToInteractive(key) {
-          const element = document.querySelector('#df-337a7c3b-b423-4de4-ad4a-c798181cb27d');
-          const dataTable =
-            await google.colab.kernel.invokeFunction('convertToInteractive',
-                                                     [key], {});
-          if (!dataTable) return;
-
-          const docLinkHtml = 'Like what you see? Visit the ' +
-            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
-            + ' to learn more about interactive tables.';
-          element.innerHTML = '';
-          dataTable['output_type'] = 'display_data';
-          await google.colab.output.renderOutput(dataTable, element);
-          const docLink = document.createElement('div');
-          docLink.innerHTML = docLinkHtml;
-          element.appendChild(docLink);
-        }
-      </script>
-    </div>
-  </div>
-</div><div class="output text_html">
-  <div id="df-1383d366-ccaf-40fa-b017-c189d241b649">
-    <div class="colab-df-container">
-      <div>
+</div></div><div class="output text_html"><div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1666,7 +1366,7 @@ Incumbant    -&gt; Helen             0.00
       <th></th>
       <th>Terminal A</th>
       <th>Terminal B</th>
-      <th>Incumbant</th>
+      <th>Current Supplier</th>
     </tr>
   </thead>
   <tbody>
@@ -1720,91 +1420,15 @@ Incumbant    -&gt; Helen             0.00
     </tr>
   </tbody>
 </table>
-</div>
-      <button class="colab-df-convert" onclick="convertToInteractive('df-1383d366-ccaf-40fa-b017-c189d241b649')"
-              title="Convert this dataframe to an interactive table."
-              style="display:none;">
-
-  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
-       width="24px">
-    <path d="M0 0h24v24H0V0z" fill="none"/>
-    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
-  </svg>
-      </button>
-
-  <style>
-    .colab-df-container {
-      display:flex;
-      flex-wrap:wrap;
-      gap: 12px;
-    }
-
-    .colab-df-convert {
-      background-color: #E8F0FE;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      display: none;
-      fill: #1967D2;
-      height: 32px;
-      padding: 0 0 0 0;
-      width: 32px;
-    }
-
-    .colab-df-convert:hover {
-      background-color: #E2EBFA;
-      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
-      fill: #174EA6;
-    }
-
-    [theme=dark] .colab-df-convert {
-      background-color: #3B4455;
-      fill: #D2E3FC;
-    }
-
-    [theme=dark] .colab-df-convert:hover {
-      background-color: #434B5C;
-      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
-      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
-      fill: #FFFFFF;
-    }
-  </style>
-
-      <script>
-        const buttonEl =
-          document.querySelector('#df-1383d366-ccaf-40fa-b017-c189d241b649 button.colab-df-convert');
-        buttonEl.style.display =
-          google.colab.kernel.accessAllowed ? 'block' : 'none';
-
-        async function convertToInteractive(key) {
-          const element = document.querySelector('#df-1383d366-ccaf-40fa-b017-c189d241b649');
-          const dataTable =
-            await google.colab.kernel.invokeFunction('convertToInteractive',
-                                                     [key], {});
-          if (!dataTable) return;
-
-          const docLinkHtml = 'Like what you see? Visit the ' +
-            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
-            + ' to learn more about interactive tables.';
-          element.innerHTML = '';
-          dataTable['output_type'] = 'display_data';
-          await google.colab.output.renderOutput(dataTable, element);
-          const docLink = document.createElement('div');
-          docLink.innerHTML = docLinkHtml;
-          element.appendChild(docLink);
-        }
-      </script>
-    </div>
-  </div>
-</div><div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;matplotlib.axes._subplots.AxesSubplot at 0x7f056e417610&gt;
+</div></div><div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;AxesSubplot:&gt;
 </pre></div>
 </div>
-<img alt="../../_images/transportation_18_4.png" src="../../_images/transportation_18_4.png" />
+<img alt="../../_images/transportation_17_4.png" src="../../_images/transportation_17_4.png" />
 </div>
 </div>
 </section>
 <section id="graphviz">
-<h2>Graphviz<a class="headerlink" href="#graphviz" title="Permalink to this headline">¶</a></h2>
+<h3>Graphviz<a class="headerlink" href="#graphviz" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">graphviz</span></code> utility is a collection of tools for visually graphs and directed graphs. Unfortunately, the package can be troublesome to install on laptops in a way that is compatable with many JupyterLab installations. Accordingly, the following cell is intended for use on Google Colab which provides a preinstalled version of <code class="docutils literal notranslate"><span class="pre">graphviz</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1842,9 +1466,8 @@ Incumbant    -&gt; Helen             0.00
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<img alt="../../_images/transportation_20_0.svg" src="../../_images/transportation_20_0.svg" /></div>
 </div>
+</section>
 </section>
 </section>
 

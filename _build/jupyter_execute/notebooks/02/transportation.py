@@ -2,8 +2,20 @@
 # coding: utf-8
 
 # # Transportation Models
+# 
+# This notebook presents a transportation model to optimally allocate the delivery of a commodity from multiple sources to multiple destinations. The notebook also presents techniques for Pyomo modeling and reporting including: 
+# 
+# * `pyo.Expression` decorator
+# * Accessing the duals (i.e., shadow prices)
+# * Methods for reporting the solution and duals.
+#     * Pyomo `.display()` method for Pyomo objects
+#     * Manually formatted reports
+#     * Pandas 
+#     * Graphviz for display of results as a directed graph.
+#     
+# The model invites a discussion of the pitfalls in optimizing a global objective for customers who may have an uneven share of the resulting benefits.
 
-# In[1]:
+# In[25]:
 
 
 import sys
@@ -14,15 +26,15 @@ if "google.colab" in sys.modules:
 
 # ## Distributing Gasoline to Franchise Operators
 # 
-# YaYa Gas-n-Grub is franchisor and operator for a network of regional convenience stores selling gasoline and convenience items. Each store is individually owned by a YaYa Gas-n-Grub franchisee who pays a fixed fee to the franchisor for services.
+# YaYa Gas-n-Grub is franchisor and operator for a network of regional convenience stores selling gasoline and convenience items in the United States. Each store is individually owned by a YaYa Gas-n-Grub franchisee who pays a fixed fee to the franchisor for services.
 # 
-# Gasoline is delivered to each store by truck from a regional distribution terminal. The stores sell an average of about 4,000 gallons daily for an average profit of about &dollar;100 for the franchise owners, but sales vary widely based on location. Each delivery truck carrys 8,000 gallons. Under the current business agreement, the gasoline is delivered at a fixed charge of &dollar;700 per delivery, or 11.43 cents per gallon. The franchise owners are eager to reduce delivery costs to boost profits, but the current distributor claims a lower price would be unsustainable.
+# Gasoline is delivered by truck from regional distribution terminals. Each delivery truck carrys 8,000 gallons delivered at a fixed charge of 700 dollars per delivery, or 8.75 cents per gallon. The franchise owners are eager to reduce delivery costs to boost profits.
 # 
-# YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, "A" and "B", to supply the franchise operators. They each provide delivery pricing based on location. Since they already have existing customers, "A" and "B" can only provide a limited amount of gasoline to new customers, 100,000 and 150,000 gallons respectively. The only difference between the new suppliers and the incumbant is the delivery charge, the cost of gasoline is determined on the pipeline market is the same among the distributors. 
+# YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, "A" and "B", to supply the franchise operators. They each provide delivery pricing based on location. Since they already have existing customers, "A" and "B" can only provide a limited amount of gasoline to new customers, 100,000 and 150,000 gallons respectively. The only difference between the new suppliers and the current supplier is the delivery charge.
 # 
 # The following chart shows the pricing of gasoline delivery in cents/gallon.
 # 
-# | Store Owner | Demand |  Termina A | Terminal B | Incumbant |
+# | Store Owner | Demand |  Terminal A | Terminal B | Current Supplier |
 # | :-------- | ------------: | ---------: | -------: | --------: |
 # | Alice | 30,000 | 8.3 | 10.2 | 8.75 |
 # | Badri  | 40,000 | 8.1 | 12.0 | 8.75 |
@@ -40,24 +52,23 @@ if "google.colab" in sys.modules:
 # 
 # ### Analysis
 # 
-# A majority of the franchise owners must agree with the new contract in order to proceed. Will the franchise owers agree?  Who might object to the new arrangment, and why?
-# 
+# The following model presents a global objective to minimize the total cost of delivery to all franchise owners. But there is no guarantee that each owner will benefit equally or at all. Suppose, for example, that a majority of the franchise owners must agree with the new contract in order to proceed. Will the franchise owers agree?  Who might object to the new arrangment? Could the model be modified to assure that each operator gains at least some share of the global objective?
 
-# In[2]:
+# In[26]:
 
 
 import pandas as pd
 import matplotlib.pyplot as plt
 
 rates = pd.DataFrame({
-    "Alice": {"Terminal A": 8.3, "Terminal B": 10.2, "Incumbant": 8.75},
-    "Badri": {"Terminal A": 8.1, "Terminal B": 12.0, "Incumbant": 8.75},
-    "Cara": {"Terminal A": 8.3, "Terminal B": 100, "Incumbant": 8.75},
-    "Dan": {"Terminal A": 9.3, "Terminal B": 8.0, "Incumbant": 8.75},
-    "Emma": {"Terminal A": 10.1, "Terminal B": 10.0, "Incumbant": 8.75},
-    "Fujita": {"Terminal A": 9.8, "Terminal B": 10.0, "Incumbant": 8.75},
-    "Grace": {"Terminal A": 100, "Terminal B": 8.0, "Incumbant": 8.75},
-    "Helen": {"Terminal A": 7.5, "Terminal B": 10.0, "Incumbant": 8.75}}).T
+    "Alice": {"Terminal A": 8.3, "Terminal B": 10.2, "Current Supplier": 8.75},
+    "Badri": {"Terminal A": 8.1, "Terminal B": 12.0, "Current Supplier": 8.75},
+    "Cara": {"Terminal A": 8.3, "Terminal B": 100, "Current Supplier": 8.75},
+    "Dan": {"Terminal A": 9.3, "Terminal B": 8.0, "Current Supplier": 8.75},
+    "Emma": {"Terminal A": 10.1, "Terminal B": 10.0, "Current Supplier": 8.75},
+    "Fujita": {"Terminal A": 9.8, "Terminal B": 10.0, "Current Supplier": 8.75},
+    "Grace": {"Terminal A": 100, "Terminal B": 8.0, "Current Supplier": 8.75},
+    "Helen": {"Terminal A": 7.5, "Terminal B": 10.0, "Current Supplier": 8.75}}).T
 
 display(rates)
 
@@ -74,7 +85,7 @@ demand = pd.Series({
 supply = pd.Series({
     "Terminal A": 100000,
     "Terminal B": 80000,
-    "Incumbant": 500000})
+    "Current Supplier": 500000})
 
 fix, ax = plt.subplots(1, 2)
 demand.plot(kind="bar", ax=ax[0], title=f"Demand = {demand.sum()}")
@@ -82,7 +93,7 @@ supply.plot(kind="bar", ax=ax[1], title=f"Supply = {supply.sum()}")
 plt.tight_layout()
 
 
-# In[3]:
+# In[27]:
 
 
 import pyomo.environ as pyo
@@ -141,65 +152,71 @@ print(f"New Delivery Costs = $ {m.cost()}")
 display(results)
 
 
-# ## Pyomo solution reports
+# ## Reporting Solutions
+# 
+# Pyomo models can produce considerable amounts of data that must be summarized and presented for analysis and decision making. In this application, for example, the individual franchise owners receive differing amounts of savings which is certain to result in considerable discussion and possibly negotiation with the franchisor. 
+# 
+# The following cells demonstrate techniques for extracting and displaying information generated by a Pyomo model. 
 
-# In[4]:
+# ### Pyomo `.display()` method
+# 
+# Pyomo provides a default `.display()` method for most Pyomo objects. The default display is often sufficient for model reporting requirements, particularly when initially developing a new application.
+
+# In[33]:
 
 
+# display elements of sets
 m.SOURCES.display()
-
-
-# In[5]:
-
-
 m.DESTINATIONS.display()
 
 
-# In[6]:
+# In[34]:
 
 
+# display elements of an indexed parameter
 m.Rates.display()
 
 
-# In[7]:
+# In[35]:
 
 
+# display elements of Pyomo Expression
 m.shipped_to.display()
 
 
-# In[8]:
+# In[36]:
 
 
 m.shipped_from.display()
 
 
-# In[9]:
+# In[37]:
 
 
+# display Pyomo Objective
 m.cost.display()
 
 
-# In[10]:
+# In[38]:
 
 
+# display indexed Pyomo Constraint
 m.supply_constraint.display()
-
-
-# In[11]:
-
-
 m.demand_constraint.display()
 
 
-# In[12]:
+# In[39]:
 
 
+# display Pyomo decision variables
 m.x.display()
 
 
-# ## Manually formatted reports
+# ### Manually formatted reports
+# 
+# Following solution, the value associated with Pyomo objects are returned by calling the object as a function. The following cell demonstrates the construction of a custom report using Python f-strings and Pyomo methods.
 
-# In[13]:
+# In[18]:
 
 
 # Objective report
@@ -223,9 +240,11 @@ for src in m.SOURCES:
     print()
 
 
-# ## Pandas
+# ### Pandas
+# 
+# The Python Pandas library provides a highly flexible framework for data science applications. The next cell demonstrates the translation of Pyomo object values to Pandas DataFrames
 
-# In[14]:
+# In[19]:
 
 
 suppliers = pd.DataFrame({src: {"supply": supply[src], 
@@ -247,11 +266,11 @@ display(shipments)
 shipments.plot(kind="bar")
 
 
-# ## Graphviz
+# ### Graphviz
 # 
 # The `graphviz` utility is a collection of tools for visually graphs and directed graphs. Unfortunately, the package can be troublesome to install on laptops in a way that is compatable with many JupyterLab installations. Accordingly, the following cell is intended for use on Google Colab which provides a preinstalled version of `graphviz`.
 
-# In[15]:
+# In[20]:
 
 
 import graphviz

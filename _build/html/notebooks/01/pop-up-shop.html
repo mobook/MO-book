@@ -200,7 +200,7 @@ const thebe_selector_output = ".output, .cell_output"
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="../03/simple-production-model-gdp.html">
-     Production
+     Production Model with Disjuncts
     </a>
    </li>
    <li class="toctree-l2">
@@ -494,7 +494,7 @@ const thebe_selector_output = ".output, .cell_output"
                 
   <section class="tex2jax_ignore mathjax_ignore" id="scenario-analysis-pop-up-shop">
 <h1>Scenario Analysis: Pop Up Shop<a class="headerlink" href="#scenario-analysis-pop-up-shop" title="Permalink to this headline">¶</a></h1>
-<p><img alt="" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg/1200px-Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg" /></p>
+<p><img alt="" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg/400px-Weich_Couture_Alpaca%2C_D%C3%BCsseldorf%2C_December_2020_%2809%29.jpg" /></p>
 <p>Kürschner (talk) 17:51, 1 December 2020 (UTC), CC0, via Wikimedia Commons</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -509,7 +509,7 @@ const thebe_selector_output = ".output, .cell_output"
 </div>
 <section id="the-problem">
 <h2>The problem<a class="headerlink" href="#the-problem" title="Permalink to this headline">¶</a></h2>
-<p>You’ve been offered an opportunity to operate a pop-up shop to sell a unique commemorative item for each event held at a famous location. The items cost 12 € each and you will be able to sell them for 40 €. Unsold items can be returned to the supplier but you will receive only 2 € due to their commemorative nature.</p>
+<p>There is an opportunity to operate a pop-up shop to sell a unique commemorative item for events held at a famous location. The items cost 12 € each and will selL for 40 €. Unsold items can be returned to the supplier at a value of only 2 € due to their commemorative nature.</p>
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="text-align:center head"><p>Parameter</p></th>
@@ -532,7 +532,7 @@ const thebe_selector_output = ".output, .cell_output"
 </tr>
 </tbody>
 </table>
-<p>The more you sell the more profit you will earn. Demand for these items, however, will be high only if the weather is good. Historical data suggests the following scenarios.</p>
+<p>Profit will increase with sales. Demand for these items, however, will be high only if the weather is good. Historical data suggests the following scenarios.</p>
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="text-align:center head"><p>Scenario (<span class="math notranslate nohighlight">\(s\)</span>)</p></th>
@@ -555,6 +555,42 @@ const thebe_selector_output = ".output, .cell_output"
 </tr>
 </tbody>
 </table>
+<p>The problem is to determine how many items to order for the pop-up shop.</p>
+<p>The dilemma is that the weather won’t be known until after the order is placed. Ordering enough items to meet demand for a good weather day results in a  financial penalty on returned goods if the weather is poor. But ordering just enough items to satisfy demand on a poor weather day leaves “money on the table” if the weather is good.</p>
+<p>How many items should be ordered for sale?</p>
+</section>
+<section id="expected-value-for-the-mean-scenario-evm">
+<h2>Expected value for the mean scenario (EVM)<a class="headerlink" href="#expected-value-for-the-mean-scenario-evm" title="Permalink to this headline">¶</a></h2>
+<p>A naive solution to this problem is to place an order equal to the expected demand. The expected demand is given by</p>
+<div class="math notranslate nohighlight">
+\[
+\begin{align*}
+\mathbb E[D] &amp; = \sum_{s\in S} p_s d_s 
+\end{align*}
+\]</div>
+<p>Choosing an order size <span class="math notranslate nohighlight">\(x = \mathbb E[d]\)</span> results in an expected profit we call the <strong>expected value of the mean scenario (EVM)</strong>.</p>
+<p>Variable <span class="math notranslate nohighlight">\(y_s\)</span> is the actual number of items sold if scenario <span class="math notranslate nohighlight">\(s\)</span> should occur. The number sold is the lesser of the demand <span class="math notranslate nohighlight">\(d_s\)</span> and the order size <span class="math notranslate nohighlight">\(x\)</span>.</p>
+<div class="math notranslate nohighlight">
+\[
+\begin{align*}
+y_s &amp; = \min(d_s, x) &amp; \forall s \in S
+\end{align*}
+\]</div>
+<p>Any unsold inventory <span class="math notranslate nohighlight">\(x - y_s\)</span> remaining after the event will be sold at the salvage price <span class="math notranslate nohighlight">\(w\)</span>. Taking into account the revenue from sales <span class="math notranslate nohighlight">\(r y_s\)</span>, the salvage value of the unsold inventory <span class="math notranslate nohighlight">\(w(x - y_s)\)</span>, and the cost of the order <span class="math notranslate nohighlight">\(c x\)</span>, the profit <span class="math notranslate nohighlight">\(f_s\)</span> for scenario <span class="math notranslate nohighlight">\(s\)</span> is given by</p>
+<div class="math notranslate nohighlight">
+\[
+\begin{align*}
+f_s &amp; = r y_s + w (x - y_s) - c  x &amp; \forall s \in S
+\end{align*}
+\]</div>
+<p>The average or expected profit is given by</p>
+<div class="math notranslate nohighlight">
+\[
+\begin{align*}
+\text{EVM} = \mathbb E[f] &amp; = \sum_{s\in S} p_s f_s
+\end{align*}
+\]</div>
+<p>These calculations can be executed using operations on the pandas dataframe. Let’s begin by calculating the expected demand.</p>
 <p>Below we create a pandas DataFrame object to store the scenario data.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -621,41 +657,6 @@ const thebe_selector_output = ".output, .cell_output"
 </table>
 </div></div></div>
 </div>
-<p>The problem is to determine how many items to order for the pop-up shop. The dilemma is that the weather won’t be known until after the order is placed. Ordering enough items to meet demand for a good weather day results in a  financial penalty on returned goods if the weather is poor. On the other hand, ordering just enough items to satisfy demand on a poor weather day leaves “money on the table” if the weather is good.</p>
-<p>How many items should order for sale at the event?</p>
-</section>
-<section id="expected-value-for-the-mean-scenario-evm">
-<h2>Expected value for the mean scenario (EVM)<a class="headerlink" href="#expected-value-for-the-mean-scenario-evm" title="Permalink to this headline">¶</a></h2>
-<p>A naive solution to this proc is to place an order equal to the expected demand. The expected demand is given by</p>
-<div class="math notranslate nohighlight">
-\[
-\begin{align*}
-\mathbb E[D] &amp; = \sum_{s\in S} p_s d_s 
-\end{align*}
-\]</div>
-<p>Choosing an order size <span class="math notranslate nohighlight">\(x = \mathbb E[d]\)</span> results in an expected profit we call the <strong>expected value of the mean scenario (EVM)</strong>.</p>
-<p>Given an order size <span class="math notranslate nohighlight">\(x\)</span>, <span class="math notranslate nohighlight">\(y_s\)</span> will be the number of items sold if scenario <span class="math notranslate nohighlight">\(s\)</span> should occur. The amount sold is the lesser of the demand <span class="math notranslate nohighlight">\(d_s\)</span> and <span class="math notranslate nohighlight">\(x\)</span>.</p>
-<div class="math notranslate nohighlight">
-\[
-\begin{align*}
-y_s &amp; = \min(d_s, x) &amp; \forall s \in S
-\end{align*}
-\]</div>
-<p>After completing event, the remaining inventory <span class="math notranslate nohighlight">\(x - y_s\)</span> will be sold at the salvage price <span class="math notranslate nohighlight">\(w\)</span>. Taking into account the revenue from sales <span class="math notranslate nohighlight">\(r y_s\)</span>, the salvage value of the unsold inventory <span class="math notranslate nohighlight">\(w(x - y_s)\)</span>, and the cost of the order <span class="math notranslate nohighlight">\(c x\)</span>, the resulting profit <span class="math notranslate nohighlight">\(f_s\)</span> for scenario <span class="math notranslate nohighlight">\(s\)</span> is given by</p>
-<div class="math notranslate nohighlight">
-\[
-\begin{align*}
-f_s &amp; = r y_s + w (x - y_s) - c  x &amp; \forall s \in S
-\end{align*}
-\]</div>
-<p>The average or expected profit is given by</p>
-<div class="math notranslate nohighlight">
-\[
-\begin{align*}
-\text{EVM} = \mathbb E[f] &amp; = \sum_{s\in S} p_s f_s
-\end{align*}
-\]</div>
-<p>These calculations can be executed using operations on the pandas dataframe. Let’s begin by calculating the expected demand.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">expected_demand</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;probability&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;demand&quot;</span><span class="p">])</span>
@@ -751,7 +752,7 @@ Expected value of the mean demand (EVM) = 8339.0
 </section>
 <section id="expected-value-of-the-stochastic-solution-evss">
 <h2>Expected value of the stochastic solution (EVSS)<a class="headerlink" href="#expected-value-of-the-stochastic-solution-evss" title="Permalink to this headline">¶</a></h2>
-<p>The optimization problem is to find the order size <span class="math notranslate nohighlight">\(x\)</span> that maximizes expected profit subject to operational constraints on the decision variables. The variables <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y_s\)</span> are non-negative, while <span class="math notranslate nohighlight">\(f_s\)</span> can take on both positive and negative values. Operationally, the amount of goods sold in scenario <span class="math notranslate nohighlight">\(s\)</span> has to be less than the order size <span class="math notranslate nohighlight">\(x\)</span> and customer demand <span class="math notranslate nohighlight">\(d_s\)</span>.</p>
+<p>The optimization problem is to find the order size <span class="math notranslate nohighlight">\(x\)</span> that maximizes expected profit subject to operational constraints on the decision variables. The variables <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y_s\)</span> are non-negative integers, while <span class="math notranslate nohighlight">\(f_s\)</span> is a real number that can take either positive and negative values. The number of goods sold in scenario <span class="math notranslate nohighlight">\(s\)</span> has to be less than the order size <span class="math notranslate nohighlight">\(x\)</span> and customer demand <span class="math notranslate nohighlight">\(d_s\)</span>.</p>
 <p>The problem to be solved is</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -782,15 +783,15 @@ y_s &amp; \leq d_s &amp; \forall s \in S
 <span class="p">}</span>
 
 <span class="c1"># create model instance</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;Pet Shop&#39;</span><span class="p">)</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;Pop-up Shop&#39;</span><span class="p">)</span>
 
 <span class="c1"># set of scenarios</span>
 <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">scenarios</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
 <span class="c1"># decision variables</span>
-<span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
 
 <span class="c1"># objective</span>
 <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
@@ -892,16 +893,17 @@ Expected Profit: 8920.0
 </table>
 </div></div></div>
 </div>
-<p>Optimizing the expected value of the profit over all scenarios provides an expected profit of 8,920 €, an increase of 581 € over the base case of simply ordering the expected number of items sold. The new solution places a larger order. In poor weather conditions there will be more returns and lower profit, but that is more than compensated by the increased profits in good weather conditions.</p>
+<p>Optimizing over all scenarios provides an expected profit of 8,920 €, an increase of 581 € over the base case of simply ordering the expected number of items sold. The new solution places a larger order. In poor weather conditions there will be more returns and lower profit that is more than compensated by the increased profits in good weather conditions.</p>
 <p>The addtional value that results from solve of this planning problem is called the <strong>Value of the Stochastic Solution (VSS)</strong>. The value of the stochastic solution is the additional profit compared to ordering to meet expected in demand. In this case,</p>
 <div class="math notranslate nohighlight">
 \[\text{VSS} = \text{EV} - \text{EVM} = 8,920 - 8,339 = 581\]</div>
 </section>
 <section id="expected-value-with-perfect-information-evpi">
 <h2>Expected value with perfect information (EVPI)<a class="headerlink" href="#expected-value-with-perfect-information-evpi" title="Permalink to this headline">¶</a></h2>
-<p>Maximizing expected profit requires the size of the order be decided before knowing what scenario will unfold. The decision for <span class="math notranslate nohighlight">\(x\)</span> has to be made “here and now” with probablistic information about the future, but no specific information on which specific future will transpire.</p>
-<p>But we can perform the hypothetic calculation of what profit could be realized if we knew the future. We are still subject to the variability of weather, what is different is we know what the weather will be at the time the order is placed. The result value of expected profit is called the <strong>Expected Value of Perfect Information (EVPI)</strong>.  The difference EVPI - EV is the extra expected profit due to having perfect knowledge of the future.</p>
-<p>To compute the expect profit with perfect information we let the order variable <span class="math notranslate nohighlight">\(x\)</span> be indexed by the subsequent scenario that will unfold. Given decision varaible <span class="math notranslate nohighlight">\(x_s\)</span>, the model for EVPI becomes</p>
+<p>Maximizing expected profit requires the size of the order be decided before knowing what scenario will unfold. The decision for <span class="math notranslate nohighlight">\(x\)</span> has to be made “here and now” with probablistic information about the future, but without specific information on which future will actually transpire.</p>
+<p>Nevertheless, we can perform the hypothetical calculation of what profit would be realized if we could know the future. We are still subject to the variability of weather, what is different is we know what the weather will be at the time the order is placed.</p>
+<p>The resulting value for the expected profit is called the <strong>Expected Value of Perfect Information (EVPI)</strong>.  The difference EVPI - EV is the extra profit due to having perfect knowledge of the future.</p>
+<p>To compute the expected profit with perfect information, we let the order variable <span class="math notranslate nohighlight">\(x\)</span> be indexed by the subsequent scenario that will unfold. Given decision varaible <span class="math notranslate nohighlight">\(x_s\)</span>, the model for EVPI becomes</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -931,15 +933,15 @@ y_s &amp; \leq d_s &amp; \forall s \in S
 <span class="p">}</span>
 
 <span class="c1"># create model instance</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;Pet Shop&#39;</span><span class="p">)</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;Pop-up Shop&#39;</span><span class="p">)</span>
 
 <span class="c1"># set of scenarios</span>
 <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">scenarios</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
 <span class="c1"># decision variables</span>
-<span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
 
 <span class="c1"># objective</span>
 <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
@@ -1071,13 +1073,25 @@ Expected Profit: 10220.0
 </table>
 <p>These results verify our expectation that</p>
 <div class="math notranslate nohighlight">
-\[EVM \leq EVSS \leq EVPI\]</div>
+\[
+\begin{align*}
+EVM \leq EVSS \leq EVPI
+\end{align*}
+\]</div>
 <p>The value of the stochastic solution</p>
 <div class="math notranslate nohighlight">
-\[ VSS = EVSS - EVM = 581 \]</div>
+\[
+\begin{align*}
+VSS = EVSS - EVM = 581
+\end{align*}
+\]</div>
 <p>The value of perfect information</p>
 <div class="math notranslate nohighlight">
-\[ VPI = EVPI - EVSS = 1,300 \]</div>
+\[
+\begin{align*}
+VPI = EVPI - EVSS = 1,300
+\end{align*}
+\]</div>
 <p>As one might expect, there is a cost that results from lack of knowledge about an uncertain future.</p>
 </section>
 </section>
