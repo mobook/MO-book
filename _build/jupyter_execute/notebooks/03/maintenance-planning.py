@@ -30,9 +30,11 @@ import pyomo.gdp as gdp
 # 
 # The planning objective is to maximize profit realized during the days the plant is operational. 
 # 
+# $$
 # \begin{align*}
 # \mbox{Profit} & = \max_{x, y} \sum_{t=1}^T c_t x_t
 # \end{align*}
+# $$
 # 
 # subject to completing $P$ maintenance periods.  
 
@@ -42,17 +44,21 @@ import pyomo.gdp as gdp
 # 
 # Completing $P$ maintenance periods requires a total of $P$ starts.
 # 
+# $$
 # \begin{align*}
 # \sum_{t=1}^T y_t &  = P \\
 # \end{align*}
+# $$
 # 
 # **Maintenance periods do not overlap.**
 # 
 # No more than one maintenance period can start in any consecutive set of M days.
 # 
+# $$
 # \begin{align*}
 # \sum_{s=0}^{M-1}y_{t+s} & \leq 1 \qquad \forall t = 1, 2, \ldots, T-M+1
 # \end{align*}
+# $$
 # 
 # This last requirement could be modified if some period of time should occur between maintenance periods.
 # 
@@ -60,9 +66,11 @@ import pyomo.gdp as gdp
 # 
 # The final requirement is a disjunctive constraint that says either $y_t = 0$ or the sum $\sum_{s}^{M-1}x_{t+s} = 0$, but not both. Mathematically, this forms a set of constraints reading
 # 
+# $$
 # \begin{align*}
 # \left(y_t = 0\right) \veebar \left(\sum_{s=0}^{M-1}x_{t+s} = 0\right)\qquad \forall t = 1, 2, \ldots, T-M+1
 # \end{align*}
+# $$
 # 
 # where $\veebar$ denotes an exclusive or condition.
 
@@ -152,9 +160,11 @@ plot_schedule(model)
 # 
 # * An additional sequence of equality constraints is introduced relating $x_t$ to $u_t^+$ and $u_t^-$.
 # 
+# $$
 # \begin{align*}
 # x_{t} & = x_{t-1} + u^+_t - u^-_t
 # \end{align*}
+# $$
 # 
 # We begin the Pyomo model by specifying the constraints, then modifying the Big-M formulation to add the features described above.
 
@@ -220,17 +230,21 @@ plot_schedule(m)
 # 
 # The next revision of the model is to incorporate a requirement that $N$ operational days be scheduled between any mainteance periods. This does allow for maintenance to be postponed until the very end of the planning period. The disjunctive constraints read
 # 
+# $$
 # \begin{align*}
 # \left(y_t = 0\right) \veebar \left(\sum_{s=0}^{(M + N -1) \wedge (t + s \leq T)}x_{t+s} = 0\right)\qquad \forall t = 1, 2, \ldots, T-M+1
 # \end{align*}
+# $$
 # 
 # where the upper bound on the summation is needed to handle the terminal condition. 
 # 
 # Paradoxically, this is an example where the Big-M method provides a much faster solution.
 # 
+# $$
 # \begin{align*}
 # \sum_{s=0}^{(M + N -1) \wedge (t + s \leq T)}x_{t+s} \leq (M+N)(1-y_t) \qquad \forall t = 1, 2, \ldots, T-M+1
 # \end{align*}
+# $$
 # 
 # The following cell implements both sets of constraints. 
 

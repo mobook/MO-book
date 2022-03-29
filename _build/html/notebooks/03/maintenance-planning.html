@@ -58,7 +58,7 @@ const thebe_selector_output = ".output, .cell_output"
     <script>mermaid.initialize({startOnLoad:true});</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="4. Network Optimization" href="../04/04.00.html" />
+    <link rel="next" title="NEED TITLE" href="large-example.html" />
     <link rel="prev" title="Job Shop Scheduling" href="job-shop-scheduling.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
@@ -226,6 +226,11 @@ const thebe_selector_output = ".output, .cell_output"
    <li class="toctree-l2 current active">
     <a class="current reference internal" href="#">
      Maintenance Planning
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="large-example.html">
+     NEED TITLE
     </a>
    </li>
   </ul>
@@ -582,29 +587,41 @@ const thebe_selector_output = ".output, .cell_output"
 <section id="objective">
 <h3>Objective<a class="headerlink" href="#objective" title="Permalink to this headline">¶</a></h3>
 <p>The planning objective is to maximize profit realized during the days the plant is operational.</p>
-<p>\begin{align*}
+<div class="math notranslate nohighlight">
+\[
+\begin{align*}
 \mbox{Profit} &amp; = \max_{x, y} \sum_{t=1}^T c_t x_t
-\end{align*}</p>
+\end{align*}
+\]</div>
 <p>subject to completing <span class="math notranslate nohighlight">\(P\)</span> maintenance periods.</p>
 </section>
 <section id="constraints">
 <h3>Constraints<a class="headerlink" href="#constraints" title="Permalink to this headline">¶</a></h3>
 <p><strong>Number of maintenance periods is equal to P.</strong></p>
 <p>Completing <span class="math notranslate nohighlight">\(P\)</span> maintenance periods requires a total of <span class="math notranslate nohighlight">\(P\)</span> starts.</p>
-<p>\begin{align*}
-\sum_{t=1}^T y_t &amp;  = P \
-\end{align*}</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\sum_{t=1}^T y_t &amp;  = P \\
+\end{align*}
+\end{split}\]</div>
 <p><strong>Maintenance periods do not overlap.</strong></p>
 <p>No more than one maintenance period can start in any consecutive set of M days.</p>
-<p>\begin{align*}
+<div class="math notranslate nohighlight">
+\[
+\begin{align*}
 \sum_{s=0}^{M-1}y_{t+s} &amp; \leq 1 \qquad \forall t = 1, 2, \ldots, T-M+1
-\end{align*}</p>
+\end{align*}
+\]</div>
 <p>This last requirement could be modified if some period of time should occur between maintenance periods.</p>
 <p><strong>The unit must shut down for M days following a maintenance start.</strong></p>
 <p>The final requirement is a disjunctive constraint that says either <span class="math notranslate nohighlight">\(y_t = 0\)</span> or the sum <span class="math notranslate nohighlight">\(\sum_{s}^{M-1}x_{t+s} = 0\)</span>, but not both. Mathematically, this forms a set of constraints reading</p>
-<p>\begin{align*}
+<div class="math notranslate nohighlight">
+\[
+\begin{align*}
 \left(y_t = 0\right) \veebar \left(\sum_{s=0}^{M-1}x_{t+s} = 0\right)\qquad \forall t = 1, 2, \ldots, T-M+1
-\end{align*}</p>
+\end{align*}
+\]</div>
 <p>where <span class="math notranslate nohighlight">\(\veebar\)</span> denotes an exclusive or condition.</p>
 </section>
 </section>
@@ -699,9 +716,12 @@ const thebe_selector_output = ".output, .cell_output"
 <li><p>Two new variable sequences, <span class="math notranslate nohighlight">\(0 \leq u_t^+ \leq u_t^{+,\max}\)</span> and <span class="math notranslate nohighlight">\(0\leq u_t^- \leq u_t^{-,\max}\)</span>, are introduced which denote the fraction increase or decrease in unit capacity to completed on day <span class="math notranslate nohighlight">\(t\)</span>.</p></li>
 <li><p>An additional sequence of equality constraints is introduced relating <span class="math notranslate nohighlight">\(x_t\)</span> to <span class="math notranslate nohighlight">\(u_t^+\)</span> and <span class="math notranslate nohighlight">\(u_t^-\)</span>.</p></li>
 </ul>
-<p>\begin{align*}
+<div class="math notranslate nohighlight">
+\[
+\begin{align*}
 x_{t} &amp; = x_{t-1} + u^+_t - u^-_t
-\end{align*}</p>
+\end{align*}
+\]</div>
 <p>We begin the Pyomo model by specifying the constraints, then modifying the Big-M formulation to add the features described above.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -769,14 +789,20 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t
 <h2>Specifying the minimum number of operational days between maintenance periods<a class="headerlink" href="#specifying-the-minimum-number-of-operational-days-between-maintenance-periods" title="Permalink to this headline">¶</a></h2>
 <p>Up to this point we have imposed no constraints on the frequency of maintenance periods. Without such constraints, particularly when ramping constraints are imposed, is that maintenance periods will be scheduled back-to-back, which is clearly not a useful result for most situations.</p>
 <p>The next revision of the model is to incorporate a requirement that <span class="math notranslate nohighlight">\(N\)</span> operational days be scheduled between any mainteance periods. This does allow for maintenance to be postponed until the very end of the planning period. The disjunctive constraints read</p>
-<p>\begin{align*}
+<div class="math notranslate nohighlight">
+\[
+\begin{align*}
 \left(y_t = 0\right) \veebar \left(\sum_{s=0}^{(M + N -1) \wedge (t + s \leq T)}x_{t+s} = 0\right)\qquad \forall t = 1, 2, \ldots, T-M+1
-\end{align*}</p>
+\end{align*}
+\]</div>
 <p>where the upper bound on the summation is needed to handle the terminal condition.</p>
 <p>Paradoxically, this is an example where the Big-M method provides a much faster solution.</p>
-<p>\begin{align*}
+<div class="math notranslate nohighlight">
+\[
+\begin{align*}
 \sum_{s=0}^{(M + N -1) \wedge (t + s \leq T)}x_{t+s} \leq (M+N)(1-y_t) \qquad \forall t = 1, 2, \ldots, T-M+1
-\end{align*}</p>
+\end{align*}
+\]</div>
 <p>The following cell implements both sets of constraints.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -877,10 +903,10 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t
             <p class="prev-next-title">Job Shop Scheduling</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="../04/04.00.html" title="next page">
+    <a class='right-next' id="next-link" href="large-example.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">4. Network Optimization</p>
+        <p class="prev-next-title">NEED TITLE</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

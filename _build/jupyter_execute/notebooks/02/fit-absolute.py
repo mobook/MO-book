@@ -7,7 +7,7 @@
 # 
 # This notebook demonstrates linear regression by using to linear programming to minimize a sum of absolute errors between the model prediction and data from a training set. The sum of absolute values of  errors is the $L_1$ norm which is known to have favorable robustness characteristics in practical use. We follow closely this [paper](https://www.jstor.org/stable/1402501).
 
-# In[150]:
+# In[1]:
 
 
 # Install Pyomo and solvers for Google Colab
@@ -26,7 +26,7 @@ if "google.colab" in sys.modules:
 # 
 # Cortez, P., Cerdeira, A., Almeida, F., Matos, T., & Reis, J. (2009). Modeling wine preferences by data mining from physicochemical properties. Decision support systems, 47(4), 547-553. https://doi.org/10.1016/j.dss.2009.05.016
 
-# In[221]:
+# In[2]:
 
 
 import pandas as pd
@@ -40,7 +40,7 @@ red_wines
 # 
 # The data consists of 1,599 measurements of eleven physical and chemical characteristics plus an integer measure of sensory quality recorded on a scale from 3 to 8. Histograms provides insight into the values and variability of the data set.
 
-# In[222]:
+# In[3]:
 
 
 fig, ax = plt.subplots(3, 4, figsize=(12, 8), sharey=True)
@@ -56,13 +56,13 @@ plt.tight_layout()
 
 # Here the "output" is the reported sensory quality.
 
-# In[223]:
+# In[ ]:
 
 
 red_wines.corr()["quality"].plot(kind="bar", grid=True)
 
 
-# In[224]:
+# In[ ]:
 
 
 ax = wine_quality.boxplot(column="alcohol", by="quality")
@@ -83,7 +83,7 @@ ax = wine_quality.boxplot(column="alcohol", by="quality")
 # $$
 # 
 
-# In[225]:
+# In[4]:
 
 
 import pyomo.environ as pyo
@@ -129,19 +129,19 @@ m = l1_fit_version1(red_wines, "quality", "alcohol")
 print(m.sum_of_absolute_values())
 
 
-# In[227]:
+# In[5]:
 
 
 vars = {i: l1_fit_version1(red_wines, "quality", i).sum_of_absolute_values() for i in red_wines.columns}
 
 
-# In[229]:
+# In[6]:
 
 
 pd.Series(vars).plot(kind="bar")
 
 
-# In[219]:
+# In[7]:
 
 
 red_wines["prediction"] = [m.prediction[i]() for i in m.I]

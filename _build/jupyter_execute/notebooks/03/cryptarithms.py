@@ -44,7 +44,7 @@ if "google.colab" in sys.modules:
 # $$
 # \begin{align*}
 # \begin{bmatrix}n_a \lt n_b\end{bmatrix} 
-# \veebar &
+# \ \veebar\  &
 # \begin{bmatrix}n_b \lt n_a\end{bmatrix} 
 # & \forall a \lt b
 # \end{align*}$$
