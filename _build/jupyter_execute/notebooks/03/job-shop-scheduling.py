@@ -7,7 +7,7 @@
 # 
 # The following cell specifies the solver to used in the subsequent calculations. Some of these problems can become quite larger, and therefore the `gurobi` solver has been set as a default. If you don't have the `gurobi` solver then adjust the code to use the `glpk` solver, but know the calculations may take longer (and the benchmark problem will not solve at all). If you do have the `gurobi` solver, edit the location of the executable to match the location on your computer.
 
-# In[1]:
+# In[37]:
 
 
 # Import Pyomo and solvers for Google Colab
@@ -64,7 +64,7 @@ if "google.colab" in sys.modules:
 # 
 # We convert this to a JSON style representation where tasks are denoted by (Job,Machine) tuples in Python. The task data is stored in a Python dictionary indexed by (Job,Machine) tuples. The task data conists of a dictionary with duration ('dur') and (Job,Machine) pair for any prerequisite task.
 
-# In[2]:
+# In[38]:
 
 
 TASKS = {
@@ -126,7 +126,7 @@ TASKS = {
 # 
 # The job shop scheduling problem is implemented below in Pyomo. The implementation consists of of a function JobShopModel(TASKS) that accepts a dictionary of tasks and returns a Pyomo model. 
 
-# In[3]:
+# In[40]:
 
 
 import pyomo.environ as pyo
@@ -142,18 +142,20 @@ def jobshop_model(TASKS):
     model.JOBS = pyo.Set(initialize = list(set([j for (j, m) in model.TASKS])))
     
     # set of machines is constructed from a python set
-    model.MACHINES = pyo.Set(initialize = list(set([m for (j,m) in model.TASKS])))
+    model.MACHINES = pyo.Set(initialize = list(set([m for (j, m) in model.TASKS])))
     
     # the order of tasks is constructed as a cross-product of tasks and filtering
     model.TASKORDER = pyo.Set(initialize = model.TASKS * model.TASKS, dimen=4, 
-        filter = lambda model, j, m, k, n: (k,n) == TASKS[(j,m)]['prec'])
+        filter = lambda model, j, m, k, n: (k, n) == TASKS[(j, m)]['prec'])
     
     # the set of disjunctions is cross-product of jobs, jobs, and machines
     model.DISJUNCTIONS = pyo.Set(initialize = model.JOBS * model.JOBS * model.MACHINES, dimen=3,
-        filter = lambda model, j, k, m: j < k and (j,m) in model.TASKS and (k,m) in model.TASKS)
+        filter = lambda model, j, k, m: j < k and (j, m) in model.TASKS and (k, m) in model.TASKS)
     
     # load duration data into a model parameter for later access
-    model.dur = pyo.Param(model.TASKS, initialize=lambda model, j, m: TASKS[(j,m)]['dur'])
+    @model.Param(model.TASKS)
+    def dur(model, j, m):
+        return TASKS[(j, m)]['dur']
 
     # establish an upper bound on makespan
     ub = sum([model.dur[j, m] for (j,m) in model.TASKS])
@@ -178,7 +180,6 @@ def jobshop_model(TASKS):
     def no_overlap(model, j, k, m):
         return [model.start[j, m] + model.dur[j, m] <= model.start[k, m],
                 model.start[k, m] + model.dur[k, m] <= model.start[j, m]]
-        
     
     pyo.TransformationFactory('gdp.hull').apply_to(model)
     return model
@@ -186,7 +187,7 @@ def jobshop_model(TASKS):
 jobshop_model(TASKS)
 
 
-# In[4]:
+# In[41]:
 
 
 def jobshop_solve(model):
@@ -208,7 +209,7 @@ results
 
 # ## Printing schedules
 
-# In[5]:
+# In[42]:
 
 
 import pandas as pd
@@ -224,7 +225,7 @@ print(schedule.sort_values(by=['Machine','Start']).set_index(['Machine', 'Job'])
 
 # ## Visualizing Results with Gantt Charts
 
-# In[6]:
+# In[43]:
 
 
 import matplotlib.pyplot as plt
@@ -291,7 +292,7 @@ visualize(results)
 # 
 # Before going further, we create a function to streamline the generation of the TASKS dictionary.
 
-# In[7]:
+# In[44]:
 
 
 def recipe_to_tasks(jobs, machines, durations):
@@ -311,14 +312,14 @@ recipeA = recipe_to_tasks('A', ['Mixer', 'Reactor', 'Separator', 'Packaging'], [
 visualize(jobshop(recipeA))
 
 
-# In[8]:
+# In[45]:
 
 
 recipeB = recipe_to_tasks('B', ['Separator', 'Packaging'], [4.5, 1])
 visualize(jobshop(recipeB))
 
 
-# In[9]:
+# In[46]:
 
 
 recipeC = recipe_to_tasks('C', ['Separator', 'Reactor', 'Packaging'], [5, 3, 1.5])
@@ -329,7 +330,7 @@ visualize(jobshop(recipeC))
 # 
 # Let's now consider an optimal scheduling problem where we are wish to make two batches of Product A.
 
-# In[10]:
+# In[47]:
 
 
 TASKS = recipe_to_tasks(['A1','A2','A3', 'A4'],['Mixer','Reactor','Separator','Packaging'],[1,5,4,1.5])
@@ -342,7 +343,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # Let's next consider production of a single batch each of products A, B, and C.
 
-# In[11]:
+# In[48]:
 
 
 # update is used to append dictionaries
@@ -362,7 +363,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # As we see below, each additional set of three products takes an additionl 13 hours.  So there is considerable efficiency gained by scheduling over longer intervals whenever possible.
 
-# In[12]:
+# In[49]:
 
 
 TASKS = recipe_to_tasks(['A1','A2'],['Mixer','Reactor','Separator','Packaging'],[1,5,4,1.5])
@@ -390,7 +391,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # For this purpose, we write a new JobShopModel_Clean
 
-# In[13]:
+# In[50]:
 
 
 def jobshop_model_clean(TASKS, tclean=0):
@@ -401,41 +402,47 @@ def jobshop_model_clean(TASKS, tclean=0):
     model.TASKS = pyo.Set(initialize = TASKS.keys(), dimen=2)
     
     # the set of jobs is constructed from a python set
-    model.JOBS = pyo.Set(initialize = list(set([j for (j,m) in model.TASKS])))
+    model.JOBS = pyo.Set(initialize = list(set([j for (j, m) in model.TASKS])))
     
     # set of machines is constructed from a python set
-    model.MACHINES = pyo.Set(initialize = list(set([m for (j,m) in model.TASKS])))
+    model.MACHINES = pyo.Set(initialize = list(set([m for (j, m) in model.TASKS])))
     
     # the order of tasks is constructed as a cross-product of tasks and filtering
     model.TASKORDER = pyo.Set(initialize = model.TASKS * model.TASKS, dimen=4, 
-        filter = lambda model, j, m, k, n: (k,n) == TASKS[(j,m)]['prec'])
+        filter = lambda model, j, m, k, n: (k, n) == TASKS[(j, m)]['prec'])
     
     # the set of disjunctions is cross-product of jobs, jobs, and machines
     model.DISJUNCTIONS = pyo.Set(initialize = model.JOBS * model.JOBS * model.MACHINES, dimen=3,
-        filter = lambda model, j, k, m: j < k and (j,m) in model.TASKS and (k,m) in model.TASKS)
+        filter = lambda model, j, k, m: j < k and (j, m) in model.TASKS and (k, m) in model.TASKS)
     
     # load duration data into a model parameter for later access
-    model.dur = pyo.Param(model.TASKS, initialize=lambda model, j, m: TASKS[(j,m)]['dur'])
+    @model.Param(model.TASKS)
+    def dur(model, j, m):
+        return TASKS[(j, m)]['dur']
 
     # establish an upper bound on makespan
-    ub = sum([model.dur[j,m] for (j,m) in model.TASKS])
+    ub = sum([model.dur[j, m] for (j, m) in model.TASKS])
     
     model.makespan = pyo.Var(bounds=(0, ub))
 
     model.start = pyo.Var(model.TASKS, bounds=(0, ub))
     
-    model.objective = pyo.Objective(expr = model.makespan, sense = pyo.minimize)
+    @model.Objective(sense=pyo.minimize)
+    def objective(m):
+        return model.makespan
 
-    model.finish = pyo.Constraint(model.TASKS, rule=lambda model, j, m:  
-        model.start[j,m] + model.dur[j,m] <= model.makespan)
+    @model.Constraint(model.TASKS)
+    def finish(model, j, m):
+        return model.start[j, m] + model.dur[j, m] <= model.makespan
     
-    model.preceding = pyo.Constraint(model.TASKORDER, rule=lambda model, j, m, k, n: 
-        model.start[k,n] + model.dur[k,n] <= model.start[j,m])
+    @model.Constraint(model.TASKORDER)
+    def preceding(model, j, m, k, n):
+        return model.start[k, n] + model.dur[k, n] <= model.start[j, m]
     
     @model.Disjunction(model.DISJUNCTIONS)
     def disjunctions(model, j, k, m):
-        return [model.start[j,m] + model.dur[j,m] + tclean <= model.start[k,m], 
-                model.start[k,m] + model.dur[k,m] + tclean <= model.start[j,m]]
+        return [model.start[j, m] + model.dur[j, m] + tclean <= model.start[k, m], 
+                model.start[k, m] + model.dur[k, m] + tclean <= model.start[j, m]]
 
     pyo.TransformationFactory('gdp.hull').apply_to(model)
     return model
@@ -470,7 +477,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # While this could be implemented on an equipment or product specific basis, here we add an optional ZW flag to the JobShop function that, by default, is set to False.
 
-# In[14]:
+# In[61]:
 
 
 def jobshop_model_clean_zw(TASKS, tclean=0, ZW=False):
@@ -481,49 +488,50 @@ def jobshop_model_clean_zw(TASKS, tclean=0, ZW=False):
     model.TASKS = pyo.Set(initialize = TASKS.keys(), dimen=2)
     
     # the set of jobs is constructed from a python set
-    model.JOBS = pyo.Set(initialize = list(set([j for (j,m) in model.TASKS])))
+    model.JOBS = pyo.Set(initialize = list(set([j for (j, m) in model.TASKS])))
     
     # set of machines is constructed from a python set
-    model.MACHINES = pyo.Set(initialize = list(set([m for (j,m) in model.TASKS])))
+    model.MACHINES = pyo.Set(initialize = list(set([m for (j, m) in model.TASKS])))
     
     # the order of tasks is constructed as a cross-product of tasks and filtering
     model.TASKORDER = pyo.Set(initialize = model.TASKS * model.TASKS, dimen=4, 
-        filter = lambda model, j, m, k, n: (k,n) == TASKS[(j,m)]['prec'])
+        filter = lambda model, j, m, k, n: (k, n) == TASKS[(j, m)]['prec'])
     
     # the set of disjunctions is cross-product of jobs, jobs, and machines
     model.DISJUNCTIONS = pyo.Set(initialize = model.JOBS * model.JOBS * model.MACHINES, dimen=3,
-        filter = lambda model, j, k, m: j < k and (j,m) in model.TASKS and (k,m) in model.TASKS)
+        filter = lambda model, j, k, m: j < k and (j, m) in model.TASKS and (k, m) in model.TASKS)
     
     # load duration data into a model parameter for later access
-    model.dur = pyo.Param(model.TASKS, initialize=lambda model, j, m: TASKS[(j,m)]['dur'])
+    @model.Param(model.TASKS)
+    def dur(model, j, m):
+        return TASKS[(j, m)]['dur']
 
     # establish an upper bound on makespan
-    ub = sum([model.dur[j,m] for (j,m) in model.TASKS])
-    
-    # to implement a zero-wait policy
-    model.bigM = pyo.Param(initialize=ub if ZW else 0)
+    ub = sum([model.dur[j, m] for (j, m) in model.TASKS])
     
     model.makespan = pyo.Var(bounds=(0, ub))
     
     model.start = pyo.Var(model.TASKS, bounds=(0, ub))
     
-    model.objective = pyo.Objective(expr = model.makespan, sense = pyo.minimize)
-
-    model.finish = pyo.Constraint(model.TASKS, rule=lambda model, j, m:  
-        model.start[j,m] + model.dur[j,m] <= model.makespan)
+    @model.Objective(sense=pyo.minimize)
+    def objective(model):
+        return model.makespan
     
-    def _preceding(model, j, m, k, n):
+    @model.Constraint(model.TASKS)
+    def finish(mode, j, m):
+        return model.start[j, m] + model.dur[j, m] <= model.makespan
+    
+    @model.Constraint(model.TASKORDER)
+    def preceding(model, j, m, k, n):
         if ZW:
-            return  model.start[k,n] + model.dur[k,n] == model.start[j,m]
+            return  model.start[k, n] + model.dur[k, n] == model.start[j, m]
         else:
-            return model.start[k,n] + model.dur[k,n] <= model.start[j,m]
-
-    model.preceding = pyo.Constraint(model.TASKORDER, rule=_preceding)
+            return model.start[k, n] + model.dur[k, n] <= model.start[j, m]
     
     @model.Disjunction(model.DISJUNCTIONS)
     def disjunctions(model, j, k, m):
-        return [model.start[j,m] + model.dur[j,m] + tclean <= model.start[k,m],
-                model.start[k,m] + model.dur[k,m] + tclean <= model.start[j,m]]
+        return [model.start[j, m] + model.dur[j, m] + tclean <= model.start[k, m],
+                model.start[k, m] + model.dur[k, m] + tclean <= model.start[j, m]]
 
     pyo.TransformationFactory('gdp.hull').apply_to(model)
     return model
