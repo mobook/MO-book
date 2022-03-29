@@ -97,22 +97,28 @@ TASKS = {
 # 
 # The constraints include lower bounda on the start and an upper bound on the completion of each task $(j,m)$
 # 
+# 44
 # \begin{align}
 # \text{start}_{j,m} & \geq 0\\
 # \text{start}_{j,m}+\text{dur}_{j,m} & \leq \text{makespan}
 # \end{align}
+# $$
 # 
 # Any preceeding tasks must be completed before task $(j,m)$ can start.
 # 
+# $$
 # \begin{align}
 # \text{start}_{k,n}+\text{dur}_{k,n}\leq\text{start}_{j,m}\ \ \ \ \text{for } (k,n) =\text{prec}_{j,m}
 # \end{align}
+# $$
 # 
 # Finally, for every task performed on machine $m$, there can be no overlap among those tasks. This leads to a set of pair-wise disjunctive constraints for each machine.
 # 
+# $$
 # \begin{align}
 # \left[\text{start}_{j,m}+\text{dur}_{j,m} \leq \text{start}_{k,m}\right] \vee \left[\text{start}_{k,m}+\text{dur}_{k,m} \leq \text{start}_{j,m}\right]
 # \end{align}
+# $$
 # 
 # avoids conflicts for use of the same machine. 
 
@@ -376,9 +382,11 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # This policy is implemented by modifying the usual disjunctive constraints to avoid machine conflicts to read
 # 
+# $$
 # \begin{align}
 # \left[\text{start}_{j,m}+\text{dur}_{j,m} + t_{clean} \leq \text{start}_{k,m}\right] \vee \left[\text{start}_{k,m}+\text{dur}_{k,m} + t_{clean} \leq \text{start}_{j,m}\right]
 # \end{align}
+# $$
 # 
 # For this purpose, we write a new JobShopModel_Clean
 
@@ -387,48 +395,49 @@ print("Makespan =", max([task['Finish'] for task in results]))
 
 def jobshop_model_clean(TASKS, tclean=0):
    
-    model = ConcreteModel()
+    model = pyo.ConcreteModel()
 
     # tasks is a two dimensional set of (j,m) constructed from the dictionary keys
-    model.TASKS = Set(initialize = TASKS.keys(), dimen=2)
+    model.TASKS = pyo.Set(initialize = TASKS.keys(), dimen=2)
     
     # the set of jobs is constructed from a python set
-    model.JOBS = Set(initialize = list(set([j for (j,m) in model.TASKS])))
+    model.JOBS = pyo.Set(initialize = list(set([j for (j,m) in model.TASKS])))
     
     # set of machines is constructed from a python set
-    model.MACHINES = Set(initialize = list(set([m for (j,m) in model.TASKS])))
+    model.MACHINES = pyo.Set(initialize = list(set([m for (j,m) in model.TASKS])))
     
     # the order of tasks is constructed as a cross-product of tasks and filtering
-    model.TASKORDER = Set(initialize = model.TASKS * model.TASKS, dimen=4, 
+    model.TASKORDER = pyo.Set(initialize = model.TASKS * model.TASKS, dimen=4, 
         filter = lambda model, j, m, k, n: (k,n) == TASKS[(j,m)]['prec'])
     
     # the set of disjunctions is cross-product of jobs, jobs, and machines
-    model.DISJUNCTIONS = Set(initialize = model.JOBS * model.JOBS * model.MACHINES, dimen=3,
+    model.DISJUNCTIONS = pyo.Set(initialize = model.JOBS * model.JOBS * model.MACHINES, dimen=3,
         filter = lambda model, j, k, m: j < k and (j,m) in model.TASKS and (k,m) in model.TASKS)
     
     # load duration data into a model parameter for later access
-    model.dur = Param(model.TASKS, initialize=lambda model, j, m: TASKS[(j,m)]['dur'])
+    model.dur = pyo.Param(model.TASKS, initialize=lambda model, j, m: TASKS[(j,m)]['dur'])
 
     # establish an upper bound on makespan
     ub = sum([model.dur[j,m] for (j,m) in model.TASKS])
     
-    model.makespan = Var(bounds=(0, ub))
+    model.makespan = pyo.Var(bounds=(0, ub))
 
-    model.start = Var(model.TASKS, bounds=(0, ub))
+    model.start = pyo.Var(model.TASKS, bounds=(0, ub))
     
-    model.objective = Objective(expr = model.makespan, sense = minimize)
+    model.objective = pyo.Objective(expr = model.makespan, sense = pyo.minimize)
 
-    model.finish = Constraint(model.TASKS, rule=lambda model, j, m:  
+    model.finish = pyo.Constraint(model.TASKS, rule=lambda model, j, m:  
         model.start[j,m] + model.dur[j,m] <= model.makespan)
     
-    model.preceding = Constraint(model.TASKORDER, rule=lambda model, j, m, k, n: 
+    model.preceding = pyo.Constraint(model.TASKORDER, rule=lambda model, j, m, k, n: 
         model.start[k,n] + model.dur[k,n] <= model.start[j,m])
     
-    model.disjunctions = Disjunction(model.DISJUNCTIONS, rule=lambda model,j,k,m:
-        [model.start[j,m] + model.dur[j,m] + tclean <= model.start[k,m], 
-         model.start[k,m] + model.dur[k,m] + tclean <= model.start[j,m]])
+    @model.Disjunction(model.DISJUNCTIONS)
+    def disjunctions(model, j, k, m):
+        return [model.start[j,m] + model.dur[j,m] + tclean <= model.start[k,m], 
+                model.start[k,m] + model.dur[k,m] + tclean <= model.start[j,m]]
 
-    TransformationFactory('gdp.hull').apply_to(model)
+    pyo.TransformationFactory('gdp.hull').apply_to(model)
     return model
 
 model = jobshop_model_clean(TASKS, tclean=0.5)
@@ -443,60 +452,64 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # A zero-wait policy requires subsequent processing machines to be available immediately upon completion of any task. To implement this policy, the usual precident sequencing constraint of a job shop scheduling problem, i.e.,
 # 
+# $$
 # \begin{align*}
 # \text{start}_{k,n}+\text{Dur}_{k,n} \leq \text{start}_{j,m}\ \ \ \ \text{for } (k,n) =\text{Prec}_{j,m}
 # \end{align*}
+# $$
 # 
 # is changed to 
 # 
+# $$
 # \begin{align*}
 # \text{start}_{k,n}+\text{Dur}_{k,n} = \text{start}_{j,m}\ \ \ \ \text{for } (k,n) =\text{Prec}_{j,m}\text{ and ZW is True}
 # \end{align*}
+# $$
 # 
 # if the zero-wait policy is in effect. 
 # 
 # While this could be implemented on an equipment or product specific basis, here we add an optional ZW flag to the JobShop function that, by default, is set to False.
 
-# In[ ]:
+# In[14]:
 
 
 def jobshop_model_clean_zw(TASKS, tclean=0, ZW=False):
    
-    model = ConcreteModel()
+    model = pyo.ConcreteModel()
     
     # tasks is a two dimensional set of (j,m) constructed from the dictionary keys
-    model.TASKS = Set(initialize = TASKS.keys(), dimen=2)
+    model.TASKS = pyo.Set(initialize = TASKS.keys(), dimen=2)
     
     # the set of jobs is constructed from a python set
-    model.JOBS = Set(initialize = list(set([j for (j,m) in model.TASKS])))
+    model.JOBS = pyo.Set(initialize = list(set([j for (j,m) in model.TASKS])))
     
     # set of machines is constructed from a python set
-    model.MACHINES = Set(initialize = list(set([m for (j,m) in model.TASKS])))
+    model.MACHINES = pyo.Set(initialize = list(set([m for (j,m) in model.TASKS])))
     
     # the order of tasks is constructed as a cross-product of tasks and filtering
-    model.TASKORDER = Set(initialize = model.TASKS * model.TASKS, dimen=4, 
+    model.TASKORDER = pyo.Set(initialize = model.TASKS * model.TASKS, dimen=4, 
         filter = lambda model, j, m, k, n: (k,n) == TASKS[(j,m)]['prec'])
     
     # the set of disjunctions is cross-product of jobs, jobs, and machines
-    model.DISJUNCTIONS = Set(initialize = model.JOBS * model.JOBS * model.MACHINES, dimen=3,
+    model.DISJUNCTIONS = pyo.Set(initialize = model.JOBS * model.JOBS * model.MACHINES, dimen=3,
         filter = lambda model, j, k, m: j < k and (j,m) in model.TASKS and (k,m) in model.TASKS)
     
     # load duration data into a model parameter for later access
-    model.dur = Param(model.TASKS, initialize=lambda model, j, m: TASKS[(j,m)]['dur'])
+    model.dur = pyo.Param(model.TASKS, initialize=lambda model, j, m: TASKS[(j,m)]['dur'])
 
     # establish an upper bound on makespan
     ub = sum([model.dur[j,m] for (j,m) in model.TASKS])
     
     # to implement a zero-wait policy
-    model.bigM = Param(initialize=ub if ZW else 0)
+    model.bigM = pyo.Param(initialize=ub if ZW else 0)
     
-    model.makespan = Var(bounds=(0, ub))
+    model.makespan = pyo.Var(bounds=(0, ub))
     
-    model.start = Var(model.TASKS, bounds=(0, ub))
+    model.start = pyo.Var(model.TASKS, bounds=(0, ub))
     
-    model.objective = Objective(expr = model.makespan, sense = minimize)
+    model.objective = pyo.Objective(expr = model.makespan, sense = pyo.minimize)
 
-    model.finish = Constraint(model.TASKS, rule=lambda model, j, m:  
+    model.finish = pyo.Constraint(model.TASKS, rule=lambda model, j, m:  
         model.start[j,m] + model.dur[j,m] <= model.makespan)
     
     def _preceding(model, j, m, k, n):
@@ -505,13 +518,14 @@ def jobshop_model_clean_zw(TASKS, tclean=0, ZW=False):
         else:
             return model.start[k,n] + model.dur[k,n] <= model.start[j,m]
 
-    model.preceding = Constraint(model.TASKORDER, rule=_preceding)
+    model.preceding = pyo.Constraint(model.TASKORDER, rule=_preceding)
     
-    model.disjunctions = Disjunction(model.DISJUNCTIONS, rule=lambda model,j,k,m:
-        [model.start[j,m] + model.dur[j,m] + tclean <= model.start[k,m], 
-         model.start[k,m] + model.dur[k,m] + tclean <= model.start[j,m]])
+    @model.Disjunction(model.DISJUNCTIONS)
+    def disjunctions(model, j, k, m):
+        return [model.start[j,m] + model.dur[j,m] + tclean <= model.start[k,m],
+                model.start[k,m] + model.dur[k,m] + tclean <= model.start[j,m]]
 
-    TransformationFactory('gdp.hull').apply_to(model)
+    pyo.TransformationFactory('gdp.hull').apply_to(model)
     return model
 
 model = jobshop_model_clean_zw(TASKS, tclean=0.5, ZW=True)
@@ -561,20 +575,7 @@ for job, line in enumerate(data.splitlines()[1:]):
 # In[16]:
 
 
-def jobshop_solve_neos(model):
-    solver_manager = SolverManagerFactory('neos')
-    solver_manager.solve(model, opt='cplex')
-    results = [{'Job': j,
-                'Machine': m,
-                'Start': model.start[j, m](), 
-                'Duration': model.dur[j,m], 
-                'Finish': model.start[(j, m)]() + model.dur[j,m]}
-               for j,m in model.TASKS]
-    return results
-
-model = jobshop_model(TASKS)
-results = jobshop_solve_neos(model)
-visualize(results)
+get_ipython().run_cell_magic('script', 'echo skipping', "\ndef jobshop_solve_neos(model):\n    solver_manager = pyo.SolverManagerFactory('neos')\n    solver_manager.solve(model, opt='cplex')\n    results = [{'Job': j,\n                'Machine': m,\n                'Start': model.start[j, m](), \n                'Duration': model.dur[j,m], \n                'Finish': model.start[(j, m)]() + model.dur[j,m]}\n               for j,m in model.TASKS]\n    return results\n\nmodel = jobshop_model(TASKS)\nresults = jobshop_solve_neos(model)\nvisualize(results)")
 
 
 # ## References

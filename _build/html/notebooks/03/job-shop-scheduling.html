@@ -200,7 +200,7 @@ const thebe_selector_output = ".output, .cell_output"
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="simple-production-model-gdp.html">
-     Production
+     Production Model with Disjuncts
     </a>
    </li>
    <li class="toctree-l2">
@@ -791,18 +791,26 @@ const thebe_selector_output = ".output, .cell_output"
 </tbody>
 </table>
 <p>The constraints include lower bounda on the start and an upper bound on the completion of each task <span class="math notranslate nohighlight">\((j,m)\)</span></p>
-<p>\begin{align}
+<p>44
+\begin{align}
 \text{start}<em>{j,m} &amp; \geq 0\
 \text{start}</em>{j,m}+\text{dur}_{j,m} &amp; \leq \text{makespan}
-\end{align}</p>
+\end{align}
+$$</p>
 <p>Any preceeding tasks must be completed before task <span class="math notranslate nohighlight">\((j,m)\)</span> can start.</p>
-<p>\begin{align}
-\text{start}<em>{k,n}+\text{dur}</em>{k,n}\leq\text{start}<em>{j,m}\ \ \ \ \text{for } (k,n) =\text{prec}</em>{j,m}
-\end{align}</p>
+<div class="math notranslate nohighlight">
+\[
+\begin{align}
+\text{start}_{k,n}+\text{dur}_{k,n}\leq\text{start}_{j,m}\ \ \ \ \text{for } (k,n) =\text{prec}_{j,m}
+\end{align}
+\]</div>
 <p>Finally, for every task performed on machine <span class="math notranslate nohighlight">\(m\)</span>, there can be no overlap among those tasks. This leads to a set of pair-wise disjunctive constraints for each machine.</p>
-<p>\begin{align}
-\left[\text{start}<em>{j,m}+\text{dur}</em>{j,m} \leq \text{start}<em>{k,m}\right] \vee \left[\text{start}</em>{k,m}+\text{dur}<em>{k,m} \leq \text{start}</em>{j,m}\right]
-\end{align}</p>
+<div class="math notranslate nohighlight">
+\[
+\begin{align}
+\left[\text{start}_{j,m}+\text{dur}_{j,m} \leq \text{start}_{k,m}\right] \vee \left[\text{start}_{k,m}+\text{dur}_{k,m} \leq \text{start}_{j,m}\right]
+\end{align}
+\]</div>
 <p>avoids conflicts for use of the same machine.</p>
 </section>
 <section id="pyomo-implementation">
@@ -869,7 +877,7 @@ const thebe_selector_output = ".output, .cell_output"
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;pyomo.core.base.PyomoModel.ConcreteModel at 0x7faf01d73c00&gt;
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;pyomo.core.base.PyomoModel.ConcreteModel at 0x7fc349527340&gt;
 </pre></div>
 </div>
 </div>
@@ -1207,56 +1215,60 @@ Makespan = 15.0
 <p>A common feature of batch unit operations is a requirement that equipment be cleaned prior to reuse.</p>
 <p>In most cases the time needed for clean out would be specific to the equipment and product. But for the purposes this notebook, we implement can implement a simple clean out policy with a single non-negative parameter <span class="math notranslate nohighlight">\(t_{clean} \geq 0\)</span> which, if specified, requires a period no less than <span class="math notranslate nohighlight">\(t_{clean}\)</span> between the finish of one task and the start of another on every piece of equipment.</p>
 <p>This policy is implemented by modifying the usual disjunctive constraints to avoid machine conflicts to read</p>
-<p>\begin{align}
-\left[\text{start}<em>{j,m}+\text{dur}</em>{j,m} + t_{clean} \leq \text{start}<em>{k,m}\right] \vee \left[\text{start}</em>{k,m}+\text{dur}<em>{k,m} + t</em>{clean} \leq \text{start}_{j,m}\right]
-\end{align}</p>
+<div class="math notranslate nohighlight">
+\[
+\begin{align}
+\left[\text{start}_{j,m}+\text{dur}_{j,m} + t_{clean} \leq \text{start}_{k,m}\right] \vee \left[\text{start}_{k,m}+\text{dur}_{k,m} + t_{clean} \leq \text{start}_{j,m}\right]
+\end{align}
+\]</div>
 <p>For this purpose, we write a new JobShopModel_Clean</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">jobshop_model_clean</span><span class="p">(</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">tclean</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
    
-    <span class="n">model</span> <span class="o">=</span> <span class="n">ConcreteModel</span><span class="p">()</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
 
     <span class="c1"># tasks is a two dimensional set of (j,m) constructed from the dictionary keys</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">TASKS</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">TASKS</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
     
     <span class="c1"># the set of jobs is constructed from a python set</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">j</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">])))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">j</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">])))</span>
     
     <span class="c1"># set of machines is constructed from a python set</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">MACHINES</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">m</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">])))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">MACHINES</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">m</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">])))</span>
     
     <span class="c1"># the order of tasks is constructed as a cross-product of tasks and filtering</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">TASKORDER</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> 
+    <span class="n">model</span><span class="o">.</span><span class="n">TASKORDER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> 
         <span class="nb">filter</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">n</span><span class="p">)</span> <span class="o">==</span> <span class="n">TASKS</span><span class="p">[(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)][</span><span class="s1">&#39;prec&#39;</span><span class="p">])</span>
     
     <span class="c1"># the set of disjunctions is cross-product of jobs, jobs, and machines</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">DISJUNCTIONS</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">MACHINES</span><span class="p">,</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">DISJUNCTIONS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">MACHINES</span><span class="p">,</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
         <span class="nb">filter</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">k</span> <span class="ow">and</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span> <span class="ow">and</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">)</span>
     
     <span class="c1"># load duration data into a model parameter for later access</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">dur</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="n">TASKS</span><span class="p">[(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)][</span><span class="s1">&#39;dur&#39;</span><span class="p">])</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">dur</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="n">TASKS</span><span class="p">[(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)][</span><span class="s1">&#39;dur&#39;</span><span class="p">])</span>
 
     <span class="c1"># establish an upper bound on makespan</span>
     <span class="n">ub</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">])</span>
     
-    <span class="n">model</span><span class="o">.</span><span class="n">makespan</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">makespan</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="p">))</span>
 
-    <span class="n">model</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="p">))</span>
     
-    <span class="n">model</span><span class="o">.</span><span class="n">objective</span> <span class="o">=</span> <span class="n">Objective</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">makespan</span><span class="p">,</span> <span class="n">sense</span> <span class="o">=</span> <span class="n">minimize</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">objective</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">makespan</span><span class="p">,</span> <span class="n">sense</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
 
-    <span class="n">model</span><span class="o">.</span><span class="n">finish</span> <span class="o">=</span> <span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span>  
+    <span class="n">model</span><span class="o">.</span><span class="n">finish</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span>  
         <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">makespan</span><span class="p">)</span>
     
-    <span class="n">model</span><span class="o">.</span><span class="n">preceding</span> <span class="o">=</span> <span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKORDER</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> 
+    <span class="n">model</span><span class="o">.</span><span class="n">preceding</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKORDER</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> 
         <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">n</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">])</span>
     
-    <span class="n">model</span><span class="o">.</span><span class="n">disjunctions</span> <span class="o">=</span> <span class="n">Disjunction</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">DISJUNCTIONS</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">:</span>
-        <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">tclean</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">],</span> 
-         <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">tclean</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]])</span>
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Disjunction</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">DISJUNCTIONS</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">disjunctions</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">tclean</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">],</span> 
+                <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">tclean</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]]</span>
 
-    <span class="n">TransformationFactory</span><span class="p">(</span><span class="s1">&#39;gdp.hull&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s1">&#39;gdp.hull&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">model</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">jobshop_model_clean</span><span class="p">(</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">tclean</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
@@ -1267,25 +1279,10 @@ Makespan = 15.0
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">folders</span><span class="o">/</span><span class="n">cm</span><span class="o">/</span><span class="n">z3t28j296f98jdp1vqyplkz00000gn</span><span class="o">/</span><span class="n">T</span><span class="o">/</span><span class="n">ipykernel_7574</span><span class="o">/</span><span class="mf">2072446490.</span><span class="n">py</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
-<span class="g g-Whitespace">     </span><span class="mi">45</span>     <span class="k">return</span> <span class="n">model</span>
-<span class="g g-Whitespace">     </span><span class="mi">46</span> 
-<span class="ne">---&gt; </span><span class="mi">47</span> <span class="n">model</span> <span class="o">=</span> <span class="n">jobshop_model_clean</span><span class="p">(</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">tclean</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">48</span> <span class="n">results</span> <span class="o">=</span> <span class="n">jobshop_solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">49</span> <span class="n">visualize</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
-
-<span class="nn">/var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/ipykernel_7574/2072446490.py</span> in <span class="ni">jobshop_model_clean</span><span class="nt">(TASKS, tclean)</span>
-<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="k">def</span> <span class="nf">jobshop_model_clean</span><span class="p">(</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">tclean</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> 
-<span class="ne">----&gt; </span><span class="mi">3</span>     <span class="n">model</span> <span class="o">=</span> <span class="n">ConcreteModel</span><span class="p">()</span>
-<span class="g g-Whitespace">      </span><span class="mi">4</span> 
-<span class="g g-Whitespace">      </span><span class="mi">5</span>     <span class="c1"># tasks is a two dimensional set of (j,m) constructed from the dictionary keys</span>
-
-<span class="ne">NameError</span>: name &#39;ConcreteModel&#39; is not defined
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Makespan = 30.5
 </pre></div>
 </div>
+<img alt="../../_images/job-shop-scheduling_27_1.png" src="../../_images/job-shop-scheduling_27_1.png" />
 </div>
 </div>
 </section>
@@ -1293,54 +1290,60 @@ Makespan = 15.0
 <h3>Adding a zero wait policy<a class="headerlink" href="#adding-a-zero-wait-policy" title="Permalink to this headline">¶</a></h3>
 <p>One of the issues in the use of job shop scheduling for chemical process operations are situations where there it is not possible to store intermediate materials. If there is no way to store intermediates, either in the processing equipment or in external vessels, then a <strong>zero-wait</strong> policy may be required.</p>
 <p>A zero-wait policy requires subsequent processing machines to be available immediately upon completion of any task. To implement this policy, the usual precident sequencing constraint of a job shop scheduling problem, i.e.,</p>
-<p>\begin{align*}
-\text{start}<em>{k,n}+\text{Dur}</em>{k,n} \leq \text{start}<em>{j,m}\ \ \ \ \text{for } (k,n) =\text{Prec}</em>{j,m}
-\end{align*}</p>
+<div class="math notranslate nohighlight">
+\[
+\begin{align*}
+\text{start}_{k,n}+\text{Dur}_{k,n} \leq \text{start}_{j,m}\ \ \ \ \text{for } (k,n) =\text{Prec}_{j,m}
+\end{align*}
+\]</div>
 <p>is changed to</p>
-<p>\begin{align*}
-\text{start}<em>{k,n}+\text{Dur}</em>{k,n} = \text{start}<em>{j,m}\ \ \ \ \text{for } (k,n) =\text{Prec}</em>{j,m}\text{ and ZW is True}
-\end{align*}</p>
+<div class="math notranslate nohighlight">
+\[
+\begin{align*}
+\text{start}_{k,n}+\text{Dur}_{k,n} = \text{start}_{j,m}\ \ \ \ \text{for } (k,n) =\text{Prec}_{j,m}\text{ and ZW is True}
+\end{align*}
+\]</div>
 <p>if the zero-wait policy is in effect.</p>
 <p>While this could be implemented on an equipment or product specific basis, here we add an optional ZW flag to the JobShop function that, by default, is set to False.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">jobshop_model_clean_zw</span><span class="p">(</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">tclean</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ZW</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
    
-    <span class="n">model</span> <span class="o">=</span> <span class="n">ConcreteModel</span><span class="p">()</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
     
     <span class="c1"># tasks is a two dimensional set of (j,m) constructed from the dictionary keys</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">TASKS</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">TASKS</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
     
     <span class="c1"># the set of jobs is constructed from a python set</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">j</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">])))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">j</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">])))</span>
     
     <span class="c1"># set of machines is constructed from a python set</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">MACHINES</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">m</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">])))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">MACHINES</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">m</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">])))</span>
     
     <span class="c1"># the order of tasks is constructed as a cross-product of tasks and filtering</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">TASKORDER</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> 
+    <span class="n">model</span><span class="o">.</span><span class="n">TASKORDER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> 
         <span class="nb">filter</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">n</span><span class="p">)</span> <span class="o">==</span> <span class="n">TASKS</span><span class="p">[(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)][</span><span class="s1">&#39;prec&#39;</span><span class="p">])</span>
     
     <span class="c1"># the set of disjunctions is cross-product of jobs, jobs, and machines</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">DISJUNCTIONS</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">MACHINES</span><span class="p">,</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">DISJUNCTIONS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">MACHINES</span><span class="p">,</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
         <span class="nb">filter</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">k</span> <span class="ow">and</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span> <span class="ow">and</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">)</span>
     
     <span class="c1"># load duration data into a model parameter for later access</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">dur</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="n">TASKS</span><span class="p">[(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)][</span><span class="s1">&#39;dur&#39;</span><span class="p">])</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">dur</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="n">TASKS</span><span class="p">[(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)][</span><span class="s1">&#39;dur&#39;</span><span class="p">])</span>
 
     <span class="c1"># establish an upper bound on makespan</span>
     <span class="n">ub</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">])</span>
     
     <span class="c1"># to implement a zero-wait policy</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">bigM</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">ub</span> <span class="k">if</span> <span class="n">ZW</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">bigM</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">ub</span> <span class="k">if</span> <span class="n">ZW</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
     
-    <span class="n">model</span><span class="o">.</span><span class="n">makespan</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">makespan</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="p">))</span>
     
-    <span class="n">model</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="p">))</span>
     
-    <span class="n">model</span><span class="o">.</span><span class="n">objective</span> <span class="o">=</span> <span class="n">Objective</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">makespan</span><span class="p">,</span> <span class="n">sense</span> <span class="o">=</span> <span class="n">minimize</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">objective</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">makespan</span><span class="p">,</span> <span class="n">sense</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
 
-    <span class="n">model</span><span class="o">.</span><span class="n">finish</span> <span class="o">=</span> <span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span>  
+    <span class="n">model</span><span class="o">.</span><span class="n">finish</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span>  
         <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">makespan</span><span class="p">)</span>
     
     <span class="k">def</span> <span class="nf">_preceding</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
@@ -1349,13 +1352,14 @@ Makespan = 15.0
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">n</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span>
 
-    <span class="n">model</span><span class="o">.</span><span class="n">preceding</span> <span class="o">=</span> <span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKORDER</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="n">_preceding</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">preceding</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TASKORDER</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="n">_preceding</span><span class="p">)</span>
     
-    <span class="n">model</span><span class="o">.</span><span class="n">disjunctions</span> <span class="o">=</span> <span class="n">Disjunction</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">DISJUNCTIONS</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">model</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">:</span>
-        <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">tclean</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">],</span> 
-         <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">tclean</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]])</span>
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Disjunction</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">DISJUNCTIONS</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">disjunctions</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">tclean</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">],</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">+</span> <span class="n">tclean</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]]</span>
 
-    <span class="n">TransformationFactory</span><span class="p">(</span><span class="s1">&#39;gdp.hull&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s1">&#39;gdp.hull&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">model</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">jobshop_model_clean_zw</span><span class="p">(</span><span class="n">TASKS</span><span class="p">,</span> <span class="n">tclean</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">ZW</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -1364,6 +1368,12 @@ Makespan = 15.0
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Makespan =&quot;</span><span class="p">,</span> <span class="nb">max</span><span class="p">([</span><span class="n">task</span><span class="p">[</span><span class="s1">&#39;Finish&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]))</span>
 </pre></div>
 </div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Makespan = 32.0
+</pre></div>
+</div>
+<img alt="../../_images/job-shop-scheduling_29_1.png" src="../../_images/job-shop-scheduling_29_1.png" />
 </div>
 </div>
 </section>
@@ -1405,25 +1415,29 @@ Makespan = 15.0
 <p>The following cell shows how to solve a model using <a class="reference external" href="https://www.ibm.com/analytics/cplex-optimizer">CPLEX</a>, a high performance commericial solver, on NEOS. The solution may take several minutes, and depends on the current length of the NEOS job queue.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">jobshop_solve_neos</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="n">solver_manager</span> <span class="o">=</span> <span class="n">SolverManagerFactory</span><span class="p">(</span><span class="s1">&#39;neos&#39;</span><span class="p">)</span>
-    <span class="n">solver_manager</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">opt</span><span class="o">=</span><span class="s1">&#39;cplex&#39;</span><span class="p">)</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;Job&#39;</span><span class="p">:</span> <span class="n">j</span><span class="p">,</span>
-                <span class="s1">&#39;Machine&#39;</span><span class="p">:</span> <span class="n">m</span><span class="p">,</span>
-                <span class="s1">&#39;Start&#39;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">](),</span> 
-                <span class="s1">&#39;Duration&#39;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">],</span> 
-                <span class="s1">&#39;Finish&#39;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[(</span><span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">)]()</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">dur</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">m</span><span class="p">]}</span>
-               <span class="k">for</span> <span class="n">j</span><span class="p">,</span><span class="n">m</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">results</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span><span class="k">script</span> echo skipping
 
-<span class="n">model</span> <span class="o">=</span> <span class="n">jobshop_model</span><span class="p">(</span><span class="n">TASKS</span><span class="p">)</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">jobshop_solve_neos</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-<span class="n">visualize</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+def jobshop_solve_neos(model):
+    solver_manager = pyo.SolverManagerFactory(&#39;neos&#39;)
+    solver_manager.solve(model, opt=&#39;cplex&#39;)
+    results = [{&#39;Job&#39;: j,
+                &#39;Machine&#39;: m,
+                &#39;Start&#39;: model.start[j, m](), 
+                &#39;Duration&#39;: model.dur[j,m], 
+                &#39;Finish&#39;: model.start[(j, m)]() + model.dur[j,m]}
+               for j,m in model.TASKS]
+    return results
+
+model = jobshop_model(TASKS)
+results = jobshop_solve_neos(model)
+visualize(results)
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/job-shop-scheduling_33_0.png" src="../../_images/job-shop-scheduling_33_0.png" />
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>skipping
+</pre></div>
+</div>
 </div>
 </div>
 </section>
