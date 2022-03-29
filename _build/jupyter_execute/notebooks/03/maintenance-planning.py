@@ -12,7 +12,7 @@
 
 # ## Imports
 
-# In[2]:
+# In[1]:
 
 
 import matplotlib.pyplot as plt
@@ -78,7 +78,7 @@ import pyomo.gdp as gdp
 
 # ### Parameter values
 
-# In[16]:
+# In[2]:
 
 
 # problem parameters
@@ -94,7 +94,7 @@ c = {k: np.random.uniform() for k in range(1, T+1)}
 # 
 # The disjunctive constraints can be represented directly in Pyomo using the [Generalized Disjunctive Programming](https://pyomo.readthedocs.io/en/latest/modeling_extensions/gdp.html) extension. The GDP extension transforms the disjunctive constraints to an MILP using convex hull and cutting plane methods.
 
-# In[35]:
+# In[3]:
 
 
 def maintenance_planning(c, M, P):
@@ -168,14 +168,14 @@ plot_schedule(model)
 # 
 # We begin the Pyomo model by specifying the constraints, then modifying the Big-M formulation to add the features described above.
 
-# In[37]:
+# In[4]:
 
 
 upos_max = 0.3334
 uneg_max = 0.5000
 
 
-# In[43]:
+# In[5]:
 
 
 def maintenance_planning_ramp(c, M, P):
@@ -248,13 +248,13 @@ plot_schedule(m)
 # 
 # The following cell implements both sets of constraints. 
 
-# In[8]:
+# In[6]:
 
 
 N = 10  # minimum number of operational days between maintenance periods
 
 
-# In[10]:
+# In[7]:
 
 
 def maintenance_planning_ramp_operational(c, T, M, P, N):
@@ -271,27 +271,39 @@ def maintenance_planning_ramp_operational(c, T, M, P, N):
     m.upos = pyo.Var(m.T, bounds=(0, upos_max))
     m.uneg = pyo.Var(m.T, bounds=(0, uneg_max))
 
-    # objective
-    m.profit = pyo.Objective(expr = sum(m.c[t]*m.x[t] for t in m.T), sense=pyo.maximize)
+    @m.Objective(sense=pyo.maximize)
+    def profit(m):
+        return sum(m.c[t]*m.x[t] for t in m.T)
     
     # ramp constraint
-    m.ramp = pyo.Constraint(m.T, rule = lambda m, t: 
-         m.x[t] == m.x[t-1] + m.upos[t] - m.uneg[t] if t > 1 else pyo.Constraint.Skip)
+    @m.Constraint(m.T)
+    def ramp(m, t):
+        if t > 1:
+            return m.x[t] == m.x[t-1] + m.upos[t] - m.uneg[t]
+        return pyo.Constraint.Skip
       
     # required number P of maintenance starts
-    m.sumy = pyo.Constraint(expr = sum(m.y[t] for t in m.Y) == P)
+    @m.Constraint()
+    def sumy(m):
+        return sum(m.y[t] for t in m.Y) == P
 
     # no more than one maintenance start in the period of length M
-    m.sprd = pyo.Constraint(m.Y, rule = lambda m, t: sum(m.y[t+s] for s in m.W if t + s <= T) <= 1)   
-    
+    @m.Constraint(m.Y)
+    def sprd(m, t):
+        return sum(m.y[t+s] for s in m.W if t + s <= T) <= 1
+
     # Choose one or the other the following methods. Comment out the method not used.
+
+    #@m.Disjunction(m.Y)
+    #def disj(m, t):
+    #    return [m.y[t] == 0, 
+    #            sum(m.x[t+s] for s in m.W if t + s <= T) == 0]
+    #pyo.TransformationFactory('gdp.bigm').apply_to(m)
     
     # disjunctive constraints, big-M method.
-    m.bigm = pyo.Constraint(m.Y, rule = lambda m, t: sum(m.x[t+s] for s in m.S) <= (M+N)*(1 - m.y[t]))
-    
-    # disjunctive constraints, GDP programming method
-    #m.disj = gdp.Disjunction(m.Y, rule = lambda m, t: [m.y[t]==0, sum(m.x[t+s] for s in m.W if t + s <= T)==0])
-    #pyo.TransformationFactory('gdp.chull').apply_to(m)
+    @m.Constraint(m.Y)
+    def bigm(m, t):
+        return sum(m.x[t+s] for s in m.S) <= (M+N)*(1 - m.y[t])
     
     return m
 
