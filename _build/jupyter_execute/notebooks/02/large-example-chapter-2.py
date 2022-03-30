@@ -54,7 +54,7 @@
 # 
 # Please help Caroline to model the material planning and solve it with the data above. 
 
-# In[63]:
+# In[95]:
 
 
 import sys
@@ -70,7 +70,7 @@ if 'google.colab' in sys.modules:
 
 # To be self contained... alternative is to upload and read a file. 
 
-# In[64]:
+# In[96]:
 
 
 demand_data = '''chip,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
@@ -78,7 +78,7 @@ Logic,88,125,260,217,238,286,248,238,265,293,259,244
 Memory,47,62,81,65,95,118,86,89,82,82,84,66'''
 
 
-# In[65]:
+# In[97]:
 
 
 from io import StringIO
@@ -87,7 +87,7 @@ demand_chips = pd.read_csv( StringIO(demand_data), index_col='chip' )
 demand_chips
 
 
-# In[66]:
+# In[98]:
 
 
 price_data = '''product,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
@@ -97,7 +97,7 @@ germanium,5,5,5,3,3,3,3,2,3,4,5,6
 plastic,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1'''
 
 
-# In[67]:
+# In[99]:
 
 
 price = pd.read_csv( StringIO(price_data), index_col='product' )
@@ -108,7 +108,7 @@ price
 
 # ## A simple dataframe with the consumptions
 
-# In[68]:
+# In[100]:
 
 
 use = dict()
@@ -120,20 +120,210 @@ use
 
 # ## A simple matrix multiplication
 
-# In[69]:
+# In[101]:
 
 
 demand = use.dot( demand_chips )
 demand
 
 
-# In[81]:
+# In[102]:
 
 
 import pyomo.environ as pyo
 
 
-# In[121]:
+# In[103]:
+
+
+def ShowTableOfPyomoVariables( X, I, J ):
+    return pd.DataFrame.from_records( [ [ pyo.value( X[i,j] ) for j in J ] for i in I ], index=I, columns=J )
+
+
+# # NOTE: The functions below follow closely the naming in Overleaf
+
+# In[104]:
+
+
+def VersionOne( demand, acquisition_price, existing, desired, stock_limit, month_budget ):
+    m = pyo.ConcreteModel( 'Product acquisition and inventory' )
+    
+    periods  = demand.columns
+    products = demand.index 
+    first    = periods[0] 
+    prev     = { j : i for i,j in zip(periods,periods[1:]) }
+    last     = periods[-1]
+    
+    m.T = pyo.Set( initialize=periods )
+    m.P = pyo.Set( initialize=products )
+    
+    m.PT = m.P * m.T # to avoid internal set bloat
+    
+    m.x = pyo.Var( m.PT, within=pyo.NonNegativeReals )
+    m.s = pyo.Var( m.PT, within=pyo.NonNegativeReals )
+    
+    @m.Param( m.PT )
+    def pi(m,p,t):
+        return acquisition_price.loc[p][t]
+    
+    @m.Param( m.PT )
+    def h(m,p,t): 
+        return .05 # the holding cost
+    
+    @m.Param( m.PT )
+    def delta(m,t,p):
+        return demand.loc[t,p]
+    
+    @m.Expression()
+    def acquisition_cost( m ):
+        return pyo.quicksum( m.pi[p,t] * m.x[p,t] for p in m.P for t in m.T )
+    
+    @m.Expression()
+    def inventory_cost( m ):
+        return pyo.quicksum( m.h[p,t] * m.s[p,t] for p in m.P for t in m.T )
+    
+    @m.Objective( sense=pyo.minimize )
+    def total_cost( m ):
+        return m.acquisition_cost + m.inventory_cost
+    
+    @m.Constraint( m.PT )
+    def balance( m, p, t ):
+        if t == first:
+            return existing[p] + m.x[p,t] == m.delta[p,t] + m.s[p,t]
+        else:
+            return m.x[p,t] + m.s[p,prev[t]] == m.delta[p,t] + m.s[p,t]
+        
+    @m.Constraint( m.P )
+    def finish( m, p ):
+        return m.s[p,last] >= desired[p]
+    
+    @m.Constraint( m.T )
+    def inventory( m, t ):
+        return pyo.quicksum( m.s[p,t] for p in m.P ) <= stock_limit
+    
+    @m.Constraint( m.T )
+    def budget( m, t ):
+        return pyo.quicksum( m.pi[p,t]*m.x[p,t] for p in m.P ) <= month_budget
+    
+    return m
+
+
+# In[105]:
+
+
+m = VersionOne( demand, price, 
+           {'silicon' : 1000, 'germanium': 1500, 'plastic': 1750, 'copper' : 4800 }, 
+           {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2000 },
+           9000, 2000 )
+
+pyo.SolverFactory( 'gurobi_direct' ).solve(m)
+
+
+# In[106]:
+
+
+ShowTableOfPyomoVariables( m.x, m.P, m.T ).round(2)
+
+
+# In[107]:
+
+
+ShowTableOfPyomoVariables( m.s, m.P, m.T ).round(2)
+
+
+# In[108]:
+
+
+def VersionTwo( demand, acquisition_price, existing, desired, stock_limit, month_budget ):
+    m = pyo.ConcreteModel( 'Product acquisition and inventory' )
+    
+    periods  = demand.columns
+    products = demand.index 
+    first    = periods[0] 
+    prev     = { j : i for i,j in zip(periods,periods[1:]) }
+    last     = periods[-1]
+    
+    m.T = pyo.Set( initialize=periods )
+    m.P = pyo.Set( initialize=products )
+    
+    m.PT = m.P * m.T # to avoid internal set bloat
+    
+    m.x = pyo.Var( m.PT, within=pyo.NonNegativeReals )
+    
+    @m.Param( m.PT )
+    def pi(m,p,t):
+        return acquisition_price.loc[p][t]
+    
+    @m.Param( m.PT )
+    def h(m,p,t): 
+        return .05 # the holding cost
+    
+    @m.Param( m.PT )
+    def delta(m,t,p):
+        return demand.loc[t,p]
+    
+    @m.Expression( m.PT )
+    def s( m, p, t ):
+        if t == first:
+            return existing[p] + m.x[p,t] - m.delta[p,t]
+        else:
+            return m.x[p,t] + m.s[p,prev[t]] - m.delta[p,t]
+        
+    @m.Constraint( m.PT )
+    def non_negative_stock( m, p, t ):
+        return m.s[p,t] >= 0
+    
+    @m.Expression()
+    def acquisition_cost( m ):
+        return pyo.quicksum( m.pi[p,t] * m.x[p,t] for p in m.P for t in m.T )
+    
+    @m.Expression()
+    def inventory_cost( m ):
+        return pyo.quicksum( m.h[p,t] * m.s[p,t] for p in m.P for t in m.T )
+    
+    @m.Objective( sense=pyo.minimize )
+    def total_cost( m ):
+        return m.acquisition_cost + m.inventory_cost
+            
+    @m.Constraint( m.P )
+    def finish( m, p ):
+        return m.s[p,last] >= desired[p]
+    
+    @m.Constraint( m.T )
+    def inventory( m, t ):
+        return pyo.quicksum( m.s[p,t] for p in m.P ) <= stock_limit
+    
+    @m.Constraint( m.T )
+    def budget( m, t ):
+        return pyo.quicksum( m.pi[p,t]*m.x[p,t] for p in m.P ) <= month_budget
+    
+    return m
+
+
+# In[109]:
+
+
+m = VersionTwo( demand, price, 
+           {'silicon' : 1000, 'germanium': 1500, 'plastic': 1750, 'copper' : 4800 }, 
+           {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2000 },
+           9000, 2000 )
+
+pyo.SolverFactory( 'gurobi_direct' ).solve(m)
+
+
+# In[110]:
+
+
+ShowTableOfPyomoVariables( m.x, m.P, m.T ).round(2)
+
+
+# In[111]:
+
+
+ShowTableOfPyomoVariables( m.s, m.P, m.T ).round(2)
+
+
+# In[112]:
 
 
 m = pyo.ConcreteModel()
@@ -141,7 +331,7 @@ m = pyo.ConcreteModel()
 
 # # Add the relevant data to the model
 
-# In[122]:
+# In[113]:
 
 
 m.Time        = demand.columns
@@ -153,7 +343,7 @@ m.StockLimit  = 9000
 m.Budget      = 2000
 
 
-# In[123]:
+# In[114]:
 
 
 m.existing = {'silicon' : 1000, 'germanium': 1500, 'plastic': 1750, 'copper' : 4800 }
@@ -162,7 +352,7 @@ m.desired  = {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2
 
 # # Some care to deal with the `time` index
 
-# In[124]:
+# In[115]:
 
 
 m.first = m.Time[0]
@@ -172,7 +362,7 @@ m.prev  = { j : i for i,j in zip(m.Time,m.Time[1:]) }
 
 # # Variables for the decision (buy) and consequence (stock)
 
-# In[125]:
+# In[116]:
 
 
 m.buy   = pyo.Var( m.Product, m.Time, within=pyo.NonNegativeReals )
@@ -181,7 +371,7 @@ m.stock = pyo.Var( m.Product, m.Time, within=pyo.NonNegativeReals )
 
 # # The constraints that balance acquisition with inventory and demand
 
-# In[126]:
+# In[117]:
 
 
 def BalanceRule( m, p, t ):
@@ -191,7 +381,7 @@ def BalanceRule( m, p, t ):
         return m.buy[p,t] + m.stock[p,m.prev[t]] == m.Demand.loc[p,t] + m.stock[p,t]
 
 
-# In[127]:
+# In[118]:
 
 
 m.balance = pyo.Constraint( m.Product, m.Time, rule = BalanceRule )
@@ -203,7 +393,7 @@ m.balance = pyo.Constraint( m.Product, m.Time, rule = BalanceRule )
 
 # ## Ensure the desired inventory at the end of the horizon
 
-# In[128]:
+# In[119]:
 
 
 m.finish = pyo.Constraint( m.Product, rule = lambda m, p : m.stock[p,m.last] >= m.desired[p] )
@@ -211,7 +401,7 @@ m.finish = pyo.Constraint( m.Product, rule = lambda m, p : m.stock[p,m.last] >= 
 
 # ## Ensure that the inventory fits the capacity
 
-# In[129]:
+# In[120]:
 
 
 m.inventory = pyo.Constraint( m.Time, rule = lambda m, t : sum( m.stock[p,t] for p in m.Product ) <= m.StockLimit )
@@ -219,13 +409,13 @@ m.inventory = pyo.Constraint( m.Time, rule = lambda m, t : sum( m.stock[p,t] for
 
 # ## Ensure that the acquisition fits the budget
 
-# In[130]:
+# In[121]:
 
 
 m.budget = pyo.Constraint( m.Time, rule = lambda m, t : sum( m.UnitPrice.loc[p,t]*m.buy[p,t] for p in m.Product ) <= m.Budget )
 
 
-# In[131]:
+# In[122]:
 
 
 m.obj = pyo.Objective( expr = sum( m.UnitPrice.loc[p,t]*m.buy[p,t] for p in m.Product for t in m.Time )
@@ -233,35 +423,28 @@ m.obj = pyo.Objective( expr = sum( m.UnitPrice.loc[p,t]*m.buy[p,t] for p in m.Pr
                       , sense = pyo.minimize )
 
 
-# In[132]:
+# In[123]:
 
 
 pyo.SolverFactory( 'gurobi_direct' ).solve(m)
 
 
-# In[133]:
+# In[124]:
 
 
-def ShowDouble( X, I,J ):
-    return pd.DataFrame.from_records( [ [ X[i,j].value for j in J ] for i in I ], index=I, columns=J )
+ShowTableOfPyomoVariables( m.buy, m.Product, m.Time )
 
 
-# In[134]:
+# In[125]:
 
 
-ShowDouble( m.buy, m.Product, m.Time )
+ShowTableOfPyomoVariables( m.stock, m.Product, m.Time )
 
 
-# In[118]:
+# In[126]:
 
 
-ShowDouble( m.stock, m.Product, m.Time )
-
-
-# In[119]:
-
-
-ShowDouble( m.stock, m.Product, m.Time ).T.plot(drawstyle='steps-mid',grid=True, figsize=(20,4))
+ShowTableOfPyomoVariables( m.stock, m.Product, m.Time ).T.plot(drawstyle='steps-mid',grid=True, figsize=(20,4))
 
 
 # # Notes
