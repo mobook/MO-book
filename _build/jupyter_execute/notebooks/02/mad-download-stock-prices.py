@@ -6,12 +6,40 @@
 # Use this notebook to download daily trading data for a group of the stocks from Yahoo Finance. The trading data is stored in a designated sub-directory (default `./data/stocks/`) as individual `.csv` files for each stock. Subsequent notebooks can read and consolidate the stock price data. 
 # 
 # Run the cells in the notebook once to create data sets for use by other notebook, or to refresh a previously stored set of data. The function will overwrite any existing data sets.
-# 
-# The notebook uses the `pandas_datareader` module to read data from Yahoo Finance. 
 
-# ## Stocks to Download
+# ## Installing and Testing `pandas_datareader`
+# 
+# The notebook uses the `pandas_datareader` module to read data from Yahoo Finance. Web interfaces for financial services are notoriously fickle and subject to change, and a particular issue with Google Colaboratory. The following cell tests if `pandas_datareader` installed and functional. It will attempt to upgrade and restart the Python kernel. If you encounter repeated errors please report this as an issue for this notebook. 
 
 # In[3]:
+
+
+import sys
+import os
+
+# attempt to install. If not found then try install
+try:
+    import pandas_datareader as pdr
+    
+except:
+    get_ipython().system('pip install -q pandas_datareader')
+    from pandas_datareader import data, wb, DataReader
+    
+# test download. If fail, then upgrade and restart kernal
+try: 
+    goog = pdr.DataReader("GOOG", "yahoo")
+    print("pandas_datareader is installed and appears to be working correctly.")
+except:
+    get_ipython().system('pip install pandas_datareader --upgrade')
+    os.kill(os.getpid(), 9)
+    
+
+
+# ## Stocks to Download
+# 
+# Edit the following cell to download a list of stock symbols from Yahoo Finance,  `n_years` to change the historical period, or change the data directory.
+
+# In[1]:
 
 
 import os
@@ -28,20 +56,14 @@ os.makedirs(data_dir, exist_ok=True)
 
 
 # ## Downloads
+# 
+# Run the following cell to download the historical stock data.
 
-# In[5]:
+# In[2]:
 
 
-import os
 import pandas as pd
 import datetime as datetime
-
-# attempt install if pandas_data reader is not found
-try:
-    from pandas_datareader import data, wb, DataReader
-except:
-    get_ipython().system('pip install -q pandas_datareader')
-    from pandas_datareader import data, wb, DataReader
 
 # historical period
 end_date = datetime.datetime.today().date()
@@ -51,7 +73,7 @@ start_date = end_date - datetime.timedelta(round(n_years*365))
 def get_stock_data(s, path=data_dir):
     try:
         print(f"Downloading {s:6s}", end="")
-        data = DataReader(s, "yahoo", start_date, end_date)
+        data = pdr.DataReader(s, "yahoo", start_date, end_date)
         try:
             filename = os.path.join(data_dir, s + '.csv')
             data.to_csv(filename) 
@@ -63,6 +85,7 @@ def get_stock_data(s, path=data_dir):
     
 for s in assets:
     get_stock_data(s)
+    
 
 
 # In[ ]:

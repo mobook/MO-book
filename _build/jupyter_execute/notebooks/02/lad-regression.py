@@ -21,7 +21,7 @@ if "google.colab" in sys.modules:
 # 
 # The Python [scikit learn](https://scikit-learn.org/stable/) library for machine learning provides a full-featured collection of tools for regression. The following cell uses `make_regression` from scikit learn to generate a synthetic data set for use in subsequent cells. The data consists of a numpy array `y` containing `n_samples` of one dependent variable $y$, and an array `X` containing `n_samples` observations of `n_features` independent explanatory variables.
 
-# In[1]:
+# In[2]:
 
 
 from sklearn.datasets import make_regression
@@ -40,7 +40,7 @@ X, y = make_regression(n_samples=n_samples, n_features=n_features, noise=noise)
 # 
 # Before going further, it is generally useful to prepare an initial visualization of the data. The following cell presents a scatter plot of $y$ versus $x$ for the special case of one explanatory variable, and a histogram of the difference between $y$ and the mean value $\bar{y}$. This histogram will provide a reference against which to compare the residual error in $y$ after regression.
 
-# In[64]:
+# In[3]:
 
 
 import matplotlib.pyplot as plt
@@ -92,7 +92,7 @@ plt.ylabel('counts')
 # 
 # The following cell provides a direct implementation of LAD regression.
 
-# In[65]:
+# In[4]:
 
 
 import pyomo.environ as pyo
@@ -132,7 +132,7 @@ m.b.display()
 
 # ## Visualizing the Results
 
-# In[66]:
+# In[5]:
 
 
 y_fit = np.array([sum(x[j]*m.m[j]() for j in m.J) + m.b() for x in X])
