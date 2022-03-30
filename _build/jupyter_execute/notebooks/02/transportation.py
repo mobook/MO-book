@@ -29,9 +29,9 @@ if "google.colab" in sys.modules:
 # 
 # YaYa Gas-n-Grub is franchisor and operator for a network of regional convenience stores selling gasoline and convenience items in the United States. Each store is individually owned by a YaYa Gas-n-Grub franchisee who pays feea to the franchisor for services.
 # 
-# Gasoline is delivered by truck from regional distribution terminals. Each delivery truck carrys 8,000 gallons delivered at a fixed charge of 700 dollars per delivery, or 8.75 cents per gallon. The franchise owners are eager to reduce delivery costs to boost profits.
+# Gasoline is delivered by truck from regional distribution terminals. Each delivery truck carries 8,000 gallons delivered at a fixed charge of 700 dollars per delivery, or 8.75 cents per gallon. The franchise owners are eager to reduce delivery costs to boost profits.
 # 
-# YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, "A" and "B", to supply the franchise operators. Rather than a fixed fee per delivery, they proposed pricing based on location. But they already have existing customers, "A" and "B" can only provide a limited amount of gasoline to new customers totalling 100,000 and 150,000 gallons respectively. The only difference between the new suppliers and the current supplier is the delivery charge.
+# YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, "A" and "B", to supply the franchise operators. Rather than a fixed fee per delivery, they proposed pricing based on location. But they already have existing customers, "A" and "B" can only provide a limited amount of gasoline to new customers totaling 100,000 and 150,000 gallons respectively. The only difference between the new suppliers and the current supplier is the delivery charge.
 # 
 # The following chart shows the pricing of gasoline delivery in cents/gallon.
 # 
@@ -47,13 +47,13 @@ if "google.colab" in sys.modules:
 # | Helen | 18,000 | 7.5 | 10.0 | 8.75 |
 # | **TOTALS**| 313,000 | 100,000 | 150,000 | 500, 000 | 370,000 |
 # 
-# As the franchisor and operator of YaYa Gas-n-Grub, the problem is to allocate the delivery of gasoline to minimize the cost to the frachise owners. The following model will present a global objective to minimize the total cost of delivery to all franchise owners. 
+# As the franchisor and operator of YaYa Gas-n-Grub, the problem is to allocate the delivery of gasoline to minimize the cost to the franchise owners. The following model will present a global objective to minimize the total cost of delivery to all franchise owners. 
 
 # ## Model 1: Minimize Total Delivery Cost
 # 
 # The decision variables for this example are labeled $x_{d, s}$ where subscript $d \in 1, \dots, n_d$ refers to the destination of the delivery and subscript $s \in 1, \dots, n_s$ to the source. The value of $x_{d,s}$ is the volume of gasoline shipped to destination $d$ from source $s$.
 # 
-# Given the cost rate $r_{d, s}$ for shipping one unit of goods from $d$ to $s$, the objective is to minimize the total cost of transporting gasoline from the sources to the destinatons as given by
+# Given the cost rate $r_{d, s}$ for shipping one unit of goods from $d$ to $s$, the objective is to minimize the total cost of transporting gasoline from the sources to the destinations as given by
 # 
 # $$
 # \begin{align*}
@@ -122,7 +122,7 @@ display(rates)
 
 # ## Pyomo Model 1: Minimize Total Delivery Cost
 # 
-# The pyomo model is an implementation of the mathematical model described above. The sets and indices have been designated with more descriptive symbols readability and mainenance. 
+# The pyomo model is an implementation of the mathematical model described above. The sets and indices have been designated with more descriptive symbols readability and maintenance. 
 
 # In[3]:
 
@@ -288,7 +288,7 @@ results.plot(y="savings", kind="bar")
 # 
 # Model 2 was an attempt to remedy the problem by solving for an allocation of deliveries that would lower the cost rate that would be paid by each franchisee directly to the gasoline distributors. Perhaps surprisingly, the resulting solution offered no savings to any franchisee. Inspecting the data shows the source of the problem is that two franschisees, "Emma" and "Fujita", simply have no lower cost alternative than the current supplier. Therefore finding a distribution plan with direct payments to the distributors that lowers everyone's cost is an impossible task.
 # 
-# The third model addresses this problem with a plan to share the cost savings among the franchisees. In this plan, the franchisor would collect delivery fees from the franchisees to pay the gasoline distributors. The optimization objective returns to the problem to minizing total delivery costs, but then adds a constraint that defines a common cost rate to charge all franchisees. By offering a benefit to all parties, the franchisor offers incentive for group participation in contracting for gasoline distribution services.
+# The third model addresses this problem with a plan to share the cost savings among the franchisees. In this plan, the franchisor would collect delivery fees from the franchisees to pay the gasoline distributors. The optimization objective returns to the problem to minimizing total delivery costs, but then adds a constraint that defines a common cost rate to charge all franchisees. By offering a benefit to all parties, the franchisor offers incentive for group participation in contracting for gasoline distribution services.
 # 
 # 
 # $$
@@ -394,7 +394,7 @@ model1_results.plot(y="savings", marker='o', ax=ax[0], color='g', alpha=alpha)
 model3_results.plot(y="savings", kind="bar", ax=ax[0], color='r', alpha=alpha)
 model3_results.plot(y="savings", marker='o', ax=ax[0], color='r', alpha=alpha)
 ax[0].legend(["Model 1", "Model 3"])
-ax[0].set_title("comparison of franchise savings on delivery costs")
+ax[0].set_title("delivery costs by franchise")
 
 model1_results.plot(y=["contract rate"], kind="bar", ax=ax[1], color='g', alpha=alpha)
 model1_results.plot(y="contract rate", marker='o', ax=ax[1], color='g', alpha=alpha)
@@ -403,7 +403,7 @@ model3_results.plot(y="contract rate", kind="bar", ax=ax[1], color='r', alpha=al
 model3_results.plot(y="contract rate", marker='o', ax=ax[1], color='r', alpha=alpha)
 ax[1].set_ylim(0.07, 0.09)
 ax[1].legend(["Model 1", "Model 3"])
-ax[1].set_title("comparison of gasoline delivery cost rate")
+ax[1].set_title("delivery cost rate by franchise")
 
 
 # ## Didactics: Reporting Solutions
@@ -522,7 +522,7 @@ shipments.plot(kind="bar")
 
 # ### Graphviz
 # 
-# The `graphviz` utility is a collection of tools for visually graphs and directed graphs. Unfortunately, the package can be troublesome to install on laptops in a way that is compatable with many JupyterLab installations. Accordingly, the following cell is intended for use on Google Colab which provides a preinstalled version of `graphviz`.
+# The `graphviz` utility is a collection of tools for visually graphs and directed graphs. Unfortunately, the package can be troublesome to install on laptops in a way that is compatible with many JupyterLab installations. Accordingly, the following cell is intended for use on Google Colab which provides a preinstalled version of `graphviz`.
 
 # In[16]:
 
