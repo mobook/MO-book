@@ -49,7 +49,7 @@
 # The production is made to order, meaning that no inventory of chips is kept.
 # 
 
-# In[1]:
+# In[2]:
 
 
 import sys
@@ -65,7 +65,7 @@ if 'google.colab' in sys.modules:
 
 # To be self contained... alternative is to upload and read a file. 
 
-# In[2]:
+# In[3]:
 
 
 demand_data = '''chip,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
@@ -73,7 +73,7 @@ Logic,88,125,260,217,238,286,248,238,265,293,259,244
 Memory,47,62,81,65,95,118,86,89,82,82,84,66'''
 
 
-# In[3]:
+# In[4]:
 
 
 from io import StringIO
@@ -82,7 +82,7 @@ demand_chips = pd.read_csv( StringIO(demand_data), index_col='chip' )
 demand_chips
 
 
-# In[4]:
+# In[5]:
 
 
 use = dict()
@@ -92,7 +92,7 @@ use = pd.DataFrame.from_dict( use ).fillna(0).astype( int )
 use
 
 
-# In[5]:
+# In[6]:
 
 
 demand = use.dot( demand_chips )
@@ -107,10 +107,14 @@ demand
 #  - still need to describe the modeling choices.
 #  - still need to adjust the code to meet the style guide
 
-# In[6]:
+# In[7]:
 
 
 import pyomo.environ as pyo
+
+
+# In[8]:
+
 
 m = pyo.ConcreteModel("Francis' material planning")  
 
@@ -118,14 +122,14 @@ m.periods = demand.keys()
 m.materials = demand.index
 
 
-# In[7]:
+# In[9]:
 
 
 m.existing = {'silicon' : 1000, 'germanium': 1500, 'plastic': 1750, 'copper' : 4800 }
 m.desired  = {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2000 }
 
 
-# In[8]:
+# In[10]:
 
 
 m.suppliers        = ['A','B','C']
@@ -142,6 +146,154 @@ m.batchSize = 100
 
 m.unitaryHoldingCosts = { 'copper': 10, 'silicon' : 2, 'germanium': 2, 'plastic': 2 }
 m.unitaryMaterials = [ 'silicon', 'germanium', 'plastic' ]
+
+
+# In[25]:
+
+
+def BookVersion( demand, existing, desired, stock_limit,
+                supplying_copper, supplying_batches, price_copper_sheet, price_batch, discounted_price, batch_size,
+                unitary_products, unitary_holding_costs
+                ):
+    m = pyo.ConcreteModel( 'Product acquisition and inventory with sophisticated prices' )
+    
+    periods  = demand.columns
+    products = demand.index 
+    first    = periods[0] 
+    prev     = { j : i for i,j in zip(periods,periods[1:]) }
+    last     = periods[-1]
+    
+    m.T = pyo.Set( initialize=periods )
+    m.P = pyo.Set( initialize=products )
+    
+    m.PT = m.P * m.T # to avoid internal set bloat
+    
+    @m.Block( m.T )
+    def acquisition( b ):
+        b.units  = pyo.Var( supplying_batches, products, within=pyo.NonNegativeReals )
+        b.batches= pyo.Var( supplying_batches, within=pyo.NonNegativeIntegers )
+        b.sheets = pyo.Var( supplying_copper, within=pyo.NonNegativeIntegers )
+        b.pairs  = pyo.Var( within=pyo.NonNegativeIntegers )
+
+        @b.Constraint( supplying_batches )
+        def in_batches( b, s ):
+            return pyo.quicksum( b.units[s,p] for p in products ) <= batch_size*b.batches[s]
+
+        @b.Constraint()
+        def pairs_in_batches( b ):
+            return b.pairs <= b.batches['C']
+
+        @b.Constraint()
+        def pairs_in_sheets( b ):
+            return b.pairs <= b.sheets['C']
+        
+        @b.Expression( products )
+        def x( b, p ):
+            if p == 'copper':
+                return 100*pyo.quicksum( b.sheets[s] for s in supplying_copper )
+            return pyo.quicksum( b.units[s,p] for s in supplying_batches )
+            
+        @b.Expression()
+        def cost( b ):
+            discount = price_batch['C']+price_copper_sheet['C']-discounted_price
+            return pyo.quicksum( price_copper_sheet[s]*b.sheets[s] for s in supplying_copper )                 + pyo.quicksum( price_batch[s]*b.batches[s] for s in supplying_batches )                 - discount * b.pairs    
+    
+    @m.Block( m.T )
+    def inventory( b ):
+        b.s       = pyo.Var( products, within=pyo.NonNegativeReals )
+        b.buckets = pyo.Var( within=pyo.NonNegativeIntegers )
+        
+        @b.Constraint()
+        def copper_in_buckets(b):
+            return b.s['copper'] <= 10*b.buckets
+        
+        @b.Constraint()
+        def capacity( b ):
+            return b.s['copper'] <= stock_limit
+
+        @b.Expression()
+        def cost( b ):
+            return unitary_holding_costs['copper']*b.buckets +                 pyo.quicksum( unitary_holding_costs[p]*b.s[p] for p in unitary_products )
+            
+    @m.Param( m.PT )
+    def delta(m,t,p):
+        return demand.loc[t,p]
+    
+    @m.Expression()
+    def acquisition_cost( m ):
+        return pyo.quicksum( m.acquisition[t].cost for t in m.T )
+    
+    @m.Expression()
+    def inventory_cost( m ):
+        return pyo.quicksum( m.inventory[t].cost for t in m.T )
+    
+    @m.Objective( sense=pyo.minimize )
+    def total_cost( m ):
+        return m.acquisition_cost + m.inventory_cost
+    
+    @m.Constraint( m.PT )
+    def balance( m, p, t ):
+        if t == first:
+            return existing[p] + m.acquisition[t].x[p] == m.delta[p,t] + m.inventory[t].s[p]
+        else:
+            return m.acquisition[t].x[p] + m.inventory[prev[t]].s[p] == m.delta[p,t] + m.inventory[t].s[p]
+        
+    @m.Constraint( m.P )
+    def finish( m, p ):
+        return m.inventory[last].s[p] >= desired[p]
+    
+    return m
+
+
+# In[26]:
+
+
+m = BookVersion( demand=demand, 
+                existing = {'silicon' : 1000, 'germanium': 1500, 'plastic': 1750, 'copper' : 4800 }, 
+                desired = {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2000 }, 
+                stock_limit = 10000,
+                supplying_copper = [ 'B', 'C' ],
+                supplying_batches = [ 'A', 'C' ],
+                price_copper_sheet = { 'B': 300, 'C': 400 }, 
+                price_batch = { 'A': 500, 'C': 600 }, 
+                discounted_price = 700, 
+                batch_size = 100,
+                unitary_products = [ 'silicon', 'germanium', 'plastic' ], 
+                unitary_holding_costs = { 'copper': 10, 'silicon' : 2, 'germanium': 2, 'plastic': 2 }
+                )
+
+pyo.SolverFactory( 'gurobi_direct' ).solve(m)
+
+
+# In[27]:
+
+
+pd.DataFrame( [ 0+pyo.value( m.acquisition[t].pairs ) for t in m.T ], index=m.T ).T
+
+
+# In[28]:
+
+
+pd.DataFrame.from_records( [ [ pyo.value( m.acquisition[t].x[p] ) for t in m.T ] for p in m.P ], index=m.P, columns=m.T )
+
+
+# In[29]:
+
+
+pd.DataFrame.from_records( [ [ 0+pyo.value( m.acquisition[t].batches[s] ) for t in m.T ] for s in [ 'A', 'C' ] ], index=[ 'A', 'C' ], columns=m.T )
+
+
+# In[30]:
+
+
+pd.DataFrame.from_records( [ [ pyo.value( m.inventory[t].s[p] ) for t in m.T ] for p in m.P ], index=m.P, columns=m.T )
+
+
+# In[31]:
+
+
+index = pd.MultiIndex.from_product([[ 'A', 'C' ],[ 'silicon', 'germanium', 'plastic' ]], names=['supplier','materials'])
+pd.DataFrame.from_records( [ [ pyo.value( m.acquisition[t].units[s,p] ) for t in m.T ] for s in [ 'A', 'C' ] for p in [ 'silicon', 'germanium', 'plastic' ] ],index=index,columns=m.T )
 
 
 # In[9]:
