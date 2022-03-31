@@ -33,3 +33,10 @@ Move relevant html files to github pages.
 ```
 ghp-import -n -p -f _build/html
 ```
+
+## Git
+
+The following git command fixed problems with git hanging after "Total" on pushes.
+```
+git config --global http.postBuffer 524288000
+```
