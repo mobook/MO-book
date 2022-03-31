@@ -17,7 +17,7 @@ if "google.colab" in sys.modules:
     get_ipython().run_line_magic('run', 'install_on_colab.py')
 
 
-# In[15]:
+# In[2]:
 
 
 import matplotlib.dates as mdates
@@ -46,7 +46,7 @@ import pyomo.environ as pyo
 # 
 # The notebook uses the `pandas_datareader` module to read data from Yahoo Finance. Web interfaces for financial services are notoriously fickle and subject to change, and a particular issue with Google Colaboratory. The following cell tests if `pandas_datareader` installed and functional. It will attempt to upgrade and restart the Python kernel. If you encounter repeated errors please report this as an issue for this notebook. 
 
-# In[12]:
+# In[3]:
 
 
 # attempt to install. If not found then try install
@@ -71,7 +71,7 @@ except:
 # 
 # Edit the following cell to download a list of stock symbols from Yahoo Finance,  `n_years` to change the historical period, or change the data directory.
 
-# In[13]:
+# In[4]:
 
 
 # list of stock symbols
@@ -89,7 +89,7 @@ os.makedirs(data_path, exist_ok=True)
 # 
 # Run the following cell to download the historical stock data.
 
-# In[14]:
+# In[5]:
 
 
 # historical period
@@ -121,7 +121,7 @@ for s in assets:
 # 
 # The first step in this analysis is to load and consolidate the asset price information into a single DataFrame named `assets`.  The consolidated price information consists of the adjusted closing price reported by Yahoo Finance which includes adjustments for stock splits and dividend distributions.
 
-# In[34]:
+# In[6]:
 
 
 # read historical asset prices
@@ -146,7 +146,7 @@ plt.legend(bbox_to_anchor=(1.0, 1.0))
 # 
 # The historical prices are scaled to a value to have unit value at the start of the historical period. Scaling facilitates plotting and subsequent calculations while preserving arithmetic and logarithmic returns needed for analysis. 
 
-# In[35]:
+# In[7]:
 
 
 # scaled asset prices
@@ -167,7 +167,7 @@ plt.legend(bbox_to_anchor=(1.0, 1.0))
 # 
 # The following cells compute and display the daily returns for all assets and displays as time series and histograms.
 
-# In[37]:
+# In[8]:
 
 
 # daily returns
@@ -179,7 +179,7 @@ for a, s in zip(ax.flatten(), sorted(daily_returns.columns)):
 plt.tight_layout()
 
 
-# In[38]:
+# In[9]:
 
 
 # distributions of returns
@@ -210,7 +210,7 @@ plt.tight_layout()
 # 
 # The mean daily return and the mean absolute deviation in daily return are computed and plotted in the following cell. The side by side comparison provides a comparison of return vs volatility for individual assets.
 
-# In[29]:
+# In[10]:
 
 
 # bar charts of mean return and mean absolute deviation in returns
@@ -226,7 +226,7 @@ mean_absolute_deviation.plot(kind='barh', ax=ax[1], title='Mean Absolute Deviati
 ax[1].invert_yaxis()
 
 
-# In[47]:
+# In[11]:
 
 
 # plot return vs risk
@@ -253,40 +253,47 @@ ax.grid(True)
 # 
 # Given a portfolio with value $W_t$ at time $t$, return on the portfolio at $t_{t +\delta t}$ is defined as
 # 
+# $$
 # \begin{align*}
 # r_{t + \delta t} & = \frac{W_{t + \delta t} - W_{t}}{W_{t}}
 # \end{align*}
+# $$
 # 
 # For the period from $[t, t+\delta t)$ we assume there are $n_{j,t}$ shares of asset $j$ with a starting value of $S_{j,t}$ per share. The initial and final values of the portfolio are then 
 # 
+# $$
 # \begin{align*}
 # W_t & = \sum_{j=1}^J n_{j,t}S_{j,t} \\
 # W_{t+\delta t} & = \sum_{j=1}^J n_{j,t}S_{j,t + \delta t}
 # \end{align*}
+# $$
 # 
 # The return of the portfolio is given by
 # 
+# $$
 # \begin{align*}
 # r_{t+\delta t} & = \frac{W_{t + \delta t} - W_{t}}{W_{t}} \\
 # & = \frac{\sum_{j=1}^Jn_{j,t}S_{j,t+\delta t} - \sum_{j=1}^J n_{j,t}S_{j,t}}{W_{t}} \\
 # & = \frac{\sum_{j=1}^J n_{j,t}S_{j,t}r_{j, t+\delta t}}{W_{t}} \\
 # & = \sum_{j=1}^J \frac{n_{j,t}S_{j,t}}{W_{t}} r_{j, t+\delta t}
 # \end{align*}
+# $$
 # 
 # where $r_{j,t+\delta t}$ is the return on asset $j$ at time $t+\delta t$. 
 # 
 # Defining $W_{j,t} = n_{j,t}S_{j,t}$ as the wealth invested in asset $j$ at time $t$, then $w_{j,t} = n_{j,t}S_{j,t}/W_{t}$ is the fraction of total wealth invested in asset $j$ at time $t$. The portfolio return is then given by 
 # 
+# $$
 # \begin{align*}
 # r_{t+\delta t} & = \sum_{j=1}^J w_{j,t} r_{j, t+\delta t} 
 # \end{align*}
+# $$
 # 
 # on a single interval extending from $t$ to $t + \delta t$.
 
 # ### Mean Absolute Deviation in Portfolio Returns
 # 
 # The return on a portfolio with weights $w_j$ for asset $j$ is 
-# 
 # 
 # $$
 # \begin{align*}
@@ -330,7 +337,7 @@ ax.grid(True)
 
 # ## Pyomo Model
 
-# In[120]:
+# In[12]:
 
 
 import pyomo.environ as pyo
@@ -422,7 +429,7 @@ mad_visualization(assets, m)
 
 # ## Risk versus Return
 
-# In[122]:
+# In[13]:
 
 
 # plot return vs risk
@@ -488,7 +495,7 @@ for R in np.linspace(0, mean_return.max(), 20):
 # $$
 # 
 
-# In[126]:
+# In[14]:
 
 
 import pyomo.environ as pyo
@@ -581,7 +588,7 @@ mad_visualization(assets, m)
 
 # ## Risk versus return with a risk-free asset 
 
-# In[128]:
+# In[15]:
 
 
 # plot return vs risk
