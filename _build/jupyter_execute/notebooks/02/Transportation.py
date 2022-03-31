@@ -57,7 +57,7 @@ if "google.colab" in sys.modules:
 # 
 # $$
 # \begin{align*}
-# \text{objective: total delivery cost}\qquad\min & \sum_{d=1}^{n_d} \sum_{s=1}^{n_s} r_{d, s} x_{d, x} \\
+# \text{objective: total delivery cost}\qquad\min & \sum_{d=1}^{n_d} \sum_{s=1}^{n_s} r_{d, s} x_{d, s} \\
 # \end{align*}
 # $$
 # 
@@ -65,8 +65,8 @@ if "google.colab" in sys.modules:
 # 
 # $$
 # \begin{align*}
-# \text{demand constraints}\qquad\sum_{s=1}^{n_s} x_{d, s} & = D_d & \forall s\in 1, \dots, n_s \\
-# \text{supply constraints}\qquad\sum_{d=1}^{n_d} x_{d, x} & \leq S_s & \forall d\in 1, \dots, n_d \\
+# \text{demand constraints}\qquad\sum_{s=1}^{n_s} x_{d, s} & = D_d & \forall d\in 1, \dots, n_d \\
+# \text{supply constraints}\qquad\sum_{d=1}^{n_d} x_{d, s} & \leq S_s & \forall s\in 1, \dots, n_s \\
 # \end{align*}
 # $$
 # 
@@ -209,9 +209,9 @@ model1_results = results
 # 
 # $$
 # \begin{align*}
-# \text{common cost rate}\qquad\sum_{s=1}^{n_s} r_{d, s} x_{d, s} & \leq \rho D_s & \forall s\in 1, \dots, n_s\\
-# \text{demand constraints}\qquad\sum_{s=1}^{n_s} x_{d, s} & = D_d & \forall s\in 1, \dots, n_s \\
-# \text{supply constraints}\qquad\sum_{d=1}^{n_d} x_{d, x} & \leq S_s & \forall d\in 1, \dots, n_d \\
+# \text{common cost rate}\qquad\sum_{s=1}^{n_s} r_{d, s} x_{d, s} & \leq \rho D_d & \forall d\in 1, \dots, n_d\\
+# \text{demand constraints}\qquad\sum_{s=1}^{n_s} x_{d, s} & = D_d & \forall s\in 1, \dots, n_d \\
+# \text{supply constraints}\qquad\sum_{d=1}^{n_d} x_{d, s} & \leq S_s & \forall s\in 1, \dots, n_s \\
 # \end{align*}
 # $$
 # 
@@ -307,10 +307,10 @@ results.plot(y="savings", kind="bar")
 # 
 # $$
 # \begin{align*}
-# \text{total cost}\qquad \sum_{d=1}^{n_d} \sum_{s=1}^{n_s} r_{d, s} x_{d, x} & = C \\
-# \text{uniform cost sharing rate}\qquad\sum_{s=1}^{n_s} r_{d, s} x_{d, s} & = \rho D_s & \forall s\in 1, \dots, n_s\\
-# \text{demand constraints}\qquad\sum_{s=1}^{n_s} x_{d, s} & = D_d & \forall s\in 1, \dots, n_s \\
-# \text{supply constraints}\qquad\sum_{d=1}^{n_d} x_{d, x} & \leq S_s & \forall d\in 1, \dots, n_d \\
+# \text{total cost}\qquad \sum_{d=1}^{n_d} \sum_{s=1}^{n_s} r_{d, s} x_{d, s} & = C \\
+# \text{uniform cost sharing rate}\qquad\sum_{s=1}^{n_s} r_{d, s} x_{d, s} & = \rho D_d & \forall d\in 1, \dots, n_d\\
+# \text{demand constraints}\qquad\sum_{s=1}^{n_s} x_{d, s} & = D_d & \forall d\in 1, \dots, n_d \\
+# \text{supply constraints}\qquad\sum_{d=1}^{n_d} x_{d, x} & \leq S_s & \forall s\in 1, \dots, n_s \\
 # \end{align*}
 # $$
 
