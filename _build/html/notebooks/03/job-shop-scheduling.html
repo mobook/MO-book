@@ -476,11 +476,6 @@ const thebe_selector_output = ".output, .cell_output"
   </ul>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#solving-the-la19-benchmark-problem-with-neos">
-   Solving the LA19 benchmark problem with NEOS
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#references">
    References
   </a>
@@ -588,11 +583,6 @@ const thebe_selector_output = ".output, .cell_output"
     </a>
    </li>
   </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#solving-the-la19-benchmark-problem-with-neos">
-   Solving the LA19 benchmark problem with NEOS
-  </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#references">
@@ -1380,69 +1370,6 @@ Makespan = 15.0
 </div>
 </div>
 </section>
-</section>
-<section id="solving-the-la19-benchmark-problem-with-neos">
-<h2>Solving the LA19 benchmark problem with NEOS<a class="headerlink" href="#solving-the-la19-benchmark-problem-with-neos" title="Permalink to this headline">¶</a></h2>
-<p>The file <a class="reference external" href="http://people.brunel.ac.uk/~mastjjb/jeb/orlib/files/jobshop1.txt"><code class="docutils literal notranslate"><span class="pre">jobshop1.txt</span></code> contains 82 benchmark problems</a> from a well-known collection of job shop scheduling problems in the <a class="reference external" href="http://people.brunel.ac.uk/~mastjjb/jeb/info.html">OR-Library maintained by J. E. Beasley</a>. The data format for each example consists of a single line for each job.  The data on each line is a sequence of (machine number, time) pairs showing the order in which machines process each job.</p>
-<p>LA19 is a benchmark problem for job shop scheduling introduced by Lawrence in 1984, and a solution presented by Cook and Applegate in 1991. The following cell may take many minutes to hours to run, depending on the choice of solver and hardware. To run, uncomment the the last lines in the cell.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">2  44  3   5  5  58  4  97  0   9  7  84  8  77  9  96  1  58  6  89</span>
-<span class="s2">4  15  7  31  1  87  8  57  0  77  3  85  2  81  5  39  9  73  6  21</span>
-<span class="s2">9  82  6  22  4  10  3  70  1  49  0  40  8  34  2  48  7  80  5  71</span>
-<span class="s2">1  91  2  17  7  62  5  75  8  47  4  11  3   7  6  72  9  35  0  55</span>
-<span class="s2">6  71  1  90  3  75  0  64  2  94  8  15  4  12  7  67  9  20  5  50</span>
-<span class="s2">7  70  5  93  8  77  2  29  4  58  6  93  3  68  1  57  9   7  0  52</span>
-<span class="s2">6  87  1  63  4  26  5   6  2  82  3  27  7  56  8  48  9  36  0  95</span>
-<span class="s2">0  36  5  15  8  41  9  78  3  76  6  84  4  30  7  76  2  36  1   8</span>
-<span class="s2">5  88  2  81  3  13  6  82  4  54  7  13  8  29  9  40  1  78  0  75</span>
-<span class="s2">9  88  4  54  6  64  7  32  0  52  2   6  8  54  5  82  3   6  1  26</span>
-<span class="s2">&quot;&quot;&quot;</span>
-
-<span class="n">TASKS</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="k">for</span> <span class="n">job</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="mi">1</span><span class="p">:]):</span>
-    <span class="n">nums</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-    <span class="n">prec</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">dur</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">nums</span><span class="p">[::</span><span class="mi">2</span><span class="p">],</span> <span class="n">nums</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]):</span>
-        <span class="n">task</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;J</span><span class="si">{</span><span class="n">job</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span><span class="sa">f</span><span class="s2">&quot;M</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">TASKS</span><span class="p">[</span><span class="n">task</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dur&#39;</span><span class="p">:</span><span class="nb">int</span><span class="p">(</span><span class="n">dur</span><span class="p">),</span> <span class="s1">&#39;prec&#39;</span><span class="p">:</span><span class="n">prec</span><span class="p">}</span>
-        <span class="n">prec</span> <span class="o">=</span> <span class="n">task</span>
-    
-<span class="c1">#pd.DataFrame(TASKS).T</span>
-</pre></div>
-</div>
-</div>
-</div>
-<p>Depending on the choice of solver, this benchmark example may require from minutes to hours of computational effort on a laptop. An alternative to solving on a laptop is to submit the job to <a class="reference external" href="https://neos-server.org/neos/">NEOS</a>, a free internet-based service for solving optimization problems hosted by the University of Wisconsin and utilizing high performance servers at locations across the globe.</p>
-<p>The following cell shows how to solve a model using <a class="reference external" href="https://www.ibm.com/analytics/cplex-optimizer">CPLEX</a>, a high performance commericial solver, on NEOS. The solution may take several minutes, and depends on the current length of the NEOS job queue.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span><span class="k">script</span> echo skipping
-
-def jobshop_solve_neos(model):
-    solver_manager = pyo.SolverManagerFactory(&#39;neos&#39;)
-    solver_manager.solve(model, opt=&#39;cplex&#39;)
-    results = [{&#39;Job&#39;: j,
-                &#39;Machine&#39;: m,
-                &#39;Start&#39;: model.start[j, m](), 
-                &#39;Duration&#39;: model.dur[j,m], 
-                &#39;Finish&#39;: model.start[(j, m)]() + model.dur[j,m]}
-               for j,m in model.TASKS]
-    return results
-
-model = jobshop_model(TASKS)
-results = jobshop_solve_neos(model)
-visualize(results)
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>skipping
-</pre></div>
-</div>
-</div>
-</div>
 </section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>

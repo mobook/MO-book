@@ -542,50 +542,6 @@ visualize(results)
 print("Makespan =", max([task['Finish'] for task in results]))
 
 
-# ## Solving the LA19 benchmark problem with NEOS
-# 
-# The file [`jobshop1.txt` contains 82 benchmark problems](http://people.brunel.ac.uk/~mastjjb/jeb/orlib/files/jobshop1.txt) from a well-known collection of job shop scheduling problems in the [OR-Library maintained by J. E. Beasley](http://people.brunel.ac.uk/~mastjjb/jeb/info.html). The data format for each example consists of a single line for each job.  The data on each line is a sequence of (machine number, time) pairs showing the order in which machines process each job.
-# 
-# LA19 is a benchmark problem for job shop scheduling introduced by Lawrence in 1984, and a solution presented by Cook and Applegate in 1991. The following cell may take many minutes to hours to run, depending on the choice of solver and hardware. To run, uncomment the the last lines in the cell.
-
-# In[15]:
-
-
-data = """
-2  44  3   5  5  58  4  97  0   9  7  84  8  77  9  96  1  58  6  89
-4  15  7  31  1  87  8  57  0  77  3  85  2  81  5  39  9  73  6  21
-9  82  6  22  4  10  3  70  1  49  0  40  8  34  2  48  7  80  5  71
-1  91  2  17  7  62  5  75  8  47  4  11  3   7  6  72  9  35  0  55
-6  71  1  90  3  75  0  64  2  94  8  15  4  12  7  67  9  20  5  50
-7  70  5  93  8  77  2  29  4  58  6  93  3  68  1  57  9   7  0  52
-6  87  1  63  4  26  5   6  2  82  3  27  7  56  8  48  9  36  0  95
-0  36  5  15  8  41  9  78  3  76  6  84  4  30  7  76  2  36  1   8
-5  88  2  81  3  13  6  82  4  54  7  13  8  29  9  40  1  78  0  75
-9  88  4  54  6  64  7  32  0  52  2   6  8  54  5  82  3   6  1  26
-"""
-
-TASKS = {}
-for job, line in enumerate(data.splitlines()[1:]):
-    nums = line.split()
-    prec = None
-    for m, dur in zip(nums[::2], nums[1::2]):
-        task = (f"J{job}",f"M{m}")
-        TASKS[task] = {'dur':int(dur), 'prec':prec}
-        prec = task
-    
-#pd.DataFrame(TASKS).T
-
-
-# Depending on the choice of solver, this benchmark example may require from minutes to hours of computational effort on a laptop. An alternative to solving on a laptop is to submit the job to [NEOS](https://neos-server.org/neos/), a free internet-based service for solving optimization problems hosted by the University of Wisconsin and utilizing high performance servers at locations across the globe.
-# 
-# The following cell shows how to solve a model using [CPLEX](https://www.ibm.com/analytics/cplex-optimizer), a high performance commericial solver, on NEOS. The solution may take several minutes, and depends on the current length of the NEOS job queue.
-
-# In[16]:
-
-
-get_ipython().run_cell_magic('script', 'echo skipping', "\ndef jobshop_solve_neos(model):\n    solver_manager = pyo.SolverManagerFactory('neos')\n    solver_manager.solve(model, opt='cplex')\n    results = [{'Job': j,\n                'Machine': m,\n                'Start': model.start[j, m](), \n                'Duration': model.dur[j,m], \n                'Finish': model.start[(j, m)]() + model.dur[j,m]}\n               for j,m in model.TASKS]\n    return results\n\nmodel = jobshop_model(TASKS)\nresults = jobshop_solve_neos(model)\nvisualize(results)")
-
-
 # ## References
 # 
 # * Applegate, David, and William Cook. ["A computational study of the job-shop scheduling problem."](https://doi.org/10.1287/ijoc.3.2.149) ORSA Journal on computing 3, no. 2 (1991): 149-156. [pdf available](http://www.math.uwaterloo.ca/~bico/papers/jobshop.pdf)
