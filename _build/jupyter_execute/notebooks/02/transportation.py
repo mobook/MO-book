@@ -31,12 +31,12 @@ if "google.colab" in sys.modules:
 # 
 # Gasoline is delivered by truck from regional distribution terminals. Each delivery truck carries 8,000 gallons delivered at a fixed charge of 700 dollars per delivery, or 8.75 cents per gallon. The franchise owners are eager to reduce delivery costs to boost profits.
 # 
-# YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, "A" and "B", to supply the franchise operators. Rather than a fixed fee per delivery, they proposed pricing based on location. But they already have existing customers, "A" and "B" can only provide a limited amount of gasoline to new customers totaling 100,000 and 150,000 gallons respectively. The only difference between the new suppliers and the current supplier is the delivery charge.
+# YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, "A" and "B", to supply the franchise operators. Rather than a fixed fee per delivery, they proposed pricing based on location. But they already have existing customers, "A" and "B" can only provide a limited amount of gasoline to new customers totaling 100,000 and 80,000 gallons respectively. The only difference between the new suppliers and the current supplier is the delivery charge.
 # 
 # The following chart shows the pricing of gasoline delivery in cents/gallon.
 # 
-# | Store Owner | Demand |  Terminal A | Terminal B | Current Supplier |
-# | :-------- | ------------: | ---------: | -------: | --------: |
+# | Franchisee <br> &nbsp; | Demand <br> &nbsp; |  Terminal A <br> 100,000| Terminal B <br> 80,000 | Current Supplier <br> 500,000 |
+# | :-------- | ------------: | :---------: | :-------: | :--------: |
 # | Alice | 30,000 | 8.3 | 10.2 | 8.75 |
 # | Badri  | 40,000 | 8.1 | 12.0 | 8.75 |
 # | Cara  | 50,000 | 8.3 | - | 8.75 |
@@ -45,9 +45,9 @@ if "google.colab" in sys.modules:
 # | Fujita | 45,000 | 9.8 | 10.0 | 8.75 |
 # | Grace | 80,000 | -  | 8.0 | 8.75 |
 # | Helen | 18,000 | 7.5 | 10.0 | 8.75 |
-# | **TOTALS**| 313,000 | 100,000 | 150,000 | 500, 000 | 370,000 |
+# | **TOTAL**| **313,000**| |  | | |
 # 
-# As the franchisor and operator of YaYa Gas-n-Grub, the problem is to allocate the delivery of gasoline to minimize the cost to the franchise owners. The following model will present a global objective to minimize the total cost of delivery to all franchise owners. 
+# The franchisor and operator of YaYa Gas-n-Grub has the challenge of allocating the gasoline delivery to minimize the cost to the franchise owners. The following model will present a global objective to minimize the total cost of delivery to all franchise owners. 
 
 # ## Model 1: Minimize Total Delivery Cost
 # 
@@ -75,7 +75,7 @@ if "google.colab" in sys.modules:
 # 
 # The data is stored into Pandas DataFrame and Series objects. Note the use of a large rates to avoid assigning shipments to destination, source pairs not allowed by the problem statement.
 
-# In[2]:
+# In[17]:
 
 
 import pandas as pd
@@ -118,6 +118,12 @@ display(demand.to_frame())
 
 display(HTML("<br><b>Transportation Rates (US cents per Gallon)</b>"))
 display(rates)
+
+
+# In[18]:
+
+
+demand.sum()
 
 
 # ## Pyomo Model 1: Minimize Total Delivery Cost
