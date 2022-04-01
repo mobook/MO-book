@@ -44,7 +44,7 @@
 # 
 # $$
 # \begin{align*}
-# EOQ = \arg\min_x\ & f(x) = {h x}{2} + \frac{c d}{x} \\
+# EOQ = \arg\min_x\ & f(x) = \frac{h x}{2} + \frac{c d}{x} \\
 # \text{s.t.}\quad x & > 0 \\
 # \end{align*}
 # $$
