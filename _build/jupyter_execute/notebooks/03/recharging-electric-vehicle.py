@@ -17,7 +17,7 @@ if "google.colab" in sys.modules:
 
 # ## Problem Statement
 # 
-# The distances to the charging stations are measured relative to an arbitrary location. Given the current location $x$, battery charge $c$, and planning horizon $D$, the task is to plan a series of recharging and rest stops. The objective is to drive from location $x$ to location $x + D$ in as little time as possible subject to the following constraints:
+# Given the current location $x$, battery charge $c$, and planning horizon $D$, the task is to plan a series of recharging and rest stops. Data is provided for the location and the charging rate available at each charging stations. The objective is to drive from location $x$ to location $x + D$ in as little time as possible subject to the following constraints:
 # 
 # * To allow for unforeseen events, the state of charge should never drop below 20% of the maximum capacity.
 # * The the maximum charge is $c_{max} = 80$ kwh.
@@ -164,11 +164,11 @@ plot_stations(stations, x, D)
 
 # ## Car Information
 
-# In[4]:
+# In[23]:
 
 
 # charge limits (kw)
-c_max = 120
+c_max = 150
 c_min = 0.2 * c_max
 c = c_max
 
@@ -186,7 +186,7 @@ r_max = 3
 
 # ## Pyomo Model
 
-# In[5]:
+# In[24]:
 
 
 import pyomo.environ as pyo
@@ -226,6 +226,8 @@ def ev_plan(stations, x, D):
     m.t_dep[0].fix(0.0)
     m.r_dep[0].fix(0.0)
     m.c_dep[0].fix(c)
+    
+    m.D = D
 
     @m.Param(m.STATIONS)
     def C(m, i):
@@ -284,7 +286,7 @@ def ev_plan(stations, x, D):
     
     return m
 
-m = ev_plan(stations, 0, 1000)
+m = ev_plan(stations, 0, 2000)
 
 results = pd.DataFrame({
     i : {"location": m.x[i](),
@@ -300,12 +302,14 @@ results["t_stop"] = results["t_dep"] - results["t_arr"]
 display(results)
 
 
-# In[6]:
+# In[25]:
 
 
 # visualize
 
 def visualize(m):
+    
+    D = m.D
 
     results = pd.DataFrame({
         i : {"location": m.x[i](),
@@ -315,40 +319,53 @@ def visualize(m):
              "c_dep": m.c_dep[i](),
             } for i in m.LOCATIONS
     }).T
+    
+    results["t_stop"] = results["t_dep"] - results["t_arr"]
 
     fig, ax = plt.subplots(2, 1, figsize=(15, 8), sharex=True)
 
+    # plot stations
     for station in stations.index:
         xs = stations.loc[station, "location"]
         ys = stations.loc[station, "kw"]
         ax[0].plot([xs, xs], [0, ys], 'b', lw=10, solid_capstyle="butt")
         ax[0].text(xs, 0-30, stations.loc[station, "name"], ha="center")
 
+    # plot planning horizon
     ax[0].plot([x, x+D], [0, 0], 'r', lw=5, solid_capstyle="butt", label="plan horizon")
     ax[0].plot([x, x+D], [0, 0], 'r.', ms=20)
 
+    # annotations
     ax[0].axhline(0)
     ax[0].set_ylim(-50, 300)
     ax[0].set_ylabel('kw')
     ax[0].set_title("charging stations")
     ax[0].legend()
 
+    # plot battery charge
     for i in m.SEGMENTS:
         xv = [results.loc[i-1, "location"], results.loc[i, "location"]]
         cv = [results.loc[i-1, "c_dep"], results.loc[i, "c_arr"]]
         ax[1].plot(xv, cv, 'g')
 
+    # plot charge at stations
     for i in m.STATIONS:
         xv = [results.loc[i, "location"]]*2
         cv = [results.loc[i, "c_arr"], results.loc[i, "c_dep"]]
         ax[1].plot(xv, cv, 'g')
+        
+    # mark stop locations
+    for i in m.STATIONS:
+        if results.loc[i, "t_stop"] > 0:
+            ax[1].axvline(results.loc[i, "location"], color='r', ls='--')
 
+    # show constraints on battery charge
     ax[1].axhline(c_max, c='g')
     ax[1].axhline(c_min, c='g')
     ax[1].set_ylim(0, 1.1*c_max)
-    ax[1].set_ylabel('Charge')
+    ax[1].set_ylabel('Charge (kw)')
     
-visualize(ev_plan(stations, 0, 1000))
+visualize(ev_plan(stations, 0, 2000))
 
 
 # ## Suggested Exercises
