@@ -8,7 +8,7 @@
 # Here we revisit the example with a new model demonstrating  use of Pyomo decorators and of Pyomo Sets.
 # 
 
-# In[49]:
+# In[1]:
 
 
 # install Pyomo and solvers for Google Colab
@@ -30,7 +30,7 @@ if "google.colab" in sys.modules:
 # In principle, there are available ten employees, which is clearly over-sized. The less the workers are needed, the more the resources for other stores.
 
 # ## Analysis
-# 
+
 # ### Model sets
 # 
 # This problem requires assignment of an unspecified number of workers to a predetermined set of shifts. There are three shifts per day, seven days per week. These observations suggest the need for three ordered sets:
@@ -47,7 +47,7 @@ if "google.colab" in sys.modules:
 # 
 # * `BLOCKS` is an order set of all overlapping 24 hour periods in the week. An element of the set contains the (day, shift) period in the corresponding period. This set will be used to limit worker assignments to no more than one for each 24 hour period.
 # 
-# * `WEEKENDS` is a the set of all (day, shift) pairs on a weekend. This set will be used to implement worker perferences on weekend scheduling.
+# * `WEEKENDS` is a the set of all (day, shift) pairs on a weekend. This set will be used to implement worker preferences on weekend scheduling.
 # 
 # These additional sets improve the readability of the model.
 # 
@@ -61,7 +61,7 @@ if "google.colab" in sys.modules:
 # \text{WEEKENDS} & \subset \text{SLOTS} \text{ subset of slots corresponding to weekends} \\
 # \end{align*}
 # $$
-# 
+
 # ### Model parameters
 # 
 # $$
@@ -70,7 +70,7 @@ if "google.colab" in sys.modules:
 # \text{WorkersRequired}_{d, s} & = \text{ number of workers required for each day, shift pair } (d, s) \\
 # \end{align*}
 # $$
-# 
+
 # ### Model decision variables
 # 
 # $$
@@ -80,7 +80,7 @@ if "google.colab" in sys.modules:
 # \text{needed}_{w} & = \begin{cases}1\quad\text{if worker } w \text{ is needed during the week} \\ 0\quad \text{otherwise} \end{cases} \\
 # \end{align*}
 # $$
-# 
+
 # ### Model constraints
 # 
 # Assign workers to each shift to meet staffing requirement.
@@ -104,7 +104,7 @@ if "google.colab" in sys.modules:
 # $$
 # \begin{align*}
 # \\
-# \text{assign}_{w, d_1,s_1} + \text{assign}_{w, d_2, s_2} + \text{w, assign}_{w, d_3, s_3} & \leq 1 & \forall w \in \text{WORKERS} \\ & & \forall ((d_1, s_1), (d_2, s_2), (d_3, s_3))\in \text{BLOCKS} \\
+# \text{assign}_{w, d_1,s_1} + \text{assign}_{w, d_2, s_2} + \text{assign}_{w, d_3, s_3} & \leq 1 & \forall w \in \text{WORKERS} \\ & & \forall ((d_1, s_1), (d_2, s_2), (d_3, s_3))\in \text{BLOCKS} \\
 # \\
 # \end{align*}
 # $$
@@ -118,7 +118,7 @@ if "google.colab" in sys.modules:
 # \end{align*}
 # $$
 # 
-# Inicator if worker has been assigned a weekend shift.
+# Indicator if worker has been assigned a weekend shift.
 # $$
 # \begin{align*}
 # \\
@@ -126,17 +126,16 @@ if "google.colab" in sys.modules:
 # \\
 # \end{align*}
 # $$
-# 
+
 # ### Model objective
 # 
-# The model objective is to minimize the overall number of workers needed to fill the shift and work requirements, while also attempting to meet worker preferences regarding weekend shift assignments. This is formulated here as an objec
+# The model objective is to minimize the overall number of workers needed to fill the shift and work requirements while also attempting to meet worker preferences regarding weekend shift assignments. This is formulated here as an objective for minimizing a weighted sum of the number of workers needed to meet all shift requirements and the number of workers assigned to weekend shifts. The positive weight $gamma$ determines the relative importance of these two measures of a desirable shift schedule.
 # 
 # $$
 # \begin{align*}
 # \min \left(\sum_{w\in\text{ WORKERS}} \text{needed}_w + \gamma \sum_{w\in\text{ WORKERS}} \text{weekend}_w)
 # \right)\end{align*}
 # $$
-# 
 
 # ## Pyomo Modeling
 
@@ -222,7 +221,9 @@ def shift_schedule(N, hours=40):
 m = shift_schedule(10, 40)
 
 
-# ## Visualization
+# ## Visualization and Reporting
+# 
+# Scheduling applications generate a considerable amount of data to be used by the participants. The following cells demonstrate the preparation of charts and reports that can be used to communicate scheduling information to the store management and shift workers.
 
 # In[51]:
 

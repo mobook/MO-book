@@ -59,7 +59,7 @@ plt.ylabel('counts')
 
 # ## Model
 # 
-# Suppose we have a finite dataset consisting of $n$ points $\{({X}^{(i)}, y^{(i)})\}_{i=1,\dots,n}$ with ${X}^{(i)} \in \cal{R}^k$ and $y^{(i)} \in \cal{R}$. A linear regression model assumes the relationship between the vector of $k$ regressors ${X}$ and the dependent variable $y$ is linear. This relationship is modeled through an error or deviation term $e_i$, which quantifies how much each of the data points diverge from the model prediction and is defined as follows:
+# Suppose we have a finite dataset consisting of $n$ points $\{({X}^{(i)}, y^{(i)})\}_{i=1,\dots,n}$ with ${X}^{(i)} \in \mathbb{R}^k$ and $y^{(i)} \in \mathbb{R}$. A linear regression model assumes the relationship between the vector of $k$ regressors ${X}$ and the dependent variable $y$ is linear. This relationship is modeled through an error or deviation term $e_i$, which quantifies how much each of the data points diverge from the model prediction and is defined as follows:
 # 
 # $$
 # \begin{equation}\label{eq:regression}
@@ -80,7 +80,7 @@ plt.ylabel('counts')
 # \end{align}
 # $$
 # 
-# Since it is a minimization problem and the absolute values appear in the objective function, we can use the trick illustrated above to transform it into a linear problem. More specifically, introducing for every term $e_i$ two new variables $e_i^-, e_i^+ \geq 0$, we can rewrite the model as
+# In general, the appearance of an absolute value term indicates the problem is nonlinear and, worse, that the objective function is not differentiable when any $e_i = 0$. However, for this case where the objective is to minimize a sum of absolute errors, one can reformulate the decision variables to transform this into a linear problem. More specifically, introducing for every term $e_i$ two new variables $e_i^-, e_i^+ \geq 0$, we can rewrite the model as
 # 
 # $$
 # \begin{align}
@@ -125,7 +125,6 @@ def lad_regression(X, y):
     return m
 
 m = lad_regression(X, y)
-
 m.m.display()
 m.b.display()
 

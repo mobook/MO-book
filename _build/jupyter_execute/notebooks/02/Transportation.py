@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Transportation and Allocation Models
+# # Transportation and Allocation
 # 
 # This notebook presents a transportation model to optimally allocate the delivery of a commodity from multiple sources to multiple destinations. The model invites a discussion of the pitfalls in optimizing a global objective for customers who may have an uneven share of the resulting benefits, then through model refinement arrives at a group cost-sharing plan to delivery costs.
 # 
@@ -118,12 +118,6 @@ display(demand.to_frame())
 
 display(HTML("<br><b>Transportation Rates (US cents per Gallon)</b>"))
 display(rates)
-
-
-# In[18]:
-
-
-demand.sum()
 
 
 # ## Pyomo Model 1: Minimize Total Delivery Cost
