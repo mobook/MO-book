@@ -5,7 +5,7 @@
 # 
 # * Demonstrates reformulation of hyperbolic constraints as SOCP with implementation with `pyomo.kernel.conic.quadratic`.
 # * Demonstrates direct modeling of the hyperbolic constraint with `pyomo.kernel.conic.rotated_quadratic`.
-# * The example is familiar to any business student with a significant range off business applications including warehouse operations.
+# * The example is familiar to any MBA/business student, and has a significant range of applications including warehouse operations.
 # 
 # ## Usage notes
 # 
@@ -326,6 +326,8 @@ solver.solve(m)
 print(f"\nEOQ = {(m.t() + m.v())/2:0.2f}")
 
 
+# ## The `.as_domain()` method simplies the Pyomo model
+# 
 # `pyomo.kernel` provides additional support for conic solvers with the `.as_domain()` method that be applied to the conic solver interfaces. Adding `.as_domain` allows use of constants, linear expressions, or `None` in place of pyomo variables. For this application, this means `u` does not have to be included as a pyomo variable and constrained to a fixed value. The required value can simply be inserted directly into constraint specification as demonstrated below.
 
 # In[6]:
@@ -412,7 +414,7 @@ solver.solve(m)
 print(f"\nEOQ = {m.x():0.2f}")
 
 
-# ## Multi-Item Model
+# ## Extending the EOQ model multiple items with a shared resource
 # 
 # Solving for the EOQ for a single item using SOCP programming is using a sledgehammer to swat a fly. The problem becomes more interesting, however, for determining economic order quantities when the inventories for multiple items compete for a shared resource in a common warehouse. The shared resource could he financing available to hold inventory, space in a warehouse, or specialized facilities to hold a perishable 
 # 
@@ -541,11 +543,11 @@ m = eoq(df, 4000)
 eoq_display_results(df, m)
 
 
-# ## Large Example
+# ## Testing the model on larger problems
 # 
 # The following cell creates a random EOQ problem of size $n$ that can be used to test the model formulation and solver.
 
-# In[10]:
+# In[11]:
 
 
 n = 30
