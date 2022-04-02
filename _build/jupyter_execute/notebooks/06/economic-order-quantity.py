@@ -15,6 +15,16 @@
 # * The example is familiar to any business student.
 # * Significant range off business applications including warehouse operations.
 
+# In[1]:
+
+
+# Install Pyomo and solvers for Google Colab
+import sys
+if "google.colab" in sys.modules:
+    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
+    get_ipython().run_line_magic('run', 'install_on_colab.py')
+
+
 # ## References
 # 
 # Bretthauer, K. M., & Shetty, B. (1995). The nonlinear resource allocation problem. Operations research, 43(4), 670-683. https://www.jstor.org/stable/171693?seq=1
@@ -60,7 +70,7 @@
 # 
 # The following chart illustrates the nature of the problem and its analytical solution.
 
-# In[147]:
+# In[2]:
 
 
 import matplotlib.pyplot as plt
@@ -107,7 +117,7 @@ ax.set_ylim(0, 6000)
 # As the following diagrams the solution to this optimization problem.
 # 
 
-# In[148]:
+# In[3]:
 
 
 h = 0.75      # cost of holding one time for one year 
@@ -174,7 +184,7 @@ ax.legend()
 # t & \sim x + y
 # \end{align*}$$
 
-# In[149]:
+# In[4]:
 
 
 from mpl_toolkits import mplot3d
@@ -252,7 +262,7 @@ ax.set_ylabel('v')
 # 
 # The EOQ model is now ready to implement with Pyomo.
 
-# In[190]:
+# In[5]:
 
 
 import pyomo.kernel as pmo
@@ -260,13 +270,13 @@ import pyomo.kernel as pmo
 m = pmo.block()
 
 # define decision variables
-m.x = pmo.variable(domain=pyo.NonNegativeReals)
-m.y = pyo.variable(domain=pyo.NonNegativeReals)
+m.x = pmo.variable(domain=pmo.NonNegativeReals)
+m.y = pmo.variable(domain=pmo.NonNegativeReals)
 
 # define variables for conic constraints
-m.u = pmo.variable(domain=pyo.NonNegativeReals)
-m.v = pmo.variable(domain=pyo.NonNegativeReals)
-m.t = pmo.variable(domain=pyo.NonNegativeReals)
+m.u = pmo.variable(domain=pmo.NonNegativeReals)
+m.v = pmo.variable(domain=pmo.NonNegativeReals)
+m.t = pmo.variable(domain=pmo.NonNegativeReals)
 
 # relationships for conic constraints to decision variables
 m.u_eq = pmo.constraint(m.u == 2)
@@ -280,7 +290,7 @@ m.q = pmo.conic.quadratic(m.t, [m.u, m.v])
 m.eoq = pmo.objective(h*m.x/2 + c*d*m.y)
 
 # solve with Mosek
-solver = pyo.SolverFactory('mosek')
+solver = pmo.SolverFactory('mosek')
 solver.solve(m)
 
 # solution
@@ -361,7 +371,7 @@ print(f"\nEOQ = {m.x():0.2f}")
 # 
 # The following Pyomo/Mosek model is a direct implementation of the multi-time EOQ formulation.
 
-# In[347]:
+# In[6]:
 
 
 import pandas as pd
@@ -376,7 +386,7 @@ df = pd.DataFrame({
 display(df)
 
 
-# In[348]:
+# In[7]:
 
 
 import pyomo.kernel as pmo
@@ -392,23 +402,23 @@ def eoq(df, b):
     # variable dictionaries
     m.x = pmo.variable_dict()
     for i in m.I:
-        m.x[i] = pmo.variable(domain=pyo.NonNegativeReals)
+        m.x[i] = pmo.variable(domain=pmo.NonNegativeReals)
 
     m.y = pmo.variable_dict()
     for i in m.I:
-        m.y[i] = pmo.variable(domain=pyo.NonNegativeReals)
+        m.y[i] = pmo.variable(domain=pmo.NonNegativeReals)
 
     m.t = pmo.variable_dict()
     for i in m.I:
-        m.t[i] = pmo.variable(domain=pyo.NonNegativeReals)
+        m.t[i] = pmo.variable(domain=pmo.NonNegativeReals)
 
     m.u = pmo.variable_dict()
     for i in m.I:
-        m.u[i] = pmo.variable(domain=pyo.NonNegativeReals)
+        m.u[i] = pmo.variable(domain=pmo.NonNegativeReals)
 
     m.v = pmo.variable_dict()
     for i in m.I:
-        m.v[i] = pmo.variable(domain=pyo.NonNegativeReals)
+        m.v[i] = pmo.variable(domain=pmo.NonNegativeReals)
 
     # constraints= dictionaries
     m.t_eq = pmo.constraint_dict()
@@ -423,7 +433,7 @@ def eoq(df, b):
     for i in m.I:
         m.v_eq[i] = pmo.constraint(m.v[i] == m.x[i] - m.y[i])
 
-    m.b_cap = pyo.constraint(sum(df.loc[i, "b"]*m.x[i] for i in m.I) <= m.b)
+    m.b_cap = pmo.constraint(sum(df.loc[i, "b"]*m.x[i] for i in m.I) <= m.b)
 
     m.q = pmo.constraint_dict()
     for i in m.I:
@@ -433,7 +443,7 @@ def eoq(df, b):
     m.eoq = pmo.objective(sum(df.loc[i, "h"]*m.x[i]/2 + df.loc[i, "c"]*df.loc[i, "d"]*m.y[i] for i in m.I))
 
     # solve with Mosek
-    solver = pyo.SolverFactory('mosek')
+    solver = pmo.SolverFactory('mosek')
     solver.solve(m)
     
     return m
@@ -453,7 +463,11 @@ m = eoq(df, 4000)
 eoq_display_results(df, m)
 
 
-# In[349]:
+# ## Large Example
+# 
+# The following cell creates a random EOQ problem of size $n$ that can be used to test the model formulation and solver.
+
+# In[8]:
 
 
 n = 100
@@ -469,12 +483,6 @@ df_large
 
 m = eoq(df_large, 100000)
 eoq_display_results(df_large, m)
-
-
-# In[ ]:
-
-
-
 
 
 # In[ ]:
