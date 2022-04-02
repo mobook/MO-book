@@ -252,7 +252,7 @@ ax.set_ylabel('v')
 # 
 # The EOQ model is now ready to implement with Pyomo.
 
-# In[187]:
+# In[190]:
 
 
 import pyomo.kernel as pmo
@@ -289,18 +289,193 @@ print(f"\nEOQ = {m.x():0.2f}")
 
 # ## Multi-Item Model
 # 
-# Solving for the EOQ for a single item using SOCP programming is a case of using a sledgehammer to swat a fly. The computations become more interesting, however, for the case of finding economic order quantities for multiple items that compete for space in a common warehouse.
+# Solving for the EOQ for a single item using SOCP programming is using a sledgehammer to swat a fly. The problem becomes more interesting, however, for the case of determining economic order quantities for multiple items that compete for resources in a common warehouse.
+# 
+# Extending the notation of the single item model
 # 
 # $$
 # \begin{align*}
 # \min & \quad \sum_{i=1}^n \frac{h x_i}{2} + \frac{c_i d_i}{x_i} \\
 # \text{s.t.} & \quad \sum_{i=1}^n b_i x_i  \leq b_0 \\
-# & l_i \leq x_i \leq u_i & \forall i\in 1, \dots, n
-# \\
+# & 0 < lb_i \leq x_i \leq ub_i & \forall i\in 1, \dots, n \\
 # \end{align*}
 # $$
 # 
-# where $h_i$ is the annual holding cost for one unit of item $i$, $c_i$ is the cost to place an order and receive delivery for item $i$, and $d_i$ is the annual demand. $b_i$ is the available resource to store item $i$ and $b_0$  is the total available storage space.
+# where $h_i$ is the annual holding cost for one unit of item $i$, $c_i$ is the cost to place an order and receive delivery for item $i$, and $d_i$ is the annual demand. 
+# 
+# The additional constraint models the allocation of a shared resource to hold the inventory. The shared resource could he financing available to hold inventory, space in a warehouse, or specialized facilities to hold a perishable good. Parameter $b_i$ is the amount of resource needed to store one unit of item i, and $b_0$ is the total resource available.
+# 
+# Following the reformulation of the single item model, a variable $y_i 
+# \geq 0$, $i=1, \dots, n$ is introduced to linearize the objective
+# 
+# $$
+# \begin{align*}
+# \min \quad \sum_{i=1}^n \frac{h x_i}{2} & + c_i d_i y_i \\
+# \text{s.t.} \quad \sum_{i=1}^n b_i x_i &  \leq b_0 \\
+# x_i y_i & \geq 1 & \forall i\in 1, \dots, n \\
+# 0 < lb_i \leq x_i & \leq ub_i & \forall i\in 1, \dots, n \\
+# y_i & \geq 0 & \forall i\in 1, \dots, n \\
+# \end{align*}
+# $$
+# 
+# As a short cut to reformulating the model with conic constraints, note that a "completion of square" gives the needed substitutions
+# 
+# $$
+# \begin{align*}
+# (x_i + y_i)^2  = x_i^2 + 2 x_i y_i + y_i^2 \\
+# - (x_i - y_i)^2  = - x_i^2 + 2 x_i y_i - y_i^2 \\
+# \rule{6cm}{0.4pt} \\
+# \implies (x_i + y_i)^2 - (x_i - y_i)^2  = 4 x_i y_i \\
+# \end{align*}
+# $$
+# 
+# The multi-item EOQ model is now written with conic constraints
+# 
+# $$
+# \begin{align*}
+# \min \quad \sum_{i=1}^n \frac{h x_i}{2} & + c_i d_i y_i \\
+# \text{s.t.} \quad \sum_{i=1}^n b_i x_i &  \leq b_0 \\
+# 4 + (x_i - y_i)^2 & \leq (x_i + y_i)^2 & \forall i\in 1, \dots, n \\
+# 0 < lb_i \leq x_i & \leq ub_i & \forall i\in 1, \dots, n \\
+# y_i & \geq 0 & \forall i\in 1, \dots, n \\
+# \end{align*}
+# $$
+# 
+# Variables $t_i$, $u_i$, and $v_i$ are introduced t complete the reformulation for implementation with Pyomo/Mosek.
+
+# 
+# $$
+# \begin{align*}
+# \min \quad \sum_{i=1}^n \frac{h x_i}{2} & + c_i d_i y_i \\
+# \text{s.t.} \quad \sum_{i=1}^n b_i x_i &  \leq b_0 \\
+# t_i & = x_i + y_i & \forall i\in 1, \dots, n \\
+# u_i & = 2 & \forall i \in 1, \dots, n \\
+# v_i & = x_i - y_i & \forall i\in 1, \dots, n \\
+# u_i^2 + v_i^2 & \leq t_i^2 & \forall i\in 1, \dots, n \\
+# 0 < lb_i \leq x_i & \leq ub_i & \forall i\in 1, \dots, n \\
+# t_i, u_i, v_i, y_i & \geq 0 & \forall i\in 1, \dots, n \\
+# \end{align*}
+# $$
+
+# ## Pyomo Model
+# 
+# The following Pyomo/Mosek model is a direct implementation of the multi-time EOQ formulation.
+
+# In[347]:
+
+
+import pandas as pd
+
+df = pd.DataFrame({
+    "all weather":   {"h": 1.0, "c": 200, "d": 1300, "b": 3},
+    "truck":         {"h": 2.8, "c": 250, "d":  700, "b": 8},
+    "heavy duty":    {"h": 1.2, "c": 200, "d":  500, "b": 5},
+    "low cost":      {"h": 0.8, "c": 180, "d": 2000, "b": 3},
+}).T
+
+display(df)
+
+
+# In[348]:
+
+
+import pyomo.kernel as pmo
+
+def eoq(df, b):
+
+    m = pmo.block()
+
+    m.b = pmo.parameter(b)
+
+    m.I = df.index
+
+    # variable dictionaries
+    m.x = pmo.variable_dict()
+    for i in m.I:
+        m.x[i] = pmo.variable(domain=pyo.NonNegativeReals)
+
+    m.y = pmo.variable_dict()
+    for i in m.I:
+        m.y[i] = pmo.variable(domain=pyo.NonNegativeReals)
+
+    m.t = pmo.variable_dict()
+    for i in m.I:
+        m.t[i] = pmo.variable(domain=pyo.NonNegativeReals)
+
+    m.u = pmo.variable_dict()
+    for i in m.I:
+        m.u[i] = pmo.variable(domain=pyo.NonNegativeReals)
+
+    m.v = pmo.variable_dict()
+    for i in m.I:
+        m.v[i] = pmo.variable(domain=pyo.NonNegativeReals)
+
+    # constraints= dictionaries
+    m.t_eq = pmo.constraint_dict()
+    for i in m.I:
+        m.t_eq[i] = pmo.constraint(m.t[i] == m.x[i] + m.y[i])
+
+    m.u_eq = pmo.constraint_dict()
+    for i in m.I:
+        m.u_eq[i] = pmo.constraint(m.u[i] == 2)
+
+    m.v_eq = pmo.constraint_dict()
+    for i in m.I:
+        m.v_eq[i] = pmo.constraint(m.v[i] == m.x[i] - m.y[i])
+
+    m.b_cap = pyo.constraint(sum(df.loc[i, "b"]*m.x[i] for i in m.I) <= m.b)
+
+    m.q = pmo.constraint_dict()
+    for i in m.I:
+        m.q[i] = pmo.conic.quadratic(m.t[i], [m.u[i], m.v[i]])
+
+    # objective
+    m.eoq = pmo.objective(sum(df.loc[i, "h"]*m.x[i]/2 + df.loc[i, "c"]*df.loc[i, "d"]*m.y[i] for i in m.I))
+
+    # solve with Mosek
+    solver = pyo.SolverFactory('mosek')
+    solver.solve(m)
+    
+    return m
+
+def eoq_display_results(df, m):
+
+    results = pd.DataFrame([
+        [i, m.x[i](), m.x[i]()*df.loc[i, "b"]] 
+        for i in m.I],
+        columns = ["product", "EOQ", "Space Req'd"]).round(1)
+    results.set_index("product", inplace=True)
+
+    display(results)
+    results.plot(y = ["EOQ", "Space Req'd"], kind="bar", subplots=True, layout=(2, 1), figsize=(10, 6))
+    
+m = eoq(df, 4000)
+eoq_display_results(df, m)
+
+
+# In[349]:
+
+
+n = 100
+
+df_large = pd.DataFrame()
+df_large["h"] = np.random.uniform(0.5, 2.0, n)
+df_large["c"] = np.random.randint(300, 500, n)
+df_large["d"] = np.random.randint(100, 5000, n)
+df_large["b"] = np.random.uniform(10, 50)
+df_large.set_index(pd.Series(f"product {i:03d}" for i in range(n)), inplace=True)
+
+df_large
+
+m = eoq(df_large, 100000)
+eoq_display_results(df_large, m)
+
+
+# In[ ]:
+
+
+
+
 
 # In[ ]:
 

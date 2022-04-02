@@ -462,6 +462,11 @@ const thebe_selector_output = ".output, .cell_output"
    Multi-Item Model
   </a>
  </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#pyomo-model">
+   Pyomo Model
+  </a>
+ </li>
 </ul>
 
             </nav>
@@ -522,6 +527,11 @@ const thebe_selector_output = ".output, .cell_output"
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#multi-item-model">
    Multi-Item Model
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#pyomo-model">
+   Pyomo Model
   </a>
  </li>
 </ul>
@@ -834,17 +844,381 @@ x, y, t, u, v &amp; \geq 0
 </section>
 <section id="multi-item-model">
 <h2>Multi-Item Model<a class="headerlink" href="#multi-item-model" title="Permalink to this headline">¶</a></h2>
-<p>Solving for the EOQ for a single item using SOCP programming is a case of using a sledgehammer to swat a fly. The computations become more interesting, however, for the case of finding economic order quantities for multiple items that compete for space in a common warehouse.</p>
+<p>Solving for the EOQ for a single item using SOCP programming is using a sledgehammer to swat a fly. The problem becomes more interesting, however, for the case of determining economic order quantities for multiple items that compete for resources in a common warehouse.</p>
+<p>Extending the notation of the single item model</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
 \min &amp; \quad \sum_{i=1}^n \frac{h x_i}{2} + \frac{c_i d_i}{x_i} \\
 \text{s.t.} &amp; \quad \sum_{i=1}^n b_i x_i  \leq b_0 \\
-&amp; l_i \leq x_i \leq u_i &amp; \forall i\in 1, \dots, n
-\\
+&amp; 0 &lt; lb_i \leq x_i \leq ub_i &amp; \forall i\in 1, \dots, n \\
 \end{align*}
 \end{split}\]</div>
-<p>where <span class="math notranslate nohighlight">\(h_i\)</span> is the annual holding cost for one unit of item <span class="math notranslate nohighlight">\(i\)</span>, <span class="math notranslate nohighlight">\(c_i\)</span> is the cost to place an order and receive delivery for item <span class="math notranslate nohighlight">\(i\)</span>, and <span class="math notranslate nohighlight">\(d_i\)</span> is the annual demand. <span class="math notranslate nohighlight">\(b_i\)</span> is the available resource to store item <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(b_0\)</span>  is the total available storage space.</p>
+<p>where <span class="math notranslate nohighlight">\(h_i\)</span> is the annual holding cost for one unit of item <span class="math notranslate nohighlight">\(i\)</span>, <span class="math notranslate nohighlight">\(c_i\)</span> is the cost to place an order and receive delivery for item <span class="math notranslate nohighlight">\(i\)</span>, and <span class="math notranslate nohighlight">\(d_i\)</span> is the annual demand.</p>
+<p>The additional constraint models the allocation of a shared resource to hold the inventory. The shared resource could he financing available to hold inventory, space in a warehouse, or specialized facilities to hold a perishable good. Parameter <span class="math notranslate nohighlight">\(b_i\)</span> is the amount of resource needed to store one unit of item i, and <span class="math notranslate nohighlight">\(b_0\)</span> is the total resource available.</p>
+<p>Following the reformulation of the single item model, a variable <span class="math notranslate nohighlight">\(y_i 
+\geq 0\)</span>, <span class="math notranslate nohighlight">\(i=1, \dots, n\)</span> is introduced to linearize the objective</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\min \quad \sum_{i=1}^n \frac{h x_i}{2} &amp; + c_i d_i y_i \\
+\text{s.t.} \quad \sum_{i=1}^n b_i x_i &amp;  \leq b_0 \\
+x_i y_i &amp; \geq 1 &amp; \forall i\in 1, \dots, n \\
+0 &lt; lb_i \leq x_i &amp; \leq ub_i &amp; \forall i\in 1, \dots, n \\
+y_i &amp; \geq 0 &amp; \forall i\in 1, \dots, n \\
+\end{align*}
+\end{split}\]</div>
+<p>As a short cut to reformulating the model with conic constraints, note that a “completion of square” gives the needed substitutions</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+(x_i + y_i)^2  = x_i^2 + 2 x_i y_i + y_i^2 \\
+- (x_i - y_i)^2  = - x_i^2 + 2 x_i y_i - y_i^2 \\
+\rule{6cm}{0.4pt} \\
+\implies (x_i + y_i)^2 - (x_i - y_i)^2  = 4 x_i y_i \\
+\end{align*}
+\end{split}\]</div>
+<p>The multi-item EOQ model is now written with conic constraints</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\min \quad \sum_{i=1}^n \frac{h x_i}{2} &amp; + c_i d_i y_i \\
+\text{s.t.} \quad \sum_{i=1}^n b_i x_i &amp;  \leq b_0 \\
+4 + (x_i - y_i)^2 &amp; \leq (x_i + y_i)^2 &amp; \forall i\in 1, \dots, n \\
+0 &lt; lb_i \leq x_i &amp; \leq ub_i &amp; \forall i\in 1, \dots, n \\
+y_i &amp; \geq 0 &amp; \forall i\in 1, \dots, n \\
+\end{align*}
+\end{split}\]</div>
+<p>Variables <span class="math notranslate nohighlight">\(t_i\)</span>, <span class="math notranslate nohighlight">\(u_i\)</span>, and <span class="math notranslate nohighlight">\(v_i\)</span> are introduced t complete the reformulation for implementation with Pyomo/Mosek.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\min \quad \sum_{i=1}^n \frac{h x_i}{2} &amp; + c_i d_i y_i \\
+\text{s.t.} \quad \sum_{i=1}^n b_i x_i &amp;  \leq b_0 \\
+t_i &amp; = x_i + y_i &amp; \forall i\in 1, \dots, n \\
+u_i &amp; = 2 &amp; \forall i \in 1, \dots, n \\
+v_i &amp; = x_i - y_i &amp; \forall i\in 1, \dots, n \\
+u_i^2 + v_i^2 &amp; \leq t_i^2 &amp; \forall i\in 1, \dots, n \\
+0 &lt; lb_i \leq x_i &amp; \leq ub_i &amp; \forall i\in 1, \dots, n \\
+t_i, u_i, v_i, y_i &amp; \geq 0 &amp; \forall i\in 1, \dots, n \\
+\end{align*}
+\end{split}\]</div>
+</section>
+<section id="pyomo-model">
+<h2>Pyomo Model<a class="headerlink" href="#pyomo-model" title="Permalink to this headline">¶</a></h2>
+<p>The following Pyomo/Mosek model is a direct implementation of the multi-time EOQ formulation.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s2">&quot;all weather&quot;</span><span class="p">:</span>   <span class="p">{</span><span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="mi">1300</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>
+    <span class="s2">&quot;truck&quot;</span><span class="p">:</span>         <span class="p">{</span><span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="mf">2.8</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="mi">250</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">:</span>  <span class="mi">700</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">},</span>
+    <span class="s2">&quot;heavy duty&quot;</span><span class="p">:</span>    <span class="p">{</span><span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="mf">1.2</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">:</span>  <span class="mi">500</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span>
+    <span class="s2">&quot;low cost&quot;</span><span class="p">:</span>      <span class="p">{</span><span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="mi">180</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span>
+<span class="p">})</span><span class="o">.</span><span class="n">T</span>
+
+<span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>h</th>
+      <th>c</th>
+      <th>d</th>
+      <th>b</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>all weather</th>
+      <td>1.0</td>
+      <td>200.0</td>
+      <td>1300.0</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <th>truck</th>
+      <td>2.8</td>
+      <td>250.0</td>
+      <td>700.0</td>
+      <td>8.0</td>
+    </tr>
+    <tr>
+      <th>heavy duty</th>
+      <td>1.2</td>
+      <td>200.0</td>
+      <td>500.0</td>
+      <td>5.0</td>
+    </tr>
+    <tr>
+      <th>low cost</th>
+      <td>0.8</td>
+      <td>180.0</td>
+      <td>2000.0</td>
+      <td>3.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
+
+<span class="k">def</span> <span class="nf">eoq</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">block</span><span class="p">()</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">parameter</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">I</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
+
+    <span class="c1"># variable dictionaries</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable_dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">:</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable_dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">:</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable_dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">:</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable_dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">:</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable_dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">:</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+
+    <span class="c1"># constraints= dictionaries</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">t_eq</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint_dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">:</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">t_eq</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">u_eq</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint_dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">:</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">u_eq</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">v_eq</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint_dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">:</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">v_eq</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">b_cap</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint_dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">:</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">q</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">quadratic</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
+
+    <span class="c1"># objective</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">eoq</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">objective</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">))</span>
+
+    <span class="c1"># solve with Mosek</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;mosek&#39;</span><span class="p">)</span>
+    <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">m</span>
+
+<span class="k">def</span> <span class="nf">eoq_display_results</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span>
+        <span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">](),</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span><span class="o">*</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">]]</span> 
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">],</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;product&quot;</span><span class="p">,</span> <span class="s2">&quot;EOQ&quot;</span><span class="p">,</span> <span class="s2">&quot;Space Req&#39;d&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;product&quot;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">display</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;EOQ&quot;</span><span class="p">,</span> <span class="s2">&quot;Space Req&#39;d&quot;</span><span class="p">],</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">subplots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+    
+<span class="n">m</span> <span class="o">=</span> <span class="n">eoq</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="mi">4000</span><span class="p">)</span>
+<span class="n">eoq_display_results</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>EOQ</th>
+      <th>Space Req'd</th>
+    </tr>
+    <tr>
+      <th>product</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>all weather</th>
+      <td>306.2</td>
+      <td>918.7</td>
+    </tr>
+    <tr>
+      <th>truck</th>
+      <td>153.2</td>
+      <td>1225.3</td>
+    </tr>
+    <tr>
+      <th>heavy duty</th>
+      <td>151.0</td>
+      <td>754.9</td>
+    </tr>
+    <tr>
+      <th>low cost</th>
+      <td>367.0</td>
+      <td>1101.1</td>
+    </tr>
+  </tbody>
+</table>
+</div></div><img alt="../../_images/economic-order-quantity_15_1.png" src="../../_images/economic-order-quantity_15_1.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n</span> <span class="o">=</span> <span class="mi">100</span>
+
+<span class="n">df_large</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+<span class="n">df_large</span><span class="p">[</span><span class="s2">&quot;h&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+<span class="n">df_large</span><span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">300</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+<span class="n">df_large</span><span class="p">[</span><span class="s2">&quot;d&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+<span class="n">df_large</span><span class="p">[</span><span class="s2">&quot;b&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="n">df_large</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;product </span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s2">03d</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)),</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">df_large</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">eoq</span><span class="p">(</span><span class="n">df_large</span><span class="p">,</span> <span class="mi">100000</span><span class="p">)</span>
+<span class="n">eoq_display_results</span><span class="p">(</span><span class="n">df_large</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>EOQ</th>
+      <th>Space Req'd</th>
+    </tr>
+    <tr>
+      <th>product</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>product 000</th>
+      <td>81.3</td>
+      <td>1160.2</td>
+    </tr>
+    <tr>
+      <th>product 001</th>
+      <td>99.7</td>
+      <td>1422.2</td>
+    </tr>
+    <tr>
+      <th>product 002</th>
+      <td>83.2</td>
+      <td>1187.5</td>
+    </tr>
+    <tr>
+      <th>product 003</th>
+      <td>84.2</td>
+      <td>1201.7</td>
+    </tr>
+    <tr>
+      <th>product 004</th>
+      <td>64.8</td>
+      <td>924.1</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>product 095</th>
+      <td>84.3</td>
+      <td>1202.9</td>
+    </tr>
+    <tr>
+      <th>product 096</th>
+      <td>23.0</td>
+      <td>328.3</td>
+    </tr>
+    <tr>
+      <th>product 097</th>
+      <td>87.8</td>
+      <td>1252.5</td>
+    </tr>
+    <tr>
+      <th>product 098</th>
+      <td>70.9</td>
+      <td>1011.0</td>
+    </tr>
+    <tr>
+      <th>product 099</th>
+      <td>62.0</td>
+      <td>884.4</td>
+    </tr>
+  </tbody>
+</table>
+<p>100 rows × 2 columns</p>
+</div></div><img alt="../../_images/economic-order-quantity_16_1.png" src="../../_images/economic-order-quantity_16_1.png" />
+</div>
+</div>
 </section>
 </section>
 
