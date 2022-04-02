@@ -87,7 +87,7 @@ if "google.colab" in sys.modules:
 import matplotlib.pyplot as plt
 import numpy as np
 
-h = 0.75      # cost of holding one time for one year 
+h = 0.75      # cost of holding one item for one year 
 c = 500.0     # cost of processing one order
 d = 10000.0   # annual demand
 
@@ -134,7 +134,7 @@ ax.set_ylim(0, 6000)
 import matplotlib.pyplot as plt
 import numpy as np
 
-h = 0.75      # cost of holding one time for one year 
+h = 0.75      # cost of holding one item for one year 
 c = 500.0     # cost of processing one order
 d = 10000.0   # annual demand
 
@@ -224,9 +224,7 @@ for t in np.linspace(0, t_max, n+1):
         u = t*np.cos(a)
         v = t*np.sin(a)
         ax.plot3D(u, v, t, 'b', lw=0.3) 
-        ax.plot3D([2, 2], [t*np.sin(b), -t*np.sin(b)], [t, t], 'b', lw=0.3)  
-        #ax.plot3D(t*np.cos(b), t*np.sin(b), t, 'bo', ms=2)
-        #ax.plot3D(t*np.cos(b), -t*np.sin(b), t, 'bo', ms=2)       
+        ax.plot3D([2, 2], [t*np.sin(b), -t*np.sin(b)], [t, t], 'b', lw=0.3)        
 
 t = np.linspace(w, t_max)
 v = t*np.sin(np.arccos(w/t))
@@ -300,7 +298,7 @@ ax.set_ylabel('v');
 
 import pyomo.kernel as pmo
 
-h = 0.75      # cost of holding one time for one year 
+h = 0.75      # cost of holding one item for one year 
 c = 500.0     # cost of processing one order
 d = 10000.0   # annual demand
 
@@ -335,7 +333,7 @@ print(f"\nEOQ = {(m.t() + m.v())/2:0.2f}")
 
 import pyomo.kernel as pmo
 
-h = 0.75      # cost of holding one time for one year 
+h = 0.75      # cost of holding one item for one year 
 c = 500.0     # cost of processing one order
 d = 10000.0   # annual demand
 
@@ -485,9 +483,9 @@ display(df)
 def eoq(df, b):
 
     m = pmo.block()
-
+    
     m.b = pmo.parameter(b)
-
+    
     m.I = df.index
 
     # variable dictionaries
@@ -499,27 +497,14 @@ def eoq(df, b):
     for i in m.I:
         m.y[i] = pmo.variable(lb=0)
 
-    m.z = pmo.variable_dict()
+    # use a block_dict because .as_domain returns a block
+    m.q = pmo.block_dict()
     for i in m.I:
-        m.z[i] = pmo.variable(lb=0)
-
-    # constraints
-    m.z_eq = pmo.constraint_dict()
-    for i in m.I:
-        m.z_eq[i] = pmo.constraint(m.z[i] == np.sqrt(2))
-
+        m.q[i] = pmo.conic.rotated_quadratic.as_domain(m.x[i], m.y[i], [np.sqrt(2)])
+        
     m.b_cap = pmo.constraint(sum(df.loc[i, "b"]*m.x[i] for i in m.I) <= m.b)
-
-# THIS DOESN'T WORK FOR SOME REASON
-#    m.q = pmo.constraint_dict()
-#    for i in m.I:
-#        m.q[i] = pmo.conic.rotated_quadratic.as_domain(m.x[i], m.y[i], [np.sqrt(2)])
         
-    m.q = pmo.constraint_dict()
-    for i in m.I:
-        m.q[i] = pmo.conic.rotated_quadratic(m.x[i], m.y[i], [m.z[i]])
-        
-    # objective
+   # objective
     m.eoq = pmo.objective(sum(df.loc[i, "h"]*m.x[i]/2 + df.loc[i, "c"]*df.loc[i, "d"]*m.y[i] for i in m.I))
 
     # solve with Mosek
@@ -547,7 +532,7 @@ eoq_display_results(df, m)
 # 
 # The following cell creates a random EOQ problem of size $n$ that can be used to test the model formulation and solver.
 
-# In[11]:
+# In[10]:
 
 
 n = 30
