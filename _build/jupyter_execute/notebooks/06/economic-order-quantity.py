@@ -3,17 +3,16 @@
 
 # # Economic Order Quantity
 # 
-# History
+# * Demonstrates reformulation of hyperbolic constraints as SOCP with implementation with `pyomo.kernel.conic.quadratic`.
+# * Demonstrates direct modeling of the hyperbolic constraint with `pyomo.kernel.conic.rotated_quadratic`.
+# * The example is familiar to any business student with a significant range off business applications including warehouse operations.
 # 
-# * Formulated in 1982 by Ziegler. Extension of classic EOQ problem
-# * Reformulated in 2004 SOCP by Kuo & Mittleman, cited by Letchford and El Ghaoui
-# * See Bretthauer for related applications
+# ## Usage notes
 # 
-# Relevance
-# 
-# * Demonstrates reformulation of hyperbolic constraints as SOCP
-# * The example is familiar to any business student.
-# * Significant range off business applications including warehouse operations.
+# * The notebook requires a solver that can handle a conic constraint. Pyomo provides direct interface to the commercial solvers Gurobi and Mosek that include conic solvers. Other nonlinear solvers may solve this problems using more general numerical techniques. 
+# * On Google Colab use the `gurobi_direct` solver to use the demo version of Gurobi that is included with Google Colab. Note there are size limits for problems using the demo version of Gurobi.
+# * For personal installations of Mosek or Gurobi (free licenses available for academic use), use `mosek_direct` or `gurobi_direct`.
+# * For use without Gurobi or Mosek, use the `ipopt` solver.
 
 # In[1]:
 
@@ -25,26 +24,38 @@ if "google.colab" in sys.modules:
     get_ipython().run_line_magic('run', 'install_on_colab.py')
 
 
-# ## References
+# ## Bibliographic notes
 # 
-# Bretthauer, K. M., & Shetty, B. (1995). The nonlinear resource allocation problem. Operations research, 43(4), 670-683. https://www.jstor.org/stable/171693?seq=1
+# The original formulation and solution of the economic order quantity problem is attributed to Ford Harris, but in a curious twist has been [incorrectly cited ince 1931](https://pubsonline.informs.org/doi/abs/10.1287/mnsc.35.7.898). The correct citation is:
 # 
-# Kuo, Y. J., & Mittelmann, H. D. (2004). Interior point methods for second-order cone programming and OR applications. Computational Optimization and Applications, 28(3), 255-285. https://link.springer.com/content/pdf/10.1023/B:COAP.0000033964.95511.23.pdf
+# >Harris, F. W. (1915). Operations and Cost (Factory Management Series). A. W. Shaw Company, Chap IV, pp.48-52. Chicago. 
 # 
-# Letchford, A. N., & Parkes, A. J. (2018). A guide to conic optimisation and its applications. RAIRO-Operations Research, 52(4-5), 1087-1106. http://www.cs.nott.ac.uk/~pszajp/pubs/conic-guide.pdf
+# Harris later developed an extensive consulting business and the concept has become embedded in business practice for over 100 years. Harris's single item model was later extended to multiple items sharing a resource constraint. There may be earlier citations, but this model is generally attributed to Ziegler (1982):
 # 
-# Lobo, M. S., Vandenberghe, L., Boyd, S., & Lebret, H. (1998). Applications of second-order cone programming. Linear algebra and its applications, 284(1-3), 193-228. https://web.stanford.edu/~boyd/papers/pdf/socp.pdf
+# > Ziegler, H. (1982). Solving certain singly constrained convex optimization problems in production planning. Operations Research Letters, 1(6), 246-252.
 # 
-# Ziegler, H. (1982). Solving certain singly constrained convex optimization problems in production planning. Operations Research Letters, 1(6), 246-252.
+# > Bretthauer, K. M., & Shetty, B. (1995). The nonlinear resource allocation problem. Operations research, 43(4), 670-683. https://www.jstor.org/stable/171693?seq=1
 # 
-# El Ghaoui, Laurent (2018). Lecture notes on Optimization Models. https://inst.eecs.berkeley.edu/~ee127/fa19/Lectures/12_socp.pdf
+# Reformulation of the multi-item EOQ model as a conic program is attributed to Kuo and Mittleman (2004) using techniques described by Lobo, et al. (1998):
+# 
+# > Kuo, Y. J., & Mittelmann, H. D. (2004). Interior point methods for second-order cone programming and OR applications. Computational Optimization and Applications, 28(3), 255-285. https://link.springer.com/content/pdf/10.1023/B:COAP.0000033964.95511.23.pdf
+# 
+# > Lobo, M. S., Vandenberghe, L., Boyd, S., & Lebret, H. (1998). Applications of second-order cone programming. Linear algebra and its applications, 284(1-3), 193-228. https://web.stanford.edu/~boyd/papers/pdf/socp.pdf
+# 
+# The multi-item model has been used didactically many times since 2004. These are representative examples 
+# 
+# > Letchford, A. N., & Parkes, A. J. (2018). A guide to conic optimisation and its applications. RAIRO-Operations Research, 52(4-5), 1087-1106. http://www.cs.nott.ac.uk/~pszajp/pubs/conic-guide.pdf
+# 
+# > El Ghaoui, Laurent (2018). Lecture notes on Optimization Models. https://inst.eecs.berkeley.edu/~ee127/fa19/Lectures/12_socp.pdf
+# 
+# > Mosek Modeling Cookbook, section 3.3.5.  https://docs.mosek.com/modeling-cookbook/cqo.html.
 # 
 
 # ## EOQ Model
 # 
 # ### Classical formulation
 # 
-# The economic order quantity (EOQ) is a classical problem in inventory management attributed in Ford Harris (1913). The problem is to find the size of a that minimizes the cost of maintaining that item in an inventory. 
+# The economic order quantity (EOQ) is a classical problem in inventory management attributed in Ford Harris (1915). The problem is to find the size of a that minimizes the cost of maintaining that item in an inventory. 
 # 
 # The cost $f(x)$ for maintaining an item in inventory given given an order size $x$ is
 # 
@@ -95,7 +106,7 @@ ax.set_xlabel("x = order size")
 ax.set_ylabel("cost")
 ax.plot(eoq, fopt, 'ro', ms=10, label="EOQ")
 ax.legend(loc='lower right')
-ax.annotate(f"EOQ = {eoq:0.1f}", xy=(eoq, 0), xytext=(1.2*eoq, 0.2*fopt),
+ax.annotate(f"EOQ = {eoq:0.2f}", xy=(eoq, 0), xytext=(1.2*eoq, 0.2*fopt),
            arrowprops=dict(facecolor="black", shrink=0.15, width=1, headwidth=6))
 ax.plot([eoq, eoq, 0], [0, fopt, fopt], 'r--')
 ax.set_xlim(0, 10000)
@@ -120,6 +131,9 @@ ax.set_ylim(0, 6000)
 # In[3]:
 
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 h = 0.75      # cost of holding one time for one year 
 c = 500.0     # cost of processing one order
 d = 10000.0   # annual demand
@@ -137,11 +151,9 @@ ax.plot(x, (fopt - h*x/2)/(c*d), 'g', lw=3)
 for f in fopt*np.linspace(0, 3, 11):
     ax.plot(x, (f - h*x/2)/(c*d), 'g--', alpha=0.5)
 ax.plot(eoq, yopt, 'ro', ms=10)
-ax.annotate(f"EOQ = {eoq:0.1f}", xy=(eoq, 0), xytext=(1.2*eoq, 0.2*yopt),
+ax.annotate(f"EOQ = {eoq:0.2f}", xy=(eoq, 0), xytext=(1.2*eoq, 0.2*yopt),
            arrowprops=dict(facecolor="black", shrink=0.15, width=1, headwidth=6))
 
-grad = h/(2*c*d)
-print(grad)
 ax.annotate("", xytext=(4800, 0.0006), xy=(4000, 1/3000),
            arrowprops=dict(facecolor="black", shrink=0.05, width=1, headwidth=6))
 ax.text(4800, .0005, "decreasing objective")
@@ -187,15 +199,20 @@ ax.legend()
 # In[4]:
 
 
+import matplotlib.pyplot as plt
+import numpy as np
 from mpl_toolkits import mplot3d
 import mpl_toolkits.mplot3d.art3d as art3d
 from matplotlib.patches import Rectangle
 
-fig = plt.figure(figsize=(12, 12))
+t_max = 4
+w = 2
+n = 40
+
+fig = plt.figure(figsize=(10, 10))
 ax = plt.axes(projection='3d')
 
-w = 2
-for t in np.linspace(0, 3, 61):
+for t in np.linspace(0, t_max, n+1):
     if t < w:
         a = np.linspace(0, 2*np.pi, 30)
         u = t*np.cos(a)
@@ -207,28 +224,35 @@ for t in np.linspace(0, 3, 61):
         u = t*np.cos(a)
         v = t*np.sin(a)
         ax.plot3D(u, v, t, 'b', lw=0.3) 
-        ax.plot3D(t*np.cos(b), t*np.sin(b), t, 'ro', ms=10)
-        ax.plot3D(t*np.cos(b), -t*np.sin(b), t, 'ro', ms=10)
-        
-ax.plot3D([0, 4], [0, 0], [0, 0], 'k', lw=3, alpha=0.4)
-ax.plot3D([0, 0], [0, 4], [0, 0], 'k', lw=3, alpha=0.4)
-ax.plot3D([0, 0], [0, 0], [0, 4], 'k', lw=3, alpha=0.4)
+        ax.plot3D([2, 2], [t*np.sin(b), -t*np.sin(b)], [t, t], 'b', lw=0.3)  
+        #ax.plot3D(t*np.cos(b), t*np.sin(b), t, 'bo', ms=2)
+        #ax.plot3D(t*np.cos(b), -t*np.sin(b), t, 'bo', ms=2)       
 
-ax.text3D(5, 0, 0, 'u', fontsize=30)
-ax.text3D(0, 4.5, 0, 'v', fontsize=30)
-ax.text3D(0, 0, 4.5, 't', fontsize=30)
+t = np.linspace(w, t_max)
+v = t*np.sin(np.arccos(w/t))
+u = w*np.array([1]*len(t))
+ax.plot3D(u, v, t, 'b')
+ax.plot3D(u, -v, t, 'b')
 
-ax.view_init(elev=20, azim=30)
+ax.plot3D([0, t_max + 0.5], [0, 0], [0, 0], 'k', lw=3, alpha=0.4)
+ax.plot3D([0, 0], [0, t_max + 1], [0, 0], 'k', lw=3, alpha=0.4)
+ax.plot3D([0, 0], [0, 0], [0, t_max + 1], 'k', lw=3, alpha=0.4)
 
-r = Rectangle((-3, 0), 6, 3, alpha=0.3)
+ax.text3D(t_max + 1, 0, 0.5, 'u', fontsize=24)
+ax.text3D(0, t_max , 0.5, 'v', fontsize=24)
+ax.text3D(0, 0, t_max + 1.5, 't', fontsize=24)
+
+ax.view_init(elev=20, azim=40)
+
+r = Rectangle((-t_max, 0), 2*t_max, t_max + 1, alpha=0.2)
 ax.add_patch(r)
-art3d.pathpatch_2d_to_3d(r, z=2, zdir="x")
+art3d.pathpatch_2d_to_3d(r, z=w, zdir="x")
 
 ax.grid(False)
 ax.axis('off')
 
 ax.set_xlabel('u')
-ax.set_ylabel('v')
+ax.set_ylabel('v');
 
 
 # The result is a reformulation of the EOQ problem as a second order conic program (SOCP).
@@ -239,17 +263,17 @@ ax.set_ylabel('v')
 # \end{align*}
 # $$
 
-# ## Modeling with `pyomo.kernel`
+# ## Pyomo Modeling with `conic.quadratic`
 # 
-# The [Pyomo kernel library](https://pyomo.readthedocs.io/en/stable/library_reference/kernel/index.html#) provides an experimental modeling interface for advanced application development with Pyomo. In particular, the kernel library provides direct support for conic constraints with the commercial Mosek solver (note that academic licenses are available at no cost, and that a demo version of Mosek is available on Google Colab). 
+# The [Pyomo kernel library](https://pyomo.readthedocs.io/en/stable/library_reference/kernel/index.html#) provides an experimental modeling interface for advanced application development with Pyomo. In particular, the kernel library provides direct support for conic constraints with the Mosek or Gurobi commercial solvers (note that academic licenses are available at no cost, a demo version of Gurobi is available on Google Colab). 
 # 
-# Pyomo/Mosek includes six forms for conic constraints. The `conic.quadratic` constraint is expressed in the form
+# The Pyomo interface to conic solvers includes six forms for conic constraints. The `conic.quadratic` constraint is expressed in the form
 # 
 # $$\sum_{i} x_i^2 \leq r^2, \ r \geq 0$$
 # 
 # where the $x_i$ and $r$ terms are pyomo.kernel variables. 
 # 
-# Reformulating the EOQ problem one more time to use the Pyomo/Mosek conic solver yields
+# The SOCP formation given above needs to be reformulated one more time to use with the Pyomo `conic.quadratic` constraint. The first step is to introduce rotated coordinates $t = x+ y$ and $v = x - y$, and introduce a new variable with fixed value $u = 2$, to fit the Pyomo model for quadratic constraints, 
 # 
 # $$\begin{align*}
 # \min_{x, y}\  f(x, y) & = \frac{h x}{2} + c d y \\
@@ -260,6 +284,15 @@ ax.set_ylabel('v')
 # x, y, t, u, v & \geq 0
 # \end{align*}$$
 # 
+# This version of the model with variables $t, u, v, x, y$ could be implemented directly in Pyomo with `conic.quadratic`. However, the model can be further reduced to yield a simpler version of the model.
+# 
+# $$\begin{align*}
+# \min_{t, u, v}\  f(u, v) & = \frac{1}{4}\left[(h + 2 cd)\,t + (h - 2 cd)\, v\right] \\
+# u & = 2 \\
+# u^2 + v^2 & \leq t^2 \\
+# t, u, v & \geq 0
+# \end{align*}$$
+# 
 # The EOQ model is now ready to implement with Pyomo.
 
 # In[5]:
@@ -267,30 +300,112 @@ ax.set_ylabel('v')
 
 import pyomo.kernel as pmo
 
+h = 0.75      # cost of holding one time for one year 
+c = 500.0     # cost of processing one order
+d = 10000.0   # annual demand
+
 m = pmo.block()
 
-# define decision variables
-m.x = pmo.variable(domain=pmo.NonNegativeReals)
-m.y = pmo.variable(domain=pmo.NonNegativeReals)
-
 # define variables for conic constraints
-m.u = pmo.variable(domain=pmo.NonNegativeReals)
-m.v = pmo.variable(domain=pmo.NonNegativeReals)
-m.t = pmo.variable(domain=pmo.NonNegativeReals)
+m.u = pmo.variable(lb=0)
+m.v = pmo.variable(lb=0)
+m.t = pmo.variable(lb=0)
 
 # relationships for conic constraints to decision variables
 m.u_eq = pmo.constraint(m.u == 2)
-m.v_eq = pmo.constraint(m.v == m.x - m.y)
-m.t_eq = pmo.constraint(m.t == m.x + m.y)
+m.q = pmo.conic.quadratic(m.t, [m.u, m.v])
+
+# linear objective
+m.eoq = pmo.objective(((h + 2*c*d)*m.t + (h - 2*c*d)*m.v)/4)
+
+# solve with 'mosek_direct' or 'gurobi_direct'
+solver = pmo.SolverFactory('mosek_direct')
+solver.solve(m)
+
+# solution
+print(f"\nEOQ = {(m.t() + m.v())/2:0.2f}")
+
+
+# `pyomo.kernel` provides additional support for conic solvers with the `.as_domain()` method that be applied to the conic solver interfaces. Adding `.as_domain` allows use of constants, linear expressions, or `None` in place of pyomo variables. For this application, this means `u` does not have to be included as a pyomo variable and constrained to a fixed value. The required value can simply be inserted directly into constraint specification as demonstrated below.
+
+# In[6]:
+
+
+import pyomo.kernel as pmo
+
+h = 0.75      # cost of holding one time for one year 
+c = 500.0     # cost of processing one order
+d = 10000.0   # annual demand
+
+m = pmo.block()
+
+# define variables for conic constraints
+m.v = pmo.variable(lb=0)
+m.t = pmo.variable(lb=0)
+
+# relationships for conic constraints to decision variables
+m.q = pmo.conic.quadratic.as_domain(m.t, [2, m.v])
+
+# linear objective
+m.eoq = pmo.objective(((h + 2*c*d)*m.t + (h - 2*c*d)*m.v)/4)
+
+# solve with 'mosek_direct' or 'gurobi_direct'
+solver = pmo.SolverFactory('mosek_direct')
+solver.solve(m)
+
+# solution
+print(f"\nEOQ = {(m.t() + m.v())/2:0.2f}")
+
+
+# ## Pyomo Modeling with `conic.rotated_quadratic`
+# 
+# The need to the natural coordinates of the EOQ problem to fit the requirements of the `conic.quadratic` constraint is not a stumbling block, but it does raise the question of whether there is a more natural way to express the hyperbolic or cone constraint in Pyomo. 
+# 
+# `pyomo.kernel.conic.rotated_quadratic` expresses constraints in the form
+# 
+# $$\sum_{i} x_i^2 \leq 2 r_1 r_2 \quad r_1, r_2 \geq 0$$
+# 
+# This enables a direct a expression of the hyperbolic constraint $x y \geq 1$ by introducing an auxiliary variable $z$ with fixed value $z^2 = 2$ such that 
+# 
+# $$xy \geq 1 \iff z^2 \leq x y \quad\text{where }z^2 = 2$$
+# 
+# The model to be implemented in Pyomo is now
+# 
+# $$
+# \begin{align*}
+# \min_{x, y}\ & f(x, y) = \frac{h x}{2} + c d y \\
+# \\
+# \text{s.t.} \qquad z^2 & \leq x\,y  \\
+# z & = \sqrt{2} \\
+# x, y & > 0 \\
+# \end{align*}
+# $$
+# 
+# which is demonstrated below. Note the improvement in accuracy of this calculation compared to the analytical solution. Also note the use of `.as_domain()` eliminates the need to specify a variable $z$.
+
+# In[7]:
+
+
+import pyomo.kernel as pmo
+
+h = 0.75      # cost of holding one time for one year 
+c = 500.0     # cost of processing one order
+d = 10000.0   # annual demand
+
+m = pmo.block()
+
+# define variables for conic constraints
+m.x = pmo.variable(lb=0)
+m.y = pmo.variable(lb=0)
 
 # conic constraint
-m.q = pmo.conic.quadratic(m.t, [m.u, m.v])
+m.q = pmo.conic.rotated_quadratic.as_domain(m.x, m.y, [np.sqrt(2)])
 
 # linear objective
 m.eoq = pmo.objective(h*m.x/2 + c*d*m.y)
 
-# solve with Mosek
-solver = pmo.SolverFactory('mosek')
+# solve with 'mosek_direct' or 'gurobi_direct'
+solver = pmo.SolverFactory('mosek_direct')
 solver.solve(m)
 
 # solution
@@ -299,7 +414,7 @@ print(f"\nEOQ = {m.x():0.2f}")
 
 # ## Multi-Item Model
 # 
-# Solving for the EOQ for a single item using SOCP programming is using a sledgehammer to swat a fly. The problem becomes more interesting, however, for the case of determining economic order quantities for multiple items that compete for resources in a common warehouse.
+# Solving for the EOQ for a single item using SOCP programming is using a sledgehammer to swat a fly. The problem becomes more interesting, however, for determining economic order quantities when the inventories for multiple items compete for a shared resource in a common warehouse. The shared resource could he financing available to hold inventory, space in a warehouse, or specialized facilities to hold a perishable 
 # 
 # Extending the notation of the single item model
 # 
@@ -311,9 +426,7 @@ print(f"\nEOQ = {m.x():0.2f}")
 # \end{align*}
 # $$
 # 
-# where $h_i$ is the annual holding cost for one unit of item $i$, $c_i$ is the cost to place an order and receive delivery for item $i$, and $d_i$ is the annual demand. 
-# 
-# The additional constraint models the allocation of a shared resource to hold the inventory. The shared resource could he financing available to hold inventory, space in a warehouse, or specialized facilities to hold a perishable good. Parameter $b_i$ is the amount of resource needed to store one unit of item i, and $b_0$ is the total resource available.
+# where $h_i$ is the annual holding cost for one unit of item $i$, $c_i$ is the cost to place an order and receive delivery for item $i$, and $d_i$ is the annual demand. The additional constraint models an allocation of $b_i$ of the shared resource, and $b_0$ is the total resource available.
 # 
 # Following the reformulation of the single item model, a variable $y_i 
 # \geq 0$, $i=1, \dots, n$ is introduced to linearize the objective
@@ -327,6 +440,132 @@ print(f"\nEOQ = {m.x():0.2f}")
 # y_i & \geq 0 & \forall i\in 1, \dots, n \\
 # \end{align*}
 # $$
+# 
+# Following the discussion above regarding rotated quadratic constraints, auxiliary variables $z_i$ for $i=1, \dots, n$ is introduced
+# 
+# 
+# $$
+# \begin{align*}
+# \min \quad \sum_{i=1}^n \frac{h x_i}{2} & + c_i d_i y_i \\
+# \text{s.t.} \quad \sum_{i=1}^n b_i x_i &  \leq b_0 \\
+# z_i^2 & \leq x_i y_i & \forall i\in 1, \dots, n \\
+# z_1^2 & = 2 & \forall i\in 1, \dots, n \\
+# 0 < lb_i \leq x_i & \leq ub_i & \forall i\in 1, \dots, n \\
+# y_i & \geq 0 & \forall i\in 1, \dots, n \\
+# \end{align*}
+# $$
+# 
+# The following Pyomo model is a direct implementation of the multi-time EOQ formulation and applied to a hypothetical car parts store that maintains an inventory of tires.
+
+# In[8]:
+
+
+import pandas as pd
+
+df = pd.DataFrame({
+    "all weather":   {"h": 1.0, "c": 200, "d": 1300, "b": 3},
+    "truck":         {"h": 2.8, "c": 250, "d":  700, "b": 8},
+    "heavy duty":    {"h": 1.2, "c": 200, "d":  500, "b": 5},
+    "low cost":      {"h": 0.8, "c": 180, "d": 2000, "b": 3},
+}).T
+
+display(df)
+
+
+# In[9]:
+
+
+import pyomo.kernel as pmo
+import numpy as np
+
+display(df)
+
+def eoq(df, b):
+
+    m = pmo.block()
+
+    m.b = pmo.parameter(b)
+
+    m.I = df.index
+
+    # variable dictionaries
+    m.x = pmo.variable_dict()
+    for i in m.I:
+        m.x[i] = pmo.variable(lb=0)
+
+    m.y = pmo.variable_dict()
+    for i in m.I:
+        m.y[i] = pmo.variable(lb=0)
+
+    m.z = pmo.variable_dict()
+    for i in m.I:
+        m.z[i] = pmo.variable(lb=0)
+
+    # constraints
+    m.z_eq = pmo.constraint_dict()
+    for i in m.I:
+        m.z_eq[i] = pmo.constraint(m.z[i] == np.sqrt(2))
+
+    m.b_cap = pmo.constraint(sum(df.loc[i, "b"]*m.x[i] for i in m.I) <= m.b)
+
+# THIS DOESN'T WORK FOR SOME REASON
+#    m.q = pmo.constraint_dict()
+#    for i in m.I:
+#        m.q[i] = pmo.conic.rotated_quadratic.as_domain(m.x[i], m.y[i], [np.sqrt(2)])
+        
+    m.q = pmo.constraint_dict()
+    for i in m.I:
+        m.q[i] = pmo.conic.rotated_quadratic(m.x[i], m.y[i], [m.z[i]])
+        
+    # objective
+    m.eoq = pmo.objective(sum(df.loc[i, "h"]*m.x[i]/2 + df.loc[i, "c"]*df.loc[i, "d"]*m.y[i] for i in m.I))
+
+    # solve with Mosek
+    solver = pmo.SolverFactory('mosek_direct')
+    solver.solve(m)
+    
+    return m
+
+def eoq_display_results(df, m):
+
+    results = pd.DataFrame([
+        [i, m.x[i](), m.x[i]()*df.loc[i, "b"]] 
+        for i in m.I],
+        columns = ["product", "EOQ", "Space Req'd"]).round(1)
+    results.set_index("product", inplace=True)
+
+    display(results)
+    results.plot(y = ["EOQ", "Space Req'd"], kind="bar", subplots=True, layout=(2, 1), figsize=(10, 6))
+    
+m = eoq(df, 4000)
+eoq_display_results(df, m)
+
+
+# ## Large Example
+# 
+# The following cell creates a random EOQ problem of size $n$ that can be used to test the model formulation and solver.
+
+# In[10]:
+
+
+n = 30
+
+df_large = pd.DataFrame()
+df_large["h"] = np.random.uniform(0.5, 2.0, n)
+df_large["c"] = np.random.randint(300, 500, n)
+df_large["d"] = np.random.randint(100, 5000, n)
+df_large["b"] = np.random.uniform(10, 50)
+df_large.set_index(pd.Series(f"product {i:03d}" for i in range(n)), inplace=True)
+
+df_large
+
+m = eoq(df_large, 100000)
+eoq_display_results(df_large, m)
+
+
+# ## Appendix: Formulation with SOCP constraints
+# 
+# Pyomo's facility for directly handling hyperbolic constraints bypasses the need to formulate SOCP constraints for the multi-item model. For completeness, however, that development is included here.
 # 
 # As a short cut to reformulating the model with conic constraints, note that a "completion of square" gives the needed substitutions
 # 
@@ -352,7 +591,6 @@ print(f"\nEOQ = {m.x():0.2f}")
 # $$
 # 
 # Variables $t_i$, $u_i$, and $v_i$ are introduced t complete the reformulation for implementation with Pyomo/Mosek.
-
 # 
 # $$
 # \begin{align*}
@@ -366,124 +604,6 @@ print(f"\nEOQ = {m.x():0.2f}")
 # t_i, u_i, v_i, y_i & \geq 0 & \forall i\in 1, \dots, n \\
 # \end{align*}
 # $$
-
-# ## Pyomo Model
-# 
-# The following Pyomo/Mosek model is a direct implementation of the multi-time EOQ formulation.
-
-# In[6]:
-
-
-import pandas as pd
-
-df = pd.DataFrame({
-    "all weather":   {"h": 1.0, "c": 200, "d": 1300, "b": 3},
-    "truck":         {"h": 2.8, "c": 250, "d":  700, "b": 8},
-    "heavy duty":    {"h": 1.2, "c": 200, "d":  500, "b": 5},
-    "low cost":      {"h": 0.8, "c": 180, "d": 2000, "b": 3},
-}).T
-
-display(df)
-
-
-# In[7]:
-
-
-import pyomo.kernel as pmo
-
-def eoq(df, b):
-
-    m = pmo.block()
-
-    m.b = pmo.parameter(b)
-
-    m.I = df.index
-
-    # variable dictionaries
-    m.x = pmo.variable_dict()
-    for i in m.I:
-        m.x[i] = pmo.variable(domain=pmo.NonNegativeReals)
-
-    m.y = pmo.variable_dict()
-    for i in m.I:
-        m.y[i] = pmo.variable(domain=pmo.NonNegativeReals)
-
-    m.t = pmo.variable_dict()
-    for i in m.I:
-        m.t[i] = pmo.variable(domain=pmo.NonNegativeReals)
-
-    m.u = pmo.variable_dict()
-    for i in m.I:
-        m.u[i] = pmo.variable(domain=pmo.NonNegativeReals)
-
-    m.v = pmo.variable_dict()
-    for i in m.I:
-        m.v[i] = pmo.variable(domain=pmo.NonNegativeReals)
-
-    # constraints= dictionaries
-    m.t_eq = pmo.constraint_dict()
-    for i in m.I:
-        m.t_eq[i] = pmo.constraint(m.t[i] == m.x[i] + m.y[i])
-
-    m.u_eq = pmo.constraint_dict()
-    for i in m.I:
-        m.u_eq[i] = pmo.constraint(m.u[i] == 2)
-
-    m.v_eq = pmo.constraint_dict()
-    for i in m.I:
-        m.v_eq[i] = pmo.constraint(m.v[i] == m.x[i] - m.y[i])
-
-    m.b_cap = pmo.constraint(sum(df.loc[i, "b"]*m.x[i] for i in m.I) <= m.b)
-
-    m.q = pmo.constraint_dict()
-    for i in m.I:
-        m.q[i] = pmo.conic.quadratic(m.t[i], [m.u[i], m.v[i]])
-
-    # objective
-    m.eoq = pmo.objective(sum(df.loc[i, "h"]*m.x[i]/2 + df.loc[i, "c"]*df.loc[i, "d"]*m.y[i] for i in m.I))
-
-    # solve with Mosek
-    solver = pmo.SolverFactory('mosek')
-    solver.solve(m)
-    
-    return m
-
-def eoq_display_results(df, m):
-
-    results = pd.DataFrame([
-        [i, m.x[i](), m.x[i]()*df.loc[i, "b"]] 
-        for i in m.I],
-        columns = ["product", "EOQ", "Space Req'd"]).round(1)
-    results.set_index("product", inplace=True)
-
-    display(results)
-    results.plot(y = ["EOQ", "Space Req'd"], kind="bar", subplots=True, layout=(2, 1), figsize=(10, 6))
-    
-m = eoq(df, 4000)
-eoq_display_results(df, m)
-
-
-# ## Large Example
-# 
-# The following cell creates a random EOQ problem of size $n$ that can be used to test the model formulation and solver.
-
-# In[8]:
-
-
-n = 100
-
-df_large = pd.DataFrame()
-df_large["h"] = np.random.uniform(0.5, 2.0, n)
-df_large["c"] = np.random.randint(300, 500, n)
-df_large["d"] = np.random.randint(100, 5000, n)
-df_large["b"] = np.random.uniform(10, 50)
-df_large.set_index(pd.Series(f"product {i:03d}" for i in range(n)), inplace=True)
-
-df_large
-
-m = eoq(df_large, 100000)
-eoq_display_results(df_large, m)
-
 
 # In[ ]:
 
