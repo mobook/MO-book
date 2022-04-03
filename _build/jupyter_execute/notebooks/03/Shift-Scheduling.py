@@ -3,10 +3,9 @@
 
 # # Shift Scheduling
 # 
-# An article entitled ["Modeling and optimization of a weekly workforce with Python and Pyomo"](https://towardsdatascience.com/modeling-and-optimization-of-a-weekly-workforce-with-python-and-pyomo-29484ba065bb) by [Christian Carballo Lozano](https://medium.com/@ccarballolozano) posted in 2018 on the [Towards Data Science](https://towardsdatascience.com/) demonstrated the development of a Pyomo model for scheduling weekly shifts for a small campus food store. The article was primarily intended as a tutorial introduction to Pyomo (see the [github](https://github.com/ccarballolozano/blog-post-codes/blob/master/Modeling-and-optimization-of-a-weekly-workforce-with-Python-and-Pyomo/Modeling%20and%20optimization%20of%20a%20weekly%20workforce%20with%20Python%20and%20Pyomo.ipynb) repository for the code). 
+# An article entitled ["Modeling and optimization of a weekly workforce with Python and Pyomo"](https://towardsdatascience.com/modeling-and-optimization-of-a-weekly-workforce-with-python-and-pyomo-29484ba065bb) by [Christian Carballo Lozano](https://medium.com/@ccarballolozano) posted on the [Towards Data Science](https://towardsdatascience.com/) blog showed how to build a Pyomo model to schedule weekly shifts for a small campus food store. The article was primarily intended as a tutorial introduction to Pyomo (see the [github](https://github.com/ccarballolozano/blog-post-codes/blob/master/Modeling-and-optimization-of-a-weekly-workforce-with-Python-and-Pyomo/Modeling%20and%20optimization%20of%20a%20weekly%20workforce%20with%20Python%20and%20Pyomo.ipynb) repository for the code). 
 # 
-# Here we revisit the example with a new model demonstrating  use of Pyomo decorators and of Pyomo Sets.
-# 
+# Here we revisit the example with a new model demonstrating  use of Pyomo decorators and of Pyomo sets, and how to use the model solution to create useful visualizations and reports for workers and managers.
 
 # In[1]:
 
@@ -129,22 +128,23 @@ if "google.colab" in sys.modules:
 
 # ### Model objective
 # 
-# The model objective is to minimize the overall number of workers needed to fill the shift and work requirements while also attempting to meet worker preferences regarding weekend shift assignments. This is formulated here as an objective for minimizing a weighted sum of the number of workers needed to meet all shift requirements and the number of workers assigned to weekend shifts. The positive weight $gamma$ determines the relative importance of these two measures of a desirable shift schedule.
+# The model objective is to minimize the overall number of workers needed to fill the shift and work requirements while also attempting to meet worker preferences regarding weekend shift assignments. This is formulated here as an objective for minimizing a weighted sum of the number of workers needed to meet all shift requirements and the number of workers assigned to weekend shifts. The positive weight $\gamma$ determines the relative importance of these two measures of a desirable shift schedule.
 # 
 # $$
 # \begin{align*}
-# \min \left(\sum_{w\in\text{ WORKERS}} \text{needed}_w + \gamma \sum_{w\in\text{ WORKERS}} \text{weekend}_w)
+# \min \left(\sum_{w\in\text{ WORKERS}} \text{needed}_w + \gamma\sum_{w\in\text{ WORKERS}} \text{weekend}_w)
 # \right)\end{align*}
 # $$
 
 # ## Pyomo Modeling
 
-# In[50]:
+# In[2]:
 
 
 import pyomo.environ as pyo
 
-def shift_schedule(N, hours=40):
+def shift_schedule(N=10, hours=40):
+    """return a solved model assigning N workers to shifts"""
 
     m = pyo.ConcreteModel('workforce')
 
@@ -172,6 +172,7 @@ def shift_schedule(N, hours=40):
             return 1
         return 2
     
+    # max hours per week per worker
     m.Hours = pyo.Param(mutable=True, default=hours)
 
     # decision variable: assign[worker, day, shift] = 1 assigns worker to a time slot
@@ -221,11 +222,11 @@ def shift_schedule(N, hours=40):
 m = shift_schedule(10, 40)
 
 
-# ## Visualization and Reporting
+# ## Visualizing the Solution
 # 
 # Scheduling applications generate a considerable amount of data to be used by the participants. The following cells demonstrate the preparation of charts and reports that can be used to communicate scheduling information to the store management and shift workers.
 
-# In[51]:
+# In[3]:
 
 
 import matplotlib.pyplot as plt
@@ -273,43 +274,78 @@ def visualize(m):
         if m.needed[worker]() and not m.weekend[worker]():
             ax.fill_between([15, len(m.SLOTS)], [j, j], [j+1, j+1], color='k', alpha=0.3)
         
-
 visualize(m)
 
 
-# ## Reporting
+# ## Implementing the Schedule with Reports
+# 
+# Optimal planning models can generate large amounts of data that need to be summarized and communicated to individuals for implementation. 
+# 
+# ### Creating a master schedule with categorical data
+# 
+# The following cell creates a pandas DataFrame comprising all active assignments from the solved model. The data consists of all (worker, day, shift) tuples for which the Boolean decision variable m.assign equals one.    
+# 
+# The data is categorical consisting of a unique id for each worker, a day of the week, or the name of a shift. Each of the categories has a natural ordering that should be used in creating reports. This is implemented using the `CategoricalDtype` class.
 
-# In[52]:
-
-
-print("Store Staffing Schedule\n")
-
-print("Day    Shift     Staff on Duty")
-print("---    -----     -------------")
-for day, shift in m.SLOTS:
-    print(f"{day}    {shift:7s}   ", end="")
-    workers = [worker for worker in m.WORKERS if round(m.assign[worker, day, shift]())]
-    print(", ".join(workers))
+# In[5]:
 
 
-# In[53]:
+import pandas as pd
+
+schedule = pd.DataFrame([[w, d, s] for w in m.WORKERS for d, s in m.SLOTS if m.assign[w, d, s]()], 
+                        columns=["worker", "day", "shift"])
+
+# create and assign a worker category type
+worker_type = pd.CategoricalDtype(categories=m.WORKERS, ordered=True)
+schedule["worker"] = schedule["worker"].astype(worker_type)
+
+# create and assign a day category type
+day_type = pd.CategoricalDtype(categories=m.DAYS, ordered=True)
+schedule["day"] = schedule["day"].astype(day_type)
+
+# create and assign a shift category type
+shift_type = pd.CategoricalDtype(categories=m.SHIFTS, ordered=True)
+schedule["shift"] = schedule["shift"].astype(shift_type)
+
+# demonstrate sorting and display of the master schedule
+schedule.sort_values(by=["day", "shift", "worker"])
 
 
-print('Staff Shift Assignments')
+# ### Reports for workers
+# 
+# Each worker should receive a report detailing their shift assignments. The reports are created by sorting the master schedule by worker, day, and shift, then grouping by worker. 
 
-for worker in m.WORKERS:
-    print(f"\n{worker}:", end="")
-    n_shifts = sum(m.assign[worker, day, shift]() for day, shift in m.SLOTS)
-    n_weekend_hours = 8*sum(m.assign[worker, day, shift]() for day, shift in m.WEEKENDS)
-    if round(n_shifts) == 0:
-        print(" no shifts")
+# In[12]:
+
+
+# sort schedule by worker
+schedule = schedule.sort_values(by=["worker", "day", "shift"])
+
+# print worker schedules
+for worker, worker_schedule in schedule.groupby('worker'):
+    print(f"\n Work schedule for {worker}")
+    if len(worker_schedule) > 0:   
+        for s in worker_schedule.to_string(index=False).split('\n'):
+            print(s)
     else:
-        if n_weekend_hours > 0:
-            print(f" {n_weekend_hours} weekend hours", end="")
-        print(' ')
-        for day, shift in m.SLOTS:
-            if round(m.assign[worker, day, shift]()):
-                print(f"    {day} {shift}")
+        print("   no assigned shifts")
+
+
+# ### Reports for store managers
+# 
+# The store managers need reports listing workers by assigned day and shift.
+
+# In[42]:
+
+
+# sort by day, shift, worker
+schedule = schedule.sort_values(by=["day", "shift", "worker"])
+
+for day, day_schedule in schedule.groupby(["day"]):
+    print(f"\nShift schedule for {day}")
+    for shift, shift_schedule in day_schedule.groupby(["shift"]):
+        print(f"   {shift} shift: ", end="")
+        print(', '.join([worker for worker in shift_schedule["worker"].values]))
 
 
 # ## Suggested Exercises

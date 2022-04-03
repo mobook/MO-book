@@ -147,11 +147,6 @@ const thebe_selector_output = ".output, .cell_output"
     </a>
    </li>
    <li class="toctree-l2">
-    <a class="reference internal" href="../02/Transportation.html">
-     Transportation and Allocation
-    </a>
-   </li>
-   <li class="toctree-l2">
     <a class="reference internal" href="../02/making-the-best-of-the-worst.html">
      Making the Best of the Worst
     </a>
@@ -463,14 +458,31 @@ const thebe_selector_output = ".output, .cell_output"
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#visualization-and-reporting">
-   Visualization and Reporting
+  <a class="reference internal nav-link" href="#visualizing-the-solution">
+   Visualizing the Solution
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#reporting">
-   Reporting
+  <a class="reference internal nav-link" href="#implementing-the-schedule-with-reports">
+   Implementing the Schedule with Reports
   </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#creating-a-master-schedule-with-categorical-data">
+     Creating a master schedule with categorical data
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#reports-for-workers">
+     Reports for workers
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#reports-for-store-managers">
+     Reports for store managers
+    </a>
+   </li>
+  </ul>
  </li>
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#suggested-exercises">
@@ -540,14 +552,31 @@ const thebe_selector_output = ".output, .cell_output"
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#visualization-and-reporting">
-   Visualization and Reporting
+  <a class="reference internal nav-link" href="#visualizing-the-solution">
+   Visualizing the Solution
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#reporting">
-   Reporting
+  <a class="reference internal nav-link" href="#implementing-the-schedule-with-reports">
+   Implementing the Schedule with Reports
   </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#creating-a-master-schedule-with-categorical-data">
+     Creating a master schedule with categorical data
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#reports-for-workers">
+     Reports for workers
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#reports-for-store-managers">
+     Reports for store managers
+    </a>
+   </li>
+  </ul>
  </li>
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#suggested-exercises">
@@ -565,8 +594,8 @@ const thebe_selector_output = ".output, .cell_output"
                 
   <section class="tex2jax_ignore mathjax_ignore" id="shift-scheduling">
 <h1>Shift Scheduling<a class="headerlink" href="#shift-scheduling" title="Permalink to this headline">¶</a></h1>
-<p>An article entitled <a class="reference external" href="https://towardsdatascience.com/modeling-and-optimization-of-a-weekly-workforce-with-python-and-pyomo-29484ba065bb">“Modeling and optimization of a weekly workforce with Python and Pyomo”</a> by <a class="reference external" href="https://medium.com/&#64;ccarballolozano">Christian Carballo Lozano</a> posted in 2018 on the <a class="reference external" href="https://towardsdatascience.com/">Towards Data Science</a> demonstrated the development of a Pyomo model for scheduling weekly shifts for a small campus food store. The article was primarily intended as a tutorial introduction to Pyomo (see the <a class="reference external" href="https://github.com/ccarballolozano/blog-post-codes/blob/master/Modeling-and-optimization-of-a-weekly-workforce-with-Python-and-Pyomo/Modeling%20and%20optimization%20of%20a%20weekly%20workforce%20with%20Python%20and%20Pyomo.ipynb">github</a> repository for the code).</p>
-<p>Here we revisit the example with a new model demonstrating  use of Pyomo decorators and of Pyomo Sets.</p>
+<p>An article entitled <a class="reference external" href="https://towardsdatascience.com/modeling-and-optimization-of-a-weekly-workforce-with-python-and-pyomo-29484ba065bb">“Modeling and optimization of a weekly workforce with Python and Pyomo”</a> by <a class="reference external" href="https://medium.com/&#64;ccarballolozano">Christian Carballo Lozano</a> posted on the <a class="reference external" href="https://towardsdatascience.com/">Towards Data Science</a> blog showed how to build a Pyomo model to schedule weekly shifts for a small campus food store. The article was primarily intended as a tutorial introduction to Pyomo (see the <a class="reference external" href="https://github.com/ccarballolozano/blog-post-codes/blob/master/Modeling-and-optimization-of-a-weekly-workforce-with-Python-and-Pyomo/Modeling%20and%20optimization%20of%20a%20weekly%20workforce%20with%20Python%20and%20Pyomo.ipynb">github</a> repository for the code).</p>
+<p>Here we revisit the example with a new model demonstrating  use of Pyomo decorators and of Pyomo sets, and how to use the model solution to create useful visualizations and reports for workers and managers.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers for Google Colab</span>
@@ -686,11 +715,11 @@ $<span class="math notranslate nohighlight">\(
 </section>
 <section id="model-objective">
 <h3>Model objective<a class="headerlink" href="#model-objective" title="Permalink to this headline">¶</a></h3>
-<p>The model objective is to minimize the overall number of workers needed to fill the shift and work requirements while also attempting to meet worker preferences regarding weekend shift assignments. This is formulated here as an objective for minimizing a weighted sum of the number of workers needed to meet all shift requirements and the number of workers assigned to weekend shifts. The positive weight <span class="math notranslate nohighlight">\(gamma\)</span> determines the relative importance of these two measures of a desirable shift schedule.</p>
+<p>The model objective is to minimize the overall number of workers needed to fill the shift and work requirements while also attempting to meet worker preferences regarding weekend shift assignments. This is formulated here as an objective for minimizing a weighted sum of the number of workers needed to meet all shift requirements and the number of workers assigned to weekend shifts. The positive weight <span class="math notranslate nohighlight">\(\gamma\)</span> determines the relative importance of these two measures of a desirable shift schedule.</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
-\min \left(\sum_{w\in\text{ WORKERS}} \text{needed}_w + \gamma \sum_{w\in\text{ WORKERS}} \text{weekend}_w)
+\min \left(\sum_{w\in\text{ WORKERS}} \text{needed}_w + \gamma\sum_{w\in\text{ WORKERS}} \text{weekend}_w)
 \right)\end{align*}
 \]</div>
 </section>
@@ -701,7 +730,8 @@ $<span class="math notranslate nohighlight">\(
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 
-<span class="k">def</span> <span class="nf">shift_schedule</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">hours</span><span class="o">=</span><span class="mi">40</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">shift_schedule</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">hours</span><span class="o">=</span><span class="mi">40</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;return a solved model assigning N workers to shifts&quot;&quot;&quot;</span>
 
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;workforce&#39;</span><span class="p">)</span>
 
@@ -729,6 +759,7 @@ $<span class="math notranslate nohighlight">\(
             <span class="k">return</span> <span class="mi">1</span>
         <span class="k">return</span> <span class="mi">2</span>
     
+    <span class="c1"># max hours per week per worker</span>
     <span class="n">m</span><span class="o">.</span><span class="n">Hours</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">mutable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">hours</span><span class="p">)</span>
 
     <span class="c1"># decision variable: assign[worker, day, shift] = 1 assigns worker to a time slot</span>
@@ -781,8 +812,8 @@ $<span class="math notranslate nohighlight">\(
 </div>
 </div>
 </section>
-<section id="visualization-and-reporting">
-<h2>Visualization and Reporting<a class="headerlink" href="#visualization-and-reporting" title="Permalink to this headline">¶</a></h2>
+<section id="visualizing-the-solution">
+<h2>Visualizing the Solution<a class="headerlink" href="#visualizing-the-solution" title="Permalink to this headline">¶</a></h2>
 <p>Scheduling applications generate a considerable amount of data to be used by the participants. The following cells demonstrate the preparation of charts and reports that can be used to communicate scheduling information to the store management and shift workers.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -831,7 +862,6 @@ $<span class="math notranslate nohighlight">\(
         <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">needed</span><span class="p">[</span><span class="n">worker</span><span class="p">]()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">m</span><span class="o">.</span><span class="n">weekend</span><span class="p">[</span><span class="n">worker</span><span class="p">]():</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">([</span><span class="mi">15</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SLOTS</span><span class="p">)],</span> <span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
         
-
 <span class="n">visualize</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -841,130 +871,408 @@ $<span class="math notranslate nohighlight">\(
 </div>
 </div>
 </section>
-<section id="reporting">
-<h2>Reporting<a class="headerlink" href="#reporting" title="Permalink to this headline">¶</a></h2>
+<section id="implementing-the-schedule-with-reports">
+<h2>Implementing the Schedule with Reports<a class="headerlink" href="#implementing-the-schedule-with-reports" title="Permalink to this headline">¶</a></h2>
+<p>Optimal planning models can generate large amounts of data that need to be summarized and communicated to individuals for implementation.</p>
+<section id="creating-a-master-schedule-with-categorical-data">
+<h3>Creating a master schedule with categorical data<a class="headerlink" href="#creating-a-master-schedule-with-categorical-data" title="Permalink to this headline">¶</a></h3>
+<p>The following cell creates a pandas DataFrame comprising all active assignments from the solved model. The data consists of all (worker, day, shift) tuples for which the Boolean decision variable m.assign equals one.</p>
+<p>The data is categorical consisting of a unique id for each worker, a day of the week, or the name of a shift. Each of the categories has a natural ordering that should be used in creating reports. This is implemented using the <code class="docutils literal notranslate"><span class="pre">CategoricalDtype</span></code> class.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Store Staffing Schedule</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Day    Shift     Staff on Duty&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;---    -----     -------------&quot;</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">day</span><span class="p">,</span> <span class="n">shift</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SLOTS</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">day</span><span class="si">}</span><span class="s2">    </span><span class="si">{</span><span class="n">shift</span><span class="si">:</span><span class="s2">7s</span><span class="si">}</span><span class="s2">   &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-    <span class="n">workers</span> <span class="o">=</span> <span class="p">[</span><span class="n">worker</span> <span class="k">for</span> <span class="n">worker</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">WORKERS</span> <span class="k">if</span> <span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">assign</span><span class="p">[</span><span class="n">worker</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">shift</span><span class="p">]())]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">workers</span><span class="p">))</span>
+<span class="n">schedule</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([[</span><span class="n">w</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">WORKERS</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SLOTS</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">assign</span><span class="p">[</span><span class="n">w</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span><span class="p">]()],</span> 
+                        <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;worker&quot;</span><span class="p">,</span> <span class="s2">&quot;day&quot;</span><span class="p">,</span> <span class="s2">&quot;shift&quot;</span><span class="p">])</span>
+
+<span class="c1"># create and assign a worker category type</span>
+<span class="n">worker_type</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">CategoricalDtype</span><span class="p">(</span><span class="n">categories</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">WORKERS</span><span class="p">,</span> <span class="n">ordered</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">schedule</span><span class="p">[</span><span class="s2">&quot;worker&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">schedule</span><span class="p">[</span><span class="s2">&quot;worker&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">worker_type</span><span class="p">)</span>
+
+<span class="c1"># create and assign a day category type</span>
+<span class="n">day_type</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">CategoricalDtype</span><span class="p">(</span><span class="n">categories</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">DAYS</span><span class="p">,</span> <span class="n">ordered</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">schedule</span><span class="p">[</span><span class="s2">&quot;day&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">schedule</span><span class="p">[</span><span class="s2">&quot;day&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">day_type</span><span class="p">)</span>
+
+<span class="c1"># create and assign a shift category type</span>
+<span class="n">shift_type</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">CategoricalDtype</span><span class="p">(</span><span class="n">categories</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">SHIFTS</span><span class="p">,</span> <span class="n">ordered</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">schedule</span><span class="p">[</span><span class="s2">&quot;shift&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">schedule</span><span class="p">[</span><span class="s2">&quot;shift&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">shift_type</span><span class="p">)</span>
+
+<span class="c1"># demonstrate sorting and display of the master schedule</span>
+<span class="n">schedule</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;day&quot;</span><span class="p">,</span> <span class="s2">&quot;shift&quot;</span><span class="p">,</span> <span class="s2">&quot;worker&quot;</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Store Staffing Schedule
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
 
-Day    Shift     Staff on Duty
----    -----     -------------
-Mon    morning   W05, W07
-Mon    evening   W04, W06
-Mon    night     W01
-Tue    morning   W05, W07
-Tue    evening   W02, W06
-Tue    night     W03
-Wed    morning   W01, W05
-Wed    evening   W02, W04
-Wed    night     W06
-Thu    morning   W03, W07
-Thu    evening   W04, W05
-Thu    night     W06
-Fri    morning   W02, W07
-Fri    evening   W01, W04
-Fri    night     W06
-Sat    morning   W02, W05
-Sat    evening   W01, W04
-Sat    night     W03
-Sun    morning   W02
-Sun    evening   W01
-Sun    night     W03
-</pre></div>
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>worker</th>
+      <th>day</th>
+      <th>shift</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>19</th>
+      <td>W05</td>
+      <td>Mon</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>29</th>
+      <td>W07</td>
+      <td>Mon</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>W04</td>
+      <td>Mon</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>W06</td>
+      <td>Mon</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>0</th>
+      <td>W01</td>
+      <td>Mon</td>
+      <td>night</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>W05</td>
+      <td>Tue</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>30</th>
+      <td>W07</td>
+      <td>Tue</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>W02</td>
+      <td>Tue</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>W06</td>
+      <td>Tue</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>W03</td>
+      <td>Tue</td>
+      <td>night</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>W01</td>
+      <td>Wed</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>W05</td>
+      <td>Wed</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>W02</td>
+      <td>Wed</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>W04</td>
+      <td>Wed</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>W06</td>
+      <td>Wed</td>
+      <td>night</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>W03</td>
+      <td>Thu</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>31</th>
+      <td>W07</td>
+      <td>Thu</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>W04</td>
+      <td>Thu</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>W05</td>
+      <td>Thu</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>W06</td>
+      <td>Thu</td>
+      <td>night</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>W02</td>
+      <td>Fri</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>32</th>
+      <td>W07</td>
+      <td>Fri</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>W01</td>
+      <td>Fri</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>W04</td>
+      <td>Fri</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>W06</td>
+      <td>Fri</td>
+      <td>night</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>W02</td>
+      <td>Sat</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>W05</td>
+      <td>Sat</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>W01</td>
+      <td>Sat</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>W04</td>
+      <td>Sat</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>W03</td>
+      <td>Sat</td>
+      <td>night</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>W02</td>
+      <td>Sun</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>W01</td>
+      <td>Sun</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>W03</td>
+      <td>Sun</td>
+      <td>night</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
-</div>
-</div>
+</section>
+<section id="reports-for-workers">
+<h3>Reports for workers<a class="headerlink" href="#reports-for-workers" title="Permalink to this headline">¶</a></h3>
+<p>Each worker should receive a report detailing their shift assignments. The reports are created by sorting the master schedule by worker, day, and shift, then grouping by worker.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Staff Shift Assignments&#39;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># sort schedule by worker</span>
+<span class="n">schedule</span> <span class="o">=</span> <span class="n">schedule</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;worker&quot;</span><span class="p">,</span> <span class="s2">&quot;day&quot;</span><span class="p">,</span> <span class="s2">&quot;shift&quot;</span><span class="p">])</span>
 
-<span class="k">for</span> <span class="n">worker</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">WORKERS</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="n">worker</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-    <span class="n">n_shifts</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">assign</span><span class="p">[</span><span class="n">worker</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">shift</span><span class="p">]()</span> <span class="k">for</span> <span class="n">day</span><span class="p">,</span> <span class="n">shift</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SLOTS</span><span class="p">)</span>
-    <span class="n">n_weekend_hours</span> <span class="o">=</span> <span class="mi">8</span><span class="o">*</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">assign</span><span class="p">[</span><span class="n">worker</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">shift</span><span class="p">]()</span> <span class="k">for</span> <span class="n">day</span><span class="p">,</span> <span class="n">shift</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">WEEKENDS</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">round</span><span class="p">(</span><span class="n">n_shifts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; no shifts&quot;</span><span class="p">)</span>
+<span class="c1"># print worker schedules</span>
+<span class="k">for</span> <span class="n">worker</span><span class="p">,</span> <span class="n">worker_schedule</span> <span class="ow">in</span> <span class="n">schedule</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;worker&#39;</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> Work schedule for </span><span class="si">{</span><span class="n">worker</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">worker_schedule</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>   
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">worker_schedule</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">n_weekend_hours</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">n_weekend_hours</span><span class="si">}</span><span class="s2"> weekend hours&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">day</span><span class="p">,</span> <span class="n">shift</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SLOTS</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">assign</span><span class="p">[</span><span class="n">worker</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">shift</span><span class="p">]()):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    </span><span class="si">{</span><span class="n">day</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">shift</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;   no assigned shifts&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Staff Shift Assignments
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span> Work schedule for W01
+worker day   shift
+   W01 Mon   night
+   W01 Wed morning
+   W01 Fri evening
+   W01 Sat evening
+   W01 Sun evening
 
-W01: 16.0 weekend hours 
-    Mon night
-    Wed morning
-    Fri evening
-    Sat evening
-    Sun evening
+ Work schedule for W02
+worker day   shift
+   W02 Tue evening
+   W02 Wed evening
+   W02 Fri morning
+   W02 Sat morning
+   W02 Sun morning
 
-W02: 16.0 weekend hours 
-    Tue evening
-    Wed evening
-    Fri morning
-    Sat morning
-    Sun morning
+ Work schedule for W03
+worker day   shift
+   W03 Tue   night
+   W03 Thu morning
+   W03 Sat   night
+   W03 Sun   night
 
-W03: 16.0 weekend hours 
-    Tue night
-    Thu morning
-    Sat night
-    Sun night
+ Work schedule for W04
+worker day   shift
+   W04 Mon evening
+   W04 Wed evening
+   W04 Thu evening
+   W04 Fri evening
+   W04 Sat evening
 
-W04: 8.0 weekend hours 
-    Mon evening
-    Wed evening
-    Thu evening
-    Fri evening
-    Sat evening
+ Work schedule for W05
+worker day   shift
+   W05 Mon morning
+   W05 Tue morning
+   W05 Wed morning
+   W05 Thu evening
+   W05 Sat morning
 
-W05: 8.0 weekend hours 
-    Mon morning
-    Tue morning
-    Wed morning
-    Thu evening
-    Sat morning
+ Work schedule for W06
+worker day   shift
+   W06 Mon evening
+   W06 Tue evening
+   W06 Wed   night
+   W06 Thu   night
+   W06 Fri   night
 
-W06: 
-    Mon evening
-    Tue evening
-    Wed night
-    Thu night
-    Fri night
+ Work schedule for W07
+worker day   shift
+   W07 Mon morning
+   W07 Tue morning
+   W07 Thu morning
+   W07 Fri morning
 
-W07: 
-    Mon morning
-    Tue morning
-    Thu morning
-    Fri morning
+ Work schedule for W08
+   no assigned shifts
 
-W08: no shifts
+ Work schedule for W09
+   no assigned shifts
 
-W09: no shifts
-
-W10: no shifts
+ Work schedule for W10
+   no assigned shifts
 </pre></div>
 </div>
 </div>
 </div>
+</section>
+<section id="reports-for-store-managers">
+<h3>Reports for store managers<a class="headerlink" href="#reports-for-store-managers" title="Permalink to this headline">¶</a></h3>
+<p>The store managers need reports listing workers by assigned day and shift.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># sort by day, shift, worker</span>
+<span class="n">schedule</span> <span class="o">=</span> <span class="n">schedule</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;day&quot;</span><span class="p">,</span> <span class="s2">&quot;shift&quot;</span><span class="p">,</span> <span class="s2">&quot;worker&quot;</span><span class="p">])</span>
+
+<span class="k">for</span> <span class="n">day</span><span class="p">,</span> <span class="n">day_schedule</span> <span class="ow">in</span> <span class="n">schedule</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;day&quot;</span><span class="p">]):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Shift schedule for </span><span class="si">{</span><span class="n">day</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">shift</span><span class="p">,</span> <span class="n">shift_schedule</span> <span class="ow">in</span> <span class="n">day_schedule</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;shift&quot;</span><span class="p">]):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;   </span><span class="si">{</span><span class="n">shift</span><span class="si">}</span><span class="s2"> shift: &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">worker</span> <span class="k">for</span> <span class="n">worker</span> <span class="ow">in</span> <span class="n">shift_schedule</span><span class="p">[</span><span class="s2">&quot;worker&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Shift schedule for Mon
+   morning shift: W05, W07
+   evening shift: W04, W06
+   night shift: W01
+
+Shift schedule for Tue
+   morning shift: W05, W07
+   evening shift: W02, W06
+   night shift: W03
+
+Shift schedule for Wed
+   morning shift: W01, W05
+   evening shift: W02, W04
+   night shift: W06
+
+Shift schedule for Thu
+   morning shift: W03, W07
+   evening shift: W04, W05
+   night shift: W06
+
+Shift schedule for Fri
+   morning shift: W02, W07
+   evening shift: W01, W04
+   night shift: W06
+
+Shift schedule for Sat
+   morning shift: W02, W05
+   evening shift: W01, W04
+   night shift: W03
+
+Shift schedule for Sun
+   morning shift: W02
+   evening shift: W01
+   night shift: W03
+</pre></div>
+</div>
+</div>
+</div>
+</section>
 </section>
 <section id="suggested-exercises">
 <h2>Suggested Exercises<a class="headerlink" href="#suggested-exercises" title="Permalink to this headline">¶</a></h2>

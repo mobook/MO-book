@@ -19,8 +19,6 @@ import math
 # 
 # Note: this story was originally told in the book [Optimization](https://press.princeton.edu/books/hardcover/9780691102870/optimization) and the protagonist there is called Samantha, but we stick to the alphabetical order...
 # 
-# <img align='right' src='../../media/RoseInGlass.jpeg'>
-# 
 # As the story goes, Alice receives a beautiful rose. She has nothing but a lemonade glass to hold the rose and becomes very distressed when the ensemble falls down. 
 # 
 # Adding a bit of water helps! Not only that helps the rose, but it also helps the stability: glass, with some water, and rose stands!
@@ -104,7 +102,7 @@ opt = max(sol)
 sympy.diff(hprime, x).subs(x,opt).evalf()
 
 
-# Since $h^{\prime\prime}(\mbox{opt}) > 0$ it is indeed a (local) **minimum**.
+# Since $h^{\prime\prime}(\text{opt}) > 0$ it is indeed a (local) **minimum**.
 
 # ### With $\pi$ as a symbol
 
@@ -207,58 +205,9 @@ def cog(m):
 alice.pprint()
 
 
-# We may solve the problem even if we have no solver installed!
-# We simply call a solver on [neos](https://neos-server.org/neos/solvers/index.html) which `pyomo` treats as a _solver manager_.
-# 
-# Note that `neos` requires a valid e-mail address to be specified on the environment variable `NEOS_EMAIL`.
+# We will use `ipopt`. We refer again to [this notebook](https://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/01.02-Running-Pyomo-on-Google-Colab.ipynb) explains how to run `Pyomo` **and how to install solvers** on Google Colab. For a complete overview please check the [cookbook](https://jckantor.github.io/ND-Pyomo-Cookbook/).
 
 # In[10]:
-
-
-import os
-os.environ['NEOS_EMAIL'] = 'you@your.org'
-
-
-# In[11]:
-
-
-neos = pyo.SolverManagerFactory('neos')
-results = neos.solve( alice, opt='ipopt')
-print(results.solver.status, results.solver.termination_condition)
-alice.pprint()
-
-
-# Besides `pprint`, `pyomo` objects also implement `display`. 
-
-# In[12]:
-
-
-alice.display()
-
-
-# The reason why `Alice` reports having no constraints is because we modeled the constraints as `bounds` on the variable. 
-# 
-# We may also examine the parts of the model, as the variables, objectives, etc.
-
-# In[13]:
-
-
-alice.h.value
-
-
-# In[14]:
-
-
-alice.cog.expr()
-
-
-# It is worth learning more about [magics](https://ipython.readthedocs.io/en/stable/interactive/magics.html), try the magic `%time` above before `solve`.
-
-# ### What difference does it make if we change solver?
-# 
-# Let us get our own copy of `ipopt`. We refer again to [this notebook](https://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/01.02-Running-Pyomo-on-Google-Colab.ipynb) explains how to run `Pyomo` **and how to install solvers** on Google Colab. For a complete overview please check the [cookbook](https://jckantor.github.io/ND-Pyomo-Cookbook/).
-
-# In[15]:
 
 
 import sys
@@ -267,11 +216,10 @@ if 'google.colab' in sys.modules:
     get_ipython().system('unzip -o -q ipopt-linux64')
 
 
-# In[16]:
+# In[11]:
 
 
-from pyomo.environ import SolverFactory
-results = SolverFactory('ipopt').solve(alice)
+results = pyo.SolverFactory('ipopt').solve(alice)
 print(results.solver.status, results.solver.termination_condition )
 alice.display()
 
@@ -285,10 +233,4 @@ alice.display()
 
 # ## Last remarks
 # 
-# This notebook deferred installation of the packages needed to the moment that we actually needed them. This was deliberate, to show that - for instance - we could solve the problem on `neos` even _before_ having installed our first solver. Subsequent notebooks will normally list all dependencies on their top part, which we often call the _preamble_. 
-
-# In[ ]:
-
-
-
-
+# This notebook deferred installation of the packages needed to the moment that we needed them. This was deliberate, but subsequent notebooks will normally list all dependencies on their top part, which we often call the _preamble_. Furthermore, the `colab' dependencies will be streamlined in future notebooks. 
