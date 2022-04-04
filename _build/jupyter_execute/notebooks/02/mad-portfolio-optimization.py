@@ -208,7 +208,7 @@ plt.tight_layout()
 # 
 # $$\text{MAD}_j = \frac{1}{T} \sum_{t=1}^T | r_{j,t} - \bar{r}_j |$$
 # 
-# The mean daily return and the mean absolute deviation in daily return are computed and plotted in the following cell. The side by side comparison provides a comparison of return vs volatility for individual assets.
+# where $T$ is the period under consideration. The mean daily return and the mean absolute deviation in daily return are computed and plotted in the following cell. The side by side comparison provides a comparison of return vs volatility for individual assets.
 
 # In[10]:
 
@@ -281,7 +281,7 @@ ax.grid(True)
 # 
 # where $r_{j,t+\delta t}$ is the return on asset $j$ at time $t+\delta t$. 
 # 
-# Defining $W_{j,t} = n_{j,t}S_{j,t}$ as the wealth invested in asset $j$ at time $t$, then $w_{j,t} = n_{j,t}S_{j,t}/W_{t}$ is the fraction of total wealth invested in asset $j$ at time $t$. The portfolio return is then given by 
+# Defining $W_{j,t} = n_{j,t}S_{j,t}$ as the wealth invested in asset $j$ at time $t$, then $w_{j,t} = n_{j,t}S_{j,t}/W_{t}$ is the fraction of total wealth invested in asset $j$ at time $t$. The return on a portfolio of $J$ assets is then given by 
 # 
 # $$
 # \begin{align*}
@@ -293,7 +293,7 @@ ax.grid(True)
 
 # ### Mean Absolute Deviation in Portfolio Returns
 # 
-# The return on a portfolio with weights $w_j$ for asset $j$ is 
+# The return on a portfolio of $J$ assets over a period of $T$ intervals with weights $w_j$ for asset $j$ is given by
 # 
 # $$
 # \begin{align*}
@@ -301,11 +301,11 @@ ax.grid(True)
 # \end{align*}
 # $$
 # 
-# where $r_{t, j}$ is the return on asset $j$ at time $t$, $\bar{r}_j$ is the mean return for asset $j$, and $w_j$ is the fraction of the total portfolio that is invested in asset $j$.
+# where $r_{t, j}$ is the return on asset $j$ at time $t$, $\bar{r}_j$ is the mean return for asset $j$, and $w_j$ is the fraction of the total portfolio that is invested in asset $j$. Note that due to the use of absolute values, MAD for the portfolio is *not* the weighted sum of $\text{MAD}_j$ for individual assets
 
 # ## MAD Portfolio Optimization
 # 
-# The portfolio optimization problem is to find an allocation of investments weights $w_j$ to minimize the portfolio measure of risk subject to constraints on required return and any other constraints an investor wishes to impose.
+# The portfolio optimization problem is to find an allocation of investments weights $w_j$ to minimize the portfolio measure of risk subject to constraints on required return and any other constraints an investor wishes to impose. Assume that we can make investment decisions at every trading day $t$ over a fixed time horizon ranging from $t=1,\dots,T$ and that there is a set of $J$ assets in which we can choose to invest."
 # 
 # $$
 # \begin{align*}
@@ -427,7 +427,11 @@ pyo.SolverFactory('cbc').solve(m)
 mad_visualization(assets, m)
 
 
-# ## Risk versus Return
+# ## MAD Risk versus Return
+# 
+# The portfolio optimization problem has been formulated as the minimization of a risk measure, MAD, subject to a lower bound $R$ on mean portfolio return. Increasing the required return for the portfolio therefore comes at the cost of tolerating a higher level of risk. Finding the optimal trade off between risk and return is a central aspect of any investment strategy.
+# 
+# The following cell creates a plot of the risk/return trade off by solving the MAD portfolio optimization problem for increasing values of required return $R$. This should be compared to the similar construction commonly used in presentations of the portfolio optimization problem due to Markowitz.
 
 # In[13]:
 
@@ -586,7 +590,9 @@ pyo.SolverFactory('cbc').solve(m)
 mad_visualization(assets, m)
 
 
-# ## Risk versus return with a risk-free asset 
+# ## MAD Risk versus return with a risk-free asset 
+# 
+# As above, it is instructive to plot the MAD risk versus required return $R$. The result is similar, but not exactly the same, as  the standard presentation from modern portfolio theory (MPT) for efficient frontier of investing, and the capital market line. A careful look at the the plot below shows minor difference at very high levels of return and risk that departs from the MPT analysis. 
 
 # In[15]:
 

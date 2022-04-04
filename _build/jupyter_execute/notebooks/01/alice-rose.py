@@ -171,9 +171,6 @@ plot_alice( h, s, 0, 20 )
 #  * mathematical models expressed in `python`, using `pyomo`,
 #  * powerful numerical optimization algorithms and how to use them. 
 # 
-# We now meet [`pyomo`](http://www.pyomo.org/documentation/) which will keep us company for the rest of the course. 
-# Note that in particular you may find this [slide-deck](https://software.sandia.gov/downloads/pub/pyomo/Pyomo-Workshop-Summer-2018.pdf) quite useful. 
-# 
 # We will see that `pyomo` completely separates modeling from solving, which allows us to switch solver without recoding! 
 
 # ### Notebook dependencies requiring installation on `colab`
@@ -234,3 +231,9 @@ alice.display()
 # ## Last remarks
 # 
 # This notebook deferred installation of the packages needed to the moment that we needed them. This was deliberate, but subsequent notebooks will normally list all dependencies on their top part, which we often call the _preamble_. Furthermore, the `colab' dependencies will be streamlined in future notebooks. 
+
+# In[ ]:
+
+
+
+
