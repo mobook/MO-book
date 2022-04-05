@@ -2,6 +2,8 @@
 # coding: utf-8
 
 # # Pooling and Blending
+# 
+# This notebook presents an overview of bilinear pooling and blending problems in the context of a simple milk blending operation. The essential non-convex nature of the problem is demonstrated, and the two basic formulations (the P- and Q- parameterizations) are shown.
 
 # In[20]:
 
@@ -528,7 +530,7 @@ m.x.display()
 m.y.display()
 
 
-# In[33]:
+# In[36]:
 
 
 import pyomo.environ as pyo
@@ -575,10 +577,16 @@ def p_milk_opt(q="fat"):
     return m
 
 m = p_milk_opt()
-m.profit()
+print(m.profit())
 m.x.display()
 m.y.display()
 m.z.display()
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
