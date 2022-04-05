@@ -54,7 +54,7 @@
 # 
 # Please help Caroline to model the material planning and solve it with the data above. 
 
-# In[95]:
+# In[19]:
 
 
 import sys
@@ -70,7 +70,7 @@ if 'google.colab' in sys.modules:
 
 # To be self contained... alternative is to upload and read a file. 
 
-# In[96]:
+# In[20]:
 
 
 demand_data = '''chip,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
@@ -78,7 +78,7 @@ Logic,88,125,260,217,238,286,248,238,265,293,259,244
 Memory,47,62,81,65,95,118,86,89,82,82,84,66'''
 
 
-# In[97]:
+# In[21]:
 
 
 from io import StringIO
@@ -87,7 +87,7 @@ demand_chips = pd.read_csv( StringIO(demand_data), index_col='chip' )
 demand_chips
 
 
-# In[98]:
+# In[22]:
 
 
 price_data = '''product,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
@@ -97,7 +97,7 @@ germanium,5,5,5,3,3,3,3,2,3,4,5,6
 plastic,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1'''
 
 
-# In[99]:
+# In[23]:
 
 
 price = pd.read_csv( StringIO(price_data), index_col='product' )
@@ -108,7 +108,7 @@ price
 
 # ## A simple dataframe with the consumptions
 
-# In[100]:
+# In[24]:
 
 
 use = dict()
@@ -120,20 +120,20 @@ use
 
 # ## A simple matrix multiplication
 
-# In[101]:
+# In[25]:
 
 
 demand = use.dot( demand_chips )
 demand
 
 
-# In[102]:
+# In[26]:
 
 
 import pyomo.environ as pyo
 
 
-# In[103]:
+# In[27]:
 
 
 def ShowTableOfPyomoVariables( X, I, J ):
@@ -142,10 +142,10 @@ def ShowTableOfPyomoVariables( X, I, J ):
 
 # # NOTE: The functions below follow closely the naming in Overleaf
 
-# In[104]:
+# In[28]:
 
 
-def VersionOne( demand, acquisition_price, existing, desired, stock_limit, month_budget ):
+def BIMProductAcquisitionAndInventory( demand, acquisition_price, existing, desired, stock_limit, month_budget ):
     m = pyo.ConcreteModel( 'Product acquisition and inventory' )
     
     periods  = demand.columns
@@ -208,30 +208,40 @@ def VersionOne( demand, acquisition_price, existing, desired, stock_limit, month
     return m
 
 
-# In[105]:
+# In[29]:
 
 
-m = VersionOne( demand, price, 
+m = BIMProductAcquisitionAndInventory( demand, price, 
            {'silicon' : 1000, 'germanium': 1500, 'plastic': 1750, 'copper' : 4800 }, 
            {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2000 },
            9000, 2000 )
 
-pyo.SolverFactory( 'gurobi_direct' ).solve(m)
+pyo.SolverFactory( 'cbc' ).solve(m)
 
 
-# In[106]:
+# In[30]:
 
 
-ShowTableOfPyomoVariables( m.x, m.P, m.T ).round(2)
+ShowTableOfPyomoVariables( m.x, m.P, m.T )
 
 
-# In[107]:
+# In[31]:
 
 
-ShowTableOfPyomoVariables( m.s, m.P, m.T ).round(2)
+stock = ShowTableOfPyomoVariables( m.s, m.P, m.T )
+stock
 
 
-# In[108]:
+# In[32]:
+
+
+import matplotlib.pyplot as plt, numpy as np
+stock.T.plot(drawstyle='steps-mid',grid=True, figsize=(13,4))
+plt.xticks(np.arange(len(stock.columns)),stock.columns)
+plt.show()
+
+
+# In[33]:
 
 
 def VersionTwo( demand, acquisition_price, existing, desired, stock_limit, month_budget ):
@@ -300,7 +310,7 @@ def VersionTwo( demand, acquisition_price, existing, desired, stock_limit, month
     return m
 
 
-# In[109]:
+# In[34]:
 
 
 m = VersionTwo( demand, price, 
@@ -308,143 +318,19 @@ m = VersionTwo( demand, price,
            {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2000 },
            9000, 2000 )
 
-pyo.SolverFactory( 'gurobi_direct' ).solve(m)
+pyo.SolverFactory( 'cbc' ).solve(m)
 
 
-# In[110]:
+# In[35]:
 
 
-ShowTableOfPyomoVariables( m.x, m.P, m.T ).round(2)
+ShowTableOfPyomoVariables( m.x, m.P, m.T )
 
 
-# In[111]:
+# In[36]:
 
 
-ShowTableOfPyomoVariables( m.s, m.P, m.T ).round(2)
-
-
-# In[112]:
-
-
-m = pyo.ConcreteModel()
-
-
-# # Add the relevant data to the model
-
-# In[113]:
-
-
-m.Time        = demand.columns
-m.Product     = demand.index
-m.Demand      = demand
-m.UnitPrice   = price
-m.HoldingCost = .05
-m.StockLimit  = 9000
-m.Budget      = 2000
-
-
-# In[114]:
-
-
-m.existing = {'silicon' : 1000, 'germanium': 1500, 'plastic': 1750, 'copper' : 4800 }
-m.desired  = {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2000 }
-
-
-# # Some care to deal with the `time` index
-
-# In[115]:
-
-
-m.first = m.Time[0]
-m.last  = m.Time[-1]
-m.prev  = { j : i for i,j in zip(m.Time,m.Time[1:]) }
-
-
-# # Variables for the decision (buy) and consequence (stock)
-
-# In[116]:
-
-
-m.buy   = pyo.Var( m.Product, m.Time, within=pyo.NonNegativeReals )
-m.stock = pyo.Var( m.Product, m.Time, within=pyo.NonNegativeReals )
-
-
-# # The constraints that balance acquisition with inventory and demand
-
-# In[117]:
-
-
-def BalanceRule( m, p, t ):
-    if t == m.first:
-        return m.existing[p] + m.buy[p,t] == m.Demand.loc[p,t] + m.stock[p,t]
-    else:
-        return m.buy[p,t] + m.stock[p,m.prev[t]] == m.Demand.loc[p,t] + m.stock[p,t]
-
-
-# In[118]:
-
-
-m.balance = pyo.Constraint( m.Product, m.Time, rule = BalanceRule )
-
-
-# # The remaining constraints
-# 
-# Note that these rules are so simple, one liners, that it is better to just define them 'on the spot' as anonymous (or `'lambda`) functions. 
-
-# ## Ensure the desired inventory at the end of the horizon
-
-# In[119]:
-
-
-m.finish = pyo.Constraint( m.Product, rule = lambda m, p : m.stock[p,m.last] >= m.desired[p] )
-
-
-# ## Ensure that the inventory fits the capacity
-
-# In[120]:
-
-
-m.inventory = pyo.Constraint( m.Time, rule = lambda m, t : sum( m.stock[p,t] for p in m.Product ) <= m.StockLimit )
-
-
-# ## Ensure that the acquisition fits the budget
-
-# In[121]:
-
-
-m.budget = pyo.Constraint( m.Time, rule = lambda m, t : sum( m.UnitPrice.loc[p,t]*m.buy[p,t] for p in m.Product ) <= m.Budget )
-
-
-# In[122]:
-
-
-m.obj = pyo.Objective( expr = sum( m.UnitPrice.loc[p,t]*m.buy[p,t] for p in m.Product for t in m.Time )
-                              + sum( m.HoldingCost*m.stock[p,t] for p in m.Product for t in m.Time )
-                      , sense = pyo.minimize )
-
-
-# In[123]:
-
-
-pyo.SolverFactory( 'gurobi_direct' ).solve(m)
-
-
-# In[124]:
-
-
-ShowTableOfPyomoVariables( m.buy, m.Product, m.Time )
-
-
-# In[125]:
-
-
-ShowTableOfPyomoVariables( m.stock, m.Product, m.Time )
-
-
-# In[126]:
-
-
-ShowTableOfPyomoVariables( m.stock, m.Product, m.Time ).T.plot(drawstyle='steps-mid',grid=True, figsize=(20,4))
+ShowTableOfPyomoVariables( m.s, m.P, m.T )
 
 
 # # Notes

@@ -103,14 +103,14 @@ demand
 
 
 def Table1d( m, J, retriever ):
-    return pd.DataFrame( [ 0+retriever(m,j) for j in J ], index=J ).T.round(0).astype(int)
+    return pd.DataFrame( [ 0+retriever(m,j) for j in J ], index=J ).T
 
 def Table2d( m, I, J, retriever ):
-    return pd.DataFrame.from_records( [ [ 0+retriever( m, i, j ) for j in J ] for i in I ], index=I, columns=J ).round(0).astype(int)
+    return pd.DataFrame.from_records( [ [ 0+retriever( m, i, j ) for j in J ] for i in I ], index=I, columns=J )
 
 def Table3d( m, I, J, names, K, retriever ):
     index = pd.MultiIndex.from_product( [I,J], names=names )
-    return pd.DataFrame.from_records( [ [ 0+retriever(m,i,j,k) for k in K ] for i in I for j in J ],index=index,columns=K ).round(0).astype(int)
+    return pd.DataFrame.from_records( [ [ 0+retriever(m,i,j,k) for k in K ] for i in I for j in J ],index=index,columns=K )
 
 
 # In[7]:
@@ -229,7 +229,7 @@ def VersionOne( demand, existing, desired, stock_limit,
     return m
 
 
-# In[48]:
+# In[9]:
 
 
 m1 = VersionOne( demand = demand, 
@@ -251,80 +251,47 @@ m1 = VersionOne( demand = demand,
 pyo.SolverFactory( 'cbc' ).solve(m1)
 
 
-# In[49]:
+# In[10]:
 
 
 stock = Table2d( m1, demand.index, demand.columns, lambda m,i,j : pyo.value(m.s[i,j]) )
-stock.style.format('{:.0f}').to_latex('ch3stock.tex')
+stock
 
 
-# In[50]:
-
-
-stock.to_csv('stock1.csv')
-
-
-# In[51]:
+# In[11]:
 
 
 import matplotlib.pyplot as plt, numpy as np
 stock.T.plot(drawstyle='steps-mid',grid=True, figsize=(13,4))
 plt.xticks(np.arange(len(stock.columns)),stock.columns)
-plt.savefig('ch3stock.pdf', bbox_inches="tight", pad_inches=0,dpi=2400)
-
-
-# In[35]:
-
-
-pairs=Table1d( m1, J = demand.columns, retriever = lambda m, j : pyo.value( m.p[j] ) )
-pairs.style.format('{:.0f}').to_latex('ch3pair.tex')
-
-
-# In[36]:
-
-
-pairs
+plt.show()
 
 
 # In[ ]:
 
 
-pairs.to_csv('pairs1.csv')
-
-
-# In[12]:
-
-
-Table2d( m1, demand.index, demand.columns, lambda m,i,j : pyo.value(m.u[i,j]) ).to_csv('buy1.csv')
-
-
-# In[34]:
-
-
-batch = Table2d( m1, [ 'A', 'C' ], demand.columns, lambda m,i,j : pyo.value(m.b[j,i]) )
-batch.style.format('{:.0f}').to_latex('ch3batch.tex')
+Table1d( m1, J = demand.columns, retriever = lambda m, j : pyo.value( m.p[j] ) )
 
 
 # In[ ]:
 
 
-batch.to_csv('batches1.csv')
+Table2d( m1, demand.index, demand.columns, lambda m,i,j : pyo.value(m.u[i,j]) )
 
 
-# In[32]:
+# In[ ]:
 
 
-y = Table2d( m1, [ 'B', 'C' ], demand.columns, lambda m,i,j : pyo.value(m.y[j,i]) )
-y.style.format('{:.0f}').to_latex('ch3sheets.tex')
+Table2d( m1, [ 'A', 'C' ], demand.columns, lambda m,i,j : pyo.value(m.b[j,i]) )
 
 
-# In[31]:
+# In[ ]:
 
 
-y.to_csv('sheets1.csv')
+Table2d( m1, [ 'B', 'C' ], demand.columns, lambda m,i,j : pyo.value(m.y[j,i]) )
 
 
-# In[27]:
+# In[ ]:
 
 
 x = Table3d( m1, 
@@ -337,19 +304,7 @@ x = Table3d( m1,
 x
 
 
-# In[29]:
-
-
-x.style.format('{:.0f}').to_latex('ch3buy.tex')
-
-
-# In[28]:
-
-
-x.to_csv('unit1.csv')
-
-
-# In[16]:
+# In[ ]:
 
 
 def VersionTwo( demand, existing, desired, 
@@ -448,7 +403,7 @@ def VersionTwo( demand, existing, desired,
     return m
 
 
-# In[52]:
+# In[ ]:
 
 
 m2 = VersionTwo( demand = demand, 
@@ -470,7 +425,7 @@ m2 = VersionTwo( demand = demand,
 pyo.SolverFactory( 'cbc' ).solve(m2)
 
 
-# In[18]:
+# In[ ]:
 
 
 Table3d( m2, 
@@ -479,10 +434,10 @@ Table3d( m2,
         names    = ['supplier','materials'], 
         K        = m2.T, 
         retriever= lambda m,i,j,k : 0+pyo.value( m.A[k].x[i,j] ) 
-        ).to_csv('unit2.csv')
+        )
 
 
-# In[19]:
+# In[ ]:
 
 
 def VersionThree( demand, existing, desired, 
@@ -491,7 +446,7 @@ def VersionThree( demand, existing, desired,
                 batch_size, copper_sheet_mass, copper_bucket_size,
                 unitary_products, unitary_holding_costs
                 ):
-    m = pyo.ConcreteModel( 'Product acquisition and inventory with sophisticated prices' )
+    m = pyo.ConcreteModel( 'Product management with sophisticated prices, blocks and redundant variables' )
     
     periods  = demand.columns
     products = demand.index 
@@ -505,46 +460,45 @@ def VersionThree( demand, existing, desired,
     m.PT = m.P * m.T # to avoid internal set bloat
     
     m.x = pyo.Var( m.PT, within=pyo.NonNegativeReals )
-    m.s = pyo.Var( m.PT, within=pyo.NonNegativeReals )
     
     @m.Block( m.T )
-    def acquisition( b ):
-        b.units  = pyo.Var( supplying_batches, products, within=pyo.NonNegativeReals )
-        b.batches= pyo.Var( supplying_batches, within=pyo.NonNegativeIntegers )
-        b.sheets = pyo.Var( supplying_copper, within=pyo.NonNegativeIntegers )
-        b.pairs  = pyo.Var( within=pyo.NonNegativeIntegers )
+    def A( b ):
+        b.x = pyo.Var( supplying_batches, products, within=pyo.NonNegativeReals )
+        b.b = pyo.Var( supplying_batches, within=pyo.NonNegativeIntegers )
+        b.y = pyo.Var( supplying_copper, within=pyo.NonNegativeIntegers )
+        b.p = pyo.Var( within=pyo.NonNegativeIntegers )
 
         @b.Constraint( supplying_batches )
         def in_batches( b, s ):
-            return pyo.quicksum( b.units[s,p] for p in products ) <= batch_size*b.batches[s]
+            return pyo.quicksum( b.x[s,p] for p in products ) <= batch_size*b.b[s]
 
         @b.Constraint()
         def pairs_in_batches( b ):
-            return b.pairs <= b.batches['C']
+            return b.p <= b.b['C']
 
         @b.Constraint()
         def pairs_in_sheets( b ):
-            return b.pairs <= b.sheets['C']
+            return b.p <= b.y['C']
         
         @b.Expression( products )
-        def x( b, p ):
+        def u( b, p ):
             if p == 'copper':
-                return copper_sheet_mass*pyo.quicksum( b.sheets[s] for s in supplying_copper )
-            return pyo.quicksum( b.units[s,p] for s in supplying_batches )
+                return copper_sheet_mass*pyo.quicksum( b.y[s] for s in supplying_copper )
+            return pyo.quicksum( b.x[s,p] for s in supplying_batches )
             
         @b.Expression()
         def cost( b ):
             discount = price_batch['C']+price_copper_sheet['C']-discounted_price
-            return pyo.quicksum( price_copper_sheet[s]*b.sheets[s] for s in supplying_copper )                 + pyo.quicksum( price_batch[s]*b.batches[s] for s in supplying_batches )                 - discount * b.pairs    
+            return pyo.quicksum( price_copper_sheet[s]*b.y[s] for s in supplying_copper )                 + pyo.quicksum( price_batch[s]*b.b[s] for s in supplying_batches )                 - discount * b.p    
     
     @m.Block( m.T )
-    def inventory( b ):
-        b.s       = pyo.Var( products, within=pyo.NonNegativeReals )
-        b.buckets = pyo.Var( within=pyo.NonNegativeIntegers )
+    def I( b ):
+        b.s = pyo.Var( products, within=pyo.NonNegativeReals )
+        b.r = pyo.Var( within=pyo.NonNegativeIntegers )
         
         @b.Constraint()
         def copper_in_buckets(b):
-            return b.s['copper'] <= copper_bucket_size*b.buckets
+            return b.s['copper'] <= copper_bucket_size*b.r
         
         @b.Constraint()
         def capacity( b ):
@@ -552,7 +506,7 @@ def VersionThree( demand, existing, desired,
 
         @b.Expression()
         def cost( b ):
-            return unitary_holding_costs['copper']*b.buckets +                 pyo.quicksum( unitary_holding_costs[p]*b.s[p] for p in unitary_products )
+            return unitary_holding_costs['copper']*b.r +                 pyo.quicksum( unitary_holding_costs[p]*b.s[p] for p in unitary_products )
             
     @m.Param( m.PT )
     def delta(m,t,p):
@@ -560,39 +514,35 @@ def VersionThree( demand, existing, desired,
     
     @m.Expression()
     def acquisition_cost( m ):
-        return pyo.quicksum( m.acquisition[t].cost for t in m.T )
+        return pyo.quicksum( m.A[t].cost for t in m.T )
     
     @m.Expression()
     def inventory_cost( m ):
-        return pyo.quicksum( m.inventory[t].cost for t in m.T )
+        return pyo.quicksum( m.I[t].cost for t in m.T )
     
     @m.Objective( sense=pyo.minimize )
     def total_cost( m ):
         return m.acquisition_cost + m.inventory_cost
     
     @m.Constraint( m.PT )
-    def match_x( m, p, t ):
-        m.x[p,t] == m.A[t].x[p]
-    
-    @m.Constraint( m.PT )
-    def match_s( m, p, t ):
-        m.s[p,t] == m.I[t].s[p]
-        
+    def match( m, p, t ):
+        return m.x[p,t] == m.A[t].u[p]
+       
     @m.Constraint( m.PT )
     def balance( m, p, t ):
         if t == first:
-            return existing[p] + m.x[p,t] == m.delta[p,t] + m.s[p,t]
+            return existing[p] + m.x[p,t] == m.delta[p,t] + m.I[t].s[p]
         else:
-            return m.x[p,t] + m.s[p,prev[t]] == m.delta[p,t] + m.s[p,t]
+            return m.x[p,t] + m.I[prev[t]].s[p] == m.delta[p,t] + m.I[t].s[p]
         
     @m.Constraint( m.P )
     def finish( m, p ):
-        return m.inventory[last].s[p] >= desired[p]
+        return m.I[last].s[p] >= desired[p]
     
     return m
 
 
-# In[53]:
+# In[ ]:
 
 
 m3 = VersionThree( demand = demand, 
@@ -614,37 +564,37 @@ m3 = VersionThree( demand = demand,
 pyo.SolverFactory( 'cbc' ).solve(m3)
 
 
-# In[21]:
+# In[ ]:
 
 
-Table1d( m3, J = m3.T, retriever = lambda m, j : pyo.value( m.acquisition[j].pairs ) ).to_csv('pairs3.csv')
+Table1d( m3, J = m3.T, retriever = lambda m, j : pyo.value( m.A[j].p ) )
 
 
-# In[22]:
+# In[ ]:
 
 
-Table2d( m3, I=m3.P, J=m3.T, retriever = lambda m, i, j : pyo.value( 0+m.acquisition[j].x[i] ) ).to_csv('buy3.csv')
+Table2d( m3, I=m3.P, J=m3.T, retriever = lambda m, i, j : pyo.value( 0+m.x[i,j] ) )
 
 
-# In[23]:
+# In[ ]:
 
 
-Table2d( m3, I=['B','C'], J=m3.T, retriever = lambda m, i, j : pyo.value( 0+m.acquisition[j].sheets[i] ) ).to_csv('sheets3.csv')
+Table2d( m3, I=['B','C'], J=m3.T, retriever = lambda m, i, j : pyo.value( 0+m.A[j].y[i] ) )
 
 
-# In[24]:
+# In[ ]:
 
 
-Table2d( m3, I=m3.P, J=m3.T, retriever = lambda m, i, j : pyo.value( m.inventory[j].s[i] ) ).to_csv('stock3.csv')
+Table2d( m3, I=m3.P, J=m3.T, retriever = lambda m, i, j : pyo.value( m.I[j].s[i] ) )
 
 
-# In[25]:
+# In[ ]:
 
 
-Table2d( m3, I=['A','C'], J=m3.T, retriever=lambda m, i, j : pyo.value( m.acquisition[j].batches[i] ) ).to_csv('batches3.csv')
+Table2d( m3, I=['A','C'], J=m3.T, retriever=lambda m, i, j : pyo.value( m.A[j].b[i] ) )
 
 
-# In[26]:
+# In[ ]:
 
 
 Table3d( m3, 
@@ -652,12 +602,6 @@ Table3d( m3,
         J        = [ 'silicon', 'germanium', 'plastic' ], 
         names    = ['supplier','materials'], 
         K        = m3.T, 
-        retriever= lambda m,i,j,k : 0+pyo.value( m.acquisition[k].units[i,j] ) 
-        ).to_csv('unit3.csv')
-
-
-# In[ ]:
-
-
-
+        retriever= lambda m,i,j,k : 0+pyo.value( m.A[k].x[i,j] ) 
+        )
 
