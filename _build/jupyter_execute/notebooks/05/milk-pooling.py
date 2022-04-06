@@ -5,7 +5,7 @@
 # 
 # This notebook presents an overview of bilinear pooling and blending problems in the context of a simple milk blending operation. The essential non-convex nature of the problem is demonstrated, and the two basic formulations (the P- and Q- parameterizations) are shown.
 
-# In[20]:
+# In[37]:
 
 
 # Install Pyomo and solvers for Google Colab
@@ -51,16 +51,16 @@ if "google.colab" in sys.modules:
 # ![](milk-pooling.dio.png)
 # 
 # 
-# What should the farmer do?
+# What should the distributor do?
 # 
-# * Option 1. Do nothing, continue with business as usual.
+# * Option 1. Do nothing, continue operating the business as usual with local suppliers.
 # 
-# * Option 2. Buy a second truck so that raw milk can be transported the remote farms to the blending facility without pooling.
+# * Option 2. Buy a second truck so raw milk can be transported from the remote farms to the blending facility without pooling.
 # 
-# * Option 3. Pool raw milk from the remote farms for transport to the blending facility.
+# * Option 3. Pool raw milk from the remote farms into a single tank for truck transport to the blending facility.
 # 
 
-# In[21]:
+# In[38]:
 
 
 import pandas as pd
@@ -124,7 +124,7 @@ display(remote_suppliers)
 # 
 # This is a standard linear blending problem.
 
-# In[22]:
+# In[39]:
 
 
 import pyomo.environ as pyo
@@ -174,7 +174,7 @@ display(X)
 # 
 # The model used above applies by extending the set of suppliers to include both local and remote farms. The required changes are noted in the cell below.
 
-# In[23]:
+# In[40]:
 
 
 import pyomo.environ as pyo
@@ -278,7 +278,7 @@ display(X)
 # 
 # The bilinear terms have a profound consequence on the nature of the optimization problem. To demonstrate, the following cell creates a linear program to maximize profit as a function of $f$, then explores how profit changes as a function of parameter $f$.
 
-# In[24]:
+# In[41]:
 
 
 import pyomo.environ as pyo
@@ -327,7 +327,7 @@ f = np.linspace(0.025, 0.055, 200)
 p = [p_milk(f).profit() for f in f]
 
 
-# In[25]:
+# In[42]:
 
 
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -419,7 +419,7 @@ ax.grid(True)
 # 
 # In this formulation bilinear terms appear in the objective function and composition constraints. The following cells plot the value of the objective for fixed values of $w_{\text{Farm C}}$ where $w_{\text{Farm D}} = 1 - w_{\text{Farm C}}$.
 
-# In[26]:
+# In[43]:
 
 
 import pyomo.environ as pyo
@@ -464,7 +464,7 @@ w = np.linspace(0.0, 1.0, 200)
 p = [q_milk(w).profit() for w in w]
 
 
-# In[27]:
+# In[44]:
 
 
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -481,56 +481,7 @@ ax.grid(True)
 # 
 # The following cells demonstrate the solution of the milk pooling problem using both the P- and Q-parameterizations. 
 
-# In[29]:
-
-
-import pyomo.environ as pyo
-
-def q_milk_opt(q="fat"):
-    
-    m = pyo.ConcreteModel()
-
-    # define sources 
-    m.L = pyo.Set(initialize=local_suppliers.index)
-    m.R = pyo.Set(initialize=remote_suppliers.index)
-
-    # define customers
-    m.C = pyo.Set(initialize=customers.index)
-
-    # define flowrates
-    m.x = pyo.Var(m.L * m.C, domain=pyo.NonNegativeReals)
-    m.y = pyo.Var(m.C, domain=pyo.NonNegativeReals)
-    m.z = pyo.Var(m.R, domain=pyo.NonNegativeReals)
-    m.w = pyo.Var(m.R, bounds=(0, 1))
-
-    @m.Objective(sense=pyo.maximize)
-    def profit(m):
-        return + sum(m.x[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C)                + sum( m.y[c]*(customers.loc[c, "price"] - sum(m.w[r] * suppliers.loc[r, "cost"] for r in m.R)) for c in m.C)
-    
-    @m.Constraint()
-    def pool_balance(m):
-        return sum(m.w[r] for r in m.R) == 1
-
-    @m.Constraint(m.C)
-    def customer_demand(m, c):
-        return sum(m.x[l, c] for l in m.L) + m.y[c] <= customers.loc[c, "demand"]
-    
-    @m.Constraint(m.C)
-    def customer_quality(m, c):
-        return sum((suppliers.loc[l, q] - customers.loc[c, q]) * m.x[l, c] for l in m.L)                  + (sum(suppliers.loc[r, q] * m.w[r] for r in m.R) - customers.loc[c, q]) * m.y[c] >= 0
-
-    pyo.SolverFactory('ipopt').solve(m)
-    
-    return m
-
-m = q_milk()
-print(m.profit())
-m.w.display()
-m.x.display()
-m.y.display()
-
-
-# In[36]:
+# In[55]:
 
 
 import pyomo.environ as pyo
@@ -583,10 +534,110 @@ m.y.display()
 m.z.display()
 
 
-# In[ ]:
+# In[56]:
 
 
+import pyomo.environ as pyo
 
+def q_milk_opt(q="fat"):
+    
+    m = pyo.ConcreteModel()
+
+    # define sources 
+    m.L = pyo.Set(initialize=local_suppliers.index)
+    m.R = pyo.Set(initialize=remote_suppliers.index)
+
+    # define customers
+    m.C = pyo.Set(initialize=customers.index)
+
+    # define flowrates
+    m.x = pyo.Var(m.L * m.C, domain=pyo.NonNegativeReals)
+    m.y = pyo.Var(m.C, domain=pyo.NonNegativeReals)
+    m.w = pyo.Var(m.R, bounds=(0, 1))
+
+    @m.Objective(sense=pyo.maximize)
+    def profit(m):
+        return + sum(m.x[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C)                + sum( m.y[c]*(customers.loc[c, "price"] - sum(m.w[r] * suppliers.loc[r, "cost"] for r in m.R)) for c in m.C)
+    
+    @m.Constraint()
+    def pool_balance(m):
+        return sum(m.w[r] for r in m.R) == 1
+
+    @m.Constraint(m.C)
+    def customer_demand(m, c):
+        return sum(m.x[l, c] for l in m.L) + m.y[c] <= customers.loc[c, "demand"]
+    
+    @m.Constraint(m.C)
+    def customer_quality(m, c):
+        return sum((suppliers.loc[l, q] - customers.loc[c, q]) * m.x[l, c] for l in m.L)                  + (sum(suppliers.loc[r, q] * m.w[r] for r in m.R) - customers.loc[c, q]) * m.y[c] >= 0
+
+    pyo.SolverFactory('ipopt').solve(m)
+    
+    return m
+
+m = q_milk_opt()
+print(m.profit())
+m.w.display()
+m.x.display()
+m.y.display()
+
+
+# ## Convexification
+
+# In[105]:
+
+
+import pyomo.environ as pyo
+
+
+m = pyo.ConcreteModel()
+
+# define sources 
+m.L = pyo.Set(initialize=local_suppliers.index)
+m.R = pyo.Set(initialize=remote_suppliers.index)
+
+# define customers
+m.C = pyo.Set(initialize=customers.index)
+
+# define flowrates
+m.x = pyo.Var(m.L * m.C, domain=pyo.NonNegativeReals)
+m.y = pyo.Var(m.C, bounds = lambda m, r: (0, customers.loc[r, "demand"]))
+m.w = pyo.Var(m.R, bounds=(0, 1))
+
+@m.Objective(sense=pyo.maximize)
+def profit(m):
+    return + sum(m.x[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C)            + sum( m.y[c]*(customers.loc[c, "price"] - sum(m.w[r] * suppliers.loc[r, "cost"] for r in m.R)) for c in m.C)
+
+@m.Constraint()
+def pool_balance(m):
+    return sum(m.w[r] for r in m.R) == 1
+
+@m.Constraint(m.C)
+def customer_demand(m, c):
+    return sum(m.x[l, c] for l in m.L) + m.y[c] <= customers.loc[c, "demand"]
+
+@m.Constraint(m.C)
+def customer_quality(m, c):
+    return sum((suppliers.loc[l, q] - customers.loc[c, q]) * m.x[l, c] for l in m.L)              + (sum(suppliers.loc[r, q] * m.w[r] for r in m.R) - customers.loc[c, q]) * m.y[c] >= 0
+
+pyo.SolverFactory('ipopt').solve(m)
+
+print(m.profit())
+#m.w.display()
+#m.x.display()
+#m.y.display()
+
+for c in m.C:
+    print(f"{c}  {m.y[c].lower} {m.y[c].upper:8.2f} {m.y[c]():8.2f}")
+    
+for r in m.R:
+    print(f"{r}  {m.w[r].lower} {m.w[r].upper:8.2f} {m.w[r]():8.2f}")
+
+
+# In[73]:
+
+
+m.y["Customer A"].lower
 
 
 # In[ ]:

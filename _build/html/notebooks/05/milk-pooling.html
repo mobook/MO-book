@@ -482,6 +482,11 @@ const thebe_selector_output = ".output, .cell_output"
    Nonlinear optimization
   </a>
  </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#convexification">
+   Convexification
+  </a>
+ </li>
 </ul>
 
             </nav>
@@ -542,6 +547,11 @@ const thebe_selector_output = ".output, .cell_output"
    Nonlinear optimization
   </a>
  </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#convexification">
+   Convexification
+  </a>
+ </li>
 </ul>
 
                         </nav>
@@ -595,11 +605,11 @@ const thebe_selector_output = ".output, .cell_output"
 <p>The distributor has found lower cost sources of raw milk from several farms located a long distance away. The distant farms produce grades of milk that may be blended with local sources. The distributor, however, has just one truck with a single tank available to transport raw milk from the distant farms to the blending facility. Because of this, any milk purchased from the distant farms would be mixed together in the tank before transport to the blending station. The contents of the tank is the “pool” referred to in pooling problems.</p>
 <p>The situation is illustrated in the following diagram where arrows show the flow and blending of milk supplies.</p>
 <p><img alt="" src="../../_images/milk-pooling.dio.png" /></p>
-<p>What should the farmer do?</p>
+<p>What should the distributor do?</p>
 <ul class="simple">
-<li><p>Option 1. Do nothing, continue with business as usual.</p></li>
-<li><p>Option 2. Buy a second truck so that raw milk can be transported the remote farms to the blending facility without pooling.</p></li>
-<li><p>Option 3. Pool raw milk from the remote farms for transport to the blending facility.</p></li>
+<li><p>Option 1. Do nothing, continue operating the business as usual with local suppliers.</p></li>
+<li><p>Option 2. Buy a second truck so raw milk can be transported from the remote farms to the blending facility without pooling.</p></li>
+<li><p>Option 3. Pool raw milk from the remote farms into a single tank for truck transport to the blending facility.</p></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1274,77 +1284,6 @@ z_r &amp; = w_r \sum_{c\in C} y_c &amp; \forall r \in R
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 
-<span class="k">def</span> <span class="nf">q_milk_opt</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="s2">&quot;fat&quot;</span><span class="p">):</span>
-    
-    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
-
-    <span class="c1"># define sources </span>
-    <span class="n">m</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">local_suppliers</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">R</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">remote_suppliers</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
-
-    <span class="c1"># define customers</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">customers</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
-
-    <span class="c1"># define flowrates</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">L</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;price&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">suppliers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="s2">&quot;cost&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">L</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">)</span> \
-               <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;price&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">*</span> <span class="n">suppliers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="s2">&quot;cost&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">)</span>
-    
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-    <span class="k">def</span> <span class="nf">pool_balance</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
-
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">customer_demand</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">L</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;demand&quot;</span><span class="p">]</span>
-    
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">customer_quality</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">suppliers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">q</span><span class="p">]</span> <span class="o">-</span> <span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">])</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">L</span><span class="p">)</span> \
-                 <span class="o">+</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">suppliers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">q</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">)</span> <span class="o">-</span> <span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">])</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span>
-
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;ipopt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    
-    <span class="k">return</span> <span class="n">m</span>
-
-<span class="n">m</span> <span class="o">=</span> <span class="n">q_milk</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">())</span>
-<span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
-<span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
-<span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>71500.00069370153
-w : Size=2, Index=R
-    Key    : Lower : Value : Upper : Fixed : Stale : Domain
-    Farm C :     0 :   1.0 :     1 : False : False :  Reals
-    Farm D :     0 :   0.0 :     1 : False : False :  Reals
-x : Size=4, Index=x_index
-    Key                      : Lower : Value             : Upper : Fixed : Stale : Domain
-    (&#39;Farm A&#39;, &#39;Customer A&#39;) :     0 : 5750.000060205816 :  None : False : False : NonNegativeReals
-    (&#39;Farm A&#39;, &#39;Customer B&#39;) :     0 :               0.0 :  None : False : False : NonNegativeReals
-    (&#39;Farm B&#39;, &#39;Customer A&#39;) :     0 :               0.0 :  None : False : False : NonNegativeReals
-    (&#39;Farm B&#39;, &#39;Customer B&#39;) :     0 :               0.0 :  None : False : False : NonNegativeReals
-y : Size=2, Index=C
-    Key        : Lower : Value             : Upper : Fixed : Stale : Domain
-    Customer A :     0 : 249.9999998034846 :  None : False : False : NonNegativeReals
-    Customer B :     0 : 2500.000025018958 :  None : False : False : NonNegativeReals
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-
 <span class="k">def</span> <span class="nf">p_milk_opt</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="s2">&quot;fat&quot;</span><span class="p">):</span>
     
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
@@ -1413,6 +1352,153 @@ z : Size=2, Index=R
     Key    : Lower : Value             : Upper : Fixed : Stale : Domain
     Farm C :     0 : 2750.000028372415 :  None : False : False : NonNegativeReals
     Farm D :     0 :               0.0 :  None : False : False : NonNegativeReals
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+
+<span class="k">def</span> <span class="nf">q_milk_opt</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="s2">&quot;fat&quot;</span><span class="p">):</span>
+    
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+
+    <span class="c1"># define sources </span>
+    <span class="n">m</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">local_suppliers</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">R</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">remote_suppliers</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+    <span class="c1"># define customers</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">customers</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+    <span class="c1"># define flowrates</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">L</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;price&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">suppliers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="s2">&quot;cost&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">L</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">)</span> \
+               <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;price&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">*</span> <span class="n">suppliers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="s2">&quot;cost&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">)</span>
+    
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">pool_balance</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">customer_demand</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">L</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;demand&quot;</span><span class="p">]</span>
+    
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">customer_quality</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">suppliers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">q</span><span class="p">]</span> <span class="o">-</span> <span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">])</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">L</span><span class="p">)</span> \
+                 <span class="o">+</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">suppliers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">q</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">)</span> <span class="o">-</span> <span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">])</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;ipopt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">m</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">q_milk_opt</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">())</span>
+<span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>71500.00069370153
+w : Size=2, Index=R
+    Key    : Lower : Value : Upper : Fixed : Stale : Domain
+    Farm C :     0 :   1.0 :     1 : False : False :  Reals
+    Farm D :     0 :   0.0 :     1 : False : False :  Reals
+x : Size=4, Index=x_index
+    Key                      : Lower : Value             : Upper : Fixed : Stale : Domain
+    (&#39;Farm A&#39;, &#39;Customer A&#39;) :     0 : 5750.000060205816 :  None : False : False : NonNegativeReals
+    (&#39;Farm A&#39;, &#39;Customer B&#39;) :     0 :               0.0 :  None : False : False : NonNegativeReals
+    (&#39;Farm B&#39;, &#39;Customer A&#39;) :     0 :               0.0 :  None : False : False : NonNegativeReals
+    (&#39;Farm B&#39;, &#39;Customer B&#39;) :     0 :               0.0 :  None : False : False : NonNegativeReals
+y : Size=2, Index=C
+    Key        : Lower : Value             : Upper : Fixed : Stale : Domain
+    Customer A :     0 : 249.9999998034846 :  None : False : False : NonNegativeReals
+    Customer B :     0 : 2500.000025018958 :  None : False : False : NonNegativeReals
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="convexification">
+<h2>Convexification<a class="headerlink" href="#convexification" title="Permalink to this headline">¶</a></h2>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+
+<span class="c1"># define sources </span>
+<span class="n">m</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">local_suppliers</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">R</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">remote_suppliers</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+<span class="c1"># define customers</span>
+<span class="n">m</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">customers</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+<span class="c1"># define flowrates</span>
+<span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">L</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">,</span> <span class="n">bounds</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">r</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="s2">&quot;demand&quot;</span><span class="p">]))</span>
+<span class="n">m</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+<span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;price&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">suppliers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="s2">&quot;cost&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">L</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">)</span> \
+           <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;price&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">*</span> <span class="n">suppliers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="s2">&quot;cost&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">)</span>
+
+<span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">pool_balance</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+
+<span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">customer_demand</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">L</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;demand&quot;</span><span class="p">]</span>
+
+<span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">customer_quality</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">((</span><span class="n">suppliers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">q</span><span class="p">]</span> <span class="o">-</span> <span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">])</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">L</span><span class="p">)</span> \
+             <span class="o">+</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">suppliers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">q</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">)</span> <span class="o">-</span> <span class="n">customers</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">])</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;ipopt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">())</span>
+<span class="c1">#m.w.display()</span>
+<span class="c1">#m.x.display()</span>
+<span class="c1">#m.y.display()</span>
+
+<span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="si">:</span><span class="s2">8.2f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">c</span><span class="p">]()</span><span class="si">:</span><span class="s2">8.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+<span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">r</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">r</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">r</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="si">:</span><span class="s2">8.2f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">r</span><span class="p">]()</span><span class="si">:</span><span class="s2">8.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>71500.0004185334
+Customer A  0  6000.00   250.00
+Customer B  0  2500.00  2500.00
+Farm C  0     1.00     1.00
+Farm D  0     1.00     0.00
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="s2">&quot;Customer A&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>0
 </pre></div>
 </div>
 </div>
