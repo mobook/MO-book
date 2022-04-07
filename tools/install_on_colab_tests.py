@@ -94,13 +94,24 @@ async def install_pyomo():
         )
     print("installation and testing complete")
     
-
-nest_asyncio.apply()      
-print("installing pyomo . ", end="")
+solvers = {
+    "bonmin":        {"solver": "bonmin",        "pkg": "bonmin",     "installer": "ampl", "tester": "lp_test"},
+    "cbc":           {"solver": "cbc",           "pkg": "coinor-cbc", "installer": "apt",  "tester": "lp_test"},
+    "couenne":       {"solver": "couenne",       "pkg": "couenne",    "installer": "ampl", "tester": "lp_test"},
+    "cplex":         {"solver": "cplex_direct",  "pkg": "cplex",      "installer": "pip",  "tester": "lp_test"},
+    "cplex_direct":  {"solver": "cplex_direct",  "pkg": "cplex",      "installer": "pip",  "tester": "lp_test"},
+    "gecode":        {"solver": "gecode",        "pkg": "gecode",     "installer": "ampl", "tester": "ip_test"},
+    "gurobi":        {"solver": "gurobi_direct", "pkg": "gurobipy",  "install
+    
+async def install(solver, pkg, installer, tester):
+    
+     
+print("installing pyomo")
 os.system("pip3 install -q pyomo")
 assert package_available("pyomo"), "pyomo failed to install"
-asyncio.run(apt_install("glpk-utils", "glpk"))
+
+nest_asyncio.apply() 
+asyncio.run(apt_install("glpk-utils", "glpk")) 
 
 if __name__ == "__main__":
-
     asyncio.run(install_pyomo())
