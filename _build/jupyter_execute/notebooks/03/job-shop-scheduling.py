@@ -7,7 +7,7 @@
 # 
 # The following cell specifies the solver to used in the subsequent calculations. Some of these problems can become quite larger, and therefore the `gurobi` solver has been set as a default. If you don't have the `gurobi` solver then adjust the code to use the `glpk` solver, but know the calculations may take longer (and the benchmark problem will not solve at all). If you do have the `gurobi` solver, edit the location of the executable to match the location on your computer.
 
-# In[37]:
+# In[1]:
 
 
 # Import Pyomo and solvers for Google Colab
@@ -64,7 +64,7 @@ if "google.colab" in sys.modules:
 # 
 # We convert this to a JSON style representation where tasks are denoted by (Job,Machine) tuples in Python. The task data is stored in a Python dictionary indexed by (Job,Machine) tuples. The task data conists of a dictionary with duration ('dur') and (Job,Machine) pair for any prerequisite task.
 
-# In[38]:
+# In[2]:
 
 
 TASKS = {
@@ -126,7 +126,7 @@ TASKS = {
 # 
 # The job shop scheduling problem is implemented below in Pyomo. The implementation consists of of a function JobShopModel(TASKS) that accepts a dictionary of tasks and returns a Pyomo model. 
 
-# In[40]:
+# In[ ]:
 
 
 import pyomo.environ as pyo
@@ -139,7 +139,10 @@ def jobshop_model(TASKS):
     model.TASKS = pyo.Set(initialize = TASKS.keys(), dimen=2)
     
     # the set of jobs is constructed from a python set
-    model.JOBS = pyo.Set(initialize = list(set([j for (j, m) in model.TASKS])))
+    @model.Set()
+    def JOBS(model):
+        return list(set([j for (j, m) in model.TASKS]))
+    #model.JOBS = pyo.Set(initialize = )))
     
     # set of machines is constructed from a python set
     model.MACHINES = pyo.Set(initialize = list(set([m for (j, m) in model.TASKS])))
@@ -181,13 +184,13 @@ def jobshop_model(TASKS):
         return [model.start[j, m] + model.dur[j, m] <= model.start[k, m],
                 model.start[k, m] + model.dur[k, m] <= model.start[j, m]]
     
-    pyo.TransformationFactory('gdp.hull').apply_to(model)
+    pyo.TransformationFactory('gdp.bigm').apply_to(model)
     return model
 
 jobshop_model(TASKS)
 
 
-# In[41]:
+# In[8]:
 
 
 def jobshop_solve(model):

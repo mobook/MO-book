@@ -27,7 +27,7 @@
 # 
 # The following cells attempt to illustrate how this works.
 
-# In[56]:
+# In[60]:
 
 
 import matplotlib.pyplot as plt
@@ -60,10 +60,10 @@ ax.set_ylabel('y')
 ax.set_title('Bilinear function x*y')
 
 
-# In[59]:
+# In[61]:
 
 
-get_ipython().run_line_magic('matplotlib', 'qt')
+
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
