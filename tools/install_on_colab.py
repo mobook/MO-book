@@ -58,7 +58,7 @@ async def ampl_install(pkg:str, solver:str, test=lp_test):
         print(f".. {pkg} failed to unzip")
         return  
     test(solver) 
-    print(f".. {solver}")
+    print(f".. {solver} installed")
     return
         
 async def install_pyomo():
