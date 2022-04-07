@@ -12,7 +12,7 @@ def lp_test(solver):
         pyo.SolverFactory(solver).solve(model)
     except:
         print(f".. {solver} failed lp_test")
-    
+
 def ip_test(solver):
     """test a pyomo solver on simple IP and report if failed"""
     import pyomo.environ as pyo
@@ -63,7 +63,7 @@ async def ampl_install(pkg:str, solver:str, test=lp_test):
     test(solver) 
     print(f".. {solver} installed")
     return
-        
+
 async def install_pyomo():
     print("installing pyomo . ", end="")
     if await run("pip3 install -q pyomo"):
@@ -84,6 +84,8 @@ async def install_pyomo():
         #ampl_install("jacop", "jacop")
         )
     print("installation and testing complete")
+    
 
-nest_asyncio.apply()
-asyncio.run(install_pyomo())
+if __name__ == "__main__":
+    nest_asyncio.apply()
+    asyncio.run(install_pyomo())
