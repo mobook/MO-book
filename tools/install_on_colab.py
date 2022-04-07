@@ -76,9 +76,8 @@ async def install_pyomo():
         ampl_install("bonmin", "bonmin"),
         ampl_install("couenne", "couenne"),
         ampl_install("gecode", "gecode", ip_test),
-            
+        pip_install("cplex", "cplex_direct"),
         #pip_install("xpress", "xpress"),
-        #pip_install("cplex", "cplex"),
         #ampl_install("jacop", "jacop")
         )
     print("installation and testing complete")
