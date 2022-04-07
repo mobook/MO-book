@@ -657,7 +657,7 @@ report_solution(m_global)
 
 # ## Concluding Remarks
 # 
-# The solution for the bilinear model reveals several interesting features of the problem. 
+# The solution for the bilinear pooling model reveals several features of the problem. 
 # 
 # * For the given parameters, pooling raw materials for shipment from remote suppliers yields the most profitable solution, but that solution is only possible because there are local suppliers to augment the pool blend to meet individual customer requirements. 
 # 
