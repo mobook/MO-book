@@ -71,13 +71,13 @@ async def install_pyomo():
     await apt_install("glpk-utils", "glpk"),
     await asyncio.gather(
         pip_install("gurobipy", "gurobi_direct"),
+        pip_install("cplex", "cplex_direct"),
+        pip_install("xpress", "xpress"),
         apt_install("coinor-cbc", "cbc"),
         ampl_install("ipopt", "ipopt"),
         ampl_install("bonmin", "bonmin"),
         ampl_install("couenne", "couenne"),
         ampl_install("gecode", "gecode", ip_test),
-        pip_install("cplex", "cplex_direct"),
-        #pip_install("xpress", "xpress"),
         #ampl_install("jacop", "jacop")
         )
     print("installation and testing complete")
