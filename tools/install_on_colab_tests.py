@@ -1,5 +1,21 @@
+import os
+import sys
+import shutil
 import asyncio
 import nest_asyncio
+
+
+def on_colab(): 
+    return "google.colab" in sys.modules
+
+def _check_available(executable_name): 
+    return (shutil.which(executable_name) or os.path.isfile(executable_name)) 
+
+def package_available(package_name):
+    if package_name == "glpk":
+        return _check_available("gpsol")        
+    else:
+        return _check_available(package_name)
 
 def lp_test(solver):
     """test a pyomo solver on simple LP and report if failed"""
@@ -65,13 +81,6 @@ async def ampl_install(pkg:str, solver:str, test=lp_test):
     return
 
 async def install_pyomo():
-    print("installing pyomo . ", end="")
-    if await run("pip3 install -q pyomo"):
-        print("pyomo failed to install")
-        return
-    print("pyomo installed")
-    print("installing and testing solvers ...")
-    await apt_install("glpk-utils", "glpk"),
     await asyncio.gather(
         pip_install("gurobipy", "gurobi_direct"),
         pip_install("cplex", "cplex_direct"),
@@ -86,6 +95,12 @@ async def install_pyomo():
     print("installation and testing complete")
     
 
+nest_asyncio.apply()      
+print("installing pyomo . ", end="")
+os.system("pip3 install -q pyomo")
+assert package_available("pyomo"), "pyomo failed to install"
+asyncio.run(apt_install("glpk-utils", "glpk"))
+
 if __name__ == "__main__":
-    nest_asyncio.apply()
+
     asyncio.run(install_pyomo())
