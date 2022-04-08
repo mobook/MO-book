@@ -54,7 +54,7 @@
 # 
 # Please help Caroline to model the material planning and solve it with the data above. 
 
-# In[19]:
+# In[ ]:
 
 
 import sys
@@ -70,7 +70,7 @@ if 'google.colab' in sys.modules:
 
 # To be self contained... alternative is to upload and read a file. 
 
-# In[20]:
+# In[ ]:
 
 
 demand_data = '''chip,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
@@ -78,7 +78,7 @@ Logic,88,125,260,217,238,286,248,238,265,293,259,244
 Memory,47,62,81,65,95,118,86,89,82,82,84,66'''
 
 
-# In[21]:
+# In[ ]:
 
 
 from io import StringIO
@@ -87,7 +87,7 @@ demand_chips = pd.read_csv( StringIO(demand_data), index_col='chip' )
 demand_chips
 
 
-# In[22]:
+# In[ ]:
 
 
 price_data = '''product,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
@@ -97,7 +97,7 @@ germanium,5,5,5,3,3,3,3,2,3,4,5,6
 plastic,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1'''
 
 
-# In[23]:
+# In[ ]:
 
 
 price = pd.read_csv( StringIO(price_data), index_col='product' )
@@ -108,7 +108,7 @@ price
 
 # ## A simple dataframe with the consumptions
 
-# In[24]:
+# In[ ]:
 
 
 use = dict()
@@ -120,20 +120,20 @@ use
 
 # ## A simple matrix multiplication
 
-# In[25]:
+# In[ ]:
 
 
 demand = use.dot( demand_chips )
 demand
 
 
-# In[26]:
+# In[ ]:
 
 
 import pyomo.environ as pyo
 
 
-# In[27]:
+# In[ ]:
 
 
 def ShowTableOfPyomoVariables( X, I, J ):
@@ -142,7 +142,7 @@ def ShowTableOfPyomoVariables( X, I, J ):
 
 # # NOTE: The functions below follow closely the naming in Overleaf
 
-# In[28]:
+# In[ ]:
 
 
 def BIMProductAcquisitionAndInventory( demand, acquisition_price, existing, desired, stock_limit, month_budget ):
@@ -208,7 +208,7 @@ def BIMProductAcquisitionAndInventory( demand, acquisition_price, existing, desi
     return m
 
 
-# In[29]:
+# In[ ]:
 
 
 m = BIMProductAcquisitionAndInventory( demand, price, 
@@ -219,20 +219,20 @@ m = BIMProductAcquisitionAndInventory( demand, price,
 pyo.SolverFactory( 'cbc' ).solve(m)
 
 
-# In[30]:
+# In[ ]:
 
 
 ShowTableOfPyomoVariables( m.x, m.P, m.T )
 
 
-# In[31]:
+# In[ ]:
 
 
 stock = ShowTableOfPyomoVariables( m.s, m.P, m.T )
 stock
 
 
-# In[32]:
+# In[ ]:
 
 
 import matplotlib.pyplot as plt, numpy as np
@@ -241,7 +241,7 @@ plt.xticks(np.arange(len(stock.columns)),stock.columns)
 plt.show()
 
 
-# In[33]:
+# In[ ]:
 
 
 def VersionTwo( demand, acquisition_price, existing, desired, stock_limit, month_budget ):
@@ -310,7 +310,7 @@ def VersionTwo( demand, acquisition_price, existing, desired, stock_limit, month
     return m
 
 
-# In[34]:
+# In[ ]:
 
 
 m = VersionTwo( demand, price, 
@@ -321,13 +321,13 @@ m = VersionTwo( demand, price,
 pyo.SolverFactory( 'cbc' ).solve(m)
 
 
-# In[35]:
+# In[ ]:
 
 
 ShowTableOfPyomoVariables( m.x, m.P, m.T )
 
 
-# In[36]:
+# In[ ]:
 
 
 ShowTableOfPyomoVariables( m.s, m.P, m.T )

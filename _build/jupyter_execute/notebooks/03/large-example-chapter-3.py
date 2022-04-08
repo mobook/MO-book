@@ -49,7 +49,7 @@
 # The production is made to order, meaning that no inventory of chips is kept.
 # 
 
-# In[1]:
+# In[ ]:
 
 
 import sys
@@ -65,7 +65,7 @@ if 'google.colab' in sys.modules:
 
 # To be self contained... alternative is to upload and read a file. 
 
-# In[2]:
+# In[ ]:
 
 
 demand_data = '''chip,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
@@ -73,7 +73,7 @@ Logic,88,125,260,217,238,286,248,238,265,293,259,244
 Memory,47,62,81,65,95,118,86,89,82,82,84,66'''
 
 
-# In[3]:
+# In[ ]:
 
 
 from io import StringIO
@@ -82,7 +82,7 @@ demand_chips = pd.read_csv( StringIO(demand_data), index_col='chip' )
 demand_chips
 
 
-# In[4]:
+# In[ ]:
 
 
 use = dict()
@@ -92,14 +92,14 @@ use = pd.DataFrame.from_dict( use ).fillna(0).astype( int )
 use
 
 
-# In[5]:
+# In[ ]:
 
 
 demand = use.dot( demand_chips )
 demand
 
 
-# In[6]:
+# In[ ]:
 
 
 def Table1d( m, J, retriever ):
@@ -113,13 +113,13 @@ def Table3d( m, I, J, names, K, retriever ):
     return pd.DataFrame.from_records( [ [ 0+retriever(m,i,j,k) for k in K ] for i in I for j in J ],index=index,columns=K )
 
 
-# In[7]:
+# In[ ]:
 
 
 import pyomo.environ as pyo
 
 
-# In[8]:
+# In[ ]:
 
 
 def VersionOne( demand, existing, desired, stock_limit,
@@ -229,7 +229,7 @@ def VersionOne( demand, existing, desired, stock_limit,
     return m
 
 
-# In[9]:
+# In[ ]:
 
 
 m1 = VersionOne( demand = demand, 
@@ -251,14 +251,14 @@ m1 = VersionOne( demand = demand,
 pyo.SolverFactory( 'cbc' ).solve(m1)
 
 
-# In[10]:
+# In[ ]:
 
 
 stock = Table2d( m1, demand.index, demand.columns, lambda m,i,j : pyo.value(m.s[i,j]) )
 stock
 
 
-# In[11]:
+# In[ ]:
 
 
 import matplotlib.pyplot as plt, numpy as np
