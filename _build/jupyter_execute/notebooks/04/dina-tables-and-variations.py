@@ -2,14 +2,11 @@
 # coding: utf-8
 
 # # Dina's table seating arrangements
+
+# ## Problem
 # 
-# ---
 # Caroline takes her associates and their families out to a dinner at Dina’s restaurant to celebrate the successes brought to her material planning by Mathematical Optimization.
 # 
-# 
-# <img width=650 src='https://img.freepik.com/free-vector/cheerful-sexy-girl-restaurant-waiter-with-tray-wine-glass-portrait-isolated-white-background-vector-illustration_1284-2391.jpg?w=826&t=st=1649165412~exp=1649166012~hmac=6d1567c8ce54bac51bdb09a39111f53df051eb5983c0f0edc1f5ddb2ae641d67'>
-# 
-# <a href="https://www.freepik.com/vectors/background-people">Background people vector created by macrovector - www.freepik.com</a>
 # 
 # Caroline puts some additional requirements: to increase social interaction, the different families should sit at tables so that no more than $k$ members of the same family are seated at the same table.
 # 
@@ -19,12 +16,10 @@
 #  * At the restaurant, there are multiple tables, where table $t$ has capacity $c(t)$.
 # 
 # Model this problem in order to find a seating arrangement that satisfies Caroline's requirement.
-# 
-# ---
 
 # # Resolution
 
-# In[ ]:
+# In[1]:
 
 
 # Install Pyomo and solvers for Google Colab
@@ -34,7 +29,7 @@ if "google.colab" in sys.modules:
     get_ipython().run_line_magic('run', 'install_on_colab.py')
 
 
-# In[ ]:
+# In[2]:
 
 
 import pyomo.environ as pyo
@@ -44,13 +39,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-# In[ ]:
+# In[3]:
 
 
 solver = pyo.SolverFactory('cbc')
 
 
-# In[ ]:
+# In[4]:
 
 
 # %%writefile tableseat_1.py
@@ -77,7 +72,7 @@ def TableSeat( members, capacity, k, domain=pyo.NonNegativeReals ):
     return m
 
 
-# In[ ]:
+# In[5]:
 
 
 def TableSeatAsMaxFlow( members, capacity, k, domain=pyo.NonNegativeReals ):
@@ -103,7 +98,7 @@ def TableSeatAsMaxFlow( members, capacity, k, domain=pyo.NonNegativeReals ):
     return m
 
 
-# In[ ]:
+# In[6]:
 
 
 def Reset( model ) -> None:
@@ -127,7 +122,7 @@ def Report( model, results, type=float ):
         print('members seated  ', list(sol.sum(axis=1)))
 
 
-# In[ ]:
+# In[7]:
 
 
 seatplan = TableSeat( [6,8,2,9,13,1], [8,8,10,4,9], 3 )
@@ -137,7 +132,7 @@ get_ipython().run_line_magic('time', 'results = solver.solve(seatplan)')
 Report( seatplan,results )
 
 
-# In[ ]:
+# In[8]:
 
 
 import pyperclip 
@@ -230,7 +225,7 @@ Report( seatplan, results, int )
 
 # # Note: this is an example of a max flow!
 
-# In[ ]:
+# In[9]:
 
 
 
@@ -247,7 +242,7 @@ default_size_inches = (3.54,3.54)
 plt.rcParams['figure.figsize'] = default_size_inches
 
 
-# In[ ]:
+# In[10]:
 
 
 def ModelAsNetwork( members, capacity, k ):
@@ -270,25 +265,25 @@ def ModelAsNetwork( members, capacity, k ):
     return G
 
 
-# In[ ]:
+# In[11]:
 
 
 G = ModelAsNetwork( [6,8,2,9,13,1], [8,8,10,4,9], 3 )
 
 
-# In[ ]:
+# In[12]:
 
 
 pos = nx.multipartite_layout(G, subset_key='layer')
 
 
-# In[ ]:
+# In[13]:
 
 
 labels = { (e[0],e[1]) : e[2] for e in G.edges(data='capacity') }
 
 
-# In[ ]:
+# In[14]:
 
 
 plt.rcParams['text.usetex'] =False
@@ -300,13 +295,13 @@ with plt.xkcd():
     fig.savefig( 'net_flow.pdf', bbox_inches='tight', pad_inches=0 )
 
 
-# In[ ]:
+# In[15]:
 
 
 get_ipython().run_line_magic('time', "flow_value, flow_dict = nx.maximum_flow(G, 'door', 'seat')")
 
 
-# In[ ]:
+# In[16]:
 
 
 members, capacity = [6,8,2,9,13,1], [8,8,10,4,9]
@@ -315,14 +310,14 @@ tables = [f't{j}' for j in range(len(capacity))]
 pd.DataFrame(flow_dict).loc[tables,families]
 
 
-# In[ ]:
+# In[17]:
 
 
 flow_edges = [(a,b) for a,B in flow_dict.items() for b,v in B.items() if v>0 and a != 'door' and b != 'seat']
 flow_nodes = [n for n in G.nodes if n.startswith('f') or n.startswith('t')]
 
 
-# In[ ]:
+# In[18]:
 
 
 with plt.xkcd():
@@ -330,20 +325,20 @@ with plt.xkcd():
     nx.draw_networkx(G,ax=fig.add_subplot(111),pos=pos,node_size=300,edge_color='blue',edgelist=flow_edges,nodelist=flow_nodes)
 
 
-# In[ ]:
+# In[19]:
 
 
 fig.savefig( 'flow.pdf', bbox_inches='tight', pad_inches=0 )
 
 
-# In[ ]:
+# In[20]:
 
 
 cbc    = pyo.SolverFactory('cbc')
 gurobi = pyo.SolverFactory('gurobi_direct')
 
 
-# In[ ]:
+# In[21]:
 
 
 from pathlib import Path
@@ -377,25 +372,25 @@ else:
     df.to_excel('dina_times.xlsx')
 
 
-# In[ ]:
+# In[22]:
 
 
 aux = df.T
 
 
-# In[ ]:
+# In[23]:
 
 
 df
 
 
-# In[ ]:
+# In[24]:
 
 
 aux
 
 
-# In[ ]:
+# In[25]:
 
 
 import numpy as np
@@ -407,10 +402,16 @@ plt.xticks(np.arange(len(df.columns)),df.columns,rotation = 45)
 plt.show()
 
 
-# In[ ]:
+# In[26]:
 
 
 fig.savefig( 'dina_times.pdf', bbox_inches='tight', pad_inches=0 )
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
