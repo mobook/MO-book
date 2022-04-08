@@ -3,57 +3,77 @@
 
 # # Making the Best of the Worst
 
-# In[ ]:
+# In[1]:
 
 
-get_ipython().system('pip install -q pyomo')
+# Install Pyomo and solvers for Google Colab
+import sys
+if "google.colab" in sys.modules:
+    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
+    get_ipython().run_line_magic('run', 'install_on_colab.py')
 
 
-# In[ ]:
+# ## Cost Data
+
+# In[35]:
 
 
-# we add glpk now
-get_ipython().system('sudo apt install libglpk-dev python3.8-dev libgmp3-dev')
-get_ipython().system('apt-get install -y -qq glpk-utils')
+import pandas as pd
+
+costs = pd.DataFrame([[12, 9], [11, 10], [8, 11]], columns=["c1", "c2"])
+display(costs)
 
 
-# In[ ]:
+# ## Model
+
+# In[34]:
 
 
 import pyomo.environ as pyo
 
-
-# In[ ]:
-
-
-def BIM_maxmin( costs ):
+def BIM_maxmin(costs):
     model    = pyo.ConcreteModel('BIM')
+    
+    model.COSTS = pyo.Set(initialize=costs)
     
     model.x1 = pyo.Var(within=pyo.NonNegativeReals)
     model.x2 = pyo.Var(within=pyo.NonNegativeReals)
     model.z  = pyo.Var() 
-
-    model.profit    = pyo.Objective( sense= pyo.maximize, expr = model.z )
-
-    model.maxmin = pyo.ConstraintList()
-    for (c1,c2) in costs:
-        model.maxmin.add( expr = model.z <= c1*model.x1 + c2*model.x2 ) 
-
-    model.silicon   = pyo.Constraint(expr =    model.x1              <= 1000)
-    model.germanium = pyo.Constraint(expr =                 model.x2 <= 1500)
-    model.plastic   = pyo.Constraint(expr =    model.x1 +   model.x2 <= 1750)
-    model.copper    = pyo.Constraint(expr =  4*model.x1 + 2*model.x2 <= 4800)
+    
+    @model.Objective(sense=pyo.maximize)
+    def profit(model):
+        return model.z
+    
+    @model.Constraint(model.COSTS)
+    def maxmin(model, c1, c2):
+        return model.z <= c1 * model.x1 + c2 * model.x2
+        
+    @model.Constraint()
+    def silicon(model):
+        return model.x1 <= 1000
+    
+    @model.Constraint()
+    def germanium(model):
+        return model.x2 <= 1500
+    
+    @model.Constraint()
+    def plastic(model):
+        return model.x1 + model.x2 <= 1750
+    
+    @model.Constraint()
+    def copper(model):
+        return model.x1 + 2*model.x2 <= 4800
 
     return model
 
 
-# In[ ]:
+# In[36]:
 
 
-BIM = BIM_maxmin( [[12,9], [11,10], [8, 11]] )
+BIM = BIM_maxmin(costs.to_numpy().tolist())
 results = pyo.SolverFactory('glpk').solve(BIM)
 
-print('X=({:.1f},{:.1f}) value={:.3f}'.format(
+print('X=({:.1f}, {:.1f}) value={:.3f}'.format(
     pyo.value(BIM.x1),
     pyo.value(BIM.x2),
     pyo.value(BIM.z)))
