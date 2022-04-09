@@ -88,7 +88,7 @@ display(BIM_resources)
 # 
 # An implementation of the maximum worst-case profit model.
 
-# In[159]:
+# In[190]:
 
 
 import pyomo.environ as pyo
@@ -128,7 +128,7 @@ def maxmin(scenarios, resources):
 BIM = maxmin(BIM_scenarios, BIM_resources)
 pyo.SolverFactory('glpk').solve(BIM)
 
-worst_case_plan = pd.Series({j: BIM.x[j]() for j in BIM.J})
+worst_case_plan = pd.Series({j: BIM.x[j]() for j in BIM.J}, name="worst case")
 worst_case_profit = BIM.profit()
 
 print("\nworst case profit = ", worst_case_profit)
@@ -138,9 +138,11 @@ display(worst_case_plan)
 
 # ## Is maximizing the worst case a good idea?
 # 
-# Maximizing the worst case among all scenarios may be a pessimistic planning outlook. It may be worth investigating alternative planning outlooks The first step is to create a model to optimize a single scenario. Without repeating the mathematical description, the following Pyomo model is simply the `maxmin` model adapted to a single scenario.
+# Maximizing the worst case among all cases is a conservative planning outlook. It may be worth investigating alternative planning outlooks.
+# 
+# The first step is to create a model to optimize a single scenario. Without repeating the mathematical description, the following Pyomo model is simply the `maxmin` model adapted to a single scenario.
 
-# In[160]:
+# In[191]:
 
 
 def max_profit(scenario, resources):
@@ -175,37 +177,56 @@ def max_profit(scenario, resources):
 # 
 # The next cell computes the optimal plan for the mean scenario.
 
-# In[166]:
+# In[192]:
 
 
 # create mean scenario
-
 mean_case = max_profit(BIM_scenarios.mean(), BIM_resources)
 pyo.SolverFactory('glpk').solve(mean_case)
 
 mean_case_profit = mean_case.profit()
-mean_case_plan = pd.Series({j: m.x[j]() for j in m.J})
+mean_case_plan = pd.Series({j: m.x[j]() for j in m.J}, name="mean case")
 
 print("\nmean case profit", mean_case_profit)
 print("\nmean case production plan\n")
 print(mean_case_plan)
 
 
-# The expected profit under the mean scenario if 17,833, which is 333 greater than maximizing the worst case. Also note the change in production plan. Would plan should be preferred ... one that produces no less than 17,500 under all scenarios, or one that produces 17,833 when averaged over all scenarios?
+# The expected profit under the mean scenario if 17,833 which is 333 greater than for the worst case. Also note the production plan is different.
+# 
+# Would plan should be preferred ... one that produces a guaranteed profit of 17,500 under all scenarios, or one that produces expected profit of 17,833?
 
-# In[178]:
+# In[223]:
 
 
-mean_outcomes = BIM_scenarios.dot(mean_case_plan)
+mean_case_outcomes = BIM_scenarios.dot(mean_case_plan)
+mean_case_outcomes.name = "mean outcomes"
+
 worst_case_outcomes = BIM_scenarios.dot(worst_case_plan)
-mean_outcomes.plot(kind="bar")
+worst_case_outcomes.name = "worst case outcomes"
+
+ax = pd.concat([worst_case_outcomes, mean_case_outcomes], axis=1).plot(kind="bar", ylim=(15000, 20000))
+ax.axhline(worst_case_profit)
+ax.axhline(worst_case_outcomes.mean(), linestyle='--', label="worst case plan, mean")
+ax.axhline(mean_case_outcomes.mean(), linestyle='--', color='orange', label="mean case plan, mean")
+ax.legend()
 
 
-# In[179]:
+# In[224]:
 
 
-worst_case_outcomes.plot(kind="bar")
+ax = pd.concat([worst_case_plan, mean_case_plan], axis=1).plot(kind="bar")
 
+
+# ## Summary
+# 
+# Planning for the worst case reduces the penalty of a bad outcome. But it comes at the cost of reducing the expected payout, the also the maximum payout should the most favorable scenario occur.
+# 
+# 1. Which plan would you choose.  Why?  
+# 
+# 2. Make a case for the other choice.
+# 
+# 
 
 # In[ ]:
 
