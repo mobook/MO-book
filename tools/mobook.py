@@ -24,5 +24,8 @@ def on_colab():
 
 if on_colab():
     pip_install("pyomo")
+    
+    # for some reason subprocess doesn't install glpk
+    print("installing glpk")
     os.system("apt-get install -y -qq glpk-utils")
     
