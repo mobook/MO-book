@@ -23,5 +23,5 @@ def on_colab():
 
 if on_colab():
     pip_install("pyomo")
-    apt_install("glpk-utils")
+    !apt-get install -y -qq glpk-utils
     
