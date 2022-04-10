@@ -38,6 +38,10 @@ def install_gurobi():
     if on_colab():
         pip_install("gurobipy")
         
+def install_ipopt():
+    if on_colab():
+        ampl_install("ipopt")
+        
 def install_cplex():
     if on_colab():
         pip_install("cplex")
