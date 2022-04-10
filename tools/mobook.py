@@ -20,6 +20,7 @@ def pip_install(package):
     
 def ampl_install(package):
     print(f"installing {package}")
+    url = f"https://ampl.com/dl/open/{package}/{package}-linux64.zip"
     os.system("curl -sO " + url)
     subprocess.check_call([sys.executable, "-m", "unzip", "-o", "-p", f"{package}-linux64.zip"])
     
