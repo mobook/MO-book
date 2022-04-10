@@ -1,4 +1,5 @@
 import sys
+import os
 import subprocess
 import matplotlib as mpl
 
@@ -23,5 +24,5 @@ def on_colab():
 
 if on_colab():
     pip_install("pyomo")
-    !apt-get install -y -qq glpk-utils
+    os.system("apt-get install -y -qq glpk-utils")
     
