@@ -1,1 +1,1 @@
-404: Not Found
+print("Hello, World")
