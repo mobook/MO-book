@@ -8,7 +8,7 @@ def on_colab():
 def mplstyle():
     mpl.rcParams['font.family'] = 'STIXgeneral'
     mpl.rcParams['mathtext.fontset'] = 'stix'
-    mpl.rcParams['axes.titlesize'] = 18
+    mpl.rcParams['axes.titlesize'] = 30
     mpl.rcParams['pdf.fonttype'] = 42
 
 def pip_install(package):
