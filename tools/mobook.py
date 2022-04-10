@@ -22,7 +22,7 @@ def ampl_install(package):
     print(f"installing {package}")
     url = f"https://ampl.com/dl/open/{package}/{package}-linux64.zip"
     os.system("curl -sO " + url)
-    os.sysstem("unzip -o -p  " + f"{package}-linux64.zip"]) 
+    os.sysstem("unzip -o -p  " + f"{package}-linux64.zip") 
     
 def install_glpk():
     if on_colab():
