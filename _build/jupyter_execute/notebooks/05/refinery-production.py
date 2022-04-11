@@ -10,7 +10,7 @@
 # In[1]:
 
 
-get_ipython().system('curl -sO https://raw.githubusercontent.com/jckantor/MO-book/main/tools/_mobook.py -o mobook.py')
+get_ipython().system('curl -s https://raw.githubusercontent.com/jckantor/MO-book/main/tools/_mobook.py -o mobook.py')
 import mobook
 mobook.setup_pyomo()
 mobook.setup_glpk()
@@ -160,9 +160,7 @@ results_products["shadow price"] = capacity.dual_value
 display(results_products.round(1))
 
 
-# ## Why are the shadow prices so high?
-# 
-# $$ y = A x $$
+# ## Why is the shadow price of kerosine so high?
 
 # In[11]:
 
