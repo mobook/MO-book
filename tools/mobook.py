@@ -77,9 +77,15 @@ def setup_cplex():
     if on_colab():
         pip_install("cplex")
         
+def setup_solvers():
+    setup_glpk()
+    setup_cbc()
+    setup_ipopt()
+        
 def setup_pyomo():
     if on_colab():
         pip_install("pyomo")
+        
         
 
 
