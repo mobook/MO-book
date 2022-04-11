@@ -6,9 +6,17 @@ from IPython.display import set_matplotlib_formats
 import matplotlib_inline.backend_inline
 
 
+# 
+
 def svg():
+    """reset matplotlib defaults to use SVG"""
+    # see: https://www.alanshawn.com/tech/2021/03/27/matplotlib-latex-style.html
+    
+    # set backend to svg plotting
     matplotlib_inline.backend_inline.set_matplotlib_formats('svg')
+    
     #set_matplotlib_formats('svg', 'pdf')
+    
     # embed fonts in svg files
     mpl.rcParams['svg.fonttype'] = 'path'
     mpl.rcParams['pdf.fonttype'] = 42    
