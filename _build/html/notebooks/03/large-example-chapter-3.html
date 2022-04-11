@@ -285,6 +285,11 @@ const thebe_selector_output = ".output, .cell_output"
      McCormick Envelopes
     </a>
    </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../05/refinery-production.html">
+     Refinery Production and Shadow Pricing
+    </a>
+   </li>
   </ul>
  </li>
  <li class="toctree-l1 has-children">
@@ -470,6 +475,17 @@ const thebe_selector_output = ".output, .cell_output"
                 
   <section class="tex2jax_ignore mathjax_ignore" id="bim-production">
 <h1>BIM Production<a class="headerlink" href="#bim-production" title="Permalink to this headline">¶</a></h1>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers for Google Colab</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py 
+    <span class="o">%</span><span class="k">run</span> install_on_colab.py
+</pre></div>
+</div>
+</div>
+</div>
 <p>We consider Caroline’s material planning again, but now with more sophisticated pricing and acquisition protocols.
 There are now three suppliers.
 The suppliers can deliver the following materials:</p>
@@ -567,69 +583,277 @@ Note that Caroline aims at minimizing the acquisition and holding costs of the m
 The production is made to order, meaning that no inventory of chips is kept.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
-<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">shutil</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s1">&#39;pyomo&#39;</span><span class="p">):</span>
-        <span class="o">!</span>pip install -q pyomo
-        <span class="k">assert</span><span class="p">(</span><span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s1">&#39;pyomo&#39;</span><span class="p">))</span>
-
-    <span class="c1"># cbc</span>
-    <span class="o">!</span>apt-get install -y -qq coinor-cbc
-</pre></div>
-</div>
-</div>
-</div>
-<p>To be self contained… alternative is to upload and read a file.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">demand_data</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;chip,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec</span>
-<span class="s1">Logic,88,125,260,217,238,286,248,238,265,293,259,244</span>
-<span class="s1">Memory,47,62,81,65,95,118,86,89,82,82,84,66&#39;&#39;&#39;</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="n">demand_chips</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span> <span class="n">StringIO</span><span class="p">(</span><span class="n">demand_data</span><span class="p">),</span> <span class="n">index_col</span><span class="o">=</span><span class="s1">&#39;chip&#39;</span> <span class="p">)</span>
-<span class="n">demand_chips</span>
+
+<span class="n">demand_data</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">chip, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec</span>
+<span class="s1">Logic, 88, 125, 260, 217, 238, 286, 248, 238, 265, 293, 259, 244</span>
+<span class="s1">Memory, 47, 62, 81, 65, 95, 118, 86, 89, 82, 82, 84, 66</span>
+<span class="s1">&#39;&#39;&#39;</span>
+
+<span class="n">demand_chips</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">StringIO</span><span class="p">(</span><span class="n">demand_data</span><span class="p">),</span> <span class="n">index_col</span><span class="o">=</span><span class="s1">&#39;chip&#39;</span> <span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">demand_chips</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+    <tr>
+      <th>chip</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Logic</th>
+      <td>88</td>
+      <td>125</td>
+      <td>260</td>
+      <td>217</td>
+      <td>238</td>
+      <td>286</td>
+      <td>248</td>
+      <td>238</td>
+      <td>265</td>
+      <td>293</td>
+      <td>259</td>
+      <td>244</td>
+    </tr>
+    <tr>
+      <th>Memory</th>
+      <td>47</td>
+      <td>62</td>
+      <td>81</td>
+      <td>65</td>
+      <td>95</td>
+      <td>118</td>
+      <td>86</td>
+      <td>89</td>
+      <td>82</td>
+      <td>82</td>
+      <td>84</td>
+      <td>66</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">use</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-<span class="n">use</span><span class="p">[</span><span class="s1">&#39;Logic&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;silicon&#39;</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;copper&#39;</span> <span class="p">:</span> <span class="mi">4</span> <span class="p">}</span>
-<span class="n">use</span><span class="p">[</span><span class="s1">&#39;Memory&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;germanium&#39;</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;copper&#39;</span> <span class="p">:</span> <span class="mi">2</span> <span class="p">}</span>
-<span class="n">use</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span> <span class="n">use</span> <span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span> <span class="nb">int</span> <span class="p">)</span>
-<span class="n">use</span>
+<span class="n">use</span><span class="p">[</span><span class="s1">&#39;Logic&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;silicon&#39;</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;copper&#39;</span> <span class="p">:</span> <span class="mi">4</span><span class="p">}</span>
+<span class="n">use</span><span class="p">[</span><span class="s1">&#39;Memory&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;germanium&#39;</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span> <span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;copper&#39;</span> <span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+<span class="n">use</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">use</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">use</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Logic</th>
+      <th>Memory</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>silicon</th>
+      <td>1</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>plastic</th>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>copper</th>
+      <td>4</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>germanium</th>
+      <td>0</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">demand</span> <span class="o">=</span> <span class="n">use</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span> <span class="n">demand_chips</span> <span class="p">)</span>
-<span class="n">demand</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">demand</span> <span class="o">=</span> <span class="n">use</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">demand_chips</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">demand</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>silicon</th>
+      <td>88</td>
+      <td>125</td>
+      <td>260</td>
+      <td>217</td>
+      <td>238</td>
+      <td>286</td>
+      <td>248</td>
+      <td>238</td>
+      <td>265</td>
+      <td>293</td>
+      <td>259</td>
+      <td>244</td>
+    </tr>
+    <tr>
+      <th>plastic</th>
+      <td>135</td>
+      <td>187</td>
+      <td>341</td>
+      <td>282</td>
+      <td>333</td>
+      <td>404</td>
+      <td>334</td>
+      <td>327</td>
+      <td>347</td>
+      <td>375</td>
+      <td>343</td>
+      <td>310</td>
+    </tr>
+    <tr>
+      <th>copper</th>
+      <td>446</td>
+      <td>624</td>
+      <td>1202</td>
+      <td>998</td>
+      <td>1142</td>
+      <td>1380</td>
+      <td>1164</td>
+      <td>1130</td>
+      <td>1224</td>
+      <td>1336</td>
+      <td>1204</td>
+      <td>1108</td>
+    </tr>
+    <tr>
+      <th>germanium</th>
+      <td>47</td>
+      <td>62</td>
+      <td>81</td>
+      <td>65</td>
+      <td>95</td>
+      <td>118</td>
+      <td>86</td>
+      <td>89</td>
+      <td>82</td>
+      <td>82</td>
+      <td>84</td>
+      <td>66</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">Table1d</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">retriever</span> <span class="p">):</span>
-    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span> <span class="p">[</span> <span class="mi">0</span><span class="o">+</span><span class="n">retriever</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">J</span> <span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">J</span> <span class="p">)</span><span class="o">.</span><span class="n">T</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">Table1d</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">retriever</span> <span class="p">):</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span> <span class="mi">0</span><span class="o">+</span><span class="n">retriever</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">J</span> <span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">J</span> <span class="p">)</span><span class="o">.</span><span class="n">T</span>
 
-<span class="k">def</span> <span class="nf">Table2d</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">retriever</span> <span class="p">):</span>
-    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span> <span class="p">[</span> <span class="p">[</span> <span class="mi">0</span><span class="o">+</span><span class="n">retriever</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">J</span> <span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">I</span> <span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">I</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">J</span> <span class="p">)</span>
+<span class="k">def</span> <span class="nf">Table2d</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">retriever</span> <span class="p">):</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">([</span> <span class="p">[</span> <span class="mi">0</span><span class="o">+</span><span class="n">retriever</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">J</span> <span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">I</span> <span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">I</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">J</span> <span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">Table3d</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">retriever</span> <span class="p">):</span>
-    <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="o">.</span><span class="n">from_product</span><span class="p">(</span> <span class="p">[</span><span class="n">I</span><span class="p">,</span><span class="n">J</span><span class="p">],</span> <span class="n">names</span><span class="o">=</span><span class="n">names</span> <span class="p">)</span>
-    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span> <span class="p">[</span> <span class="p">[</span> <span class="mi">0</span><span class="o">+</span><span class="n">retriever</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">K</span> <span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">I</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">J</span> <span class="p">],</span><span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="n">K</span> <span class="p">)</span>
+<span class="k">def</span> <span class="nf">Table3d</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">retriever</span> <span class="p">):</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="o">.</span><span class="n">from_product</span><span class="p">([</span><span class="n">I</span><span class="p">,</span><span class="n">J</span><span class="p">],</span> <span class="n">names</span><span class="o">=</span><span class="n">names</span> <span class="p">)</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">([</span> <span class="p">[</span> <span class="mi">0</span><span class="o">+</span><span class="n">retriever</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">K</span> <span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">I</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">J</span> <span class="p">],</span><span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="n">K</span> <span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -637,37 +861,32 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">VersionOne</span><span class="p">(</span> <span class="n">demand</span><span class="p">,</span> <span class="n">existing</span><span class="p">,</span> <span class="n">desired</span><span class="p">,</span> <span class="n">stock_limit</span><span class="p">,</span>
+
+<span class="k">def</span> <span class="nf">VersionOne</span><span class="p">(</span><span class="n">demand</span><span class="p">,</span> <span class="n">existing</span><span class="p">,</span> <span class="n">desired</span><span class="p">,</span> <span class="n">stock_limit</span><span class="p">,</span>
                 <span class="n">supplying_copper</span><span class="p">,</span> <span class="n">supplying_batches</span><span class="p">,</span> 
                 <span class="n">price_copper_sheet</span><span class="p">,</span> <span class="n">price_batch</span><span class="p">,</span> <span class="n">discounted_price</span><span class="p">,</span> 
                 <span class="n">batch_size</span><span class="p">,</span> <span class="n">copper_sheet_mass</span><span class="p">,</span> <span class="n">copper_bucket_size</span><span class="p">,</span>
                 <span class="n">unitary_products</span><span class="p">,</span> <span class="n">unitary_holding_costs</span>
                 <span class="p">):</span>
     
-    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span> <span class="s1">&#39;Product acquisition and inventory with sophisticated prices&#39;</span> <span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;Product acquisition and inventory with sophisticated prices&#39;</span><span class="p">)</span>
     
-    <span class="n">periods</span>  <span class="o">=</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span>
+    <span class="n">periods</span> <span class="o">=</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span>
     <span class="n">products</span> <span class="o">=</span> <span class="n">demand</span><span class="o">.</span><span class="n">index</span> 
-    <span class="n">first</span>    <span class="o">=</span> <span class="n">periods</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> 
-    <span class="n">prev</span>     <span class="o">=</span> <span class="p">{</span> <span class="n">j</span> <span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span><span class="n">periods</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="p">}</span>
-    <span class="n">last</span>     <span class="o">=</span> <span class="n">periods</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">first</span> <span class="o">=</span> <span class="n">periods</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> 
+    <span class="n">prev</span> <span class="o">=</span> <span class="p">{</span><span class="n">j</span> <span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span><span class="n">periods</span><span class="p">[</span><span class="mi">1</span><span class="p">:])}</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="n">periods</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">products</span><span class="p">,</span> <span class="n">periods</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">delta</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="n">periods</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">delta</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">demand</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">supplying_batches</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">pi</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">s</span><span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">supplying_batches</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">pi</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">price_batch</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">supplying_copper</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">kappa</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">s</span><span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">supplying_copper</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">kappa</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">price_copper_sheet</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
     
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">()</span>
@@ -675,78 +894,78 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
         <span class="k">return</span> <span class="n">price_batch</span><span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">price_copper_sheet</span><span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">discounted_price</span>
     
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">products</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">gamma</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">p</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">gamma</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">unitary_holding_costs</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">products</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">Alpha</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">p</span><span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">products</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">Alpha</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">existing</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">products</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">Omega</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">p</span><span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">products</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">Omega</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">desired</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
     
-    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">periods</span><span class="p">,</span> <span class="n">supplying_copper</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">unitary_products</span><span class="p">,</span> <span class="n">periods</span><span class="p">,</span> <span class="n">supplying_batches</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">s</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">products</span><span class="p">,</span> <span class="n">periods</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">products</span><span class="p">,</span> <span class="n">periods</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">periods</span><span class="p">,</span> <span class="n">supplying_batches</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">periods</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">periods</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span> <span class="n">supplying_copper</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">unitary_products</span><span class="p">,</span> <span class="n">periods</span><span class="p">,</span> <span class="n">supplying_batches</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">s</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="n">periods</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="n">periods</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span> <span class="n">supplying_batches</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
 
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">periods</span><span class="p">,</span> <span class="n">supplying_batches</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">units_in_batches</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">s</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">unitary_products</span> <span class="p">)</span> <span class="o">&lt;=</span> <span class="n">batch_size</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">s</span><span class="p">]</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span> <span class="n">supplying_batches</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">units_in_batches</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">s</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">unitary_products</span> <span class="p">)</span> <span class="o">&lt;=</span> <span class="n">batch_size</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">s</span><span class="p">]</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">periods</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">copper_in_buckets</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">periods</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">copper_in_buckets</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;copper&#39;</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">copper_bucket_size</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">periods</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">inventory_capacity</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">periods</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">inventory_capacity</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;copper&#39;</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">stock_limit</span>
 
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">periods</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">pairs_in_batches</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">periods</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">pairs_in_batches</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="s1">&#39;C&#39;</span><span class="p">]</span>
 
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">periods</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">pairs_in_sheets</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">periods</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">pairs_in_sheets</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="s1">&#39;C&#39;</span><span class="p">]</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">periods</span><span class="p">,</span> <span class="n">products</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">bought</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span> <span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span> <span class="n">products</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">bought</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span> <span class="p">):</span>
         <span class="k">if</span> <span class="n">p</span> <span class="o">==</span> <span class="s1">&#39;copper&#39;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">==</span> <span class="n">copper_sheet_mass</span><span class="o">*</span><span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_copper</span> <span class="p">)</span>
+            <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">==</span> <span class="n">copper_sheet_mass</span><span class="o">*</span><span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_copper</span> <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">==</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_batches</span> <span class="p">)</span>
+            <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">==</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_batches</span> <span class="p">)</span>
             
     <span class="nd">@m</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
-    <span class="k">def</span> <span class="nf">acquisition_cost</span><span class="p">(</span> <span class="n">m</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> 
-                    <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">pi</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_batches</span> <span class="p">)</span> \
-                  <span class="o">+</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">kappa</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_copper</span> <span class="p">)</span> \
+    <span class="k">def</span> <span class="nf">acquisition_cost</span><span class="p">(</span><span class="n">m</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span>
+                    <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">pi</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_batches</span> <span class="p">)</span> \
+                  <span class="o">+</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">kappa</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_copper</span> <span class="p">)</span> \
                   <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">beta</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">periods</span> <span class="p">)</span>   
     
     <span class="nd">@m</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
-    <span class="k">def</span> <span class="nf">inventory_cost</span><span class="p">(</span> <span class="n">m</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">gamma</span><span class="p">[</span><span class="s1">&#39;copper&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">+</span> \
-                             <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">gamma</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">unitary_products</span> <span class="p">)</span> \
+    <span class="k">def</span> <span class="nf">inventory_cost</span><span class="p">(</span><span class="n">m</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">gamma</span><span class="p">[</span><span class="s1">&#39;copper&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">+</span> \
+                             <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">gamma</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">unitary_products</span> <span class="p">)</span> \
                             <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">periods</span> <span class="p">)</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">total_cost</span><span class="p">(</span> <span class="n">m</span> <span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">total_cost</span><span class="p">(</span><span class="n">m</span> <span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">acquisition_cost</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">inventory_cost</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">products</span><span class="p">,</span> <span class="n">periods</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">balance</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="n">periods</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">balance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
         <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="n">first</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">Alpha</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">delta</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">prev</span><span class="p">[</span><span class="n">t</span><span class="p">]]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">delta</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span>
         
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">products</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">p</span> <span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">products</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span> <span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">last</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">Omega</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
     
     <span class="k">return</span> <span class="n">m</span>
@@ -756,7 +975,7 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m1</span> <span class="o">=</span> <span class="n">VersionOne</span><span class="p">(</span> <span class="n">demand</span> <span class="o">=</span> <span class="n">demand</span><span class="p">,</span> 
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m1</span> <span class="o">=</span> <span class="n">VersionOne</span><span class="p">(</span><span class="n">demand</span> <span class="o">=</span> <span class="n">demand</span><span class="p">,</span> 
     <span class="n">existing</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;silicon&#39;</span> <span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;germanium&#39;</span><span class="p">:</span> <span class="mi">1500</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span><span class="p">:</span> <span class="mi">1750</span><span class="p">,</span> <span class="s1">&#39;copper&#39;</span> <span class="p">:</span> <span class="mi">4800</span> <span class="p">},</span> 
     <span class="n">desired</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;silicon&#39;</span> <span class="p">:</span>  <span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;germanium&#39;</span><span class="p">:</span>  <span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;copper&#39;</span> <span class="p">:</span> <span class="mi">2000</span> <span class="p">},</span> 
     <span class="n">stock_limit</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span>
@@ -772,18 +991,160 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
     <span class="n">unitary_holding_costs</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;copper&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;silicon&#39;</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;germanium&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span><span class="p">:</span> <span class="mi">2</span> <span class="p">}</span>
     <span class="p">)</span>
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span> <span class="s1">&#39;cbc&#39;</span> <span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m1</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span> <span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m1</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span># ==========================================================
+# = Solver Results                                         =
+# ==========================================================
+# ----------------------------------------------------------
+#   Problem Information
+# ----------------------------------------------------------
+Problem: 
+- Name: unknown
+  Lower bound: 110216.0
+  Upper bound: 110216.0
+  Number of objectives: 1
+  Number of constraints: 86
+  Number of variables: 170
+  Number of binary variables: 0
+  Number of integer variables: 72
+  Number of nonzeros: 130
+  Sense: minimize
+# ----------------------------------------------------------
+#   Solver Information
+# ----------------------------------------------------------
+Solver: 
+- Status: ok
+  User time: -1.0
+  System time: 56.98
+  Wallclock time: 59.69
+  Termination condition: optimal
+  Termination message: Model was solved to optimality (subject to tolerances), and an optimal solution is available.
+  Statistics: 
+    Branch and bound: 
+      Number of bounded subproblems: 497214
+      Number of created subproblems: 497214
+    Black box: 
+      Number of iterations: 1378307
+  Error rc: 0
+  Time: 59.73057007789612
+# ----------------------------------------------------------
+#   Solution Information
+# ----------------------------------------------------------
+Solution: 
+- number of solutions: 0
+  number of solutions displayed: 0
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">stock</span> <span class="o">=</span> <span class="n">Table2d</span><span class="p">(</span> <span class="n">m1</span><span class="p">,</span> <span class="n">demand</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span> <span class="p">)</span>
-<span class="n">stock</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">stock</span> <span class="o">=</span> <span class="n">Table2d</span><span class="p">(</span><span class="n">m1</span><span class="p">,</span> <span class="n">demand</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span> <span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">stock</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>silicon</th>
+      <td>912.0</td>
+      <td>787.0</td>
+      <td>527.0</td>
+      <td>310.0</td>
+      <td>72.0</td>
+      <td>15.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>56.0</td>
+      <td>0.0</td>
+      <td>500.0</td>
+    </tr>
+    <tr>
+      <th>plastic</th>
+      <td>1615.0</td>
+      <td>1428.0</td>
+      <td>1087.0</td>
+      <td>805.0</td>
+      <td>472.0</td>
+      <td>68.0</td>
+      <td>1.0</td>
+      <td>36.0</td>
+      <td>24.0</td>
+      <td>0.0</td>
+      <td>54.0</td>
+      <td>1000.0</td>
+    </tr>
+    <tr>
+      <th>copper</th>
+      <td>4354.0</td>
+      <td>3730.0</td>
+      <td>2528.0</td>
+      <td>1530.0</td>
+      <td>388.0</td>
+      <td>8.0</td>
+      <td>44.0</td>
+      <td>14.0</td>
+      <td>90.0</td>
+      <td>54.0</td>
+      <td>50.0</td>
+      <td>2042.0</td>
+    </tr>
+    <tr>
+      <th>germanium</th>
+      <td>1453.0</td>
+      <td>1391.0</td>
+      <td>1310.0</td>
+      <td>1245.0</td>
+      <td>1150.0</td>
+      <td>1032.0</td>
+      <td>946.0</td>
+      <td>857.0</td>
+      <td>775.0</td>
+      <td>693.0</td>
+      <td>609.0</td>
+      <td>543.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -794,58 +1155,490 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<img alt="../../_images/large-example-chapter-3_10_0.png" src="../../_images/large-example-chapter-3_10_0.png" />
+</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Table1d</span><span class="p">(</span> <span class="n">m1</span><span class="p">,</span> <span class="n">J</span> <span class="o">=</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">retriever</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">j</span> <span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="p">)</span> <span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Table1d</span><span class="p">(</span><span class="n">m1</span><span class="p">,</span> <span class="n">J</span> <span class="o">=</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">retriever</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">j</span> <span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="p">)</span> <span class="p">)</span>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>3.0</td>
+      <td>5.0</td>
+      <td>6.0</td>
+      <td>6.0</td>
+      <td>7.0</td>
+      <td>6.0</td>
+      <td>20.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Table2d</span><span class="p">(</span> <span class="n">m1</span><span class="p">,</span> <span class="n">demand</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span> <span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Table2d</span><span class="p">(</span><span class="n">m1</span><span class="p">,</span> <span class="n">demand</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span> <span class="p">)</span>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>silicon</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>229.0</td>
+      <td>233.0</td>
+      <td>238.0</td>
+      <td>265.0</td>
+      <td>349.0</td>
+      <td>203.0</td>
+      <td>744.0</td>
+    </tr>
+    <tr>
+      <th>plastic</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>267.0</td>
+      <td>362.0</td>
+      <td>335.0</td>
+      <td>351.0</td>
+      <td>397.0</td>
+      <td>1256.0</td>
+    </tr>
+    <tr>
+      <th>copper</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1000.0</td>
+      <td>1200.0</td>
+      <td>1100.0</td>
+      <td>1300.0</td>
+      <td>1300.0</td>
+      <td>1200.0</td>
+      <td>3100.0</td>
+    </tr>
+    <tr>
+      <th>germanium</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Table2d</span><span class="p">(</span> <span class="n">m1</span><span class="p">,</span> <span class="p">[</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span> <span class="p">],</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">])</span> <span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Table2d</span><span class="p">(</span><span class="n">m1</span><span class="p">,</span> <span class="p">[</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span> <span class="p">],</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">])</span> <span class="p">)</span>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>A</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>C</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>3.0</td>
+      <td>5.0</td>
+      <td>6.0</td>
+      <td>6.0</td>
+      <td>7.0</td>
+      <td>6.0</td>
+      <td>20.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Table2d</span><span class="p">(</span> <span class="n">m1</span><span class="p">,</span> <span class="p">[</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span> <span class="p">],</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">])</span> <span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Table2d</span><span class="p">(</span><span class="n">m1</span><span class="p">,</span> <span class="p">[</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span> <span class="p">],</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">])</span> <span class="p">)</span>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>B</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>7.0</td>
+      <td>7.0</td>
+      <td>5.0</td>
+      <td>7.0</td>
+      <td>6.0</td>
+      <td>6.0</td>
+      <td>11.0</td>
+    </tr>
+    <tr>
+      <th>C</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>3.0</td>
+      <td>5.0</td>
+      <td>6.0</td>
+      <td>6.0</td>
+      <td>7.0</td>
+      <td>6.0</td>
+      <td>20.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">Table3d</span><span class="p">(</span> <span class="n">m1</span><span class="p">,</span> 
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">Table3d</span><span class="p">(</span><span class="n">m1</span><span class="p">,</span> 
         <span class="n">I</span>        <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span> <span class="p">],</span> 
         <span class="n">J</span>        <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;silicon&#39;</span><span class="p">,</span> <span class="s1">&#39;germanium&#39;</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span> <span class="p">],</span> 
         <span class="n">names</span>    <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;supplier&#39;</span><span class="p">,</span><span class="s1">&#39;materials&#39;</span><span class="p">],</span> 
         <span class="n">K</span>        <span class="o">=</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> 
-        <span class="n">retriever</span><span class="o">=</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span> <span class="p">:</span> <span class="mi">0</span><span class="o">+</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="p">)</span> 
+        <span class="n">retriever</span><span class="o">=</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span> <span class="p">:</span> <span class="mi">0</span><span class="o">+</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="p">)</span> 
         <span class="p">)</span>
 <span class="n">x</span>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+    <tr>
+      <th>supplier</th>
+      <th>materials</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th rowspan="3" valign="top">A</th>
+      <th>silicon</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>germanium</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>plastic</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th rowspan="3" valign="top">C</th>
+      <th>silicon</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>229.0</td>
+      <td>233.0</td>
+      <td>238.0</td>
+      <td>265.0</td>
+      <td>349.0</td>
+      <td>203.0</td>
+      <td>744.0</td>
+    </tr>
+    <tr>
+      <th>germanium</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>plastic</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>267.0</td>
+      <td>362.0</td>
+      <td>335.0</td>
+      <td>351.0</td>
+      <td>397.0</td>
+      <td>1256.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">VersionTwo</span><span class="p">(</span> <span class="n">demand</span><span class="p">,</span> <span class="n">existing</span><span class="p">,</span> <span class="n">desired</span><span class="p">,</span> 
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">VersionTwo</span><span class="p">(</span><span class="n">demand</span><span class="p">,</span> <span class="n">existing</span><span class="p">,</span> <span class="n">desired</span><span class="p">,</span> 
                 <span class="n">stock_limit</span><span class="p">,</span>
                 <span class="n">supplying_copper</span><span class="p">,</span> <span class="n">supplying_batches</span><span class="p">,</span> <span class="n">price_copper_sheet</span><span class="p">,</span> <span class="n">price_batch</span><span class="p">,</span> <span class="n">discounted_price</span><span class="p">,</span> 
                 <span class="n">batch_size</span><span class="p">,</span> <span class="n">copper_sheet_mass</span><span class="p">,</span> <span class="n">copper_bucket_size</span><span class="p">,</span>
                 <span class="n">unitary_products</span><span class="p">,</span> <span class="n">unitary_holding_costs</span>
                 <span class="p">):</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span> <span class="s1">&#39;Product acquisition and inventory with sophisticated prices in blocks&#39;</span> <span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;Product acquisition and inventory with sophisticated prices in blocks&#39;</span> <span class="p">)</span>
     
     <span class="n">periods</span>  <span class="o">=</span> <span class="n">demand</span><span class="o">.</span><span class="n">columns</span>
     <span class="n">products</span> <span class="o">=</span> <span class="n">demand</span><span class="o">.</span><span class="n">index</span> 
@@ -853,86 +1646,86 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
     <span class="n">prev</span>     <span class="o">=</span> <span class="p">{</span> <span class="n">j</span> <span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span><span class="n">periods</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="p">}</span>
     <span class="n">last</span>     <span class="o">=</span> <span class="n">periods</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
     
-    <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="n">periods</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">P</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="n">products</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">periods</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">P</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">products</span> <span class="p">)</span>
     
     <span class="n">m</span><span class="o">.</span><span class="n">PT</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="c1"># to avoid internal set bloat</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Block</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">A</span><span class="p">(</span> <span class="n">b</span> <span class="p">):</span>
-        <span class="n">b</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">supplying_batches</span><span class="p">,</span> <span class="n">products</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
-        <span class="n">b</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">supplying_batches</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
-        <span class="n">b</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">supplying_copper</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
-        <span class="n">b</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Block</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">supplying_batches</span><span class="p">,</span> <span class="n">products</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">supplying_batches</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">supplying_copper</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
 
-        <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">supplying_batches</span> <span class="p">)</span>
-        <span class="k">def</span> <span class="nf">in_batches</span><span class="p">(</span> <span class="n">b</span><span class="p">,</span> <span class="n">s</span> <span class="p">):</span>
-            <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">b</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">,</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">products</span> <span class="p">)</span> <span class="o">&lt;=</span> <span class="n">batch_size</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+        <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">supplying_batches</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">in_batches</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">,</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">products</span> <span class="p">)</span> <span class="o">&lt;=</span> <span class="n">batch_size</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
 
         <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-        <span class="k">def</span> <span class="nf">pairs_in_batches</span><span class="p">(</span> <span class="n">b</span> <span class="p">):</span>
+        <span class="k">def</span> <span class="nf">pairs_in_batches</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">b</span><span class="o">.</span><span class="n">p</span> <span class="o">&lt;=</span> <span class="n">b</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">]</span>
 
         <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-        <span class="k">def</span> <span class="nf">pairs_in_sheets</span><span class="p">(</span> <span class="n">b</span> <span class="p">):</span>
+        <span class="k">def</span> <span class="nf">pairs_in_sheets</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">b</span><span class="o">.</span><span class="n">p</span> <span class="o">&lt;=</span> <span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">]</span>
         
-        <span class="nd">@b</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span> <span class="n">products</span> <span class="p">)</span>
-        <span class="k">def</span> <span class="nf">u</span><span class="p">(</span> <span class="n">b</span><span class="p">,</span> <span class="n">p</span> <span class="p">):</span>
+        <span class="nd">@b</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">products</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">u</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">p</span> <span class="o">==</span> <span class="s1">&#39;copper&#39;</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">copper_sheet_mass</span><span class="o">*</span><span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_copper</span> <span class="p">)</span>
-            <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">b</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">,</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_batches</span> <span class="p">)</span>
+                <span class="k">return</span> <span class="n">copper_sheet_mass</span><span class="o">*</span><span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_copper</span> <span class="p">)</span>
+            <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">,</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_batches</span> <span class="p">)</span>
             
         <span class="nd">@b</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
-        <span class="k">def</span> <span class="nf">cost</span><span class="p">(</span> <span class="n">b</span> <span class="p">):</span>
+        <span class="k">def</span> <span class="nf">cost</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
             <span class="n">discount</span> <span class="o">=</span> <span class="n">price_batch</span><span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">price_copper_sheet</span><span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">discounted_price</span>
-            <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">price_copper_sheet</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_copper</span> <span class="p">)</span> \
-                <span class="o">+</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">price_batch</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_batches</span> <span class="p">)</span> \
+            <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">price_copper_sheet</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_copper</span> <span class="p">)</span> \
+                <span class="o">+</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">price_batch</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">supplying_batches</span> <span class="p">)</span> \
                 <span class="o">-</span> <span class="n">discount</span> <span class="o">*</span> <span class="n">b</span><span class="o">.</span><span class="n">p</span>    
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Block</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">I</span><span class="p">(</span> <span class="n">b</span> <span class="p">):</span>
-        <span class="n">b</span><span class="o">.</span><span class="n">s</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">products</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
-        <span class="n">b</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Block</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">I</span><span class="p">(</span><span class="n">b</span> <span class="p">):</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">s</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
         
         <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
         <span class="k">def</span> <span class="nf">copper_in_buckets</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">b</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;copper&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">copper_bucket_size</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">r</span>
         
         <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-        <span class="k">def</span> <span class="nf">capacity</span><span class="p">(</span> <span class="n">b</span> <span class="p">):</span>
+        <span class="k">def</span> <span class="nf">capacity</span><span class="p">(</span><span class="n">b</span> <span class="p">):</span>
             <span class="k">return</span> <span class="n">b</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;copper&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">stock_limit</span>
 
         <span class="nd">@b</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
-        <span class="k">def</span> <span class="nf">cost</span><span class="p">(</span> <span class="n">b</span> <span class="p">):</span>
+        <span class="k">def</span> <span class="nf">cost</span><span class="p">(</span><span class="n">b</span> <span class="p">):</span>
             <span class="k">return</span> <span class="n">unitary_holding_costs</span><span class="p">[</span><span class="s1">&#39;copper&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">r</span> <span class="o">+</span> \
-                <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">unitary_holding_costs</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">unitary_products</span> <span class="p">)</span>
+                <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">unitary_holding_costs</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">unitary_products</span> <span class="p">)</span>
             
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">PT</span> <span class="p">)</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span> <span class="p">)</span>
     <span class="k">def</span> <span class="nf">delta</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">p</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">demand</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">p</span><span class="p">]</span>
     
     <span class="nd">@m</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
-    <span class="k">def</span> <span class="nf">acquisition_cost</span><span class="p">(</span> <span class="n">m</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">cost</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">acquisition_cost</span><span class="p">(</span><span class="n">m</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">cost</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
     
     <span class="nd">@m</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
-    <span class="k">def</span> <span class="nf">inventory_cost</span><span class="p">(</span> <span class="n">m</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">cost</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">inventory_cost</span><span class="p">(</span><span class="n">m</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">cost</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">total_cost</span><span class="p">(</span> <span class="n">m</span> <span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">total_cost</span><span class="p">(</span><span class="n">m</span> <span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">acquisition_cost</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">inventory_cost</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">PT</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">balance</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">balance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
         <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="n">first</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">existing</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">delta</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">[</span><span class="n">prev</span><span class="p">[</span><span class="n">t</span><span class="p">]]</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">delta</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
         
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">p</span> <span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">P</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span> <span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">[</span><span class="n">last</span><span class="p">]</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">desired</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
     
     <span class="k">return</span> <span class="n">m</span>
@@ -942,7 +1735,7 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m2</span> <span class="o">=</span> <span class="n">VersionTwo</span><span class="p">(</span> <span class="n">demand</span> <span class="o">=</span> <span class="n">demand</span><span class="p">,</span> 
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m2</span> <span class="o">=</span> <span class="n">VersionTwo</span><span class="p">(</span><span class="n">demand</span> <span class="o">=</span> <span class="n">demand</span><span class="p">,</span> 
     <span class="n">existing</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;silicon&#39;</span> <span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;germanium&#39;</span><span class="p">:</span> <span class="mi">1500</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span><span class="p">:</span> <span class="mi">1750</span><span class="p">,</span> <span class="s1">&#39;copper&#39;</span> <span class="p">:</span> <span class="mi">4800</span> <span class="p">},</span> 
     <span class="n">desired</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;silicon&#39;</span> <span class="p">:</span>  <span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;germanium&#39;</span><span class="p">:</span>  <span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;copper&#39;</span> <span class="p">:</span> <span class="mi">2000</span> <span class="p">},</span> 
     <span class="n">stock_limit</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span>
@@ -958,23 +1751,214 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
     <span class="n">unitary_holding_costs</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;copper&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;silicon&#39;</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;germanium&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span><span class="p">:</span> <span class="mi">2</span> <span class="p">}</span>
     <span class="p">)</span>
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span> <span class="s1">&#39;cbc&#39;</span> <span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m2</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span> <span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m2</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span># ==========================================================
+# = Solver Results                                         =
+# ==========================================================
+# ----------------------------------------------------------
+#   Problem Information
+# ----------------------------------------------------------
+Problem: 
+- Name: unknown
+  Lower bound: 110216.0
+  Upper bound: 110216.0
+  Number of objectives: 1
+  Number of constraints: 86
+  Number of variables: 170
+  Number of binary variables: 0
+  Number of integer variables: 72
+  Number of nonzeros: 130
+  Sense: minimize
+# ----------------------------------------------------------
+#   Solver Information
+# ----------------------------------------------------------
+Solver: 
+- Status: ok
+  User time: -1.0
+  System time: 58.64
+  Wallclock time: 61.29
+  Termination condition: optimal
+  Termination message: Model was solved to optimality (subject to tolerances), and an optimal solution is available.
+  Statistics: 
+    Branch and bound: 
+      Number of bounded subproblems: 296919
+      Number of created subproblems: 296919
+    Black box: 
+      Number of iterations: 1207561
+  Error rc: 0
+  Time: 61.32410502433777
+# ----------------------------------------------------------
+#   Solution Information
+# ----------------------------------------------------------
+Solution: 
+- number of solutions: 0
+  number of solutions displayed: 0
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Table3d</span><span class="p">(</span> <span class="n">m2</span><span class="p">,</span> 
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Table3d</span><span class="p">(</span><span class="n">m2</span><span class="p">,</span> 
         <span class="n">I</span>        <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span> <span class="p">],</span> 
         <span class="n">J</span>        <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;silicon&#39;</span><span class="p">,</span> <span class="s1">&#39;germanium&#39;</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span> <span class="p">],</span> 
         <span class="n">names</span>    <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;supplier&#39;</span><span class="p">,</span><span class="s1">&#39;materials&#39;</span><span class="p">],</span> 
         <span class="n">K</span>        <span class="o">=</span> <span class="n">m2</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> 
-        <span class="n">retriever</span><span class="o">=</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span> <span class="p">:</span> <span class="mi">0</span><span class="o">+</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="p">)</span> 
+        <span class="n">retriever</span><span class="o">=</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span> <span class="p">:</span> <span class="mi">0</span><span class="o">+</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="p">)</span> 
         <span class="p">)</span>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+    <tr>
+      <th>supplier</th>
+      <th>materials</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th rowspan="3" valign="top">A</th>
+      <th>silicon</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>germanium</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>plastic</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th rowspan="3" valign="top">C</th>
+      <th>silicon</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>229.0</td>
+      <td>233.0</td>
+      <td>238.0</td>
+      <td>265.0</td>
+      <td>349.0</td>
+      <td>203.0</td>
+      <td>744.0</td>
+    </tr>
+    <tr>
+      <th>germanium</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>plastic</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>267.0</td>
+      <td>362.0</td>
+      <td>335.0</td>
+      <td>351.0</td>
+      <td>397.0</td>
+      <td>1256.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1103,7 +2087,52 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
     <span class="n">unitary_holding_costs</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">&#39;copper&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;silicon&#39;</span> <span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;germanium&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;plastic&#39;</span><span class="p">:</span> <span class="mi">2</span> <span class="p">}</span>
     <span class="p">)</span>
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span> <span class="s1">&#39;cbc&#39;</span> <span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m3</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span> <span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m3</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span># ==========================================================
+# = Solver Results                                         =
+# ==========================================================
+# ----------------------------------------------------------
+#   Problem Information
+# ----------------------------------------------------------
+Problem: 
+- Name: unknown
+  Lower bound: 110216.0
+  Upper bound: 110216.0
+  Number of objectives: 1
+  Number of constraints: 86
+  Number of variables: 170
+  Number of binary variables: 0
+  Number of integer variables: 72
+  Number of nonzeros: 130
+  Sense: minimize
+# ----------------------------------------------------------
+#   Solver Information
+# ----------------------------------------------------------
+Solver: 
+- Status: ok
+  User time: -1.0
+  System time: 13.51
+  Wallclock time: 14.44
+  Termination condition: optimal
+  Termination message: Model was solved to optimality (subject to tolerances), and an optimal solution is available.
+  Statistics: 
+    Branch and bound: 
+      Number of bounded subproblems: 188484
+      Number of created subproblems: 188484
+    Black box: 
+      Number of iterations: 696552
+  Error rc: 0
+  Time: 14.470695972442627
+# ----------------------------------------------------------
+#   Solution Information
+# ----------------------------------------------------------
+Solution: 
+- number of solutions: 0
+  number of solutions displayed: 0
 </pre></div>
 </div>
 </div>
@@ -1114,6 +2143,58 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>3.0</td>
+      <td>5.0</td>
+      <td>6.0</td>
+      <td>6.0</td>
+      <td>7.0</td>
+      <td>6.0</td>
+      <td>20.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1121,6 +2202,103 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>silicon</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>229.0</td>
+      <td>233.0</td>
+      <td>238.0</td>
+      <td>265.0</td>
+      <td>349.0</td>
+      <td>203.0</td>
+      <td>744.0</td>
+    </tr>
+    <tr>
+      <th>plastic</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>267.0</td>
+      <td>362.0</td>
+      <td>335.0</td>
+      <td>351.0</td>
+      <td>397.0</td>
+      <td>1256.0</td>
+    </tr>
+    <tr>
+      <th>copper</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1000.0</td>
+      <td>1200.0</td>
+      <td>1100.0</td>
+      <td>1300.0</td>
+      <td>1300.0</td>
+      <td>1200.0</td>
+      <td>3100.0</td>
+    </tr>
+    <tr>
+      <th>germanium</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1128,6 +2306,73 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>B</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>7.0</td>
+      <td>7.0</td>
+      <td>5.0</td>
+      <td>7.0</td>
+      <td>6.0</td>
+      <td>6.0</td>
+      <td>11.0</td>
+    </tr>
+    <tr>
+      <th>C</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>3.0</td>
+      <td>5.0</td>
+      <td>6.0</td>
+      <td>6.0</td>
+      <td>7.0</td>
+      <td>6.0</td>
+      <td>20.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1135,6 +2380,103 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>silicon</th>
+      <td>912.0</td>
+      <td>787.0</td>
+      <td>527.0</td>
+      <td>310.0</td>
+      <td>72.0</td>
+      <td>15.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>56.0</td>
+      <td>0.0</td>
+      <td>500.0</td>
+    </tr>
+    <tr>
+      <th>plastic</th>
+      <td>1615.0</td>
+      <td>1428.0</td>
+      <td>1087.0</td>
+      <td>805.0</td>
+      <td>472.0</td>
+      <td>68.0</td>
+      <td>1.0</td>
+      <td>36.0</td>
+      <td>24.0</td>
+      <td>0.0</td>
+      <td>54.0</td>
+      <td>1000.0</td>
+    </tr>
+    <tr>
+      <th>copper</th>
+      <td>4354.0</td>
+      <td>3730.0</td>
+      <td>2528.0</td>
+      <td>1530.0</td>
+      <td>388.0</td>
+      <td>8.0</td>
+      <td>44.0</td>
+      <td>14.0</td>
+      <td>90.0</td>
+      <td>54.0</td>
+      <td>50.0</td>
+      <td>2042.0</td>
+    </tr>
+    <tr>
+      <th>germanium</th>
+      <td>1453.0</td>
+      <td>1391.0</td>
+      <td>1310.0</td>
+      <td>1245.0</td>
+      <td>1150.0</td>
+      <td>1032.0</td>
+      <td>946.0</td>
+      <td>857.0</td>
+      <td>775.0</td>
+      <td>693.0</td>
+      <td>609.0</td>
+      <td>543.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1142,6 +2484,73 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>A</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>C</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>3.0</td>
+      <td>5.0</td>
+      <td>6.0</td>
+      <td>6.0</td>
+      <td>7.0</td>
+      <td>6.0</td>
+      <td>20.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1155,6 +2564,152 @@ The production is made to order, meaning that no inventory of chips is kept.</p>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th></th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+    </tr>
+    <tr>
+      <th>supplier</th>
+      <th>materials</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th rowspan="3" valign="top">A</th>
+      <th>silicon</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>germanium</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>plastic</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th rowspan="3" valign="top">C</th>
+      <th>silicon</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>229.0</td>
+      <td>233.0</td>
+      <td>238.0</td>
+      <td>265.0</td>
+      <td>349.0</td>
+      <td>203.0</td>
+      <td>744.0</td>
+    </tr>
+    <tr>
+      <th>germanium</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>plastic</th>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>267.0</td>
+      <td>362.0</td>
+      <td>335.0</td>
+      <td>351.0</td>
+      <td>397.0</td>
+      <td>1256.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 </section>
 

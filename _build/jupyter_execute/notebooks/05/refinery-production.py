@@ -2,19 +2,24 @@
 # coding: utf-8
 
 # # Refinery Production and Shadow Pricing
+# 
+# This is a work in progress.  This is a simple linear programming problem in six variables, but with four equality constraints it allows for a graphical explanation of some unusually large shadow prices for manufacturing capacity.  The notebook presents also contrasts Pyomo with CVXPY modeling.
+# 
+# This would be an good test case for valuing a commodity production facility using real options.
 
-# In[9]:
+# In[1]:
 
 
-# MO-book helper code
-get_ipython().system('curl -sO https://raw.githubusercontent.com/jckantor/MO-book/main/tools/mobook.py')
+get_ipython().system('curl -sO https://raw.githubusercontent.com/jckantor/MO-book/main/tools/_mobook.py -o mobook.py')
 import mobook
+mobook.setup_pyomo()
+mobook.setup_glpk()
 mobook.svg()
 
 
 # Inspired by Example 19.3 from Seborg, Edgar, Mellichamp, and Doyle. The changes include updating prices, solution using optimization modeling languages, and adding constraints to demonstrate the significance of duals and their interpretation as shadow prices.
 
-# In[10]:
+# In[2]:
 
 
 import cvxpy as cvxpy
@@ -28,8 +33,8 @@ products = pd.DataFrame({
 }).T
 
 crudes = pd.DataFrame({
-    "crude 1": {"available": 28000, "purchase cost": 72, "process cost": 1.5},
-    "crude 2": {"available": 15000, "purchase cost": 45, "process cost": 3},
+    "crude 1": {"available": 28000, "price": 72, "process cost": 1.5},
+    "crude 2": {"available": 15000, "price": 45, "process cost": 3},
 }).T
 
 # note: volumetric yields may not add to 100%
@@ -45,22 +50,64 @@ display(yields)
 
 # ## Pyomo Model
 
-# In[11]:
+# In[7]:
 
 
 import pyomo.environ as pyo
 
-m = pyo.ConcreteModel
+m = pyo.ConcreteModel()
 
 m.CRUDES = pyo.Set(initialize=crudes.index)
 m.PRODUCTS = pyo.Set(initialize=products.index)
 
+# decision variables
+m.x = pyo.Var(m.CRUDES, domain=pyo.NonNegativeReals)
+m.y = pyo.Var(m.PRODUCTS, domain=pyo.NonNegativeReals)
+
+# objective
+@m.Expression()
+def revenue(m):
+    return sum(products.loc[p, "price"] * m.y[p] for p in m.PRODUCTS)
+
+@m.Expression()
+def feed_cost(m):
+    return sum(crudes.loc[c, "price"] * m.x[c] for c in m.CRUDES)
+
+@m.Expression()
+def process_cost(m):
+    return sum(crudes.loc[c, "process cost"] * m.x[c] for c in m.CRUDES)
+
+@m.Objective(sense=pyo.maximize)
+def profit(m):
+    return m.revenue - m.feed_cost - m.process_cost
+
+# constraints
+@m.Constraint(m.PRODUCTS)
+def balances(m, p):
+    return m.y[p] == sum(yields.loc[c, p] * m.x[c] for c in m.CRUDES)/100
+
+@m.Constraint(m.CRUDES)
+def feeds(m, c):
+    return m.x[c] <= crudes.loc[c, "available"]
+
+@m.Constraint(m.PRODUCTS)
+def capacity(m, p):
+    return m.y[p] <= products.loc[p, "capacity"]
+
+# solution
+pyo.SolverFactory('glpk').solve(m)
+print(m.profit())
+
 
 # ## CVXPY Model
 # 
+# The `CVXPY` library for disciplined convex programming is tightly integrated with `numpy`, the standard Python library for the numerical linear algebra. For example, where `Pyomo` uses explicit indexing in constraints, summations, and other objects, `CVXPY` uses the implicit indexing implied when doing matrix and vector operations. 
 # 
+# Another sharp contrast with `Pyomo` is that `CXVPY` has no specific object to describe a set,or to define a objects variables or other modeling objects over arbitrary sets. `CVXPY` insteady uses the zero-based indexing familiar to Python users. 
+# 
+# The following cell demonstrates these differences by presenting a `CVXPY` model for the small refinery example. 
 
-# In[12]:
+# In[8]:
 
 
 import numpy as np
@@ -72,9 +119,9 @@ y = cp.Variable(len(products.index), pos=True, name="products")
 
 # objective
 revenue = products["price"].to_numpy().T @ y
-purchase_cost = crudes["purchase cost"].to_numpy().T @ x
+feed_cost = crudes["price"].to_numpy().T @ x
 process_cost = crudes["process cost"].to_numpy().T @ x
-profit = revenue - purchase_cost - process_cost
+profit = revenue - feed_cost - process_cost
 objective = cp.Maximize(profit)
 
 # constraints
@@ -90,7 +137,7 @@ problem.solve()
 
 # ## Feeds
 
-# In[13]:
+# In[9]:
 
 
 results_crudes = crudes
@@ -102,7 +149,7 @@ display(results_crudes.round(1))
 
 # ## Production
 
-# In[14]:
+# In[10]:
 
 
 results_products = products
@@ -117,7 +164,7 @@ display(results_products.round(1))
 # 
 # $$ y = A x $$
 
-# In[15]:
+# In[11]:
 
 
 import matplotlib.pyplot as plt

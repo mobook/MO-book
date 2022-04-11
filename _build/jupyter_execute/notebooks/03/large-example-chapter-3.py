@@ -3,6 +3,16 @@
 
 # # BIM Production
 
+# In[60]:
+
+
+# install Pyomo and solvers for Google Colab
+import sys
+if "google.colab" in sys.modules:
+    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
+    get_ipython().run_line_magic('run', 'install_on_colab.py')
+
+
 # We consider Caroline's material planning again, but now with more sophisticated pricing and acquisition protocols. 
 # There are now three suppliers. 
 # The suppliers can deliver the following materials:
@@ -49,104 +59,83 @@
 # The production is made to order, meaning that no inventory of chips is kept.
 # 
 
-# In[ ]:
-
-
-import sys
-if 'google.colab' in sys.modules:
-    import shutil
-    if not shutil.which('pyomo'):
-        get_ipython().system('pip install -q pyomo')
-        assert(shutil.which('pyomo'))
-
-    # cbc
-    get_ipython().system('apt-get install -y -qq coinor-cbc')
-
-
-# To be self contained... alternative is to upload and read a file. 
-
-# In[ ]:
-
-
-demand_data = '''chip,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
-Logic,88,125,260,217,238,286,248,238,265,293,259,244
-Memory,47,62,81,65,95,118,86,89,82,82,84,66'''
-
-
-# In[ ]:
+# In[61]:
 
 
 from io import StringIO
 import pandas as pd
-demand_chips = pd.read_csv( StringIO(demand_data), index_col='chip' )
-demand_chips
+
+demand_data = '''
+chip, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
+Logic, 88, 125, 260, 217, 238, 286, 248, 238, 265, 293, 259, 244
+Memory, 47, 62, 81, 65, 95, 118, 86, 89, 82, 82, 84, 66
+'''
+
+demand_chips = pd.read_csv(StringIO(demand_data), index_col='chip' )
+display(demand_chips)
 
 
-# In[ ]:
+# In[62]:
 
 
 use = dict()
-use['Logic'] = { 'silicon' : 1, 'plastic' : 1, 'copper' : 4 }
-use['Memory'] = { 'germanium' : 1, 'plastic' : 1, 'copper' : 2 }
-use = pd.DataFrame.from_dict( use ).fillna(0).astype( int )
-use
+use['Logic'] = {'silicon' : 1, 'plastic' : 1, 'copper' : 4}
+use['Memory'] = {'germanium' : 1, 'plastic' : 1, 'copper' : 2}
+use = pd.DataFrame.from_dict(use).fillna(0).astype(int)
+display(use)
 
 
-# In[ ]:
+# In[63]:
 
 
-demand = use.dot( demand_chips )
-demand
+demand = use.dot(demand_chips)
+display(demand)
 
 
-# In[ ]:
+# In[64]:
 
 
-def Table1d( m, J, retriever ):
-    return pd.DataFrame( [ 0+retriever(m,j) for j in J ], index=J ).T
+def Table1d(m, J, retriever ):
+    return pd.DataFrame([ 0+retriever(m,j) for j in J ], index=J ).T
 
-def Table2d( m, I, J, retriever ):
-    return pd.DataFrame.from_records( [ [ 0+retriever( m, i, j ) for j in J ] for i in I ], index=I, columns=J )
+def Table2d(m, I, J, retriever ):
+    return pd.DataFrame.from_records([ [ 0+retriever(m, i, j ) for j in J ] for i in I ], index=I, columns=J )
 
-def Table3d( m, I, J, names, K, retriever ):
-    index = pd.MultiIndex.from_product( [I,J], names=names )
-    return pd.DataFrame.from_records( [ [ 0+retriever(m,i,j,k) for k in K ] for i in I for j in J ],index=index,columns=K )
+def Table3d(m, I, J, names, K, retriever ):
+    index = pd.MultiIndex.from_product([I,J], names=names )
+    return pd.DataFrame.from_records([ [ 0+retriever(m,i,j,k) for k in K ] for i in I for j in J ],index=index,columns=K )
 
 
-# In[ ]:
+# In[69]:
 
 
 import pyomo.environ as pyo
 
-
-# In[ ]:
-
-
-def VersionOne( demand, existing, desired, stock_limit,
+def VersionOne(demand, existing, desired, stock_limit,
                 supplying_copper, supplying_batches, 
                 price_copper_sheet, price_batch, discounted_price, 
                 batch_size, copper_sheet_mass, copper_bucket_size,
                 unitary_products, unitary_holding_costs
                 ):
     
-    m = pyo.ConcreteModel( 'Product acquisition and inventory with sophisticated prices' )
+    m = pyo.ConcreteModel('Product acquisition and inventory with sophisticated prices')
     
-    periods  = demand.columns
+    periods = demand.columns
     products = demand.index 
-    first    = periods[0] 
-    prev     = { j : i for i,j in zip(periods,periods[1:]) }
-    last     = periods[-1]
+    first = periods[0] 
+    prev = {j : i for i,j in zip(periods,periods[1:])}
+    last = periods[-1]
     
-    @m.Param( products, periods )
-    def delta(m,p,t):
+    @m.Param(products, periods)
+    def delta(m, p, t):
         return demand.loc[p,t]
     
-    @m.Param( supplying_batches )
-    def pi(m,s):
+    @m.Param(supplying_batches)
+    def pi(m, s):
         return price_batch[s]
     
-    @m.Param( supplying_copper )
-    def kappa(m,s):
+    @m.Param(supplying_copper)
+    def kappa(m, s):
         return price_copper_sheet[s]
     
     @m.Param()
@@ -154,85 +143,85 @@ def VersionOne( demand, existing, desired, stock_limit,
         return price_batch['C']+price_copper_sheet['C']-discounted_price
     
     @m.Param(products)
-    def gamma(m,p):
+    def gamma(m, p):
         return unitary_holding_costs[p]
     
-    @m.Param( products )
-    def Alpha(m,p):
+    @m.Param(products)
+    def Alpha(m, p):
         return existing[p]
     
-    @m.Param( products )
-    def Omega(m,p):
+    @m.Param(products)
+    def Omega(m, p):
         return desired[p]
     
-    m.y = pyo.Var( periods, supplying_copper, within=pyo.NonNegativeIntegers )
-    m.x = pyo.Var( unitary_products, periods, supplying_batches, within=pyo.NonNegativeReals )
-    m.s = pyo.Var( products, periods, within=pyo.NonNegativeReals )
-    m.u = pyo.Var( products, periods, within=pyo.NonNegativeReals )
-    m.b = pyo.Var( periods, supplying_batches, within=pyo.NonNegativeIntegers )
-    m.p = pyo.Var( periods, within=pyo.NonNegativeIntegers )
-    m.r = pyo.Var( periods, within=pyo.NonNegativeIntegers )
+    m.y = pyo.Var(periods, supplying_copper, within=pyo.NonNegativeIntegers )
+    m.x = pyo.Var(unitary_products, periods, supplying_batches, within=pyo.NonNegativeReals )
+    m.s = pyo.Var(products, periods, within=pyo.NonNegativeReals )
+    m.u = pyo.Var(products, periods, within=pyo.NonNegativeReals )
+    m.b = pyo.Var(periods, supplying_batches, within=pyo.NonNegativeIntegers )
+    m.p = pyo.Var(periods, within=pyo.NonNegativeIntegers )
+    m.r = pyo.Var(periods, within=pyo.NonNegativeIntegers )
 
-    @m.Constraint( periods, supplying_batches )
-    def units_in_batches( m, t, s ):
-        return pyo.quicksum( m.x[p,t,s] for p in unitary_products ) <= batch_size*m.b[t,s]
+    @m.Constraint(periods, supplying_batches )
+    def units_in_batches(m, t, s ):
+        return pyo.quicksum(m.x[p,t,s] for p in unitary_products ) <= batch_size*m.b[t,s]
     
-    @m.Constraint( periods )
-    def copper_in_buckets( m, t ):
+    @m.Constraint(periods )
+    def copper_in_buckets(m, t ):
         return m.s['copper',t] <= copper_bucket_size*m.r[t]
     
-    @m.Constraint( periods )
-    def inventory_capacity( m, t ):
+    @m.Constraint(periods )
+    def inventory_capacity(m, t ):
         return m.s['copper',t] <= stock_limit
 
-    @m.Constraint( periods )
-    def pairs_in_batches( m, t ):
+    @m.Constraint(periods )
+    def pairs_in_batches(m, t ):
         return m.p[t] <= m.b[t,'C']
 
-    @m.Constraint( periods )
-    def pairs_in_sheets( m, t ):
+    @m.Constraint(periods )
+    def pairs_in_sheets(m, t ):
         return m.p[t] <= m.y[t,'C']
     
-    @m.Constraint( periods, products )
-    def bought( m, t, p ):
+    @m.Constraint(periods, products )
+    def bought(m, t, p ):
         if p == 'copper':
-            return m.u[p,t] == copper_sheet_mass*pyo.quicksum( m.y[t,s] for s in supplying_copper )
+            return m.u[p,t] == copper_sheet_mass*pyo.quicksum(m.y[t,s] for s in supplying_copper )
         else:
-            return m.u[p,t] == pyo.quicksum( m.x[p,t,s] for s in supplying_batches )
+            return m.u[p,t] == pyo.quicksum(m.x[p,t,s] for s in supplying_batches )
             
     @m.Expression()
-    def acquisition_cost( m ):
-        return pyo.quicksum( 
-                    pyo.quicksum( m.pi[s]*m.b[t,s] for s in supplying_batches ) \
-                  + pyo.quicksum( m.kappa[s]*m.y[t,s] for s in supplying_copper ) \
+    def acquisition_cost(m ):
+        return pyo.quicksum(
+                    pyo.quicksum(m.pi[s]*m.b[t,s] for s in supplying_batches ) \
+                  + pyo.quicksum(m.kappa[s]*m.y[t,s] for s in supplying_copper ) \
                   - m.beta * m.p[t] for t in periods )   
     
     @m.Expression()
-    def inventory_cost( m ):
-        return pyo.quicksum( m.gamma['copper']*m.r[t] +                              pyo.quicksum( m.gamma[p]*m.s[p,t] for p in unitary_products )                             for t in periods )
+    def inventory_cost(m ):
+        return pyo.quicksum(m.gamma['copper']*m.r[t] +                              pyo.quicksum(m.gamma[p]*m.s[p,t] for p in unitary_products )                             for t in periods )
     
-    @m.Objective( sense=pyo.minimize )
-    def total_cost( m ):
+    @m.Objective(sense=pyo.minimize )
+    def total_cost(m ):
         return m.acquisition_cost + m.inventory_cost
     
-    @m.Constraint( products, periods )
-    def balance( m, p, t ):
+    @m.Constraint(products, periods )
+    def balance(m, p, t ):
         if t == first:
             return m.Alpha[p] + m.u[p,t] == m.delta[p,t] + m.s[p,t]
         else:
             return m.u[p,t] + m.s[p,prev[t]] == m.delta[p,t] + m.s[p,t]
         
-    @m.Constraint( products )
-    def finish( m, p ):
+    @m.Constraint(products )
+    def finish(m, p ):
         return m.s[p,last] >= m.Omega[p]
     
     return m
 
 
-# In[ ]:
+# In[70]:
 
 
-m1 = VersionOne( demand = demand, 
+m1 = VersionOne(demand = demand, 
     existing = {'silicon' : 1000, 'germanium': 1500, 'plastic': 1750, 'copper' : 4800 }, 
     desired = {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2000 }, 
     stock_limit = 10000,
@@ -248,17 +237,17 @@ m1 = VersionOne( demand = demand,
     unitary_holding_costs = { 'copper': 10, 'silicon' : 2, 'germanium': 2, 'plastic': 2 }
     )
 
-pyo.SolverFactory( 'cbc' ).solve(m1)
+pyo.SolverFactory('cbc' ).solve(m1).write()
 
 
-# In[ ]:
+# In[72]:
 
 
-stock = Table2d( m1, demand.index, demand.columns, lambda m,i,j : pyo.value(m.s[i,j]) )
-stock
+stock = Table2d(m1, demand.index, demand.columns, lambda m,i,j : pyo.value(m.s[i,j]) )
+display(stock)
 
 
-# In[ ]:
+# In[73]:
 
 
 import matplotlib.pyplot as plt, numpy as np
@@ -267,53 +256,53 @@ plt.xticks(np.arange(len(stock.columns)),stock.columns)
 plt.show()
 
 
-# In[ ]:
+# In[74]:
 
 
-Table1d( m1, J = demand.columns, retriever = lambda m, j : pyo.value( m.p[j] ) )
+Table1d(m1, J = demand.columns, retriever = lambda m, j : pyo.value(m.p[j] ) )
 
 
-# In[ ]:
+# In[75]:
 
 
-Table2d( m1, demand.index, demand.columns, lambda m,i,j : pyo.value(m.u[i,j]) )
+Table2d(m1, demand.index, demand.columns, lambda m,i,j : pyo.value(m.u[i,j]) )
 
 
-# In[ ]:
+# In[76]:
 
 
-Table2d( m1, [ 'A', 'C' ], demand.columns, lambda m,i,j : pyo.value(m.b[j,i]) )
+Table2d(m1, [ 'A', 'C' ], demand.columns, lambda m,i,j : pyo.value(m.b[j,i]) )
 
 
-# In[ ]:
+# In[77]:
 
 
-Table2d( m1, [ 'B', 'C' ], demand.columns, lambda m,i,j : pyo.value(m.y[j,i]) )
+Table2d(m1, [ 'B', 'C' ], demand.columns, lambda m,i,j : pyo.value(m.y[j,i]) )
 
 
-# In[ ]:
+# In[78]:
 
 
-x = Table3d( m1, 
+x = Table3d(m1, 
         I        = [ 'A', 'C' ], 
         J        = [ 'silicon', 'germanium', 'plastic' ], 
         names    = ['supplier','materials'], 
         K        = demand.columns, 
-        retriever= lambda m,i,j,k : 0+pyo.value( m.x[j,k,i] ) 
+        retriever= lambda m,i,j,k : 0+pyo.value(m.x[j,k,i] ) 
         )
 x
 
 
-# In[ ]:
+# In[90]:
 
 
-def VersionTwo( demand, existing, desired, 
+def VersionTwo(demand, existing, desired, 
                 stock_limit,
                 supplying_copper, supplying_batches, price_copper_sheet, price_batch, discounted_price, 
                 batch_size, copper_sheet_mass, copper_bucket_size,
                 unitary_products, unitary_holding_costs
                 ):
-    m = pyo.ConcreteModel( 'Product acquisition and inventory with sophisticated prices in blocks' )
+    m = pyo.ConcreteModel('Product acquisition and inventory with sophisticated prices in blocks' )
     
     periods  = demand.columns
     products = demand.index 
@@ -321,92 +310,92 @@ def VersionTwo( demand, existing, desired,
     prev     = { j : i for i,j in zip(periods,periods[1:]) }
     last     = periods[-1]
     
-    m.T = pyo.Set( initialize=periods )
-    m.P = pyo.Set( initialize=products )
+    m.T = pyo.Set(initialize=periods )
+    m.P = pyo.Set(initialize=products )
     
     m.PT = m.P * m.T # to avoid internal set bloat
     
-    @m.Block( m.T )
-    def A( b ):
-        b.x = pyo.Var( supplying_batches, products, within=pyo.NonNegativeReals )
-        b.b = pyo.Var( supplying_batches, within=pyo.NonNegativeIntegers )
-        b.y = pyo.Var( supplying_copper, within=pyo.NonNegativeIntegers )
-        b.p = pyo.Var( within=pyo.NonNegativeIntegers )
+    @m.Block(m.T )
+    def A(b):
+        b.x = pyo.Var(supplying_batches, products, within=pyo.NonNegativeReals )
+        b.b = pyo.Var(supplying_batches, within=pyo.NonNegativeIntegers )
+        b.y = pyo.Var(supplying_copper, within=pyo.NonNegativeIntegers )
+        b.p = pyo.Var(within=pyo.NonNegativeIntegers )
 
-        @b.Constraint( supplying_batches )
-        def in_batches( b, s ):
-            return pyo.quicksum( b.x[s,p] for p in products ) <= batch_size*b.b[s]
+        @b.Constraint(supplying_batches)
+        def in_batches(b, s):
+            return pyo.quicksum(b.x[s,p] for p in products ) <= batch_size*b.b[s]
 
         @b.Constraint()
-        def pairs_in_batches( b ):
+        def pairs_in_batches(b):
             return b.p <= b.b['C']
 
         @b.Constraint()
-        def pairs_in_sheets( b ):
+        def pairs_in_sheets(b):
             return b.p <= b.y['C']
         
-        @b.Expression( products )
-        def u( b, p ):
+        @b.Expression(products)
+        def u(b, p):
             if p == 'copper':
-                return copper_sheet_mass*pyo.quicksum( b.y[s] for s in supplying_copper )
-            return pyo.quicksum( b.x[s,p] for s in supplying_batches )
+                return copper_sheet_mass*pyo.quicksum(b.y[s] for s in supplying_copper )
+            return pyo.quicksum(b.x[s,p] for s in supplying_batches )
             
         @b.Expression()
-        def cost( b ):
+        def cost(b):
             discount = price_batch['C']+price_copper_sheet['C']-discounted_price
-            return pyo.quicksum( price_copper_sheet[s]*b.y[s] for s in supplying_copper )                 + pyo.quicksum( price_batch[s]*b.b[s] for s in supplying_batches )                 - discount * b.p    
+            return pyo.quicksum(price_copper_sheet[s]*b.y[s] for s in supplying_copper )                 + pyo.quicksum(price_batch[s]*b.b[s] for s in supplying_batches )                 - discount * b.p    
     
-    @m.Block( m.T )
-    def I( b ):
-        b.s = pyo.Var( products, within=pyo.NonNegativeReals )
-        b.r = pyo.Var( within=pyo.NonNegativeIntegers )
+    @m.Block(m.T )
+    def I(b ):
+        b.s = pyo.Var(products, within=pyo.NonNegativeReals )
+        b.r = pyo.Var(within=pyo.NonNegativeIntegers )
         
         @b.Constraint()
         def copper_in_buckets(b):
             return b.s['copper'] <= copper_bucket_size*b.r
         
         @b.Constraint()
-        def capacity( b ):
+        def capacity(b ):
             return b.s['copper'] <= stock_limit
 
         @b.Expression()
-        def cost( b ):
-            return unitary_holding_costs['copper']*b.r +                 pyo.quicksum( unitary_holding_costs[p]*b.s[p] for p in unitary_products )
+        def cost(b ):
+            return unitary_holding_costs['copper']*b.r +                 pyo.quicksum(unitary_holding_costs[p]*b.s[p] for p in unitary_products )
             
-    @m.Param( m.PT )
+    @m.Param(m.PT )
     def delta(m,t,p):
         return demand.loc[t,p]
     
     @m.Expression()
-    def acquisition_cost( m ):
-        return pyo.quicksum( m.A[t].cost for t in m.T )
+    def acquisition_cost(m ):
+        return pyo.quicksum(m.A[t].cost for t in m.T )
     
     @m.Expression()
-    def inventory_cost( m ):
-        return pyo.quicksum( m.I[t].cost for t in m.T )
+    def inventory_cost(m ):
+        return pyo.quicksum(m.I[t].cost for t in m.T )
     
-    @m.Objective( sense=pyo.minimize )
-    def total_cost( m ):
+    @m.Objective(sense=pyo.minimize )
+    def total_cost(m ):
         return m.acquisition_cost + m.inventory_cost
     
-    @m.Constraint( m.PT )
-    def balance( m, p, t ):
+    @m.Constraint(m.PT )
+    def balance(m, p, t ):
         if t == first:
             return existing[p] + m.A[t].u[p] == m.delta[p,t] + m.I[t].s[p]
         else:
             return m.A[t].u[p] + m.I[prev[t]].s[p] == m.delta[p,t] + m.I[t].s[p]
         
-    @m.Constraint( m.P )
-    def finish( m, p ):
+    @m.Constraint(m.P )
+    def finish(m, p ):
         return m.I[last].s[p] >= desired[p]
     
     return m
 
 
-# In[ ]:
+# In[91]:
 
 
-m2 = VersionTwo( demand = demand, 
+m2 = VersionTwo(demand = demand, 
     existing = {'silicon' : 1000, 'germanium': 1500, 'plastic': 1750, 'copper' : 4800 }, 
     desired = {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2000 }, 
     stock_limit = 10000,
@@ -422,22 +411,22 @@ m2 = VersionTwo( demand = demand,
     unitary_holding_costs = { 'copper': 10, 'silicon' : 2, 'germanium': 2, 'plastic': 2 }
     )
 
-pyo.SolverFactory( 'cbc' ).solve(m2)
+pyo.SolverFactory('cbc' ).solve(m2).write()
 
 
-# In[ ]:
+# In[92]:
 
 
-Table3d( m2, 
+Table3d(m2, 
         I        = [ 'A', 'C' ], 
         J        = [ 'silicon', 'germanium', 'plastic' ], 
         names    = ['supplier','materials'], 
         K        = m2.T, 
-        retriever= lambda m,i,j,k : 0+pyo.value( m.A[k].x[i,j] ) 
+        retriever= lambda m,i,j,k : 0+pyo.value(m.A[k].x[i,j] ) 
         )
 
 
-# In[ ]:
+# In[93]:
 
 
 def VersionThree( demand, existing, desired, 
@@ -542,7 +531,7 @@ def VersionThree( demand, existing, desired,
     return m
 
 
-# In[ ]:
+# In[94]:
 
 
 m3 = VersionThree( demand = demand, 
@@ -561,40 +550,40 @@ m3 = VersionThree( demand = demand,
     unitary_holding_costs = { 'copper': 10, 'silicon' : 2, 'germanium': 2, 'plastic': 2 }
     )
 
-pyo.SolverFactory( 'cbc' ).solve(m3)
+pyo.SolverFactory('cbc' ).solve(m3).write()
 
 
-# In[ ]:
+# In[95]:
 
 
 Table1d( m3, J = m3.T, retriever = lambda m, j : pyo.value( m.A[j].p ) )
 
 
-# In[ ]:
+# In[96]:
 
 
 Table2d( m3, I=m3.P, J=m3.T, retriever = lambda m, i, j : pyo.value( 0+m.x[i,j] ) )
 
 
-# In[ ]:
+# In[97]:
 
 
 Table2d( m3, I=['B','C'], J=m3.T, retriever = lambda m, i, j : pyo.value( 0+m.A[j].y[i] ) )
 
 
-# In[ ]:
+# In[98]:
 
 
 Table2d( m3, I=m3.P, J=m3.T, retriever = lambda m, i, j : pyo.value( m.I[j].s[i] ) )
 
 
-# In[ ]:
+# In[99]:
 
 
 Table2d( m3, I=['A','C'], J=m3.T, retriever=lambda m, i, j : pyo.value( m.A[j].b[i] ) )
 
 
-# In[ ]:
+# In[100]:
 
 
 Table3d( m3, 
@@ -604,4 +593,16 @@ Table3d( m3,
         K        = m3.T, 
         retriever= lambda m,i,j,k : 0+pyo.value( m.A[k].x[i,j] ) 
         )
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
