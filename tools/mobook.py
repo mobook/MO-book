@@ -2,14 +2,18 @@ import sys
 import os
 import subprocess
 import matplotlib as mpl
+from IPython.display import set_matplotlib_formats
 
 
-def mplstyle():
+def svg():
+    set_matplotlib_formats('svg', 'pdf')
+    # embed fonts in svg files
+    mpl.rcParams['svg.fonttype'] = 'path'
+    mpl.rcParams['pdf.fonttype'] = 42    
     mpl.rcParams['font.family'] = 'STIXgeneral'
     mpl.rcParams['mathtext.fontset'] = 'stix'
     mpl.rcParams['axes.titlesize'] = 18
-    mpl.rcParams['pdf.fonttype'] = 42
-
+    
 # default installations for Google Colab
 def on_colab():
     return "google.colab" in sys.modules
