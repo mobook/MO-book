@@ -1,12 +1,25 @@
+# EDIT NOTE: This notebook is overwritten from github. 
+#            Iimmediately push this file to github after editing.
+
+"""
+Collection of helper functions for use with MO-book notebooks.
+
+Functions:
+
+    mobook.svg(): set svg as default matplotlib format for the notebook
+    mobook.on_colab(): return True if running on Google Colab
+    mobook.intall_glpk(): 
+
+
+"""
+
+
 import sys
 import os
 import subprocess
 import matplotlib as mpl
 from IPython.display import set_matplotlib_formats
 import matplotlib_inline.backend_inline
-
-
-# 
 
 def svg():
     """reset matplotlib defaults to use SVG"""

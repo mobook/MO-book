@@ -83,48 +83,43 @@ if "google.colab" in sys.modules:
 # ### Model constraints
 # 
 # Assign workers to each shift to meet staffing requirement.
-# $$
-# \begin{align*}
+# 
+# $$\begin{align*}
 # \\
 # \sum_{w\in\text{ WORKERS}} \text{assign}_{w, d, s} & \geq \text{WorkersRequired}_{d, s} & \forall (d, s) \in \text{SLOTS} \\
-# \end{align*}
-# $$
+# \end{align*}$$
 # 
 # Assign no more than 40 hours per week to each worker.
-# $$
-# \begin{align*}
+# 
+# $$\begin{align*}
 # \\
 # 8\sum_{d,s\in\text{ SLOTS}} \text{assign}_{w, d, s} & \leq 40 & \forall w \in \text{WORKERS} \\
 # \\
-# \end{align*}
-# $$
+# \end{align*}$$
 # 
 # Assign no more than one shift in each 24 hour period.
-# $$
-# \begin{align*}
+# 
+# $$\begin{align*}
 # \\
 # \text{assign}_{w, d_1,s_1} + \text{assign}_{w, d_2, s_2} + \text{assign}_{w, d_3, s_3} & \leq 1 & \forall w \in \text{WORKERS} \\ & & \forall ((d_1, s_1), (d_2, s_2), (d_3, s_3))\in \text{BLOCKS} \\
 # \\
-# \end{align*}
-# $$
+# \end{align*}$$
 # 
 # Indicator if worker has been assigned any shift.
-# $$
-# \begin{align*}
+# 
+# $$\begin{align*}
 # \\
 # \sum_{d,s\in\text{ SLOTS}} \text{assign}_{w,d,s} & \leq M_{\text{SLOTS}}\cdot\text{needed}_w & \forall w\in \text{WORKERS} \\
 # \\
-# \end{align*}
-# $$
+# \end{align*}$$
 # 
 # Indicator if worker has been assigned a weekend shift.
-# $$
-# \begin{align*}
+# 
+# $$\begin{align*}
 # \\
 # \sum_{d,s\in\text{ WEEKENDS}} \text{assign}_{w,d,s} & \leq M_{\text{WEEKENDS}}\cdot\text{weekend}_w & \forall w\in \text{WORKERS} \\
 # \\
-# \end{align*}
-# $$
+# \end{align*}$$
 
 # ### Model objective
 # 
