@@ -1,3 +1,6 @@
+# EDIT NOTE: This notebook is overwritten from github. 
+#            Iimmediately push this file to github after editing.
+
 """
 Collection of helper functions for use with MO-book notebooks.
 
@@ -13,6 +16,7 @@ Functions:
     mobook.setup_cbc()
 
 """
+
 
 import sys
 import os
