@@ -3,10 +3,12 @@ import os
 import subprocess
 import matplotlib as mpl
 from IPython.display import set_matplotlib_formats
+import matplotlib_inline.backend_inline
 
 
 def svg():
-    set_matplotlib_formats('svg', 'pdf')
+    matplotlib_inline.backend_inline.set_matplotlib_formats('svg')
+    #set_matplotlib_formats('svg', 'pdf')
     # embed fonts in svg files
     mpl.rcParams['svg.fonttype'] = 'path'
     mpl.rcParams['pdf.fonttype'] = 42    
