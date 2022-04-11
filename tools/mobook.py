@@ -8,8 +8,12 @@ Functions:
 
     mobook.svg(): set svg as default matplotlib format for the notebook
     mobook.on_colab(): return True if running on Google Colab
-    mobook.intall_glpk(): 
-
+    
+    mobook.setup_pyomo()
+    mobook.setup_solvers()
+    
+    mobook.setup_glpk()
+    mobook.setup_cbc()
 
 """
 
@@ -51,30 +55,32 @@ def ampl_install(package):
     os.system("curl -sO " + url)
     os.system("unzip -o -p  " + f"{package}-linux64.zip") 
     
-def install_glpk():
+def setup_glpk():
     if on_colab():
         print("installing glpk")
         os.system("apt-get install -y -qq glpk-utils")
         
-def install_cbc():
+def setup_cbc():
     if on_colab():
         print("installing cbc")
         os.system("apt-get install -y -qq coinor-cbc")
         
-def install_gurobi():
+def setup_gurobi():
     if on_colab():
         pip_install("gurobipy")
         
-def install_ipopt():
+def setup_ipopt():
     if on_colab():
         ampl_install("ipopt")
         
-def install_cplex():
+def setup_cplex():
     if on_colab():
         pip_install("cplex")
         
+def setup_pyomo():
+    if on_colab():
+        pip_install("pyomo")
+        
 
-if on_colab():
-    pip_install("pyomo")
 
     
