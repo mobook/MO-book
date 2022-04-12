@@ -4,6 +4,8 @@
 # # Crypto Currency Analysis
 # 
 # https://anilpai.medium.com/currency-arbitrage-using-bellman-ford-algorithm-8938dcea56ea
+# 
+# https://nbviewer.org/github/rcroessmann/sharing_public/blob/master/arbitrage_identification.ipynb
 
 # ## Installations and Imports
 # 

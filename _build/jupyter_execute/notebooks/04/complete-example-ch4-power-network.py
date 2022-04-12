@@ -6,6 +6,16 @@
 # To meet the energy demand, power plants run day and night across the country to produce electricy from a variety of sources such as fossil fuels and renewable energy. On the short-time scale, the best operating levels for electric power plants are derived every 15 minutes by solving the so-called *Optimal Power Flow (OPF)* model. The OPF model is an optimization problem with the objective of minimizing the total energy dispatching cost, while ensuring that the generation meets the total energy demand. Furthermore, the model takes into account many constraints, among which operational and physical constraints. 
 # 
 
+# In[1]:
+
+
+get_ipython().system('curl -s https://raw.githubusercontent.com/jckantor/MO-book/main/tools/_mobook.py -o mobook.py')
+import mobook
+mobook.setup_pyomo()
+mobook.setup_glpk()
+mobook.svg()
+
+
 # ## Background: Power networks and power flow physics
 # 
 # We model the nation-wide transmission power network as a directed graph $G=(V, E)$, where $V$ represents the set of nodes (e.g., cities, industrial districts, power plants) and $E$ denotes the set of directed edges (e.g., physical transmission lines). 
@@ -61,7 +71,7 @@
 
 # ### Setup code
 
-# In[1]:
+# In[2]:
 
 
 # Load packages
@@ -76,12 +86,12 @@ import networkx as nx
 import time 
 
 # Load GLPK solver
-solver = pyo.SolverFactory('glpk', executable='/usr/bin/glpsol')
+solver = pyo.SolverFactory('glpk')
 
 
 # ### Data import
 
-# In[ ]:
+# In[3]:
 
 
 # Download the data
@@ -101,7 +111,7 @@ example_edges = nodes_df[nodes_df.instance == 0]
 
 # ### Network data
 
-# In[ ]:
+# In[4]:
 
 
 def visualize_network(network, edge_flows=None, ax=None):
@@ -129,7 +139,7 @@ def visualize_network(network, edge_flows=None, ax=None):
     ax.set_axis_off()
 
 
-# In[ ]:
+# In[5]:
 
 
 visualize_network(network)
@@ -153,7 +163,7 @@ visualize_network(network)
 
 # All generator nodes can filtered by the `is_generator` parameter. All generators have a zero demand $d_i=0$. For the renewable energy sources (i.e., hydro, solar and wind) there are no variable costs `c_var`. For solar and wind, the production is fixed, i.e., `p_min = p_max`, meaning that all available solar and wind energy must be produced.
 
-# In[ ]:
+# In[6]:
 
 
 example_nodes[example_nodes.is_generator]
@@ -161,7 +171,7 @@ example_nodes[example_nodes.is_generator]
 
 # For the load nodes, the only important parameter is the demand $d_i \geq 0$. All other parameters are either zero, `False`, or `NaN`.
 
-# In[ ]:
+# In[7]:
 
 
 example_nodes[~example_nodes.is_generator]
@@ -174,7 +184,7 @@ example_nodes[~example_nodes.is_generator]
 # - `b`: the line susceptance, and
 # - `f_max`: the maximum edge capacity.
 
-# In[ ]:
+# In[8]:
 
 
 edges_df
@@ -193,7 +203,7 @@ edges_df
 # ```
 # In other words, each network consists of a dictionary, that contains a dictionary for nodes and edges, which again holds a dictionary for each node and edge. It might a be little bit confusing at first, but this data structure allows to easily access the parameters that you need for a specific constraint. For instance,
 
-# In[ ]:
+# In[9]:
 
 
 network['nodes'][1]['d']
@@ -201,7 +211,7 @@ network['nodes'][1]['d']
 
 # gives the demand of node `1`. To filter on generator nodes, you can use the following: 
 
-# In[ ]:
+# In[10]:
 
 
 [i for i, data in network['nodes'].items() if data['is_generator']]
@@ -232,7 +242,7 @@ network['nodes'][1]['d']
 
 # We then implement the model using `pyomo` and solve it for all instances `I[0]` to `I[95]`, reporting the average objective value across all the 96 instances.
 
-# In[ ]:
+# In[11]:
 
 
 def OPF1(network):
@@ -258,28 +268,49 @@ def OPF1(network):
     model.fm = pyo.Var(network["edges"], domain=pyo.NonNegativeReals)
 
     # Declare objective value
-    model.objective = pyo.Objective(expr = sum(data["c_var"] * model.p[i] for i, data in network["nodes"].items() if data["is_generator"]), sense=pyo.minimize)
-
-    # Declare constraints
-    model.outgoing_flow = pyo.Expression(network["nodes"], rule=lambda m, i: sum(m.fp[i, j] - m.fm[i, j] for j in network["nodes"] if (i, j) in network["edges"]))
-    model.incoming_flow = pyo.Expression(network["nodes"], rule=lambda m, i: sum(m.fp[j, i] - m.fm[j, i] for j in network["nodes"] if (j, i) in network["edges"]))
-    model.flow_conservation = pyo.Constraint(network["nodes"], rule=lambda m, i: m.outgoing_flow[i] - m.incoming_flow[i] == m.p[i] - network["nodes"][i]["d"])
-    model.susceptance = pyo.Constraint(network["edges"], rule=lambda m, i, j: m.fp[i, j] - m.fm[i, j] == network["edges"][(i, j)]["b"] * (m.theta[i] - m.theta[j]))
-
-    model.abs_flows = pyo.Constraint(network["edges"], rule=lambda m, *e: m.fabs[e] == m.fp[e] + m.fm[e])
-    model.flows_upper_bound = pyo.Constraint(network["edges"], rule=lambda m, *e: m.fabs[e] <= network["edges"][e]["f_max"])
-
-    model.generation_upper_bound = pyo.Constraint(network["nodes"], rule=lambda m, i: m.p[i] <= network["nodes"][i]["p_max"])
-    model.generation_lower_bound = pyo.Constraint(network["nodes"], rule=lambda m, i: network["nodes"][i]["p_min"] <= m.p[i])
+    @model.Objective(sense=pyo.maximize)
+    def objective(model):
+        return sum(data["c_var"] * model.p[i] for i, data in network["nodes"].items() if data["is_generator"])
+    
+    @model.Expression(network["nodes"])
+    def outgoing_flow(m, i):
+        return sum(m.fp[i, j] - m.fm[i, j] for j in network["nodes"] if (i, j) in network["edges"])
+    
+    @model.Expression(network["nodes"])
+    def incoming_flow(m, i):
+        return sum(m.fp[j, i] - m.fm[j, i] for j in network["nodes"] if (j, i) in network["edges"])
+    
+    @model.Constraint(network["nodes"])
+    def flow_conservation(m, i):
+        return m.outgoing_flow[i] - m.incoming_flow[i] == m.p[i] - network["nodes"][i]["d"]
+    
+    @model.Constraint(network["edges"])
+    def susceptance(m, i, j):
+        return m.fp[i, j] - m.fm[i, j] == network["edges"][(i, j)]["b"] * (m.theta[i] - m.theta[j])
+    
+    @model.Constraint(network["edges"])
+    def abs_flow(m, *e):
+        return m.fabs[e] == m.fp[e] + m.fm[e]
+    
+    @model.Constraint(network["edges"])
+    def flows_upper_bound(m, *e):
+        return m.fabs[e] <= network["edges"][e]["f_max"]
+    
+    @model.Constraint(network["nodes"])
+    def generation_upper_bound(m, i):
+        return m.p[i] <= network["nodes"][i]["p_max"]
+    
+    @model.Constraint(network["nodes"])
+    def generation_lower_bound(m, i):
+        return network["nodes"][i]["p_min"] <= m.p[i]
     
     # Solve
     result = solver.solve(model)
-    objective_value = model.objective()
 
-    return objective_value
+    return model.objective()
 
 
-# In[ ]:
+# In[12]:
 
 
 print(f"The average objective value over all instances is: {np.mean([OPF1(instance) for instance in I])}")
@@ -309,7 +340,7 @@ print(f"The average objective value over all instances is: {np.mean([OPF1(instan
 
 # We then implement the new model using `pyomo` and solve it for all instances `I[0]` to `I[95]`, reporting the average objective value across the instances.
 
-# In[ ]:
+# In[13]:
 
 
 def OPF2(network):
@@ -336,31 +367,58 @@ def OPF2(network):
     model.x = pyo.Var(network["nodes"], domain=pyo.Binary)
 
     # Declare objective value
-    model.objective = pyo.Objective(expr = sum(data["c_var"] * model.p[i] for i, data in network["nodes"].items() if data["is_generator"]), sense=pyo.minimize)
+    @model.Objective(sense=pyo.minimize)
+    def objective(model):
+        return sum(data["c_var"] * model.p[i] for i, data in network["nodes"].items() if data["is_generator"])
 
     # Declare constraints
-    model.outgoing_flow = pyo.Expression(network["nodes"], rule=lambda m, i: sum(m.fp[i, j] - m.fm[i, j] for j in network["nodes"] if (i, j) in network["edges"]))
-    model.incoming_flow = pyo.Expression(network["nodes"], rule=lambda m, i: sum(m.fp[j, i] - m.fm[j, i] for j in network["nodes"] if (j, i) in network["edges"]))
-    model.flow_conservation = pyo.Constraint(network["nodes"], rule=lambda m, i: m.outgoing_flow[i] - m.incoming_flow[i] == m.p[i] - network["nodes"][i]["d"])
-    model.susceptance = pyo.Constraint(network["edges"], rule=lambda m, i, j: m.fp[i, j] - m.fm[i, j] == network["edges"][(i, j)]["b"] * (m.theta[i] - m.theta[j]))
-
-    model.abs_flows = pyo.Constraint(network["edges"], rule=lambda m, *e: m.fabs[e] == m.fp[e] + m.fm[e])
-    model.flows_upper_bound = pyo.Constraint(network["edges"], rule=lambda m, *e: m.fabs[e] <= network["edges"][e]["f_max"])
-
-    model.generation_upperound = pyo.Constraint(network["nodes"], rule=lambda m, i: m.p[i] <= network["nodes"][i]["p_max"] * m.x[i])
-    model.generation_lower_bound = pyo.Constraint(network["nodes"], rule=lambda m, i: network["nodes"][i]["p_min"] * m.x[i] <= m.p[i])
+    @model.Expression(network["nodes"])
+    def outgoing_flow(m, i):
+        return sum(m.fp[i, j] - m.fm[i, j] for j in network["nodes"] if (i, j) in network["edges"])
     
-    model.max_gas_plants = pyo.Constraint(rule = sum(model.x[i] for i, data in network["nodes"].items() if data['energy_type'] == 'gas') <= 2)
-    model.max_coal_plants = pyo.Constraint(rule = sum(model.x[i] for i, data in network["nodes"].items() if data['energy_type'] == 'coal') <= 1)
+    @model.Expression(network["nodes"])
+    def incoming_flow(m, i):
+        return sum(m.fp[j, i] - m.fm[j, i] for j in network["nodes"] if (j, i) in network["edges"])
+    
+    @model.Constraint(network["nodes"])
+    def flow_conservation(m, i):
+        return m.outgoing_flow[i] - m.incoming_flow[i] == m.p[i] - network["nodes"][i]["d"]
+    
+    @model.Constraint(network["edges"])
+    def susceptance(m, i, j):
+        return m.fp[i, j] - m.fm[i, j] == network["edges"][(i, j)]["b"] * (m.theta[i] - m.theta[j])
+    
+    @model.Constraint(network["edges"])
+    def abs_flows(m, *e):
+        return m.fabs[e] == m.fp[e] + m.fm[e]
+    
+    @model.Constraint(network["edges"])
+    def flows_upper_bound(m, *e):
+        return m.fabs[e] <= network["edges"][e]["f_max"]
+
+    @model.Constraint(network["nodes"])
+    def generation_upperound(m, i):
+        return m.p[i] <= network["nodes"][i]["p_max"] * m.x[i]
+    
+    @model.Constraint(network["nodes"])
+    def generation_lower_bound(m, i):
+        return network["nodes"][i]["p_min"] * m.x[i] <= m.p[i]
+    
+    @model.Constraint()
+    def max_gas_plants(model):
+        return sum(model.x[i] for i, data in network["nodes"].items() if data['energy_type'] == 'gas') <= 2
+    
+    @model.Constraint()
+    def max_coal_plants(model):
+        return sum(model.x[i] for i, data in network["nodes"].items() if data['energy_type'] == 'coal') <= 1
 
     # Solve
     result = solver.solve(model)
-    objective_value = model.objective()
 
-    return objective_value
+    return model.objective()
 
 
-# In[ ]:
+# In[14]:
 
 
 print(f"The average objective value over all instances is: {np.mean([OPF2(instance) for instance in I])}")
@@ -392,7 +450,7 @@ print(f"The average objective value over all instances is: {np.mean([OPF2(instan
 
 # We now implement the new model using `pyomo` and solve it for all instances `I[0]` to `I[95]`, reporting the average objective value across the instances.
 
-# In[ ]:
+# In[15]:
 
 
 def OPF3(network):
@@ -424,33 +482,62 @@ def OPF3(network):
     M = [4, 3, max_total_renewable_production - 1000]
 
     # Declare objective value
-    model.objective = pyo.Objective(expr = sum(data["c_var"] * model.p[i] for i, data in network["nodes"].items() if data["is_generator"]), sense=pyo.minimize)
+    @model.Objective(sense=pyo.minimize)
+    def objective(m):
+        return sum(data["c_var"] * m.p[i] for i, data in network["nodes"].items() if data["is_generator"])
 
     # Declare constraints
-    model.outgoing_flow = pyo.Expression(network["nodes"], rule=lambda m, i: sum(m.fp[i, j] - m.fm[i, j] for j in network["nodes"] if (i, j) in network["edges"]))
-    model.incoming_flow = pyo.Expression(network["nodes"], rule=lambda m, i: sum(m.fp[j, i] - m.fm[j, i] for j in network["nodes"] if (j, i) in network["edges"]))
-    model.flow_conservation = pyo.Constraint(network["nodes"], rule=lambda m, i: m.outgoing_flow[i] - m.incoming_flow[i] == m.p[i] - network["nodes"][i]["d"])
-    model.susceptance = pyo.Constraint(network["edges"], rule=lambda m, i, j: m.fp[i, j] - m.fm[i, j] == network["edges"][(i, j)]["b"] * (m.theta[i] - m.theta[j]))
-
-    model.abs_flows = pyo.Constraint(network["edges"], rule=lambda m, *e: m.fabs[e] == m.fp[e] + m.fm[e])
-    model.flows_upper_bound = pyo.Constraint(network["edges"], rule=lambda m, *e: m.fabs[e] <= network["edges"][e]["f_max"])
-
-    model.generation_upper_bound = pyo.Constraint(network["nodes"], rule=lambda m, i: m.p[i] <= network["nodes"][i]["p_max"] * m.x[i])
-    model.generation_lower_bound = pyo.Constraint(network["nodes"], rule=lambda m, i: network["nodes"][i]["p_min"] * m.x[i] <= m.p[i])
+    @model.Expression(network["nodes"])
+    def outgoing_flow(m, i):
+        return sum(m.fp[i, j] - m.fm[i, j] for j in network["nodes"] if (i, j) in network["edges"])
     
-    model.max_gas_plants = pyo.Constraint(rule = sum(model.x[i] for i, data in network["nodes"].items() if data['energy_type'] == 'gas') <= 2 + (1 - model.y) * M[0])
-    model.max_coal_plants = pyo.Constraint(rule = sum(model.x[i] for i, data in network["nodes"].items() if data['energy_type'] == 'coal') <= 1 + (1 - model.y) * M[1])
+    @model.Expression(network["nodes"])
+    def incoming_flow(m, i):
+        return sum(m.fp[j, i] - m.fm[j, i] for j in network["nodes"] if (j, i) in network["edges"])
+    
+    @model.Constraint(network["nodes"])
+    def flow_conservation(m, i):
+        return m.outgoing_flow[i] - m.incoming_flow[i] == m.p[i] - network["nodes"][i]["d"]
+    
+    @model.Constraint(network["edges"])
+    def susceptance(m, i, j):
+        return m.fp[i, j] - m.fm[i, j] == network["edges"][(i, j)]["b"] * (m.theta[i] - m.theta[j])
 
-    model.renewable_energy_production = pyo.Constraint(rule = sum(model.p[i] for i, data in network["nodes"].items() if data['energy_type'] in ['solar', 'wind', 'hydro']) <= 1000 + model.y * M[2])
+    @model.Constraint(network["edges"])
+    def abs_flows(m, *e):
+        return m.fabs[e] == m.fp[e] + m.fm[e]
+    
+    @model.Constraint(network["edges"])
+    def flows_upper_bound(m, *e):
+        return m.fabs[e] <= network["edges"][e]["f_max"]
+
+    @model.Constraint(network["nodes"])
+    def generation_upper_bound(m, i):
+        return m.p[i] <= network["nodes"][i]["p_max"] * m.x[i]
+    
+    @model.Constraint(network["nodes"])
+    def generation_lower_bound(m, i):
+        return network["nodes"][i]["p_min"] * m.x[i] <= m.p[i]
+    
+    @model.Constraint()
+    def max_gas_plants(m):
+        return sum(m.x[i] for i, data in network["nodes"].items() if data['energy_type'] == 'gas') <= 2 + (1 - m.y) * M[0]
+    
+    @model.Constraint()
+    def max_coal_plants(m):
+        return sum(m.x[i] for i, data in network["nodes"].items() if data['energy_type'] == 'coal') <= 1 + (1 - m.y) * M[1]
+
+    @model.Constraint()
+    def renewable_energy_production(m):
+        return sum(m.p[i] for i, data in network["nodes"].items() if data['energy_type'] in ['solar', 'wind', 'hydro']) <= 1000 + m.y * M[2]
     
     # Solve
     result = solver.solve(model)
-    objective_value = model.objective()
 
-    return objective_value
+    return  model.objective()
 
 
-# In[ ]:
+# In[16]:
 
 
 print(f"The average objective value over all instances is: {np.mean([OPF3(instance) for instance in I])}")
@@ -459,17 +546,15 @@ print(f"The average objective value over all instances is: {np.mean([OPF3(instan
 # # Comparing the three models
 # For all three implemented models, plot the objective values for all instances. Explain the differences between the objective values in view of the different feasible regions.
 
-# In[ ]:
+# In[17]:
 
 
-objs = [[], [], []]
-for i, instance in enumerate(I):
-  objs[0].append(OPF1(instance))
-  objs[1].append(OPF2(instance))
-  objs[2].append(OPF3(instance))
+objs = [[OPF1(instance) for instance in I],
+        [OPF2(instance) for instance in I],
+        [OPF3(instance) for instance in I]]
 
 
-# In[ ]:
+# In[18]:
 
 
 plt.plot(objs[0], color='blue', label='OPF1')
@@ -493,3 +578,9 @@ plt.show()
 # - OPF3 uses expensive generators, and possibly not all the renewable energy
 # - OPF2 does only uses 1000 renewable energy power, because then it may keep using all the gas and coal generators. 
 # - OPF1 uses all renewable energy at all times, because it has the flexibility to use all generators in order to mitigate operational restrictions due to line flows.
+
+# In[ ]:
+
+
+
+
