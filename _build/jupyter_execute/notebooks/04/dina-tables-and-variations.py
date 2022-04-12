@@ -3,6 +3,16 @@
 
 # # Dina's table seating arrangements
 
+# In[1]:
+
+
+# Install Pyomo and solvers for Google Colab
+import sys
+if "google.colab" in sys.modules:
+    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
+    get_ipython().run_line_magic('run', 'install_on_colab.py')
+
+
 # ## Problem
 # 
 # Caroline takes her associates and their families out to a dinner at Dina’s restaurant to celebrate the successes brought to her material planning by Mathematical Optimization.
@@ -18,16 +28,6 @@
 # Model this problem in order to find a seating arrangement that satisfies Caroline's requirement.
 
 # # Resolution
-
-# In[1]:
-
-
-# Install Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
-
 
 # In[2]:
 

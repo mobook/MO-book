@@ -3,6 +3,24 @@
 
 # # Forex Arbitrage
 # 
+# This notebook presents an example of linear optimization on a network model for financial transactions. The goal is to identify whether or not an arbitrage opportunity exists given a matrix of cross-currency exchange rates. Other treatments of this problem and application are available, including the following links.
+# 
+# * [Crypto Arbitrage Framework](https://github.com/hzjken/crypto-arbitrage-framework)
+# * [Crypto Trading and Arbitrage Identification Strategies](https://nbviewer.org/github/rcroessmann/sharing_public/blob/master/arbitrage_identification.ipynb)
+# 
+
+# In[6]:
+
+
+# install Pyomo and solvers for Google Colab
+import sys
+if "google.colab" in sys.modules:
+    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
+    get_ipython().run_line_magic('run', 'install_on_colab.py')
+
+
+# ## Problem
+# 
 # Exchanging one currency for another is among the most common of all banking transactions. Currencies are normally priced relative to each other. 
 # 
 # At this moment of this writing, for example, the Japanese yen (symbol JPY) is priced at 0.00761 relative to the euro (symbol EUR). At this price 100 euros would purchase 100/0.00761 = 13,140.6 yen. Conversely, EUR is priced at 131.585 yen.  The 'round-trip' of 100 euros from EUR to JPY and back to EUR results in
@@ -13,22 +31,11 @@
 # 
 # Needless to say, if a simple round-trip transaction like this reliably produced a net gain then there would many eager traders ready to take advantage of the situation. Trading situations offering a net gain with no risk are called arbitrage, and are the subject of intense interest by traders in the foreign exchange (forex) and crypto-currency markets around the globe.
 # 
-# As one might expect, arbitrage opportunities involving a simple round-trip between a pair of currencies are almost non-existent in real-world markets. When the do appear, they are easily detected and rapid and automted trading  quickly exploit the situation. More complex arbitrage opportunities, however, can arise when working with three more currencies and a table of cross-currency exchange rates.
+# As one might expect, arbitrage opportunities involving a simple round-trip between a pair of currencies are almost non-existent in real-world markets. When the do appear, they are easily detected and rapid and automated trading  quickly exploit the situation. More complex arbitrage opportunities, however, can arise when working with three more currencies and a table of cross-currency exchange rates.
 # 
-# https://github.com/hzjken/crypto-arbitrage-framework
 # 
 
-# In[27]:
-
-
-# install Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
-
-
-# ## Simple Demonstration of Triangular Arbitrage
+# ## Demonstration of Triangular Arbitrage
 # 
 # Consider the following cross-currency matrix. 
 # 
@@ -39,15 +46,11 @@ if "google.colab" in sys.modules:
 # | JPY | 100.0 | 133 1/3 | 1.0 |
 # 
 # 
-# 
-# 
 # Entry $a_{m, n}$ is the number units of currency $m$ received in exchange for one unit of currency $n$.  We use the notation 
 # 
 # $$a_{m, n} = a_{m \leftarrow n}$$
 # 
-# as reminder of what the entries denote. 
-# 
-# For this given data there are no two way arbitrage opportunities. We check this by explicitly computing all two-way currency exchanges
+# as reminder of what the entries denote. For this given data there are no two way arbitrage opportunities. We check this by explicitly computing all two-way currency exchanges
 # 
 # $$I \rightarrow J \rightarrow I$$
 # 
@@ -57,7 +60,7 @@ if "google.colab" in sys.modules:
 # 
 # This particular example shows no net cost and no arbitrage for conversion from one currency to another and back again.
 
-# In[ ]:
+# In[7]:
 
 
 import pandas as pd
@@ -86,9 +89,9 @@ print(df.loc['EUR', 'JPY'] * df.loc['JPY', 'EUR'])
 # 
 # $$ a_{i \leftarrow k} \times a_{k \leftarrow j} \times a_{j \leftarrow i} $$
 # 
-# By direct caculation we see there is a three-way **triangular** arbitrage opportunity.
+# By direct calculation we see there is a three-way **triangular** arbitrage opportunity.
 
-# In[ ]:
+# In[8]:
 
 
 I = 'USD'
@@ -98,7 +101,7 @@ K = 'EUR'
 print(df.loc[I, K] * df.loc[K, J] * df.loc[J, I])
 
 
-# Our challenge is create a model that can identify complex arbitrage opporunities that may exist in cross-currency forex markets.
+# Our challenge is create a model that can identify complex arbitrage opportunities that may exist in cross-currency forex markets.
 
 # ## Modeling
 # 
@@ -115,7 +118,7 @@ print(df.loc[I, K] * df.loc[K, J] * df.loc[J, I])
 # The goal of this calculation is to find a set of transactions $x_{i\leftarrow j}(t) \geq 0$ to maximize the value of portfolio at a later time $T$.
 # 
 
-# In[ ]:
+# In[9]:
 
 
 import pyomo.environ as pyo
@@ -187,7 +190,7 @@ m = arbitrage(3, df, 'EUR')
 
 # ## Display graph
 
-# In[ ]:
+# In[10]:
 
 
 def graph(m):

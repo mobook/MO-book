@@ -6,6 +6,9 @@
 # https://anilpai.medium.com/currency-arbitrage-using-bellman-ford-algorithm-8938dcea56ea
 # 
 # https://nbviewer.org/github/rcroessmann/sharing_public/blob/master/arbitrage_identification.ipynb
+# 
+# https://baincapitalcrypto.com/constant-function-market-makers-multi-asset-trades-via-convex-optimization/ and https://arxiv.org/pdf/2107.12484.pdf
+# 
 
 # ## Installations and Imports
 # 

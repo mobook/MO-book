@@ -25,10 +25,12 @@ mobook.svg()
 # Each edge $(i, j) \in E$ carries a *power flow* $f_{ij} \in R$ and has a capacity $f_{ij}^\max \geq 0$, i.e., the maximum power flow that it may carry. Note that our choice to model a *directed* graph is to make the modeling of the network easier. In particular, a directed edge $(i,j)$ may carry a 'negative' flow $f_{ij} < 0$, which implies that there is flow going from $j$ to $i$ where $f_{ji} = -f_{ij}$. The capacity does not depend on the direction of the flow, implying that the flow capacity constraints are given by $|f_{ij}| = |f_{ji}| \leq f_{ij}^\max$.
 # 
 # One crucial difference of power flow problems compared to typical network flow problems is that the power flows cannot be controlled directly. Instead, as you might recall from high-school physics, the power flows are determined by the laws of electricity, which we will now present as the *power flow equations*. Ignore for a moment the flow capacity constraints. Let $\theta_{i} \in \mathbb{R}$ denote the *phase angle* of node $i$. For each edge $(i,j)$, let $b_{ij} > 0$ denote the *line susceptance*. Assuming that supply and demand is matched, i.e., $\sum_{i=1}^{n} p_i - d_i = 0$, the power flows $\mathbf{f} \in \mathbb{R}^{m}$ and phase angles $\mathbf{\theta} \in \mathbb{R}^{n}$ are obtained by solving the following linear system of equations:
-# \begin{align}
+# 
+# $$\begin{align}
 # p_i - d_i &= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, & \forall \, i \in V,\\
 #   f_{ij} &=  b_{ij}(\theta_i - \theta_j), & \forall \, (i, j) \in E.
-# \end{align}
+# \end{align}$$
+# 
 # The first set of constraints ensures flow conservation and the second set of constrations captures the flow dependency on susceptances and angle differences. The DC power flow equations admit a unique power flow solution $\mathbf{f}$ given matched power injections $\mathbf{p}$ and demand $\mathbf{d}$. 
 # 
 # For a given matched supply and demand vector $\mathbf{p}$ and $\mathbf{d}$, we can compute the power flows on the network by solving the linear equations as described above. There are exactly $|V|$ and $|E|$ equations for the $\theta_i$ variables and $f_{ij}$ variables, meaning that this system of equations admit a solution.
@@ -42,7 +44,8 @@ mobook.svg()
 # - Generator capacity constraints are met
 # 
 # Let $c_i > 0$ be the cost associated with the production of a unit energy by generator $i$. Then, the OPF problem can be formulated as
-# \begin{align}
+# 
+# $$\begin{align}
 # \begin{array}{llll}
 # \max        & \sum_{i \in V} c_i p_i \\
 # \mbox{s.t.} & \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = p_i - d_i & \forall \, i \in V,\\
@@ -53,7 +56,7 @@ mobook.svg()
 #             & \theta_i \in \mathbb{R} & \forall i \in V, \\
 #             & f_{ij} \in \mathbb{R}                 & \forall (i, j) \in E                \\
 # \end{array}
-# \end{align}
+# \end{align}$$
 # 
 # For simplicity, you may assume that all load nodes do not produce energy, i.e., $p_i = p_i^{\min} = p_i^\max = 0$ for all $i \in \mathcal{D}$. You may therefore model $p_i$ as decision variables for all nodes (both generator and load nodes). Similarly, you may assume that all generator nodes have no demand, i.e., $d_i = 0$ for all $i \in \mathcal{G}$.
 # 
@@ -226,8 +229,8 @@ network['nodes'][1]['d']
 
 # # Solving OPF
 # Observe that the stated OPF problem contains absolute decision values. We first rewrite the OPF problem into a linear optimization problem.
-
-# \begin{align}
+# 
+# $$\begin{align}
 # \begin{array}{llll}
 # \min        & \sum_{i \in V} c_i p_i \\
 # \mbox{s.t.} & \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i & \forall \, i \in V,\\
@@ -238,8 +241,8 @@ network['nodes'][1]['d']
 #             & \theta_i \in \mathbb{R} & \forall i \in V, \\
 #             & f_{ij}^+, f_{ij}^- \in \mathbb{R}                 & \forall (i, j) \in E                \\
 # \end{array}
-# \end{align}
-
+# \end{align}$$
+# 
 # We then implement the model using `pyomo` and solve it for all instances `I[0]` to `I[95]`, reporting the average objective value across all the 96 instances.
 
 # In[11]:
@@ -320,8 +323,8 @@ print(f"The average objective value over all instances is: {np.mean([OPF1(instan
 # Gas and coal plants emit CO2, while renewable energy sources are carbon neutral. For this reason, the Dutch government has decided to constrain the number of active fossil-fuel-based power plants for the generation of electricity. More specifically, a maximum of 2 gas plants and 1 coal plant may be *active* during a single OPF instance. Any plant that is set *inactive* for a specific instance cannot produce any electricity. 
 # 
 # We first write down the new model. To this end, we introduce new decision variables $x_i, i\in V$ to the model, which indicate whether a generator $i$ is active or inactive.
-
-# \begin{align}
+# 
+# $$\begin{align}
 # \begin{array}{llll}
 # \min        & \sum_{i \in V} c_i p_i \\
 # \mbox{s.t.} & \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i & \forall \, i \in V,\\
@@ -336,8 +339,8 @@ print(f"The average objective value over all instances is: {np.mean([OPF1(instan
 #             & f_{ij} \in \mathbb{R}                 & \forall (i, j) \in E                \\
 #             & x_i  \in \{0, 1\} & \forall i \in V\\
 # \end{array}
-# \end{align}
-
+# \end{align}$$
+# 
 # We then implement the new model using `pyomo` and solve it for all instances `I[0]` to `I[95]`, reporting the average objective value across the instances.
 
 # In[13]:
@@ -428,8 +431,8 @@ print(f"The average objective value over all instances is: {np.mean([OPF2(instan
 # The restriction on the number of gas and coal plants may pose a threat to the availability of electricity production when renewable energy sources fail to deliver. For this reason, the grid operators have decided to slightly change the constraint that was introduced for OPF2. If the total production of energy from renewable energy sources (i.e., solar, wind and hydro) is above 1000, then the number of gas and coal plants is restricted to 2 and 1, respectively. Otherwise, the restriction on the number of gas and coal plants is lifted. These constraints can be modeled as *either-or* constraints. 
 #   
 # We first write down the new model, using big-$M$ constraints to model the either-or constraint.
-
-# \begin{align}
+# 
+# $$\begin{align}
 # \begin{array}{llll}
 # \min        & \sum_{i \in V} c_i p_i \\
 # \mbox{s.t.} & \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i & \forall \, i \in V,\\
@@ -446,8 +449,8 @@ print(f"The average objective value over all instances is: {np.mean([OPF2(instan
 #             & x_i  \in \{0, 1\} & \forall i \in V\\
 #             & y \in \{0, 1\} &\\
 # \end{array}
-# \end{align}
-
+# \end{align}$$
+# 
 # We now implement the new model using `pyomo` and solve it for all instances `I[0]` to `I[95]`, reporting the average objective value across the instances.
 
 # In[15]:
