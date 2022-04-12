@@ -50,7 +50,7 @@ if "google.colab" in sys.modules:
 # 
 # $$a_{m, n} = a_{m \leftarrow n}$$
 # 
-# as reminder of what the entries denote. For this given data there are no two way arbitrage opportunities. We check this by explicitly computing all two-way currency exchanges
+# as reminder of what the entries denote. For this data there are no two way arbitrage opportunities. We can check this by explicitly computing all two-way currency exchanges
 # 
 # $$I \rightarrow J \rightarrow I$$
 # 
@@ -58,7 +58,7 @@ if "google.colab" in sys.modules:
 # 
 # $$ a_{i \leftarrow j} \times a_{j \leftarrow i}$$
 # 
-# This particular example shows no net cost and no arbitrage for conversion from one currency to another and back again.
+# This data set shows no net cost and no arbitrage for conversion from one currency to another and back again.
 
 # In[2]:
 
@@ -81,15 +81,15 @@ print(df.loc['USD', 'JPY'] * df.loc['JPY', 'USD'])
 print(df.loc['EUR', 'JPY'] * df.loc['JPY', 'EUR'])
 
 
-# Now consider a three-way exchange
+# Now consider a currency exchange comprised of three trades that returns back to the same currency.
 # 
 # $$ I \rightarrow J \rightarrow K \rightarrow I $$
 # 
-# The exchange rate can be computed as
+# The net exchange rate can be computed as
 # 
 # $$ a_{i \leftarrow k} \times a_{k \leftarrow j} \times a_{j \leftarrow i} $$
 # 
-# By direct calculation we see there is a three-way **triangular** arbitrage opportunity.
+# By direct calculation we see there is a three-way **triangular** arbitrage opportunity for this data set that returns a 50% increase in wealth.
 
 # In[3]:
 
@@ -107,18 +107,24 @@ print(df.loc[I, K] * df.loc[K, J] * df.loc[J, I])
 # 
 # The cross-currency table $A$ provides exchange rates among currencies. Entry $a_{i,j}$ in row $i$, column $j$ tells us how many units of currency $i$ are received in exchange for one unit of currency $j$. We'll use the notation $a_{i, j} = a_{i\leftarrow j}$ to remind ourselves of this relationship.
 # 
-# We start with $w_j(0)$ units of currency $j \in N$. In the first phase of a transaction, an amount $x_{i\leftarrow j}(t)$  is committed for exchange to currency $i$. After the commitment the unencumbered balance is
+# We start with $w_j(0)$ units of currency $j \in N$, where $N$ is the set of all currencies in the data set. We consider a sequence of trades $t = 1, 2, \ldots, T$ where $w_j(t)$ is the amount of currency $j$ on hand after completing trade $t$.
+# 
+# Each trade is executed in two phases. In the first phase an amount $x_{i\leftarrow j}(t)$  of currency $j$ is committed for exchange to currency $i$. This allows a trade to include multiple currency transactions. After the commitment the unencumbered balance for currency $j$ must satisfy trading constraints. Each trade consists of simultaneous transactions in one or more currencies.
 # 
 # $$w_j(t-1) - \sum_{i\ne j} x_{i\leftarrow j}(t) \geq 0$$
 # 
-# This constraint prohibits shorting one currency to buy another. The transaction is completed when the exchange credits accounts in the new currencies
+# Here a lower bound has been placed to prohibit short-selling of currency $j$. This constraint could be modified if leveraging is allowed on the exchange.
+# 
+# The second phase of the trade is complete when the exchange credits all of the currency accounts according to
 # 
 # $$ w_j(t) = w_j(t-1) - \underbrace{\sum_{i\ne j} x_{i\leftarrow j}(t)}_{\text{outgoing}} + \underbrace{\sum_{i\ne j} a_{j\leftarrow i}x_{j\leftarrow i}(t)}_{\text{incoming}} $$
 # 
-# The goal of this calculation is to find a set of transactions $x_{i\leftarrow j}(t) \geq 0$ to maximize the value of portfolio at a later time $T$.
+# We assume all trading fees and costs are represented in the bid/ask spreads represented by $a_{j\leftarrow i}$
+# 
+# The goal of this calculation is to find a set of transactions $x_{i\leftarrow j}(t) \geq 0$ to maximize the value of portfolio after a specified number of trades $T$.
 # 
 
-# In[4]:
+# In[86]:
 
 
 import pyomo.environ as pyo
@@ -186,29 +192,49 @@ def arbitrage(T, df, R='EUR'):
             
 
 m = arbitrage(3, df, 'EUR')
+print(m.w['EUR', 0]())
+print(m.w['EUR', 3]())
 
 
 # ## Display graph
 
-# In[5]:
+# In[89]:
 
 
 import networkx as nx
 
 def display_graph(m):
+    
+    path = []
+    
+    for t in m.T0:
+        for i in m.NODES:
+            if m.w[i, t]() >= 1e-6:
+                path.append(f"{m.w[i, t]()} {i}")
+    path = " -> ".join(path)
+    print("\n", path)
 
     G = nx.DiGraph()
+    for i in m.NODES:
+        G.add_node(i)
+    nodelist = set()
+    edge_labels = dict()
      
     for t in m.T1:
         for i, j in m.ARCS:
             if m.x[i, j, t]() > 0.1:
-                G.add_node(i)
-                G.add_node(j)
+                nodelist.add(i)
+                nodelist.add(j)
                 y = m.w[j, t-1]()
                 x = m.w[j, t]()
-                G.add_edge(i, j)
-
-    nx.draw(G, with_labels=True, node_size=1000, node_color="#bbbbee")
+                G.add_edge(j, i)
+                edge_labels[(j, i)] = df.loc[i, j]
+                
+    nodelist = list(nodelist)
+    pos = nx.spring_layout(G)
+    nx.draw(G, pos, with_labels=True, node_size=2000, nodelist=nodelist,
+            node_color="lightblue", node_shape="s", arrowsize=20, label=path)
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
     
 display_graph(m)
 
@@ -219,7 +245,7 @@ display_graph(m)
 # 
 # https://www.tradingview.com/markets/currencies/cross-rates-overview-prices/
 
-# In[6]:
+# In[90]:
 
 
 # data extracted 2022-03-17
@@ -243,17 +269,16 @@ df = pd.read_csv(io.StringIO(bloomberg.replace('-', '1.0')), sep='\t', index_col
 display(df)
 
 
-# In[7]:
+# In[91]:
 
 
 m = arbitrage(3, df, 'USD')
+
+
+# In[92]:
+
+
 display_graph(m)
-
-
-# In[ ]:
-
-
-
 
 
 # In[ ]:

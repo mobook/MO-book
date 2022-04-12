@@ -7,7 +7,7 @@
 # 
 # This would be an good test case for valuing a commodity production facility using real options.
 
-# In[1]:
+# In[4]:
 
 
 get_ipython().system('curl -s https://raw.githubusercontent.com/jckantor/MO-book/main/tools/_mobook.py -o mobook.py')
@@ -17,12 +17,13 @@ mobook.setup_glpk()
 mobook.svg()
 
 
-# Inspired by Example 19.3 from Seborg, Edgar, Mellichamp, and Doyle. The changes include updating prices, solution using optimization modeling languages, and adding constraints to demonstrate the significance of duals and their interpretation as shadow prices.
+# This example derived from Example 19.3 from Seborg, Edgar, Mellichamp, and Doyle. The changes include updating prices, new solutions using optimization modeling languages, adding constraints, and adjusting parameter values to demonstrate the significance of duals and their interpretation as shadow prices.
 
-# In[2]:
+# ## Problem data
+
+# In[3]:
 
 
-import cvxpy as cvxpy
 import pandas as pd
 
 products = pd.DataFrame({
@@ -135,9 +136,9 @@ problem = cp.Problem(objective, constraints)
 problem.solve()
 
 
-# ## Feeds
+# ## Crude oil feed results
 
-# In[9]:
+# In[1]:
 
 
 results_crudes = crudes
@@ -147,7 +148,7 @@ results_crudes["shadow price"] = feeds.dual_value
 display(results_crudes.round(1))
 
 
-# ## Production
+# ## Refinery production results
 
 # In[10]:
 
