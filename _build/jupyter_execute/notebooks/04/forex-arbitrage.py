@@ -9,7 +9,7 @@
 # * [Crypto Trading and Arbitrage Identification Strategies](https://nbviewer.org/github/rcroessmann/sharing_public/blob/master/arbitrage_identification.ipynb)
 # 
 
-# In[6]:
+# In[1]:
 
 
 # install Pyomo and solvers for Google Colab
@@ -60,7 +60,7 @@ if "google.colab" in sys.modules:
 # 
 # This particular example shows no net cost and no arbitrage for conversion from one currency to another and back again.
 
-# In[7]:
+# In[2]:
 
 
 import pandas as pd
@@ -91,7 +91,7 @@ print(df.loc['EUR', 'JPY'] * df.loc['JPY', 'EUR'])
 # 
 # By direct calculation we see there is a three-way **triangular** arbitrage opportunity.
 
-# In[8]:
+# In[3]:
 
 
 I = 'USD'
@@ -118,7 +118,7 @@ print(df.loc[I, K] * df.loc[K, J] * df.loc[J, I])
 # The goal of this calculation is to find a set of transactions $x_{i\leftarrow j}(t) \geq 0$ to maximize the value of portfolio at a later time $T$.
 # 
 
-# In[9]:
+# In[4]:
 
 
 import pyomo.environ as pyo
@@ -190,23 +190,27 @@ m = arbitrage(3, df, 'EUR')
 
 # ## Display graph
 
-# In[10]:
+# In[5]:
 
 
-def graph(m):
-    dot = Digraph()
-    for i in m.NODES:
-        dot.node(i)
+import networkx as nx
 
+def display_graph(m):
+
+    G = nx.DiGraph()
+     
     for t in m.T1:
         for i, j in m.ARCS:
             if m.x[i, j, t]() > 0.1:
-                y = m.w[j,t-1]()
-                x = m.w[i,t]()
-                dot.edge(i, j) # label=f"{m.x[i, j, t]():0.1f}")
-    return dot
+                G.add_node(i)
+                G.add_node(j)
+                y = m.w[j, t-1]()
+                x = m.w[j, t]()
+                G.add_edge(i, j)
 
-graph(m)
+    nx.draw(G, with_labels=True, node_size=1000, node_color="#bbbbee")
+    
+display_graph(m)
 
 
 # ## FOREX data
@@ -215,7 +219,7 @@ graph(m)
 # 
 # https://www.tradingview.com/markets/currencies/cross-rates-overview-prices/
 
-# In[ ]:
+# In[6]:
 
 
 # data extracted 2022-03-17
@@ -239,11 +243,17 @@ df = pd.read_csv(io.StringIO(bloomberg.replace('-', '1.0')), sep='\t', index_col
 display(df)
 
 
-# In[ ]:
+# In[7]:
 
 
 m = arbitrage(3, df, 'USD')
-graph(m)
+display_graph(m)
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
