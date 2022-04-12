@@ -77,6 +77,8 @@ def setup_solvers():
     setup_glpk()
     setup_cbc()
     setup_ipopt()
+    setup_gurobi()
+    setup_cplex()
         
 def setup_pyomo():
     if on_colab():
