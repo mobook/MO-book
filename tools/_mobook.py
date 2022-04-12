@@ -35,7 +35,7 @@ def svg():
     mpl.rcParams['pdf.fonttype'] = 42    
     mpl.rcParams['font.family'] = 'STIXgeneral'
     mpl.rcParams['mathtext.fontset'] = 'stix'
-    mpl.rcParams['axes.titlesize'] = 18
+    #mpl.rcParams['axes.titlesize'] = 18
     
 # default installations for Google Colab
 def on_colab():
