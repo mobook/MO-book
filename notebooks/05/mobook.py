@@ -1,6 +1,3 @@
-# EDIT NOTE: This notebook is overwritten from github. 
-#            Iimmediately push this file to github after editing.
-
 """
 Collection of helper functions for use with MO-book notebooks.
 
@@ -16,7 +13,6 @@ Functions:
     mobook.setup_cbc()
 
 """
-
 
 import sys
 import os
@@ -39,7 +35,7 @@ def svg():
     mpl.rcParams['pdf.fonttype'] = 42    
     mpl.rcParams['font.family'] = 'STIXgeneral'
     mpl.rcParams['mathtext.fontset'] = 'stix'
-    mpl.rcParams['axes.titlesize'] = 18
+    #mpl.rcParams['axes.titlesize'] = 18
     
 # default installations for Google Colab
 def on_colab():
@@ -81,6 +77,8 @@ def setup_solvers():
     setup_glpk()
     setup_cbc()
     setup_ipopt()
+    setup_gurobi()
+    setup_cplex()
         
 def setup_pyomo():
     if on_colab():
