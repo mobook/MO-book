@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Support Vector Machine Classifier by Convex Programming
+# # Support Vector Machine Classifier
 
 # In[374]:
 
