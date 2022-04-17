@@ -65,7 +65,7 @@ import cvxpy as cp
 # 
 # $$
 # \begin{align*}
-# \min\ & \frac{1}{n}  \sum_{i=1}^n z_i + \|w\|_1 \\
+# \min_{z, w, b}\ & \frac{1}{n}  \sum_{i=1}^n z_i + \lambda \|w\|_1 \\
 # \text{s.t.}\qquad z_i & \geq 1 - y_i(w^\top x_i + b) & \forall i = 1, \dots, n \\
 # z_i & \geq 0 & \forall i = 1, \dots, n
 # \end{align*}
