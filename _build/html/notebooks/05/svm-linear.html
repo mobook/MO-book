@@ -480,6 +480,11 @@ const thebe_selector_output = ".output, .cell_output"
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#the-svm-dual">
+   The SVM Dual
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#data-set">
    Data Set
   </a>
@@ -551,6 +556,11 @@ const thebe_selector_output = ".output, .cell_output"
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#linear-support-vector-machines-svm">
    Linear Support Vector Machines (SVM)
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#the-svm-dual">
+   The SVM Dual
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
@@ -633,6 +643,10 @@ const thebe_selector_output = ".output, .cell_output"
 </section>
 <section id="linear-support-vector-machines-svm">
 <h2>Linear Support Vector Machines (SVM)<a class="headerlink" href="#linear-support-vector-machines-svm" title="Permalink to this headline">¶</a></h2>
+<p>Notes:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.adeveloperdiary.com/data-science/machine-learning/support-vector-machines-for-beginners-linear-svm/">http://www.adeveloperdiary.com/data-science/machine-learning/support-vector-machines-for-beginners-linear-svm/</a></p></li>
+</ul>
 <p>A linear support vector machine is a binary classifier that uses linear form to determine the classification.</p>
 <div class="math notranslate nohighlight">
 \[y = \text{sgn}\ ( w^\top x + b)\]</div>
@@ -663,6 +677,63 @@ const thebe_selector_output = ".output, .cell_output"
 z_i &amp; \geq 0 &amp; \forall i = 1, \dots, n
 \end{align*}
 \end{split}\]</div>
+<p>This is the primal optimization problem in decision variables <span class="math notranslate nohighlight">\(w\in\mathbb{R}^p\)</span>, <span class="math notranslate nohighlight">\(b\in\mathbb{R}\)</span>, and <span class="math notranslate nohighlight">\(z\in\mathbb{R}^n\)</span>, a total of <span class="math notranslate nohighlight">\(n + p + 1\)</span> unknowns with <span class="math notranslate nohighlight">\(2n\)</span> constraints.</p>
+</section>
+<section id="the-svm-dual">
+<h2>The SVM Dual<a class="headerlink" href="#the-svm-dual" title="Permalink to this headline">¶</a></h2>
+<p>Creating the dual of the support vector machine will turn out to have practical consequences. Creating the dual requires a differentiable objective function. For this reason, the regularization term is changed to the 2-norm of <span class="math notranslate nohighlight">\(w\)</span></p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\min_{z, w, b}\  \frac{1}{2} \|w\|_2^2 + \frac{c}{n}  \sum_{i=1}^n z_i \\
+\\
+\text{s.t.}\qquad 1 - y_i(w^\top x_i + b) - z_i &amp; \leq 0 &amp; \forall i = 1, \dots, n \\
+- z_i &amp; \leq 0 &amp; \forall i = 1, \dots, n
+\end{align*}
+\end{split}\]</div>
+<p>where the regularization parameter shifted to <span class="math notranslate nohighlight">\(c\)</span>, and the constraints restated in standard form. This is a quadratic problem in <span class="math notranslate nohighlight">\(n + p + 1\)</span> variables and <span class="math notranslate nohighlight">\(2n\)</span> constraints.</p>
+<p>The Lagrangian <span class="math notranslate nohighlight">\(\mathcal{L}\)</span> is</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\mathcal{L} &amp; = \frac{1}{2} \|w\|_2^2 + \frac{c}{n}\sum_{i=1}^n z_i + \sum_{i=1}^n \alpha_i (1 - y_i(w^\top x_i + b) - z_i) + \sum_{i=1}^n \beta_i (-z_i) \\
+\end{align*}
+\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(2n\)</span> non-negative Lagrange multipliers <span class="math notranslate nohighlight">\(\alpha_i \geq 0\)</span> and <span class="math notranslate nohighlight">\(\beta_1 \geq 0\)</span> have been introduced for <span class="math notranslate nohighlight">\(i \in 1,\dots,n\)</span>. Intuitively, the Lagrange variables are penalty weights assigned to the inequality constraints introduced into a modified objective function. If the penalties are large enough then the constraints will be satisfied.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\frac{\partial \mathcal{L}}{\partial z_i} &amp; = \frac{c}{n} - \alpha_i - \beta_i = 0 \implies 0 \leq \alpha_i \leq \frac{c}{n}\\
+\frac{\partial \mathcal{L}}{\partial w} &amp; = w  - \sum_{i=1}^n \alpha_i y_i x_i = 0 \implies  w = \sum_{i=1}^n \alpha_i y_i x_i \\
+\frac{\partial \mathcal{L}}{\partial b} &amp; = -\sum_{i=1}^n \alpha_i y_i = 0 \implies \sum_{i=1}^n \alpha_i y_i = 0 \\
+\end{align*}
+\end{split}\]</div>
+<p>The dual problem is then</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\max_{\alpha_i}\ &amp;  \sum_{i=1}^n \alpha_i - \frac{1}{2} \sum_{i=1}^n\sum_{j=1}^n \alpha_i \alpha_j y_i y_j ( x_i^\top x_j ) \\
+\text{s. t.}\quad &amp; \sum_{i=1}^n \alpha_i y_i = 0 \\
+&amp; \alpha_i \in \left[0, \frac{c}{n}\right] &amp; i = 1, \dots, n \\
+\end{align*}
+\end{split}\]</div>
+<p>which is a quadratic program like the primal, but with <span class="math notranslate nohighlight">\(n\)</span> decision variables <span class="math notranslate nohighlight">\(\alpha_i\)</span> and <span class="math notranslate nohighlight">\(n + 1\)</span> constraints. The dual has <span class="math notranslate nohighlight">\(p+1\)</span> fewer decision variables and <span class="math notranslate nohighlight">\(n\)</span> fewer constraints than the primal. Give a solution <span class="math notranslate nohighlight">\(\alpha_i^*\)</span>, the</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+w^* &amp; = \sum_{i=1}^n \alpha_i^* y_i x_i \\
+b^* &amp; = y_k - (w^*)^\top x_k &amp; \text{for any }k\ni 0 &lt; \alpha_k &lt; \frac{c}{n} \\
+\end{align*}
+\end{split}\]</div>
+<p>This is a remarkable result.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+w^* &amp; = \sum_{i=1}^n \alpha_i^* y_i x_i \\
+b^* &amp; = y_k - \sum_{i=1}^N \alpha_i^* y_i x_i^\top x_k &amp; \text{for any }k\ni 0 &lt; \alpha_k &lt; \frac{c}{n} 
+\end{align*}
+\end{split}\]</div>
+<p>The classifier is then</p>
 </section>
 <section id="data-set">
 <h2>Data Set<a class="headerlink" href="#data-set" title="Permalink to this headline">¶</a></h2>
@@ -735,7 +806,7 @@ PC3 -0.084899  0.762553  0.569655  0.294615
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;BarContainer object of 4 artists&gt;
 </pre></div>
 </div>
-<img alt="../../_images/svm-linear_9_2.png" src="../../_images/svm-linear_9_2.png" />
+<img alt="../../_images/svm-linear_12_2.png" src="../../_images/svm-linear_12_2.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -758,7 +829,7 @@ PC3 -0.084899  0.762553  0.569655  0.294615
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;AxesSubplot:xlabel=&#39;PC0&#39;, ylabel=&#39;PC1&#39;&gt;
 </pre></div>
 </div>
-<img alt="../../_images/svm-linear_10_1.png" src="../../_images/svm-linear_10_1.png" />
+<img alt="../../_images/svm-linear_13_1.png" src="../../_images/svm-linear_13_1.png" />
 </div>
 </div>
 </section>
@@ -783,8 +854,8 @@ PC3 -0.084899  0.762553  0.569655  0.294615
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;AxesSubplot:xlabel=&#39;KPC0&#39;, ylabel=&#39;KPC1&#39;&gt;
 </pre></div>
 </div>
-<img alt="../../_images/svm-linear_12_1.png" src="../../_images/svm-linear_12_1.png" />
-<img alt="../../_images/svm-linear_12_2.png" src="../../_images/svm-linear_12_2.png" />
+<img alt="../../_images/svm-linear_15_1.png" src="../../_images/svm-linear_15_1.png" />
+<img alt="../../_images/svm-linear_15_2.png" src="../../_images/svm-linear_15_2.png" />
 </div>
 </div>
 </section>
@@ -821,7 +892,7 @@ PC3 -0.084899  0.762553  0.569655  0.294615
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/svm-linear_14_0.png" src="../../_images/svm-linear_14_0.png" />
+<img alt="../../_images/svm-linear_17_0.png" src="../../_images/svm-linear_17_0.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -836,7 +907,7 @@ PC3 -0.084899  0.762553  0.569655  0.294615
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/svm-linear_15_0.png" src="../../_images/svm-linear_15_0.png" />
+<img alt="../../_images/svm-linear_18_0.png" src="../../_images/svm-linear_18_0.png" />
 </div>
 </div>
 <section id="test-svm-classifier">

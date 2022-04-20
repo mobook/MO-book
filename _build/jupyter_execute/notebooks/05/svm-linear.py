@@ -31,6 +31,11 @@ import cvxpy as cp
 
 # ## Linear Support Vector Machines (SVM)
 # 
+# Notes:
+# 
+# * http://www.adeveloperdiary.com/data-science/machine-learning/support-vector-machines-for-beginners-linear-svm/
+# 
+# 
 # A linear support vector machine is a binary classifier that uses linear form to determine the classification. 
 # 
 # $$y = \text{sgn}\ ( w^\top x + b)$$
@@ -70,6 +75,77 @@ import cvxpy as cp
 # z_i & \geq 0 & \forall i = 1, \dots, n
 # \end{align*}
 # $$
+# 
+# This is the primal optimization problem in decision variables $w\in\mathbb{R}^p$, $b\in\mathbb{R}$, and $z\in\mathbb{R}^n$, a total of $n + p + 1$ unknowns with $2n$ constraints.
+
+# ## The SVM Dual
+# 
+# Creating the dual of the support vector machine will turn out to have practical consequences. Creating the dual requires a differentiable objective function. For this reason, the regularization term is changed to the 2-norm of $w$
+# 
+# $$
+# \begin{align*}
+# \min_{z, w, b}\  \frac{1}{2} \|w\|_2^2 + \frac{c}{n}  \sum_{i=1}^n z_i \\
+# \\
+# \text{s.t.}\qquad 1 - y_i(w^\top x_i + b) - z_i & \leq 0 & \forall i = 1, \dots, n \\
+# - z_i & \leq 0 & \forall i = 1, \dots, n
+# \end{align*}
+# $$
+# 
+# where the regularization parameter shifted to $c$, and the constraints restated in standard form. This is a quadratic problem in $n + p + 1$ variables and $2n$ constraints.
+# 
+# The Lagrangian $\mathcal{L}$ is 
+# 
+# $$
+# \begin{align*}
+# \mathcal{L} & = \frac{1}{2} \|w\|_2^2 + \frac{c}{n}\sum_{i=1}^n z_i + \sum_{i=1}^n \alpha_i (1 - y_i(w^\top x_i + b) - z_i) + \sum_{i=1}^n \beta_i (-z_i) \\
+# \end{align*}
+# $$
+# 
+# where $2n$ non-negative Lagrange multipliers $\alpha_i \geq 0$ and $\beta_1 \geq 0$ have been introduced for $i \in 1,\dots,n$. Intuitively, the Lagrange variables are penalty weights assigned to the inequality constraints introduced into a modified objective function. If the penalties are large enough then the constraints will be satisfied.
+# 
+
+# $$
+# \begin{align*}
+# \frac{\partial \mathcal{L}}{\partial z_i} & = \frac{c}{n} - \alpha_i - \beta_i = 0 \implies 0 \leq \alpha_i \leq \frac{c}{n}\\
+# \frac{\partial \mathcal{L}}{\partial w} & = w  - \sum_{i=1}^n \alpha_i y_i x_i = 0 \implies  w = \sum_{i=1}^n \alpha_i y_i x_i \\
+# \frac{\partial \mathcal{L}}{\partial b} & = -\sum_{i=1}^n \alpha_i y_i = 0 \implies \sum_{i=1}^n \alpha_i y_i = 0 \\
+# \end{align*}
+# $$
+
+# The dual problem is then
+# 
+# $$
+# \begin{align*}
+# \max_{\alpha_i}\ &  \sum_{i=1}^n \alpha_i - \frac{1}{2} \sum_{i=1}^n\sum_{j=1}^n \alpha_i \alpha_j y_i y_j ( x_i^\top x_j ) \\
+# \text{s. t.}\quad & \sum_{i=1}^n \alpha_i y_i = 0 \\
+# & \alpha_i \in \left[0, \frac{c}{n}\right] & i = 1, \dots, n \\
+# \end{align*}
+# $$
+# 
+# which is a quadratic program like the primal, but with $n$ decision variables $\alpha_i$ and $n + 1$ constraints. The dual has $p+1$ fewer decision variables and $n$ fewer constraints than the primal. Give a solution $\alpha_i^*$, the 
+# 
+# $$
+# \begin{align*}
+# w^* & = \sum_{i=1}^n \alpha_i^* y_i x_i \\
+# b^* & = y_k - (w^*)^\top x_k & \text{for any }k\ni 0 < \alpha_k < \frac{c}{n} \\
+# \end{align*}
+# $$
+# 
+# This is a remarkable result.
+# 
+# $$
+# \begin{align*}
+# w^* & = \sum_{i=1}^n \alpha_i^* y_i x_i \\
+# b^* & = y_k - \sum_{i=1}^N \alpha_i^* y_i x_i^\top x_k & \text{for any }k\ni 0 < \alpha_k < \frac{c}{n} 
+# \end{align*}
+# $$
+# 
+# 
+# The classifier is then
+# 
+# 
+# 
+# 
 # 
 # 
 
