@@ -20,6 +20,7 @@
 
 
 import sys
+
 if "google.colab" in sys.modules:
     get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
     get_ipython().run_line_magic('run', 'install_on_colab.py')
@@ -79,36 +80,40 @@ if "google.colab" in sys.modules:
 
 
 import pandas as pd
-from IPython.display import display, HTML
+from IPython.display import HTML, display
 
-rates = pd.DataFrame([
-    ["Alice", 8.3, 10.2, 8.75],
-    ["Badri", 8.1, 12.0, 8.75],
-    ["Cara", 8.3, 100.0, 8.75],
-    ["Dan", 9.3, 8.0, 8.75],
-    ["Emma", 10.1, 10.0, 8.75],
-    ["Fujita", 9.8, 10.0, 8.75],
-    ["Grace", 100, 8.0, 8.75],
-    ["Helen", 7.5, 10.0, 8.75]],
-    columns = ["Destination", "Terminal A", "Terminal B", "Current Supplier"]
+rates = pd.DataFrame(
+    [
+        ["Alice", 8.3, 10.2, 8.75],
+        ["Badri", 8.1, 12.0, 8.75],
+        ["Cara", 8.3, 100.0, 8.75],
+        ["Dan", 9.3, 8.0, 8.75],
+        ["Emma", 10.1, 10.0, 8.75],
+        ["Fujita", 9.8, 10.0, 8.75],
+        ["Grace", 100, 8.0, 8.75],
+        ["Helen", 7.5, 10.0, 8.75],
+    ],
+    columns=["Destination", "Terminal A", "Terminal B", "Current Supplier"],
 ).set_index("Destination")
 
-demand = pd.Series({
-    "Alice": 30000,
-    "Badri": 40000,
-    "Cara": 50000,
-    "Dan": 20000,
-    "Emma": 30000,
-    "Fujita": 45000,
-    "Grace": 80000,
-    "Helen": 18000}, 
-    name="demand")
+demand = pd.Series(
+    {
+        "Alice": 30000,
+        "Badri": 40000,
+        "Cara": 50000,
+        "Dan": 20000,
+        "Emma": 30000,
+        "Fujita": 45000,
+        "Grace": 80000,
+        "Helen": 18000,
+    },
+    name="demand",
+)
 
-supply = pd.Series({
-    "Terminal A": 100000,
-    "Terminal B": 80000,
-    "Current Supplier": 500000}, 
-    name = "supply")
+supply = pd.Series(
+    {"Terminal A": 100000, "Terminal B": 80000, "Current Supplier": 500000},
+    name="supply",
+)
 
 display(HTML("<br><b>Gasoline Supply (Gallons)</b>"))
 display(supply.to_frame())
@@ -129,6 +134,7 @@ display(rates)
 
 import pyomo.environ as pyo
 
+
 def transport(supply, demand, rates):
     m = pyo.ConcreteModel()
 
@@ -143,11 +149,13 @@ def transport(supply, demand, rates):
 
     @m.Objective(sense=pyo.minimize)
     def total_cost(m):
-        return sum(m.Rates[dst, src]*m.x[dst, src] for dst, src in m.DESTINATIONS * m.SOURCES)
-    
+        return sum(
+            m.Rates[dst, src] * m.x[dst, src] for dst, src in m.DESTINATIONS * m.SOURCES
+        )
+
     @m.Expression(m.DESTINATIONS)
     def cost_to_destination(m, dst):
-        return sum(m.Rates[dst, src]*m.x[dst, src] for src in m.SOURCES)
+        return sum(m.Rates[dst, src] * m.x[dst, src] for src in m.SOURCES)
 
     @m.Expression(m.DESTINATIONS)
     def shipped_to_destination(m, dst):
@@ -166,18 +174,27 @@ def transport(supply, demand, rates):
         return m.shipped_to_destination[dst] == demand[dst]
 
     m.dual = pyo.Suffix(direction=pyo.Suffix.IMPORT)
-    pyo.SolverFactory('cbc').solve(m)
+    pyo.SolverFactory("cbc").solve(m)
 
     return m
 
-m = transport(supply, demand, rates/100)
 
-results = pd.DataFrame({dst: {src: m.x[dst, src]() for src in m.SOURCES} for dst in m.DESTINATIONS}).T
-results["current costs"] = 700*demand/8000
-results["contract costs"] = pd.Series({dst: m.cost_to_destination[dst]() for dst in m.DESTINATIONS})
-results["savings"] = results["current costs"].round(1) - results["contract costs"].round(1)
-results["contract rate"] = round(results["contract costs"]/demand, 4)
-results["marginal cost"]  = pd.Series({dst: m.dual[m.demand_constraint[dst]] for dst in m.DESTINATIONS})
+m = transport(supply, demand, rates / 100)
+
+results = pd.DataFrame(
+    {dst: {src: m.x[dst, src]() for src in m.SOURCES} for dst in m.DESTINATIONS}
+).T
+results["current costs"] = 700 * demand / 8000
+results["contract costs"] = pd.Series(
+    {dst: m.cost_to_destination[dst]() for dst in m.DESTINATIONS}
+)
+results["savings"] = results["current costs"].round(1) - results[
+    "contract costs"
+].round(1)
+results["contract rate"] = round(results["contract costs"] / demand, 4)
+results["marginal cost"] = pd.Series(
+    {dst: m.dual[m.demand_constraint[dst]] for dst in m.DESTINATIONS}
+)
 
 print(f"Old Delivery Costs = $ {sum(demand)*700/8000}")
 print(f"New Delivery Costs = $ {m.total_cost()}")
@@ -216,6 +233,7 @@ model1_results = results
 
 import pyomo.environ as pyo
 
+
 def transport(supply, demand, rates):
     m = pyo.ConcreteModel()
 
@@ -228,19 +246,19 @@ def transport(supply, demand, rates):
     @m.Param(m.DESTINATIONS, m.SOURCES)
     def Rates(m, dst, src):
         return rates.loc[dst, src]
-    
+
     @m.Objective(sense=pyo.minimize)
     def delivery_rate(m):
         return m.rate
-    
+
     @m.Expression(m.DESTINATIONS)
     def cost_to_destination(m, dst):
-        return sum(m.Rates[dst, src]*m.x[dst, src] for src in m.SOURCES)
-    
+        return sum(m.Rates[dst, src] * m.x[dst, src] for src in m.SOURCES)
+
     @m.Expression()
     def total_cost(m):
         return sum(m.cost_to_destination[dst] for dst in m.DESTINATIONS)
-    
+
     @m.Constraint(m.DESTINATIONS)
     def rate_to_destination(m, dst):
         return m.cost_to_destination[dst] == m.rate * demand[dst]
@@ -262,18 +280,30 @@ def transport(supply, demand, rates):
         return m.shipped_to_destination[dst] == demand[dst]
 
     m.dual = pyo.Suffix(direction=pyo.Suffix.IMPORT)
-    pyo.SolverFactory('cbc').solve(m)
+    pyo.SolverFactory("cbc").solve(m)
 
     return m
 
-m = transport(supply, demand, rates/100)
 
-results = round(pd.DataFrame({dst: {src: m.x[dst, src]() for src in m.SOURCES} for dst in m.DESTINATIONS}).T, 1)
-results["current costs"] = 700*demand/8000
-results["contract costs"] = round(pd.Series({dst: m.cost_to_destination[dst]() for dst in m.DESTINATIONS}), 1)
-results["savings"] = results["current costs"].round(1) - results["contract costs"].round(1)
-results["contract rate"] = round(results["contract costs"]/demand, 4)
-results["marginal cost"]  = pd.Series({dst: m.dual[m.demand_constraint[dst]] for dst in m.DESTINATIONS})
+m = transport(supply, demand, rates / 100)
+
+results = round(
+    pd.DataFrame(
+        {dst: {src: m.x[dst, src]() for src in m.SOURCES} for dst in m.DESTINATIONS}
+    ).T,
+    1,
+)
+results["current costs"] = 700 * demand / 8000
+results["contract costs"] = round(
+    pd.Series({dst: m.cost_to_destination[dst]() for dst in m.DESTINATIONS}), 1
+)
+results["savings"] = results["current costs"].round(1) - results[
+    "contract costs"
+].round(1)
+results["contract rate"] = round(results["contract costs"] / demand, 4)
+results["marginal cost"] = pd.Series(
+    {dst: m.dual[m.demand_constraint[dst]] for dst in m.DESTINATIONS}
+)
 
 print(f"Old Delivery Costs = $ {sum(demand)*700/8000}")
 print(f"New Delivery Costs = $ {m.total_cost()}")
@@ -313,6 +343,7 @@ results.plot(y="savings", kind="bar")
 
 import pyomo.environ as pyo
 
+
 def transport(supply, demand, rates):
     m = pyo.ConcreteModel()
 
@@ -325,15 +356,17 @@ def transport(supply, demand, rates):
     @m.Param(m.DESTINATIONS, m.SOURCES)
     def Rates(m, dst, src):
         return rates.loc[dst, src]
-    
+
     @m.Objective()
     def total_cost(m):
-        return sum(m.Rates[dst, src]*m.x[dst, src] for dst, src in m.DESTINATIONS * m.SOURCES)
-    
+        return sum(
+            m.Rates[dst, src] * m.x[dst, src] for dst, src in m.DESTINATIONS * m.SOURCES
+        )
+
     @m.Expression(m.DESTINATIONS)
     def cost_to_destination(m, dst):
         return m.rate * demand[dst]
-    
+
     @m.Constraint()
     def allocate_costs(m):
         return sum(m.cost_to_destination[dst] for dst in m.DESTINATIONS) == m.total_cost
@@ -355,18 +388,30 @@ def transport(supply, demand, rates):
         return m.shipped_to_destination[dst] == demand[dst]
 
     m.dual = pyo.Suffix(direction=pyo.Suffix.IMPORT)
-    pyo.SolverFactory('cbc').solve(m)
+    pyo.SolverFactory("cbc").solve(m)
 
     return m
 
-m = transport(supply, demand, rates/100)
 
-results = round(pd.DataFrame({dst: {src: m.x[dst, src]() for src in m.SOURCES} for dst in m.DESTINATIONS}).T, 1)
-results["current costs"] = 700*demand/8000
-results["contract costs"] = round(pd.Series({dst: m.cost_to_destination[dst]() for dst in m.DESTINATIONS}), 1)
-results["savings"] = results["current costs"].round(1) - results["contract costs"].round(1)
-results["contract rate"] = round(results["contract costs"]/demand, 4)
-results["marginal cost"]  = pd.Series({dst: m.dual[m.demand_constraint[dst]] for dst in m.DESTINATIONS})
+m = transport(supply, demand, rates / 100)
+
+results = round(
+    pd.DataFrame(
+        {dst: {src: m.x[dst, src]() for src in m.SOURCES} for dst in m.DESTINATIONS}
+    ).T,
+    1,
+)
+results["current costs"] = 700 * demand / 8000
+results["contract costs"] = round(
+    pd.Series({dst: m.cost_to_destination[dst]() for dst in m.DESTINATIONS}), 1
+)
+results["savings"] = results["current costs"].round(1) - results[
+    "contract costs"
+].round(1)
+results["contract rate"] = round(results["contract costs"] / demand, 4)
+results["marginal cost"] = pd.Series(
+    {dst: m.dual[m.demand_constraint[dst]] for dst in m.DESTINATIONS}
+)
 
 print(f"Old Delivery Costs = $ {sum(demand)*700/8000}")
 print(f"New Delivery Costs = $ {m.total_cost()}")
@@ -388,19 +433,19 @@ import matplotlib.pyplot as plt
 fig, ax = plt.subplots(1, 2, figsize=(12, 3))
 alpha = 0.45
 
-model1_results.plot(y=["savings"], kind="bar", ax=ax[0], color='g', alpha=alpha)
-model1_results.plot(y="savings", marker='o', ax=ax[0], color='g', alpha=alpha)
+model1_results.plot(y=["savings"], kind="bar", ax=ax[0], color="g", alpha=alpha)
+model1_results.plot(y="savings", marker="o", ax=ax[0], color="g", alpha=alpha)
 
-model3_results.plot(y="savings", kind="bar", ax=ax[0], color='r', alpha=alpha)
-model3_results.plot(y="savings", marker='o', ax=ax[0], color='r', alpha=alpha)
+model3_results.plot(y="savings", kind="bar", ax=ax[0], color="r", alpha=alpha)
+model3_results.plot(y="savings", marker="o", ax=ax[0], color="r", alpha=alpha)
 ax[0].legend(["Model 1", "Model 3"])
 ax[0].set_title("delivery costs by franchise")
 
-model1_results.plot(y=["contract rate"], kind="bar", ax=ax[1], color='g', alpha=alpha)
-model1_results.plot(y="contract rate", marker='o', ax=ax[1], color='g', alpha=alpha)
+model1_results.plot(y=["contract rate"], kind="bar", ax=ax[1], color="g", alpha=alpha)
+model1_results.plot(y="contract rate", marker="o", ax=ax[1], color="g", alpha=alpha)
 
-model3_results.plot(y="contract rate", kind="bar", ax=ax[1], color='r', alpha=alpha)
-model3_results.plot(y="contract rate", marker='o', ax=ax[1], color='r', alpha=alpha)
+model3_results.plot(y="contract rate", kind="bar", ax=ax[1], color="r", alpha=alpha)
+model3_results.plot(y="contract rate", marker="o", ax=ax[1], color="r", alpha=alpha)
 ax[1].set_ylim(0.07, 0.09)
 ax[1].legend(["Model 1", "Model 3"])
 ax[1].set_title("delivery cost rate by franchise")
@@ -480,11 +525,15 @@ print(f"cost = {m.total_cost()}")
 # Constraint reports
 print("\nConstraint: supply_constraint")
 for src in m.SOURCES:
-    print(f"{src:12s}  {m.supply_constraint[src]():8.2f}  {m.dual[m.supply_constraint[src]]:8.2f}")
+    print(
+        f"{src:12s}  {m.supply_constraint[src]():8.2f}  {m.dual[m.supply_constraint[src]]:8.2f}"
+    )
 
 print("\nConstraint: demand_constraint")
 for dst in m.DESTINATIONS:
-    print(f"{dst:12s}  {m.demand_constraint[dst]():8.2f}  {m.dual[m.demand_constraint[dst]]:8.2f}")
+    print(
+        f"{dst:12s}  {m.demand_constraint[dst]():8.2f}  {m.dual[m.demand_constraint[dst]]:8.2f}"
+    )
 
 # Decision variable reports
 print("\nDecision variables: x")
@@ -501,21 +550,35 @@ for src in m.SOURCES:
 # In[15]:
 
 
-suppliers = pd.DataFrame({src: {"supply": supply[src], 
-                              "shipped": m.supply_constraint[src](), 
-                              "sensitivity": m.dual[m.supply_constraint[src]]}
-                          for src in m.SOURCES}).T
+suppliers = pd.DataFrame(
+    {
+        src: {
+            "supply": supply[src],
+            "shipped": m.supply_constraint[src](),
+            "sensitivity": m.dual[m.supply_constraint[src]],
+        }
+        for src in m.SOURCES
+    }
+).T
 
 display(suppliers)
 
-customers = pd.DataFrame({dst: {"demand": demand[dst], 
-                              "shipped": m.demand_constraint[dst](), 
-                              "sensitivity": m.dual[m.demand_constraint[dst]]}
-                          for dst in m.DESTINATIONS}).T
+customers = pd.DataFrame(
+    {
+        dst: {
+            "demand": demand[dst],
+            "shipped": m.demand_constraint[dst](),
+            "sensitivity": m.dual[m.demand_constraint[dst]],
+        }
+        for dst in m.DESTINATIONS
+    }
+).T
 
 display(customers)
 
-shipments = pd.DataFrame({dst: {src: m.x[dst, src]() for src in m.SOURCES} for dst in m.DESTINATIONS}).T
+shipments = pd.DataFrame(
+    {dst: {src: m.x[dst, src]() for src in m.SOURCES} for dst in m.DESTINATIONS}
+).T
 display(shipments)
 shipments.plot(kind="bar")
 
@@ -527,29 +590,44 @@ shipments.plot(kind="bar")
 # In[16]:
 
 
+import sys
+
 import graphviz
 from graphviz import Digraph
-import sys
 
 if "google.colab" in sys.modules:
 
     dot = Digraph(
-        node_attr = {"fontsize": "10", "shape": "rectangle", "style": "filled"},
-        edge_attr = {"fontsize": "10"}
+        node_attr={"fontsize": "10", "shape": "rectangle", "style": "filled"},
+        edge_attr={"fontsize": "10"},
     )
 
     for src in m.SOURCES:
-        label = f"{src}"                 + f"\nsupply = {supply[src]}"                 + f"\nshipped = {m.supply_constraint[src]()}"                 + f"\nsens  = {m.dual[m.supply_constraint[src]]}"
+        label = (
+            f"{src}"
+            + f"\nsupply = {supply[src]}"
+            + f"\nshipped = {m.supply_constraint[src]()}"
+            + f"\nsens  = {m.dual[m.supply_constraint[src]]}"
+        )
         dot.node(src, label=label, fillcolor="lightblue")
 
     for dst in m.DESTINATIONS:
-        label = f"{dst}"                 + f"\ndemand = {demand[dst]}"                + f"\nshipped = {m.demand_constraint[dst]()}"                 + f"\nsens  = {m.dual[m.demand_constraint[dst]]}"
+        label = (
+            f"{dst}"
+            + f"\ndemand = {demand[dst]}"
+            + f"\nshipped = {m.demand_constraint[dst]()}"
+            + f"\nsens  = {m.dual[m.demand_constraint[dst]]}"
+        )
         dot.node(dst, label=label, fillcolor="gold")
 
     for src in m.SOURCES:
         for dst in m.DESTINATIONS:
             if m.x[dst, src]() > 0:
-                dot.edge(src, dst, f"rate = {rates.loc[dst, src]}\nshipped = {m.x[dst, src]()}")
+                dot.edge(
+                    src,
+                    dst,
+                    f"rate = {rates.loc[dst, src]}\nshipped = {m.x[dst, src]()}",
+                )
 
     display(dot)
 
