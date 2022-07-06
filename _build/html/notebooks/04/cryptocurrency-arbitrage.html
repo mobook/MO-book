@@ -485,13 +485,13 @@ const thebe_selector_output = ".output, .cell_output"
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#exchange-markets-and-symbols">
-   Exchange markets and symbols
+  <a class="reference internal nav-link" href="#representing-an-exchange-as-a-directed-graph">
+   Representing an Exchange as a Directed Graph
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#an-exchange-order-book">
-   An Exchange Order Book
+  <a class="reference internal nav-link" href="#exchange-order-book">
+   Exchange Order Book
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
@@ -550,13 +550,13 @@ const thebe_selector_output = ".output, .cell_output"
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#exchange-markets-and-symbols">
-   Exchange markets and symbols
+  <a class="reference internal nav-link" href="#representing-an-exchange-as-a-directed-graph">
+   Representing an Exchange as a Directed Graph
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#an-exchange-order-book">
-   An Exchange Order Book
+  <a class="reference internal nav-link" href="#exchange-order-book">
+   Exchange Order Book
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
@@ -590,11 +590,12 @@ const thebe_selector_output = ".output, .cell_output"
                 
   <section class="tex2jax_ignore mathjax_ignore" id="crypto-currency-analysis">
 <h1>Crypto Currency Analysis<a class="headerlink" href="#crypto-currency-analysis" title="Permalink to this headline">¶</a></h1>
-<p>Crpytocurrency exchanges are websites that enable the purchase, sale, and exchange of crypto and traditional currencies. These exchanges serve the essential functions of providing liquidity for owners and establishing the relative of these currencies. As of this writing (mid-2022), <a class="reference external" href="https://www.statista.com/statistics/730876/cryptocurrency-maket-value/">it is estimated</a> that crypocurrencies have a collective market capitalization of more than 2 trillion USD.</p>
-<p>The purpose of this notebook is to explore the efficiency of these exchanges by testing. An arbitrage exists on an exchange if, through a risk-free series of trades, a customer could realize a net profit. The efficient market hypothesis assumes any sustained arbitrage opportunities would be identified by investors and, as result of their trading, quickly wiped as prices reach a new equilibrium. In an efficient market, any arbitrage would be small and fleeting. Still, the market has to get to equilibrium somehow, so perhaps with real-time data and rapid execution, can a trader put themself in a position to profit from these fleeting market adjustments?</p>
+<p>Crpytocurrency exchanges are websites that enable the purchase, sale, and exchange of cryptocurrencies. These exchanges provide liquidity for owners and establish the relative value of these currencies. As of this writing (mid-2022), <a class="reference external" href="https://www.statista.com/statistics/730876/cryptocurrency-maket-value/">it is estimated</a> that cryptocurrencies have a collective market capitalization of more than 2 trillion USD. Cryptocurrency markets are constantly changing with new entrants, the occasional collapse of a currency, and highly volatile prices.</p>
+<p>The purpose of this notebook is to explore the efficiency of cryptocurrency exchanges by testing for arbitrage opportunities. An arbitrage exists if a customer can realize a net profit through a sequence of risk-free trades. The efficient market hypothesis assumes arbitrage opportunities are quickly identified and exploited by investors. As a result of their trading, prices would reach a new equilibrium so that in an efficient market, any arbitrage opportunities would be small and fleeting.</p>
+<p>Still, the market has to get to equilibrium somehow. So it is possible, with real-time data and rapid execution, a trader can be in a position to profit from these fleeting arbitrage opportunities?</p>
 <section id="bibliographic-notes">
 <h2>Bibliographic Notes<a class="headerlink" href="#bibliographic-notes" title="Permalink to this headline">¶</a></h2>
-<p>Crytocurrency markets are still a relatively new and relatively few academic papers are available that specifically address arbitrage on those markets. Early studies, such as the following, reported periods of large, recurrent arbitrage opportunities that exist across exchanges, and that can persist for several days or weeks.</p>
+<p>Crytocurrency markets are relatively new compared to other markets, and relatively few academic papers are available that specifically address arbitrage on those markets. Early studies, such as the following, reported periods of large, recurrent arbitrage opportunities that exist across exchanges, and that can persist for several days or weeks.</p>
 <blockquote>
 <div><p>Makarov, I., &amp; Schoar, A. (2020). Trading and arbitrage in cryptocurrency markets. Journal of Financial Economics, 135(2), 293-319.</p>
 </div></blockquote>
@@ -633,29 +634,24 @@ const thebe_selector_output = ".output, .cell_output"
 </section>
 <section id="installations-and-imports">
 <h2>Installations and Imports<a class="headerlink" href="#installations-and-imports" title="Permalink to this headline">¶</a></h2>
-<p>This notebook requires multiple libraries. The following cell performs the required installations for Google Colab. To operate your own device you will need to install the <code class="docutils literal notranslate"><span class="pre">pyomo</span></code>,<code class="docutils literal notranslate"><span class="pre">ccxt</span></code>, and <code class="docutils literal notranslate"><span class="pre">graphviz</span></code> python libraries, the graphviz executables, and a linear solver for Pyomo.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
-
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install -q ccxt
-    <span class="o">!</span>pip install -q netgraph
-    <span class="o">!</span>wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py 
-    <span class="o">%</span><span class="k">run</span> install_on_colab.py
-</pre></div>
-</div>
-</div>
-</div>
+<p>This notebook requires multiple libraries. The following cell performs the required installations for Google Colab. To run in your own environment you will need to install <code class="docutils literal notranslate"><span class="pre">pyomo</span></code>,<code class="docutils literal notranslate"><span class="pre">ccxt</span></code>, and <code class="docutils literal notranslate"><span class="pre">networkx</span></code> python libraries, and a linear solver for Pyomo.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
 <span class="kn">from</span> <span class="nn">timeit</span> <span class="kn">import</span> <span class="n">default_timer</span> <span class="k">as</span> <span class="n">timer</span>
 
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">ns</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install -q ccxt
+    <span class="o">!</span>wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py 
+    <span class="o">%</span><span class="k">run</span> install_on_colab.py
 </pre></div>
 </div>
 </div>
@@ -663,98 +659,94 @@ const thebe_selector_output = ".output, .cell_output"
 </section>
 <section id="cryptocurrency-exchanges">
 <h2>Cryptocurrency Exchanges<a class="headerlink" href="#cryptocurrency-exchanges" title="Permalink to this headline">¶</a></h2>
-<p>The <a class="reference external" href="https://github.com/ccxt/ccxt">open-source library <code class="docutils literal notranslate"><span class="pre">ccxt</span></code></a> currently supports real-time APIs for 114 exchanges on which cryptocurrencies are traded. Here we import the library and list current exchanges supported by <code class="docutils literal notranslate"><span class="pre">ccxt</span></code>.</p>
+<p>Cryptocurrency exchanges are digital marketplaces for buying and trading cryptocurrencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, buy and sell currencies, and to use cryptocurrencies in financial transactions. The <a class="reference external" href="https://github.com/ccxt/ccxt">open-source library <code class="docutils literal notranslate"><span class="pre">ccxt</span></code></a> currently supports real-time APIs for the largest and most common exchanges on which cryptocurrencies are traded. Here we import the library and list current exchanges supported by <code class="docutils literal notranslate"><span class="pre">ccxt</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ccxt</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="n">ccxt</span><span class="o">.</span><span class="n">exchanges</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">exchange</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ccxt</span><span class="o">.</span><span class="n">exchanges</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">4</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2">) </span><span class="si">{</span><span class="n">exchange</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[&#39;aax&#39;, &#39;ascendex&#39;, &#39;bequant&#39;, &#39;bibox&#39;, &#39;bigone&#39;, &#39;binance&#39;, &#39;binancecoinm&#39;, &#39;binanceus&#39;, &#39;binanceusdm&#39;, &#39;bit2c&#39;, &#39;bitbank&#39;, &#39;bitbay&#39;, &#39;bitbns&#39;, &#39;bitcoincom&#39;, &#39;bitfinex&#39;, &#39;bitfinex2&#39;, &#39;bitflyer&#39;, &#39;bitforex&#39;, &#39;bitget&#39;, &#39;bithumb&#39;, &#39;bitmart&#39;, &#39;bitmex&#39;, &#39;bitopro&#39;, &#39;bitpanda&#39;, &#39;bitrue&#39;, &#39;bitso&#39;, &#39;bitstamp&#39;, &#39;bitstamp1&#39;, &#39;bittrex&#39;, &#39;bitvavo&#39;, &#39;bkex&#39;, &#39;bl3p&#39;, &#39;blockchaincom&#39;, &#39;btcalpha&#39;, &#39;btcbox&#39;, &#39;btcmarkets&#39;, &#39;btctradeua&#39;, &#39;btcturk&#39;, &#39;buda&#39;, &#39;bw&#39;, &#39;bybit&#39;, &#39;bytetrade&#39;, &#39;cdax&#39;, &#39;cex&#39;, &#39;coinbase&#39;, &#39;coinbaseprime&#39;, &#39;coinbasepro&#39;, &#39;coincheck&#39;, &#39;coinex&#39;, &#39;coinfalcon&#39;, &#39;coinmate&#39;, &#39;coinone&#39;, &#39;coinspot&#39;, &#39;crex24&#39;, &#39;cryptocom&#39;, &#39;currencycom&#39;, &#39;delta&#39;, &#39;deribit&#39;, &#39;digifinex&#39;, &#39;eqonex&#39;, &#39;exmo&#39;, &#39;flowbtc&#39;, &#39;fmfwio&#39;, &#39;ftx&#39;, &#39;ftxus&#39;, &#39;gateio&#39;, &#39;gemini&#39;, &#39;hitbtc&#39;, &#39;hitbtc3&#39;, &#39;hollaex&#39;, &#39;huobi&#39;, &#39;huobijp&#39;, &#39;huobipro&#39;, &#39;idex&#39;, &#39;independentreserve&#39;, &#39;indodax&#39;, &#39;itbit&#39;, &#39;kraken&#39;, &#39;kucoin&#39;, &#39;kucoinfutures&#39;, &#39;kuna&#39;, &#39;latoken&#39;, &#39;lbank&#39;, &#39;liquid&#39;, &#39;luno&#39;, &#39;lykke&#39;, &#39;mercado&#39;, &#39;mexc&#39;, &#39;ndax&#39;, &#39;novadax&#39;, &#39;oceanex&#39;, &#39;okcoin&#39;, &#39;okex&#39;, &#39;okex5&#39;, &#39;okx&#39;, &#39;paymium&#39;, &#39;phemex&#39;, &#39;poloniex&#39;, &#39;probit&#39;, &#39;qtrade&#39;, &#39;ripio&#39;, &#39;stex&#39;, &#39;therock&#39;, &#39;tidebit&#39;, &#39;tidex&#39;, &#39;timex&#39;, &#39;upbit&#39;, &#39;vcc&#39;, &#39;wavesexchange&#39;, &#39;wazirx&#39;, &#39;whitebit&#39;, &#39;woo&#39;, &#39;xena&#39;, &#39;yobit&#39;, &#39;zaif&#39;, &#39;zb&#39;, &#39;zipmex&#39;, &#39;zonda&#39;]
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  1) aax                   2) ascendex              3) bequant               4) bibox               
+  5) bigone                6) binance               7) binancecoinm          8) binanceus           
+  9) binanceusdm          10) bit2c                11) bitbank              12) bitbay              
+ 13) bitbns               14) bitcoincom           15) bitfinex             16) bitfinex2           
+ 17) bitflyer             18) bitforex             19) bitget               20) bithumb             
+ 21) bitmart              22) bitmex               23) bitopro              24) bitpanda            
+ 25) bitrue               26) bitso                27) bitstamp             28) bitstamp1           
+ 29) bittrex              30) bitvavo              31) bkex                 32) bl3p                
+ 33) blockchaincom        34) btcalpha             35) btcbox               36) btcmarkets          
+ 37) btctradeua           38) btcturk              39) buda                 40) bw                  
+ 41) bybit                42) bytetrade            43) cdax                 44) cex                 
+ 45) coinbase             46) coinbaseprime        47) coinbasepro          48) coincheck           
+ 49) coinex               50) coinfalcon           51) coinmate             52) coinone             
+ 53) coinspot             54) crex24               55) cryptocom            56) currencycom         
+ 57) delta                58) deribit              59) digifinex            60) eqonex              
+ 61) exmo                 62) flowbtc              63) fmfwio               64) ftx                 
+ 65) ftxus                66) gateio               67) gemini               68) hitbtc              
+ 69) hitbtc3              70) hollaex              71) huobi                72) huobijp             
+ 73) huobipro             74) idex                 75) independentreserve   76) indodax             
+ 77) itbit                78) kraken               79) kucoin               80) kucoinfutures       
+ 81) kuna                 82) latoken              83) lbank                84) liquid              
+ 85) luno                 86) lykke                87) mercado              88) mexc                
+ 89) ndax                 90) novadax              91) oceanex              92) okcoin              
+ 93) okex                 94) okex5                95) okx                  96) paymium             
+ 97) phemex               98) poloniex             99) probit              100) qtrade              
+101) ripio               102) stex                103) therock             104) tidebit             
+105) tidex               106) timex               107) upbit               108) vcc                 
+109) wavesexchange       110) wazirx              111) whitebit            112) woo                 
+113) xena                114) yobit               115) zaif                116) zb                  
+117) zipmex              118) zonda               
 </pre></div>
 </div>
 </div>
 </div>
 </section>
-<section id="exchange-markets-and-symbols">
-<h2>Exchange markets and symbols<a class="headerlink" href="#exchange-markets-and-symbols" title="Permalink to this headline">¶</a></h2>
-<p>Each of the exchanges supported by <code class="docutils literal notranslate"><span class="pre">ccxt</span></code> offers multiple markets, each market consisting of trade between two (possibly more) currencies. <code class="docutils literal notranslate"><span class="pre">ccxt</span></code> labels each market with a symbol and market id. The market id is for HTTP request-response purposes and not relevant to this analysis. The symbol, however, is common across exchanges and suitable for arbitrage and other cross-exchange analyses.</p>
-<p>Each symbol is an upper case string with names for a pair of traded currencies separated by a slash. The first name is the base currency, the second name is the quote currency.</p>
-<p>The following cell creates a directed graph to visualize the markets available on a single exchange. The directed graph consists of nodes representing currencies, and edges trading between those currencies. The symbol for each market forms an edge with the source located at the quote currency and directed towards a destination at the base currency.</p>
+<section id="representing-an-exchange-as-a-directed-graph">
+<h2>Representing an Exchange as a Directed Graph<a class="headerlink" href="#representing-an-exchange-as-a-directed-graph" title="Permalink to this headline">¶</a></h2>
+<p>Each exchange <code class="docutils literal notranslate"><span class="pre">ccxt</span></code> consists of multiple markets. Each market consists of all trading done between two specific currencies. <code class="docutils literal notranslate"><span class="pre">ccxt</span></code> labels each market with a symbol that is common across exchanges and suitable for within-exchange and cross-exchange arbitrage analyses.</p>
+<p>The market symbol is an upper case string consisting of a slash (<code class="docutils literal notranslate"><span class="pre">/</span></code>) that separate abbreviations for a pair of traded currencies. The first abbreviation is for the base currency, the second is for the quote currency.  Prices for the base currency are denominated in units of the quote currency. As an example, the symbol <code class="docutils literal notranslate"><span class="pre">ETH/BTC</span></code> refers to a market for the base currency Ethereum (ETH) quoted in units of the Bitcoin(BTC).</p>
+<p>A directed graph can be constructed from the market symbols available on a single exchange. Currencies are represented by nodes on the directed graph. Market symbols correspond to edges in the directed graph, with the source indicating the quote currency and the destination indicating the base currency.</p>
+<p>The in-degree of a node refers to the number of incoming edges. Out-degree refers to the number of outgoing edges. Nodes with out-degrees greater than zero are highlighted because they represent currencies used to quote the price of other currencies. For all other nodes, a <code class="docutils literal notranslate"><span class="pre">minimum_in_degree</span></code> specifies a threshold value for in_degree for nodes to be displayed and retained for further analysis.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ccxt</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
-<span class="kn">from</span> <span class="nn">netgraph</span> <span class="kn">import</span> <span class="n">Graph</span>
-
-<span class="c1"># global variables used in subsequent cells</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># global variables used in subsequent cells</span>
 <span class="n">exchange</span> <span class="o">=</span> <span class="n">ccxt</span><span class="o">.</span><span class="n">binanceus</span><span class="p">()</span>
 <span class="n">markets</span> <span class="o">=</span> <span class="n">exchange</span><span class="o">.</span><span class="n">load_markets</span><span class="p">()</span>
 <span class="n">symbols</span> <span class="o">=</span> <span class="n">exchange</span><span class="o">.</span><span class="n">symbols</span>
 
 
-<span class="k">def</span> <span class="nf">symbols_to_dg</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="n">in_degree</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">symbols_to_dg</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="n">minimum_in_degree</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
 
+    <span class="c1"># create an edge for every symbol</span>
     <span class="n">dg</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">base</span><span class="p">,</span> <span class="n">quote</span> <span class="ow">in</span> <span class="p">[</span><span class="n">symbol</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">]:</span>
         <span class="n">dg</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">quote</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span>
 
+    <span class="n">remove_nodes</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">dg</span><span class="o">.</span><span class="n">nodes</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">dg</span><span class="o">.</span><span class="n">out_degree</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># color quote currencies in gold</span>
             <span class="n">dg</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;gold&quot;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">dg</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;lightblue&quot;</span>
+            <span class="k">if</span> <span class="n">dg</span><span class="o">.</span><span class="n">in_degree</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">minimum_in_degree</span><span class="p">:</span>
+                <span class="c1"># remove base currencies with an insufficint in_degree</span>
+                <span class="n">remove_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># color base currencies in lightblue</span>
+                <span class="n">dg</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;lightblue&quot;</span>
 
-    <span class="n">remove_nodes</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="p">[</span><span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">dg</span><span class="o">.</span><span class="n">nodes</span><span class="p">()</span> <span class="k">if</span> <span class="n">dg</span><span class="o">.</span><span class="n">out_degree</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="n">dg</span><span class="o">.</span><span class="n">in_degree</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">in_degree</span><span class="p">:</span>
-            <span class="n">remove_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
     <span class="n">dg</span><span class="o">.</span><span class="n">remove_nodes_from</span><span class="p">(</span><span class="n">remove_nodes</span><span class="p">)</span>
-
     <span class="k">return</span> <span class="n">dg</span>
 
 
-<span class="n">dg_symbols</span> <span class="o">=</span> <span class="n">symbols_to_dg</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">netgraph_dg</span><span class="p">(</span><span class="n">dg</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">draw_dg</span><span class="p">(</span><span class="n">dg</span><span class="p">):</span>
 
-    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">18</span><span class="p">))</span>
-    <span class="n">Graph</span><span class="p">(</span>
-        <span class="n">dg</span><span class="p">,</span>
-        <span class="n">arrows</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">node_layout</span><span class="o">=</span><span class="s2">&quot;dot&quot;</span><span class="p">,</span>
-        <span class="n">node_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">node_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-        <span class="n">node_color</span><span class="o">=</span><span class="p">{</span><span class="n">node</span><span class="p">:</span> <span class="n">dg</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">dg</span><span class="o">.</span><span class="n">nodes</span><span class="p">()},</span>
-        <span class="n">edge_width</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-        <span class="n">edge_alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
-    <span class="p">)</span>
-    
-<span class="n">netgraph_dg</span><span class="p">(</span><span class="n">dg_symbols</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<img alt="../../_images/cryptocurrency-arbitrage_9_0.png" src="../../_images/cryptocurrency-arbitrage_9_0.png" />
-</div>
-</div>
-<p>Nodes of a directed graph are characterized incoming and outgoing edges. A node’s in-degree refers to the number of incoming edges, out-degree refers to the number of outgoing edges. In this case, node with outgoing edges are highlighted because they represent currencies used to quote the price of other currencies. The currency nodes have only in-coming edge. Nodes with only one incoming edge are not candidates for arbitrage. A parameter <code class="docutils literal notranslate"><span class="pre">in_degree</span></code> specifies a minimum threshold value for these nodes to be retained for further analysis.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">draw_dg</span><span class="p">(</span><span class="n">dg</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of nodes = </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dg</span><span class="o">.</span><span class="n">nodes</span><span class="p">())</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of edges = </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dg</span><span class="o">.</span><span class="n">edges</span><span class="p">())</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">15</span><span class="p">))</span>
     <span class="n">pos</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">circular_layout</span><span class="p">(</span><span class="n">dg</span><span class="p">)</span>
     <span class="n">nx</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span>
         <span class="n">dg</span><span class="p">,</span>
@@ -766,34 +758,39 @@ const thebe_selector_output = ".output, .cell_output"
         <span class="n">arrowsize</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
         <span class="n">connectionstyle</span><span class="o">=</span><span class="s2">&quot;arc3, rad=0.1&quot;</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="c1"># nx.draw_networkx_edge_labels(</span>
-    <span class="c1">#    G, pos, edge_labels={(src, dst): f&quot;{src}/{dst}&quot; for src, dst in dg.edges()}</span>
-    <span class="c1"># )</span>
+    <span class="c1">#nx.draw_networkx_edge_labels(</span>
+    <span class="c1">#    dg, pos, edge_labels={(src, dst): f&quot;{src}/{dst}&quot; for src, dst in dg.edges()}</span>
+    <span class="c1">#)</span>
 
 
+<span class="n">dg_symbols</span> <span class="o">=</span> <span class="n">symbols_to_dg</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 <span class="n">draw_dg</span><span class="p">(</span><span class="n">dg_symbols</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of nodes = </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dg_symbols</span><span class="o">.</span><span class="n">nodes</span><span class="p">())</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of edges = </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dg_symbols</span><span class="o">.</span><span class="n">edges</span><span class="p">())</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of nodes =  31
-Number of edges =  98
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of nodes =  15
+Number of edges =  50
 </pre></div>
 </div>
-<img alt="../../_images/cryptocurrency-arbitrage_11_1.png" src="../../_images/cryptocurrency-arbitrage_11_1.png" />
+<img alt="../../_images/cryptocurrency-arbitrage_7_1.png" src="../../_images/cryptocurrency-arbitrage_7_1.png" />
 </div>
 </div>
 </section>
-<section id="an-exchange-order-book">
-<h2>An Exchange Order Book<a class="headerlink" href="#an-exchange-order-book" title="Permalink to this headline">¶</a></h2>
-<p>An currency exchange order book presents a real-time inventory of trading orders.</p>
-<p>A <strong>bid</strong> is an order to buy some amount of the base currency at a price given in the quote currency. The buyer will receive the base currency if a transaction occurs. The price paid may be less than bid price if the exchange matches the bid to a previous offer to sell at a lower price. The size the transaction is specified in terms of the base currency that is bought or sold.</p>
-<p>An <strong>ask</strong> is an offer to sell an amount of the base currency at a quoted price. If a transaction occurs, then seller receives the quote currency at a unit price that may be higher if the exchange matches the ask order to a higher bid.</p>
-<p>The exchange order book maintains a list of all active orders for all symbols traded on the exchange. The highest bid will below the lowest ask. Incoming bids above the lowest ask, or incoming asks below the highest bid, will be matched and transactions executed following exchange rules.</p>
-<p>The following cell fetches the highest bid and lowest ask from the order book for</p>
+<section id="exchange-order-book">
+<h2>Exchange Order Book<a class="headerlink" href="#exchange-order-book" title="Permalink to this headline">¶</a></h2>
+<p>The order book for a currency exchange is the real-time inventory of trading orders.</p>
+<p>A <strong>bid</strong> is an order to buy up to a specified amount of the base currency at a price no greater than value specified in the quote currency. The exchange attempts to match the bid to a sell order at a price less than or equal to the bid price. If a transaction occurs, the  buyer will receive an amount of base currency less than or equal to the bid volume at a prices less than or equal to the bid price.</p>
+<p>An <strong>ask</strong> is an offer to sell up to a specified amount of the base currency at a price no less than a value specified given in the quote currency. If a transaction occurs, then seller will sell no more than a specified about of the base currency at a price no less than the specified value if the exchange matches the ask order to a higher bid.</p>
+<p>The exchange order book maintains a list of all active orders for symbols traded on the exchange. Incoming bids above the lowest ask or incoming asks below the highest bid will be immediately matched and transactions executed following rules of the exchange.</p>
+<p>The following cell uses the <code class="docutils literal notranslate"><span class="pre">ccxt</span></code> library to fetch the highest bid and lowest ask from the order book for all trading symbols in a directed graph.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
 
 <span class="k">def</span> <span class="nf">fetch_order_book</span><span class="p">(</span><span class="n">dg</span><span class="p">):</span>
 
@@ -805,7 +802,7 @@ Number of edges =  98
         <span class="n">start_time</span> <span class="o">=</span> <span class="n">timer</span><span class="p">()</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">exchange</span><span class="o">.</span><span class="n">fetch_order_book</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
         <span class="n">result</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;quote&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">symbol</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
-        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;run_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">timer</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;run_time (ms)&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="mi">1000</span> <span class="o">*</span> <span class="p">(</span><span class="n">timer</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
         <span class="n">result</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exchange</span><span class="o">.</span><span class="n">milliseconds</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;bids&quot;</span><span class="p">]:</span>
             <span class="n">result</span><span class="p">[</span><span class="s2">&quot;bid_price&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;bids&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
@@ -856,7 +853,7 @@ Number of edges =  98
       <th>nonce</th>
       <th>base</th>
       <th>quote</th>
-      <th>run_time</th>
+      <th>run_time (ms)</th>
       <th>bid_price</th>
       <th>bid_volume</th>
       <th>ask_price</th>
@@ -866,182 +863,727 @@ Number of edges =  98
   <tbody>
     <tr>
       <th>ADA/USD</th>
-      <td>[[0.575, 840.0]]</td>
-      <td>[[0.5754, 870.3]]</td>
-      <td>2022-05-13 10:40:46.019</td>
-      <td>953297902</td>
+      <td>[[0.4548, 1224.9]]</td>
+      <td>[[0.4551, 5229.0]]</td>
+      <td>2022-07-05 10:57:23.823</td>
+      <td>1021311878</td>
       <td>ADA</td>
       <td>USD</td>
-      <td>0.056427</td>
-      <td>0.575</td>
-      <td>840.0</td>
-      <td>0.5754</td>
-      <td>870.3</td>
+      <td>172.7</td>
+      <td>0.4548</td>
+      <td>1224.9</td>
+      <td>0.4551</td>
+      <td>5229.0</td>
     </tr>
     <tr>
-      <th>ALGO/USD</th>
-      <td>[[0.476, 17346.103]]</td>
-      <td>[[0.477, 3340.225]]</td>
-      <td>2022-05-13 10:40:46.072</td>
-      <td>297337770</td>
-      <td>ALGO</td>
+      <th>BNB/USD</th>
+      <td>[[228.2095, 0.175]]</td>
+      <td>[[228.3225, 0.175]]</td>
+      <td>2022-07-05 10:57:23.884</td>
+      <td>1336972454</td>
+      <td>BNB</td>
       <td>USD</td>
-      <td>0.053172</td>
-      <td>0.476</td>
-      <td>17346.103</td>
-      <td>0.477</td>
-      <td>3340.225</td>
+      <td>61.7</td>
+      <td>228.2095</td>
+      <td>0.175</td>
+      <td>228.3225</td>
+      <td>0.175</td>
     </tr>
     <tr>
-      <th>ATOM/USD</th>
-      <td>[[10.893, 4.475]]</td>
-      <td>[[10.904, 21.2]]</td>
-      <td>2022-05-13 10:40:46.123</td>
-      <td>598245086</td>
-      <td>ATOM</td>
+      <th>BTC/USD</th>
+      <td>[[19731.37, 0.030391]]</td>
+      <td>[[19733.11, 0.001816]]</td>
+      <td>2022-07-05 10:57:23.944</td>
+      <td>2156358461</td>
+      <td>BTC</td>
       <td>USD</td>
-      <td>0.050757</td>
-      <td>10.893</td>
-      <td>4.475</td>
-      <td>10.904</td>
-      <td>21.2</td>
+      <td>59.8</td>
+      <td>19731.37</td>
+      <td>0.030391</td>
+      <td>19733.11</td>
+      <td>0.001816</td>
     </tr>
     <tr>
-      <th>AVAX/USD</th>
-      <td>[[34.55, 24.56]]</td>
-      <td>[[34.58, 19.2]]</td>
-      <td>2022-05-13 10:40:46.176</td>
-      <td>197417499</td>
-      <td>AVAX</td>
+      <th>BUSD/USD</th>
+      <td>[[1.0, 0.01]]</td>
+      <td>[[1.0001, 48160.7]]</td>
+      <td>2022-07-05 10:57:24.007</td>
+      <td>10403855</td>
+      <td>BUSD</td>
       <td>USD</td>
-      <td>0.05276</td>
-      <td>34.55</td>
-      <td>24.56</td>
-      <td>34.58</td>
-      <td>19.2</td>
+      <td>62.4</td>
+      <td>1.0</td>
+      <td>0.01</td>
+      <td>1.0001</td>
+      <td>48160.7</td>
     </tr>
     <tr>
-      <th>BCH/USD</th>
-      <td>[[209.6, 0.19068]]</td>
-      <td>[[209.82, 0.19064]]</td>
-      <td>2022-05-13 10:40:46.228</td>
-      <td>664237797</td>
-      <td>BCH</td>
+      <th>ETH/USD</th>
+      <td>[[1127.21, 1.4]]</td>
+      <td>[[1127.37, 0.07837]]</td>
+      <td>2022-07-05 10:57:24.068</td>
+      <td>1875494022</td>
+      <td>ETH</td>
       <td>USD</td>
-      <td>0.051721</td>
-      <td>209.6</td>
-      <td>0.19068</td>
-      <td>209.82</td>
-      <td>0.19064</td>
+      <td>61.4</td>
+      <td>1127.21</td>
+      <td>1.4</td>
+      <td>1127.37</td>
+      <td>0.07837</td>
     </tr>
     <tr>
-      <th>...</th>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
+      <th>MANA/USD</th>
+      <td>[[0.856, 454.5]]</td>
+      <td>[[0.8569, 300.0]]</td>
+      <td>2022-07-05 10:57:24.138</td>
+      <td>706358600</td>
+      <td>MANA</td>
+      <td>USD</td>
+      <td>70.1</td>
+      <td>0.856</td>
+      <td>454.5</td>
+      <td>0.8569</td>
+      <td>300.0</td>
+    </tr>
+    <tr>
+      <th>MATIC/USD</th>
+      <td>[[0.5112, 900.0]]</td>
+      <td>[[0.5114, 4002.8]]</td>
+      <td>2022-07-05 10:57:24.198</td>
+      <td>1033760110</td>
+      <td>MATIC</td>
+      <td>USD</td>
+      <td>59.6</td>
+      <td>0.5112</td>
+      <td>900.0</td>
+      <td>0.5114</td>
+      <td>4002.8</td>
+    </tr>
+    <tr>
+      <th>POLY/USD</th>
+      <td>[[0.1921, 1147.3]]</td>
+      <td>[[0.1928, 598.0]]</td>
+      <td>2022-07-05 10:57:24.258</td>
+      <td>5319346</td>
+      <td>POLY</td>
+      <td>USD</td>
+      <td>60.7</td>
+      <td>0.1921</td>
+      <td>1147.3</td>
+      <td>0.1928</td>
+      <td>598.0</td>
+    </tr>
+    <tr>
+      <th>SOL/USD</th>
+      <td>[[34.4656, 25.49]]</td>
+      <td>[[34.4849, 25.55]]</td>
+      <td>2022-07-05 10:57:24.322</td>
+      <td>1206665312</td>
+      <td>SOL</td>
+      <td>USD</td>
+      <td>63.7</td>
+      <td>34.4656</td>
+      <td>25.49</td>
+      <td>34.4849</td>
+      <td>25.55</td>
+    </tr>
+    <tr>
+      <th>TRX/USD</th>
+      <td>[[0.0671, 53981.9]]</td>
+      <td>[[0.0673, 78610.9]]</td>
+      <td>2022-07-05 10:57:24.383</td>
+      <td>8013214</td>
+      <td>TRX</td>
+      <td>USD</td>
+      <td>61.3</td>
+      <td>0.0671</td>
+      <td>53981.9</td>
+      <td>0.0673</td>
+      <td>78610.9</td>
+    </tr>
+    <tr>
+      <th>USDC/USD</th>
+      <td>[[0.9999, 28552.14]]</td>
+      <td>[[1.0, 407816.82]]</td>
+      <td>2022-07-05 10:57:24.445</td>
+      <td>22984494</td>
+      <td>USDC</td>
+      <td>USD</td>
+      <td>61.9</td>
+      <td>0.9999</td>
+      <td>28552.14</td>
+      <td>1.0</td>
+      <td>407816.82</td>
+    </tr>
+    <tr>
+      <th>USDT/USD</th>
+      <td>[[0.9986, 989350.48]]</td>
+      <td>[[0.9988, 14553.13]]</td>
+      <td>2022-07-05 10:57:24.508</td>
+      <td>60251674</td>
+      <td>USDT</td>
+      <td>USD</td>
+      <td>62.8</td>
+      <td>0.9986</td>
+      <td>989350.48</td>
+      <td>0.9988</td>
+      <td>14553.13</td>
+    </tr>
+    <tr>
+      <th>UST/USD</th>
+      <td>[]</td>
+      <td>[]</td>
+      <td>2022-07-05 10:57:24.571</td>
+      <td>3225972</td>
+      <td>UST</td>
+      <td>USD</td>
+      <td>62.9</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>XRP/USD</th>
+      <td>[]</td>
+      <td>[]</td>
+      <td>2022-07-05 10:57:24.631</td>
+      <td>119696569</td>
+      <td>XRP</td>
+      <td>USD</td>
+      <td>59.8</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>ADA/USDT</th>
+      <td>[[0.45522, 4150.0]]</td>
+      <td>[[0.45581, 64.2]]</td>
+      <td>2022-07-05 10:57:24.692</td>
+      <td>605842994</td>
+      <td>ADA</td>
+      <td>USDT</td>
+      <td>60.8</td>
+      <td>0.45522</td>
+      <td>4150.0</td>
+      <td>0.45581</td>
+      <td>64.2</td>
+    </tr>
+    <tr>
+      <th>BNB/USDT</th>
+      <td>[[228.5011, 1.4]]</td>
+      <td>[[228.7105, 0.9]]</td>
+      <td>2022-07-05 10:57:24.754</td>
+      <td>763725441</td>
+      <td>BNB</td>
+      <td>USDT</td>
+      <td>61.9</td>
+      <td>228.5011</td>
+      <td>1.4</td>
+      <td>228.7105</td>
+      <td>0.9</td>
+    </tr>
+    <tr>
+      <th>BTC/USDT</th>
+      <td>[[19753.02, 0.089003]]</td>
+      <td>[[19758.81, 0.085]]</td>
+      <td>2022-07-05 10:57:24.817</td>
+      <td>1164461613</td>
+      <td>BTC</td>
+      <td>USDT</td>
+      <td>63.6</td>
+      <td>19753.02</td>
+      <td>0.089003</td>
+      <td>19758.81</td>
+      <td>0.085</td>
+    </tr>
+    <tr>
+      <th>BUSD/USDT</th>
+      <td>[[1.001, 138319.98]]</td>
+      <td>[[1.0015, 278168.24]]</td>
+      <td>2022-07-05 10:57:24.877</td>
+      <td>3607505</td>
+      <td>BUSD</td>
+      <td>USDT</td>
+      <td>59.7</td>
+      <td>1.001</td>
+      <td>138319.98</td>
+      <td>1.0015</td>
+      <td>278168.24</td>
+    </tr>
+    <tr>
+      <th>ETH/USDT</th>
+      <td>[[1128.55, 0.9]]</td>
+      <td>[[1129.04, 0.87792]]</td>
+      <td>2022-07-05 10:57:24.939</td>
+      <td>1074556882</td>
+      <td>ETH</td>
+      <td>USDT</td>
+      <td>61.8</td>
+      <td>1128.55</td>
+      <td>0.9</td>
+      <td>1129.04</td>
+      <td>0.87792</td>
+    </tr>
+    <tr>
+      <th>MANA/USDT</th>
+      <td>[[0.8563, 316.0]]</td>
+      <td>[[0.8584, 207.0]]</td>
+      <td>2022-07-05 10:57:25.001</td>
+      <td>47019031</td>
+      <td>MANA</td>
+      <td>USDT</td>
+      <td>62.4</td>
+      <td>0.8563</td>
+      <td>316.0</td>
+      <td>0.8584</td>
+      <td>207.0</td>
+    </tr>
+    <tr>
+      <th>MATIC/USDT</th>
+      <td>[[0.511, 38132.8]]</td>
+      <td>[[0.513, 1323.4]]</td>
+      <td>2022-07-05 10:57:25.063</td>
+      <td>41453349</td>
+      <td>MATIC</td>
+      <td>USDT</td>
+      <td>62.0</td>
+      <td>0.511</td>
+      <td>38132.8</td>
+      <td>0.513</td>
+      <td>1323.4</td>
+    </tr>
+    <tr>
+      <th>POLY/USDT</th>
+      <td>[[0.1922, 1506.4]]</td>
+      <td>[[0.1931, 2938.6]]</td>
+      <td>2022-07-05 10:57:25.125</td>
+      <td>3638388</td>
+      <td>POLY</td>
+      <td>USDT</td>
+      <td>62.0</td>
+      <td>0.1922</td>
+      <td>1506.4</td>
+      <td>0.1931</td>
+      <td>2938.6</td>
+    </tr>
+    <tr>
+      <th>SOL/USDT</th>
+      <td>[[34.5026, 33.17]]</td>
+      <td>[[34.5388, 12.0]]</td>
+      <td>2022-07-05 10:57:25.190</td>
+      <td>501276472</td>
+      <td>SOL</td>
+      <td>USDT</td>
+      <td>64.4</td>
+      <td>34.5026</td>
+      <td>33.17</td>
+      <td>34.5388</td>
+      <td>12.0</td>
+    </tr>
+    <tr>
+      <th>TRX/USDT</th>
+      <td>[[0.0672, 12510.5]]</td>
+      <td>[[0.06734, 20365.3]]</td>
+      <td>2022-07-05 10:57:25.251</td>
+      <td>14703892</td>
+      <td>TRX</td>
+      <td>USDT</td>
+      <td>61.6</td>
+      <td>0.0672</td>
+      <td>12510.5</td>
+      <td>0.06734</td>
+      <td>20365.3</td>
+    </tr>
+    <tr>
+      <th>USDC/USDT</th>
+      <td>[[1.001, 232990.0]]</td>
+      <td>[[1.0016, 378473.0]]</td>
+      <td>2022-07-05 10:57:25.315</td>
+      <td>1225889</td>
+      <td>USDC</td>
+      <td>USDT</td>
+      <td>64.1</td>
+      <td>1.001</td>
+      <td>232990.0</td>
+      <td>1.0016</td>
+      <td>378473.0</td>
+    </tr>
+    <tr>
+      <th>UST/USDT</th>
+      <td>[]</td>
+      <td>[]</td>
+      <td>2022-07-05 10:57:25.377</td>
+      <td>1960270</td>
+      <td>UST</td>
+      <td>USDT</td>
+      <td>61.6</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>XRP/USDT</th>
+      <td>[]</td>
+      <td>[]</td>
+      <td>2022-07-05 10:57:25.440</td>
+      <td>100846158</td>
+      <td>XRP</td>
+      <td>USDT</td>
+      <td>63.1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>ADA/BTC</th>
+      <td>[[2.304e-05, 1020.0]]</td>
+      <td>[[2.308e-05, 220.0]]</td>
+      <td>2022-07-05 10:57:25.501</td>
+      <td>122112323</td>
+      <td>ADA</td>
+      <td>BTC</td>
+      <td>61.0</td>
+      <td>0.000023</td>
+      <td>1020.0</td>
+      <td>0.000023</td>
+      <td>220.0</td>
+    </tr>
+    <tr>
+      <th>BNB/BTC</th>
+      <td>[[0.0115629, 0.12]]</td>
+      <td>[[0.0115741, 0.04]]</td>
+      <td>2022-07-05 10:57:25.560</td>
+      <td>243605457</td>
+      <td>BNB</td>
+      <td>BTC</td>
+      <td>59.1</td>
+      <td>0.011563</td>
+      <td>0.12</td>
+      <td>0.011574</td>
+      <td>0.04</td>
+    </tr>
+    <tr>
+      <th>ETH/BTC</th>
+      <td>[[0.05712, 0.32]]</td>
+      <td>[[0.057143, 0.32]]</td>
+      <td>2022-07-05 10:57:25.622</td>
+      <td>377543472</td>
+      <td>ETH</td>
+      <td>BTC</td>
+      <td>62.0</td>
+      <td>0.05712</td>
+      <td>0.32</td>
+      <td>0.057143</td>
+      <td>0.32</td>
+    </tr>
+    <tr>
+      <th>MANA/BTC</th>
+      <td>[[4.337e-05, 340.0]]</td>
+      <td>[[4.345e-05, 452.0]]</td>
+      <td>2022-07-05 10:57:25.689</td>
+      <td>13373025</td>
+      <td>MANA</td>
+      <td>BTC</td>
+      <td>66.8</td>
+      <td>0.000043</td>
+      <td>340.0</td>
+      <td>0.000043</td>
+      <td>452.0</td>
+    </tr>
+    <tr>
+      <th>MATIC/BTC</th>
+      <td>[[2.588e-05, 876.5]]</td>
+      <td>[[2.594e-05, 1098.0]]</td>
+      <td>2022-07-05 10:57:25.751</td>
+      <td>13621112</td>
+      <td>MATIC</td>
+      <td>BTC</td>
+      <td>61.5</td>
+      <td>0.000026</td>
+      <td>876.5</td>
+      <td>0.000026</td>
+      <td>1098.0</td>
+    </tr>
+    <tr>
+      <th>POLY/BTC</th>
+      <td>[[9.73e-06, 1048.0]]</td>
+      <td>[[9.78e-06, 1375.0]]</td>
+      <td>2022-07-05 10:57:25.815</td>
+      <td>2417488</td>
+      <td>POLY</td>
+      <td>BTC</td>
+      <td>64.6</td>
+      <td>0.00001</td>
+      <td>1048.0</td>
+      <td>0.00001</td>
+      <td>1375.0</td>
+    </tr>
+    <tr>
+      <th>SOL/BTC</th>
+      <td>[[0.0017462, 7.26]]</td>
+      <td>[[0.0017486, 7.25]]</td>
+      <td>2022-07-05 10:57:25.879</td>
+      <td>49549787</td>
+      <td>SOL</td>
+      <td>BTC</td>
+      <td>63.9</td>
+      <td>0.001746</td>
+      <td>7.26</td>
+      <td>0.001749</td>
+      <td>7.25</td>
+    </tr>
+    <tr>
+      <th>TRX/BTC</th>
+      <td>[[3.4e-06, 4466.0]]</td>
+      <td>[[3.41e-06, 7095.0]]</td>
+      <td>2022-07-05 10:57:25.943</td>
+      <td>1577482</td>
+      <td>TRX</td>
+      <td>BTC</td>
+      <td>64.0</td>
+      <td>0.000003</td>
+      <td>4466.0</td>
+      <td>0.000003</td>
+      <td>7095.0</td>
+    </tr>
+    <tr>
+      <th>XRP/BTC</th>
+      <td>[]</td>
+      <td>[]</td>
+      <td>2022-07-05 10:57:26.011</td>
+      <td>48000651</td>
+      <td>XRP</td>
+      <td>BTC</td>
+      <td>68.2</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>ADA/BUSD</th>
+      <td>[[0.454, 6645.0]]</td>
+      <td>[[0.456, 20023.1]]</td>
+      <td>2022-07-05 10:57:26.071</td>
+      <td>8921544</td>
+      <td>ADA</td>
+      <td>BUSD</td>
+      <td>59.6</td>
+      <td>0.454</td>
+      <td>6645.0</td>
+      <td>0.456</td>
+      <td>20023.1</td>
+    </tr>
+    <tr>
+      <th>BNB/BUSD</th>
+      <td>[[228.1265, 0.5]]</td>
+      <td>[[228.4858, 118.62]]</td>
+      <td>2022-07-05 10:57:26.130</td>
+      <td>207195435</td>
+      <td>BNB</td>
+      <td>BUSD</td>
+      <td>59.1</td>
+      <td>228.1265</td>
+      <td>0.5</td>
+      <td>228.4858</td>
+      <td>118.62</td>
+    </tr>
+    <tr>
+      <th>BTC/BUSD</th>
+      <td>[[19727.11, 0.034]]</td>
+      <td>[[19736.98, 0.034]]</td>
+      <td>2022-07-05 10:57:26.192</td>
+      <td>526019376</td>
+      <td>BTC</td>
+      <td>BUSD</td>
+      <td>62.1</td>
+      <td>19727.11</td>
+      <td>0.034</td>
+      <td>19736.98</td>
+      <td>0.034</td>
+    </tr>
+    <tr>
+      <th>ETH/BUSD</th>
+      <td>[[1127.0, 0.42]]</td>
+      <td>[[1127.58, 0.42]]</td>
+      <td>2022-07-05 10:57:26.253</td>
+      <td>394616004</td>
+      <td>ETH</td>
+      <td>BUSD</td>
+      <td>60.7</td>
+      <td>1127.0</td>
+      <td>0.42</td>
+      <td>1127.58</td>
+      <td>0.42</td>
+    </tr>
+    <tr>
+      <th>MANA/BUSD</th>
+      <td>[[0.8556, 351.0]]</td>
+      <td>[[0.8574, 636.0]]</td>
+      <td>2022-07-05 10:57:26.316</td>
+      <td>24530118</td>
+      <td>MANA</td>
+      <td>BUSD</td>
+      <td>62.9</td>
+      <td>0.8556</td>
+      <td>351.0</td>
+      <td>0.8574</td>
+      <td>636.0</td>
+    </tr>
+    <tr>
+      <th>MATIC/BUSD</th>
+      <td>[[0.51104, 3346.4]]</td>
+      <td>[[0.51138, 4108.7]]</td>
+      <td>2022-07-05 10:57:26.378</td>
+      <td>331750410</td>
+      <td>MATIC</td>
+      <td>BUSD</td>
+      <td>62.6</td>
+      <td>0.51104</td>
+      <td>3346.4</td>
+      <td>0.51138</td>
+      <td>4108.7</td>
+    </tr>
+    <tr>
+      <th>POLY/BUSD</th>
+      <td>[[0.1919, 1096.6]]</td>
+      <td>[[0.1931, 1040.1]]</td>
+      <td>2022-07-05 10:57:26.438</td>
+      <td>3418253</td>
+      <td>POLY</td>
+      <td>BUSD</td>
+      <td>59.8</td>
+      <td>0.1919</td>
+      <td>1096.6</td>
+      <td>0.1931</td>
+      <td>1040.1</td>
+    </tr>
+    <tr>
+      <th>SOL/BUSD</th>
+      <td>[[34.44, 7.5]]</td>
+      <td>[[34.53, 9.22]]</td>
+      <td>2022-07-05 10:57:26.501</td>
+      <td>36789679</td>
+      <td>SOL</td>
+      <td>BUSD</td>
+      <td>62.3</td>
+      <td>34.44</td>
+      <td>7.5</td>
+      <td>34.53</td>
+      <td>9.22</td>
+    </tr>
+    <tr>
+      <th>TRX/BUSD</th>
+      <td>[[0.06713, 14176.9]]</td>
+      <td>[[0.06726, 18095.8]]</td>
+      <td>2022-07-05 10:57:26.562</td>
+      <td>9514490</td>
+      <td>TRX</td>
+      <td>BUSD</td>
+      <td>61.7</td>
+      <td>0.06713</td>
+      <td>14176.9</td>
+      <td>0.06726</td>
+      <td>18095.8</td>
+    </tr>
+    <tr>
+      <th>USDC/BUSD</th>
+      <td>[[0.9998, 66865.59]]</td>
+      <td>[[1.0, 183547.61]]</td>
+      <td>2022-07-05 10:57:26.622</td>
+      <td>637501</td>
+      <td>USDC</td>
+      <td>BUSD</td>
+      <td>59.8</td>
+      <td>0.9998</td>
+      <td>66865.59</td>
+      <td>1.0</td>
+      <td>183547.61</td>
     </tr>
     <tr>
       <th>XRP/BUSD</th>
       <td>[]</td>
       <td>[]</td>
-      <td>2022-05-13 10:40:50.900</td>
+      <td>2022-07-05 10:57:26.684</td>
       <td>28045681</td>
       <td>XRP</td>
       <td>BUSD</td>
-      <td>0.051575</td>
+      <td>61.8</td>
       <td>NaN</td>
       <td>NaN</td>
       <td>NaN</td>
       <td>NaN</td>
-    </tr>
-    <tr>
-      <th>XTZ/BUSD</th>
-      <td>[[1.85, 137.83]]</td>
-      <td>[[1.854, 104.84]]</td>
-      <td>2022-05-13 10:40:50.954</td>
-      <td>114139020</td>
-      <td>XTZ</td>
-      <td>BUSD</td>
-      <td>0.053596</td>
-      <td>1.85</td>
-      <td>137.83</td>
-      <td>1.854</td>
-      <td>104.84</td>
     </tr>
     <tr>
       <th>BTC/USDC</th>
-      <td>[[30302.67, 0.32]]</td>
-      <td>[[30333.88, 0.054327]]</td>
-      <td>2022-05-13 10:40:51.013</td>
-      <td>198679959</td>
+      <td>[[19728.1, 0.035]]</td>
+      <td>[[19736.97, 0.035]]</td>
+      <td>2022-07-05 10:57:26.744</td>
+      <td>232324505</td>
       <td>BTC</td>
       <td>USDC</td>
-      <td>0.059116</td>
-      <td>30302.67</td>
-      <td>0.32</td>
-      <td>30333.88</td>
-      <td>0.054327</td>
+      <td>59.8</td>
+      <td>19728.1</td>
+      <td>0.035</td>
+      <td>19736.97</td>
+      <td>0.035</td>
     </tr>
     <tr>
       <th>ETH/USDC</th>
-      <td>[[2076.25, 0.288]]</td>
-      <td>[[2079.35, 0.288]]</td>
-      <td>2022-05-13 10:40:51.064</td>
-      <td>34096805</td>
+      <td>[[1127.0, 0.415]]</td>
+      <td>[[1127.58, 0.415]]</td>
+      <td>2022-07-05 10:57:26.805</td>
+      <td>67862466</td>
       <td>ETH</td>
       <td>USDC</td>
-      <td>0.051345</td>
-      <td>2076.25</td>
-      <td>0.288</td>
-      <td>2079.35</td>
-      <td>0.288</td>
+      <td>61.4</td>
+      <td>1127.0</td>
+      <td>0.415</td>
+      <td>1127.58</td>
+      <td>0.415</td>
     </tr>
     <tr>
       <th>BTC/UST</th>
-      <td>[[237777.77, 0.00022]]</td>
-      <td>[[238000.0, 0.00891]]</td>
-      <td>2022-05-13 10:40:51.118</td>
-      <td>1727292</td>
+      <td>[]</td>
+      <td>[]</td>
+      <td>2022-07-05 10:57:26.868</td>
+      <td>2296799</td>
       <td>BTC</td>
       <td>UST</td>
-      <td>0.053762</td>
-      <td>237777.77</td>
-      <td>0.00022</td>
-      <td>238000.0</td>
-      <td>0.00891</td>
+      <td>63.2</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
     </tr>
   </tbody>
 </table>
-<p>98 rows × 11 columns</p>
 </div></div></div>
 </div>
 </section>
 <section id="order-book-as-a-directed-graph">
 <h2>Order Book as a Directed Graph<a class="headerlink" href="#order-book-as-a-directed-graph" title="Permalink to this headline">¶</a></h2>
-<p>Here we visual the order book as a directed graph. Each order for a particular symbol is represented as an edge. Consider a symbol with base currency <span class="math notranslate nohighlight">\(b\)</span> and quote currency <span class="math notranslate nohighlight">\(q\)</span>, with a corresponding trading symbol <span class="math notranslate nohighlight">\(b/q\)</span>.</p>
-<p>The appearance of a sell order for symbol <span class="math notranslate nohighlight">\(b/q\)</span> in the order book presents an opportunity to purchase an amount of currency <span class="math notranslate nohighlight">\(b\)</span> at the specified ask price. This opportunity is represented on the directed graph by a directed edge from the quote currency to the base currency with a ‘conversion’ value <span class="math notranslate nohighlight">\(a_{q\rightarrow b}\)</span> equal to inverse of the ask price. The conversion means that one unit of the quote currency can be converted to <span class="math notranslate nohighlight">\(a_{q\rightarrow b}\)</span> units of the base currency. The capacity of the edge is the ask volume multiplied by the ask price.</p>
-<p>A buy order for symbol <span class="math notranslate nohighlight">\(b/q\)</span> presents an opportunity to sell an amount of currency <span class="math notranslate nohighlight">\(b\)</span> at the specified bid price. The is represented by a directed edge from the base currency to the quote currency with a conversion value <span class="math notranslate nohighlight">\(a_{b\rightarrow q}\)</span> equal to the bid price. The conversion means that one unit of the base currency can be converted to <span class="math notranslate nohighlight">\(a_{b\rightarrow q}\)</span> units of the quote currency. The capacity of the edge is equal to bid volume.</p>
+<p>The order book can be organized as a directed graph..</p>
+<p>Consider a market symbol with base currency <span class="math notranslate nohighlight">\(b\)</span> and quote currency <span class="math notranslate nohighlight">\(q\)</span> corresponding to a trading symbol <span class="math notranslate nohighlight">\(b/q\)</span>. A sell order for symbol <span class="math notranslate nohighlight">\(b/q\)</span> presents an opportunity to purchase up to a specified amount of currency <span class="math notranslate nohighlight">\(b\)</span> at the specified ask price. This sell order is represented on the directed graph by a directed edge from the quote currency to the base currency with labeled with a coefficient <span class="math notranslate nohighlight">\(a_{q\rightarrow b}\)</span> equal to inverse of the ask price. The coefficient represents the conversion of one unit of the quote currency into <span class="math notranslate nohighlight">\(a_{q\rightarrow b}\)</span> units of the base currency. The capacity of the edge, <span class="math notranslate nohighlight">\(c_{q\rightarrow b}\)</span>, is equal to the units of base currency available for trading in this sell order. The capacity is computed by multiplying the ask volume of the order book by the ask price.</p>
+<p>A buy order for symbol <span class="math notranslate nohighlight">\(b/q\)</span> is an opportunity to sell an amount of currency <span class="math notranslate nohighlight">\(b\)</span> at the specified bid price. The is represented by a directed edge from the base currency to the quote currency with a coefficient value <span class="math notranslate nohighlight">\(a_{b\rightarrow q}\)</span> equal to the bid price. Execution of the trade results each unit of the base currency being converted to <span class="math notranslate nohighlight">\(a_{b\rightarrow q}\)</span> units of the quote currency. The capacity of the edge <span class="math notranslate nohighlight">\(c_{b\rightarrow q}\)</span> is equal to bid volume.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># dictionary of edges for (src, dst) tuples</span>
 <span class="c1">#     type: &#39;bid&#39; or &#39;ask&#39;</span>
-<span class="c1">#     conv: 1 unit of src currency produces conv units of dst currency</span>
+<span class="c1">#     a[src, dst]: 1 unit of src currency produces conv units of dst currency</span>
 <span class="c1">#     log10_conv: log10 of conv</span>
+
 
 <span class="k">def</span> <span class="nf">order_book_to_dg</span><span class="p">(</span><span class="n">order_book</span><span class="p">):</span>
 
     <span class="n">edges</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-    
+
     <span class="k">for</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="n">order_book</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
-        <span class="c1"># </span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;bid_volume&quot;</span><span class="p">]):</span>
             <span class="n">src</span> <span class="o">=</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;base&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">src</span> <span class="o">==</span> <span class="s2">&quot;USD&quot;</span><span class="p">:</span>
@@ -1051,9 +1593,9 @@ Number of edges =  98
                 <span class="n">dst</span> <span class="o">=</span> <span class="s2">&quot;USD-DST&quot;</span>
             <span class="n">edges</span><span class="p">[(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)]</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;bid&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;conv&quot;</span><span class="p">:</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;bid_price&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;log10_conv&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;bid_price&quot;</span><span class="p">]),</span>
-                <span class="s2">&quot;capacity&quot;</span><span class="p">:</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;bid_volume&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;bid_price&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;log10_a&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;bid_price&quot;</span><span class="p">]),</span>
+                <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;bid_volume&quot;</span><span class="p">],</span>
             <span class="p">}</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;ask_volume&quot;</span><span class="p">]):</span>
             <span class="n">src</span> <span class="o">=</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;quote&quot;</span><span class="p">]</span>
@@ -1064,20 +1606,21 @@ Number of edges =  98
                 <span class="n">dst</span> <span class="o">=</span> <span class="s2">&quot;USD-DST&quot;</span>
             <span class="n">edges</span><span class="p">[(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)]</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;ask&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;conv&quot;</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;ask_price&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;log10_conv&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;ask_price&quot;</span><span class="p">]),</span>
-                <span class="s2">&quot;capacity&quot;</span><span class="p">:</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;ask_volume&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;ask_price&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;ask_price&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;log10_a&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;ask_price&quot;</span><span class="p">]),</span>
+                <span class="s2">&quot;c&quot;</span><span class="p">:</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;ask_volume&quot;</span><span class="p">]</span><span class="o">*</span> <span class="n">order_book</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">symbol</span><span class="p">,</span> <span class="s2">&quot;ask_price&quot;</span><span class="p">],</span>
             <span class="p">}</span>
 
     <span class="n">dg_order_book</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">()</span>
-    
+
     <span class="k">for</span> <span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">),</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">edges</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">dg_order_book</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="o">-</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;log10_conv&quot;</span><span class="p">])</span>
-        
+        <span class="n">dg_order_book</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">weight</span><span class="o">=-</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;log10_a&quot;</span><span class="p">])</span>
+
     <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">dg_order_book</span><span class="o">.</span><span class="n">nodes</span><span class="p">():</span>
         <span class="n">dg_order_book</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;lightblue&quot;</span>
-        
+
     <span class="k">return</span> <span class="n">dg_order_book</span>
+
 
 <span class="n">dg_order_book</span> <span class="o">=</span> <span class="n">order_book_to_dg</span><span class="p">(</span><span class="n">order_book</span><span class="p">)</span>
 
@@ -1086,26 +1629,50 @@ Number of edges =  98
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of nodes =  31
-Number of edges = 188
-</pre></div>
-</div>
-<img alt="../../_images/cryptocurrency-arbitrage_17_1.png" src="../../_images/cryptocurrency-arbitrage_17_1.png" />
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">netgraph_dg</span><span class="p">(</span><span class="n">dg_order_book</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<img alt="../../_images/cryptocurrency-arbitrage_18_0.png" src="../../_images/cryptocurrency-arbitrage_18_0.png" />
+<img alt="../../_images/cryptocurrency-arbitrage_13_0.png" src="../../_images/cryptocurrency-arbitrage_13_0.png" />
 </div>
 </div>
 </section>
 <section id="finding-arbitrage-as-shortest-path">
 <h2>Finding Arbitrage as Shortest Path<a class="headerlink" href="#finding-arbitrage-as-shortest-path" title="Permalink to this headline">¶</a></h2>
+<p>Given a directed graph representing the order book, the challenge is determine if there is an opportunity to begin with a fixed amount of a given currency, execute a series of trades resulting in an increase in the amount of that currency. Labeling each edge with a weight equal to the negative logarithm</p>
+<div class="math notranslate nohighlight">
+\[w_{i\rightarrow j} = - \log a_{i\rightarrow j}\]</div>
+<p>and nodes <span class="math notranslate nohighlight">\(n_{SRC}\)</span> and <span class="math notranslate nohighlight">\(n_{DST}\)</span> (which may be the same node), the task is find series of nodes</p>
+<div class="math notranslate nohighlight">
+\[n_{SRC} \rightarrow n_{i_1} \rightarrow n_{i_2} \rightarrow \cdots \rightarrow n_{i_J} \rightarrow n_{DST}\]</div>
+<p>such that</p>
+<div class="math notranslate nohighlight">
+\[w_{n_{SRC} \rightarrow n_{i_1}} + \sum_{j=1}^J w_{n_{i_j} \rightarrow n_{i_{j+1}}} +  w_{i_J \rightarrow DST} \leq 0\]</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dg_order_book</span> <span class="o">=</span> <span class="n">order_book_to_dg</span><span class="p">(</span><span class="n">order_book</span><span class="p">)</span>
+<span class="n">nx</span><span class="o">.</span><span class="n">negative_edge_cycle</span><span class="p">(</span><span class="n">dg_order_book</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s2">&quot;weight&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">cycle_val</span><span class="p">(</span><span class="n">cycle</span><span class="p">):</span>
+    <span class="n">cycle</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cycle</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">dg_order_book</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">edge</span><span class="p">][</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">cycle</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">cycle</span><span class="p">[</span><span class="mi">1</span><span class="p">:])])</span>
+
+<span class="n">w_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+<span class="n">cycle_min</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">cycle</span> <span class="ow">in</span> <span class="n">nx</span><span class="o">.</span><span class="n">simple_cycles</span><span class="p">(</span><span class="n">dg_order_book</span><span class="p">):</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">cycle_val</span><span class="p">(</span><span class="n">cycle</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">w</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">w</span> <span class="o">&lt;</span> <span class="n">w_min</span><span class="p">:</span>
+            <span class="n">w_min</span> <span class="o">=</span> <span class="n">w</span>
+            <span class="n">cycle_min</span> <span class="o">=</span> <span class="n">cycle</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">cycle_min</span><span class="p">,</span> <span class="n">w_min</span><span class="p">,</span> <span class="mi">100</span><span class="o">*</span><span class="p">(</span><span class="mi">10</span><span class="o">**-</span><span class="n">w_min</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;%&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[] inf -100.0 %
+</pre></div>
+</div>
+</div>
+</div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">dg_shortest_path</span><span class="p">(</span><span class="n">dg_order_book</span><span class="p">):</span>
@@ -1136,64 +1703,31 @@ Number of edges = 188
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting Position </span><span class="si">{</span><span class="n">x</span><span class="o">/</span><span class="n">S</span><span class="si">}</span><span class="s2"> USD&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final Position </span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2"> USD&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Net profit = </span><span class="si">{</span><span class="n">x</span> <span class="o">-</span> <span class="n">x</span><span class="o">/</span><span class="n">S</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">1</span><span class="o">/</span><span class="n">S</span><span class="p">)</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2">%)&quot;</span><span class="p">)</span>
-    
+
+
 <span class="n">dg_shortest_path</span><span class="p">(</span><span class="n">dg_order_book</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Sell USD-SRC, Buy BTC:
+</pre></div>
+</div>
 <div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NetworkXUnbounded</span><span class="g g-Whitespace">                         </span>Traceback (most recent call last)
-<span class="nn">Input In [18],</span> in <span class="ni">&lt;cell line: 30&gt;</span><span class="nt">()</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="nn">Input In [172],</span> in <span class="ni">&lt;cell line: 31&gt;</span><span class="nt">()</span>
 <span class="g g-Whitespace">     </span><span class="mi">27</span>     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final Position </span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2"> USD&quot;</span><span class="p">)</span>
 <span class="g g-Whitespace">     </span><span class="mi">28</span>     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Net profit = </span><span class="si">{</span><span class="n">x</span> <span class="o">-</span> <span class="n">x</span><span class="o">/</span><span class="n">S</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">1</span><span class="o">/</span><span class="n">S</span><span class="p">)</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2">%)&quot;</span><span class="p">)</span>
-<span class="ne">---&gt; </span><span class="mi">30</span> <span class="n">dg_shortest_path</span><span class="p">(</span><span class="n">dg_order_book</span><span class="p">)</span>
+<span class="ne">---&gt; </span><span class="mi">31</span> <span class="n">dg_shortest_path</span><span class="p">(</span><span class="n">dg_order_book</span><span class="p">)</span>
 
-<span class="nn">Input In [18],</span> in <span class="ni">dg_shortest_path</span><span class="nt">(dg_order_book)</span>
-<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="k">def</span> <span class="nf">dg_shortest_path</span><span class="p">(</span><span class="n">dg_order_book</span><span class="p">):</span>
-<span class="ne">----&gt; </span><span class="mi">2</span>     <span class="n">shortest_path</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">shortest_path</span><span class="p">(</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span>         <span class="n">dg_order_book</span><span class="p">,</span> <span class="s2">&quot;USD-SRC&quot;</span><span class="p">,</span> <span class="s2">&quot;USD-DST&quot;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;bellman-ford&quot;</span>
-<span class="g g-Whitespace">      </span><span class="mi">4</span>     <span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">6</span>     <span class="n">S</span> <span class="o">=</span> <span class="mf">1.0</span>
-<span class="g g-Whitespace">      </span><span class="mi">7</span>     <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+<span class="nn">Input In [172],</span> in <span class="ni">dg_shortest_path</span><span class="nt">(dg_order_book)</span>
+<span class="g g-Whitespace">      </span><span class="mi">8</span> <span class="k">for</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">shortest_path</span><span class="p">,</span> <span class="n">shortest_path</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+<span class="g g-Whitespace">      </span><span class="mi">9</span>     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sell </span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2">, Buy </span><span class="si">{</span><span class="n">dst</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+<span class="ne">---&gt; </span><span class="mi">11</span>     <span class="n">cap</span> <span class="o">=</span> <span class="n">edges</span><span class="p">[(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)][</span><span class="s2">&quot;capacity&quot;</span><span class="p">]</span>
+<span class="g g-Whitespace">     </span><span class="mi">12</span>     <span class="n">a</span> <span class="o">=</span> <span class="n">edges</span><span class="p">[(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)][</span><span class="s2">&quot;conv&quot;</span><span class="p">]</span>
+<span class="g g-Whitespace">     </span><span class="mi">13</span>     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;     Max </span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2"> on-hand = </span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/networkx/algorithms/shortest_paths/generic.py:169,</span> in <span class="ni">shortest_path</span><span class="nt">(G, source, target, weight, method)</span>
-<span class="g g-Whitespace">    </span><span class="mi">167</span>             <span class="n">_</span><span class="p">,</span> <span class="n">paths</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">bidirectional_dijkstra</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">weight</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">168</span>         <span class="k">else</span><span class="p">:</span>  <span class="c1"># method == &#39;bellman-ford&#39;:</span>
-<span class="ne">--&gt; </span><span class="mi">169</span>             <span class="n">paths</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">bellman_ford_path</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">weight</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">170</span> <span class="k">return</span> <span class="n">paths</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/networkx/algorithms/shortest_paths/weighted.py:1512,</span> in <span class="ni">bellman_ford_path</span><span class="nt">(G, source, target, weight)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1458</span> <span class="k">def</span> <span class="nf">bellman_ford_path</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s2">&quot;weight&quot;</span><span class="p">):</span>
-<span class="g g-Whitespace">   </span><span class="mi">1459</span>     <span class="sd">&quot;&quot;&quot;Returns the shortest path from source to target in a weighted graph G.</span>
-<span class="g g-Whitespace">   </span><span class="mi">1460</span><span class="sd"> </span>
-<span class="g g-Whitespace">   </span><span class="mi">1461</span><span class="sd">     Parameters</span>
-<span class="sd">   (...)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1510</span><span class="sd">     dijkstra_path, bellman_ford_path_length</span>
-<span class="g g-Whitespace">   </span><span class="mi">1511</span><span class="sd">     &quot;&quot;&quot;</span>
-<span class="ne">-&gt; </span><span class="mi">1512</span>     <span class="n">length</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="n">single_source_bellman_ford</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">weight</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1513</span>     <span class="k">return</span> <span class="n">path</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/networkx/algorithms/shortest_paths/weighted.py:1786,</span> in <span class="ni">single_source_bellman_ford</span><span class="nt">(G, source, target, weight)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1783</span> <span class="n">weight</span> <span class="o">=</span> <span class="n">_weight_function</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">weight</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1785</span> <span class="n">paths</span> <span class="o">=</span> <span class="p">{</span><span class="n">source</span><span class="p">:</span> <span class="p">[</span><span class="n">source</span><span class="p">]}</span>  <span class="c1"># dictionary of paths</span>
-<span class="ne">-&gt; </span><span class="mi">1786</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">_bellman_ford</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="p">[</span><span class="n">source</span><span class="p">],</span> <span class="n">weight</span><span class="p">,</span> <span class="n">paths</span><span class="o">=</span><span class="n">paths</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1787</span> <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<span class="g g-Whitespace">   </span><span class="mi">1788</span>     <span class="k">return</span> <span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">paths</span><span class="p">)</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/networkx/algorithms/shortest_paths/weighted.py:1322,</span> in <span class="ni">_bellman_ford</span><span class="nt">(G, source, weight, pred, paths, dist, target, heuristic)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1313</span> <span class="n">negative_cycle_found</span> <span class="o">=</span> <span class="n">_inner_bellman_ford</span><span class="p">(</span>
-<span class="g g-Whitespace">   </span><span class="mi">1314</span>     <span class="n">G</span><span class="p">,</span>
-<span class="g g-Whitespace">   </span><span class="mi">1315</span>     <span class="n">source</span><span class="p">,</span>
-   <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1319</span>     <span class="n">heuristic</span><span class="p">,</span>
-<span class="g g-Whitespace">   </span><span class="mi">1320</span> <span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1321</span> <span class="k">if</span> <span class="n">negative_cycle_found</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<span class="ne">-&gt; </span><span class="mi">1322</span>     <span class="k">raise</span> <span class="n">nx</span><span class="o">.</span><span class="n">NetworkXUnbounded</span><span class="p">(</span><span class="s2">&quot;Negative cycle detected.&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1324</span> <span class="k">if</span> <span class="n">paths</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<span class="g g-Whitespace">   </span><span class="mi">1325</span>     <span class="n">sources</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
-
-<span class="ne">NetworkXUnbounded</span>: Negative cycle detected.
+<span class="ne">NameError</span>: name &#39;edges&#39; is not defined
 </pre></div>
 </div>
 </div>

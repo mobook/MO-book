@@ -14,7 +14,7 @@
 # * For personal installations of Mosek or Gurobi (free licenses available for academic use), use `mosek_direct` or `gurobi_direct`.
 # * For use without Gurobi or Mosek, use the `ipopt` solver.
 
-# In[1]:
+# In[3]:
 
 
 # Install Pyomo and solvers for Google Colab
@@ -53,7 +53,7 @@ if "google.colab" in sys.modules:
 
 # ## EOQ Model
 # 
-# ### Classical formulation
+# ### Classical formulation for a Single Item
 # 
 # The economic order quantity (EOQ) is a classical problem in inventory management attributed in Ford Harris (1915). The problem is to find the size of a that minimizes the cost of maintaining that item in an inventory. 
 # 
@@ -324,7 +324,7 @@ solver.solve(m)
 print(f"\nEOQ = {(m.t() + m.v())/2:0.2f}")
 
 
-# ## The `.as_domain()` method simplies the Pyomo model
+# ## The `.as_domain()` method simplifie the Pyomo model
 # 
 # `pyomo.kernel` provides additional support for conic solvers with the `.as_domain()` method that be applied to the conic solver interfaces. Adding `.as_domain` allows use of constants, linear expressions, or `None` in place of pyomo variables. For this application, this means `u` does not have to be included as a pyomo variable and constrained to a fixed value. The required value can simply be inserted directly into constraint specification as demonstrated below.
 
@@ -414,9 +414,7 @@ print(f"\nEOQ = {m.x():0.2f}")
 
 # ## Extending the EOQ model multiple items with a shared resource
 # 
-# Solving for the EOQ for a single item using SOCP programming is using a sledgehammer to swat a fly. The problem becomes more interesting, however, for determining economic order quantities when the inventories for multiple items compete for a shared resource in a common warehouse. The shared resource could he financing available to hold inventory, space in a warehouse, or specialized facilities to hold a perishable 
-# 
-# Extending the notation of the single item model
+# Solving for the EOQ for a single item using SOCP programming is using a sledgehammer to swat a fly. However, the problem becomes more interesting for determining economic order quantities when the inventories for multiple items compete for a shared resource in a common warehouse. The shared resource could he financing available to hold inventory, space in a warehouse, or specialized facilities to hold a perishable 
 # 
 # $$
 # \begin{align*}
