@@ -572,23 +572,32 @@ for t in m.T1:
 # Considerably more development, testing, and validation would be needed to adapt this code to an automated tradign bot to exploit arbitrage opportunities in the crypto-currency markets. One of the time consuming steps is accessing order book data. The following cell is an experiment using the Python `asyncio` library to determine if asynchronous calls to the `ccxt` would provide faster downloads. 
 # 
 # Preliminary testing shows little or no advantage to `asyncio` when working with a single exchange. That may change when the above code is adapted to multi-exchange arbitrage, and therefore this code is retained below for future testing.
+%%script echo skipping
 
-# In[15]:
+from timeit import default_timer as timer
 
+# asynchronous implementation
+import asyncio
+import nest_asyncio
 
-get_ipython().run_cell_magic('script', 'echo skipping', "\nfrom timeit import default_timer as timer\n\n# asynchronous implementation\nimport asyncio\nimport nest_asyncio\n\nmy_symbols = ['/'.join(edge) for edge in edges]\n\nasync def afetch_order_book(symbol, limit=1, exchange=exchange):\n    start_time = timer()\n    result = exchange.fetch_order_book(symbol, limit)\n    run_time = timer() - start_time\n    return result\n\nasync def get_data():\n    coroutines = [afetch_order_book(symbol) for symbol in my_symbols]\n    await asyncio.gather(*coroutines)\n\nstart = timer()\nnest_asyncio.apply()\nasyncio.run(get_data())\nrun_time = timer() - start\n\nprint(run_time)")
+my_symbols = ['/'.join(edge) for edge in edges]
 
+async def afetch_order_book(symbol, limit=1, exchange=exchange):
+    start_time = timer()
+    result = exchange.fetch_order_book(symbol, limit)
+    run_time = timer() - start_time
+    return result
 
-# In[15]:
+async def get_data():
+    coroutines = [afetch_order_book(symbol) for symbol in my_symbols]
+    await asyncio.gather(*coroutines)
 
+start = timer()
+nest_asyncio.apply()
+asyncio.run(get_data())
+run_time = timer() - start
 
-
-
-
-# In[7]:
-
-
-# trim currencies to those that appears as DST, or are N or more SRC
+print(run_time)# trim currencies to those that appears as DST, or are N or more SRC
 
 # all currencies trading in N or more base currencies
 N = 4
@@ -627,4 +636,3 @@ for src, dst in trade_edges:
 display(dg)
 dg.format = "png"
 dg.view("exchange-symbol-map")
-
