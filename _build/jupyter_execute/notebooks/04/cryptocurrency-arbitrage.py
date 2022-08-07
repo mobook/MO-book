@@ -3,17 +3,15 @@
 
 # # Crypto Currency Analysis
 # 
-# Crpytocurrency exchanges are websites that enable the purchase, sale, and exchange of cryptocurrencies. These exchanges provide liquidity for owners and establish the relative value of these currencies. As of this writing (mid-2022), [it is estimated](https://www.statista.com/statistics/730876/cryptocurrency-maket-value/) that cryptocurrencies have a collective market capitalization of more than 2 trillion USD. Cryptocurrency markets are constantly changing with new entrants, the occasional collapse of a currency, and highly volatile prices.
+# Crpytocurrency exchanges are web services that enable the purchase, sale, and exchange of cryptocurrencies. These exchanges provide liquidity for owners and establish the relative value of these currencies. As of this writing (mid-2022), [it is estimated](https://www.statista.com/statistics/730876/cryptocurrency-maket-value/) cryptocurrencies have a collective market capitalization of more than 2 trillion USD. Cryptocurrency markets are constantly changing with new currencies, exchanges, the occasional collapse of a currency, and highly volatile prices.
 # 
-# The purpose of this notebook is to explore the efficiency of cryptocurrency exchanges by testing for arbitrage opportunities. An arbitrage exists if a customer can realize a net profit through a sequence of risk-free trades. The efficient market hypothesis assumes arbitrage opportunities are quickly identified and exploited by investors. As a result of their trading, prices would reach a new equilibrium so that in an efficient market, any arbitrage opportunities would be small and fleeting. 
-# 
-# Still, the market has to get to equilibrium somehow. So it is possible, with real-time data and rapid execution, a trader can be in a position to profit from these fleeting arbitrage opportunities?
+# The purpose of this notebook is to explore the efficiency of cryptocurrency exchanges by testing for arbitrage opportunities. An arbitrage exists if a customer can realize a net profit through a sequence of risk-free trades. The efficient market hypothesis assumes arbitrage opportunities are quickly identified and exploited by investors. As a result of their trading, prices would reach a new equilibrium so that in an efficient market, any arbitrage opportunities would be small and fleeting. The question here is whether it is possible, with real-time data and rapid execution, for a trader to profit from these fleeting arbitrage opportunities.
 
 # ## Installations and Imports
 # 
 # This notebook requires multiple libraries. The following cell performs the required installations for Google Colab. To run in your own environment you will need to install `pyomo`,`ccxt`, and `networkx` python libraries, and a linear solver for Pyomo.
 
-# In[1]:
+# In[31]:
 
 
 import os
@@ -35,9 +33,9 @@ if "google.colab" in sys.modules:
 
 # ## Cryptocurrency Exchanges
 # 
-# Cryptocurrency exchanges are digital marketplaces for buying and trading cryptocurrencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, buy and sell currencies, and to use cryptocurrencies in financial transactions. The [open-source library `ccxt`](https://github.com/ccxt/ccxt) currently supports real-time APIs for the largest and most common exchanges on which cryptocurrencies are traded. Here we import the library and list current exchanges supported by `ccxt`.
+# Cryptocurrency exchanges are digital marketplaces for buying and trading cryptocurrencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, to buy and sell currencies, and to use cryptocurrencies for financial transactions. The [open-source library `ccxt`](https://github.com/ccxt/ccxt) currently supports real-time APIs for the largest and most common exchanges on which cryptocurrencies are traded. Here we import the library and list current exchanges supported by `ccxt`.
 
-# In[2]:
+# In[32]:
 
 
 import ccxt
@@ -48,20 +46,21 @@ for i, exchange in enumerate(ccxt.exchanges):
 
 # ## Representing an Exchange as a Directed Graph
 # 
-# Each exchange `ccxt` consists of multiple markets. Each market consists of all trading done between two specific currencies. `ccxt` labels each market with a symbol that is common across exchanges and suitable for within-exchange and cross-exchange arbitrage analyses.
+# Exchanges provide for trading between currencies. Trading done between two specific currencies is called a *market*; each exchange hosting multiple markets. `ccxt` labels each market with a market symbol that is common across exchanges and suitable for within-exchange and cross-exchange arbitrage analyses.
 # 
-# The market symbol is an upper case string consisting of a slash (`/`) that separate abbreviations for a pair of traded currencies. The first abbreviation is for the base currency, the second is for the quote currency.  Prices for the base currency are denominated in units of the quote currency. As an example, the symbol `ETH/BTC` refers to a market for the base currency Ethereum (ETH) quoted in units of the Bitcoin(BTC).
+# The market symbol is an upper case string with abbreviations for a pair of traded currencies separated by of a slash (`/`). The first abbreviation is the base currency, the second is the quote currency.  Prices for the base currency are denominated in units of the quote currency. As an example, the symbol `ETH/BTC` refers to a market for the base currency Ethereum (ETH) quoted in units of the Bitcoin(BTC). The same market symbol can refer to offer to sell the base currency (a 'bid'), or to an offer to sell the base currency (an 'ask').
 # 
-# A directed graph can be constructed from the market symbols available on a single exchange. Currencies are represented by nodes on the directed graph. Market symbols correspond to edges in the directed graph, with the source indicating the quote currency and the destination indicating the base currency.
+# An exchange can be represented by a directed graph can be constructed from the market symbols available on that exchange. Currencies correspond to nodes on the directed graph. Market symbols correspond to edges in the directed graph, with the source indicating the quote currency and the destination indicating the base currency.
 # 
-# The in-degree of a node refers to the number of incoming edges. Out-degree refers to the number of outgoing edges. Nodes with out-degrees greater than zero are highlighted because they represent currencies used to quote the price of other currencies. For all other nodes, a `minimum_in_degree` specifies a threshold value for in_degree for nodes to be displayed and retained for further analysis.
+# The in-degree of a node is equal to the number of incoming edges. Out-degree is equal to the number of outgoing edges. Nodes with out-degrees greater than zero are highlighted because they represent currencies used to quote the price of other currencies. For all other nodes, a `minimum_in_degree` specifies a threshold value for in_degree for nodes to be displayed and retained for further analysis.
 # 
 # 
 
-# In[3]:
+# In[53]:
 
 
 # global variables used in subsequent cells
+
 exchange = ccxt.binanceus()
 markets = exchange.load_markets()
 symbols = exchange.symbols
@@ -126,7 +125,7 @@ print(f"Number of edges = {len(dg_symbols.edges()):3d}")
 
 # The order book for a currency exchange is the real-time inventory of trading orders. 
 # 
-# A **bid** is an order to buy up to a specified amount of the base currency at a price no greater than value specified in the quote currency. The exchange attempts to match the bid to a sell order at a price less than or equal to the bid price. If a transaction occurs, the  buyer will receive an amount of base currency less than or equal to the bid volume at a prices less than or equal to the bid price.
+# A **bid** is an order to buy up to a specified amount of the base currency. The price is not to exceed the 'bid price' specified in the quote currency. The exchange attempts to match the bid to a sell order at a price less than or equal to the bid price. If a transaction occurs, the  buyer will receive an amount of base currency less than or equal to the bid volume at a price less than or equal to the bid price.
 # 
 # An **ask** is an offer to sell up to a specified amount of the base currency at a price no less than a value specified given in the quote currency. If a transaction occurs, then seller will sell no more than a specified about of the base currency at a price no less than the specified value if the exchange matches the ask order to a higher bid. 
 # 
@@ -134,7 +133,7 @@ print(f"Number of edges = {len(dg_symbols.edges()):3d}")
 # 
 # The following cell uses the `ccxt` library to fetch the highest bid and lowest ask from the order book for all trading symbols in a directed graph.
 
-# In[4]:
+# In[54]:
 
 
 import pandas as pd
@@ -170,22 +169,47 @@ def fetch_order_book(dg):
 
     return order_book
 
-
 order_book = fetch_order_book(dg_symbols)
 display(order_book)
 
 
-# ## Order Book as a Directed Graph
+# ## The Order Book as a Directed Graph
 
-# The order book can be represented as a directed graph in where nodes correspond to individual currencies, and edges correspond buy and sell orders that convert one currency to another. A market participant can select orders to fulfill in order to achieve their financial objectives.
+# Here we represent the order book as a directed graph where nodes correspond to individual currencies. 
 # 
-# A market symbol within an order book is a text string of the form $b/q$ where $b$ refers to a base currency, and $q$ refers to a quote currency $q$. 
+# A directed edge $i\rightarrow j$ from node $i$ to node $j$ describes an opportunity for a counterparty to convert currency $i$ into units of currency $j$. Let $w_i$ and $w_j$ denote the amounts of each currency held by the counterparty, and let $x_{i\rightarrow j}$ denote the amount of currency $i$ exchanged for currency $j$. Following the transaction
 # 
-# A buy order for market symbol $b/q$ is an order to buy up to a specified amount of base currency $b$ at a price not to exceed the 'bid' price. The bid price is specified in units of the quote currency $q$. To a seller, the buy order represents an opportunity to convert the base currency into the quote currency. The amount of base currency that can be converted is equal to the volume of the order. Each unit of base currency produces units of the quote currency equal to the bid price. For example, a buy order for market symbol CCC/USD with a bid price of 1000 USD provides the seller opportunity to convert one unit of CCC to 1000 USD. On the directed graph, the buy order is represented by an edge from the base currency to the quote currency labeled with a coefficient $a_{b\rightarrow q}$ equal to the bid price, and a capacity $c_{b\rightarrow q}$ equal to specified volume of the buy order.
+# $$\begin{align*}
+# \Delta w_i & = - x_{i\rightarrow j} \\
+# \Delta w_j & = a_{i\rightarrow j} x_{i\rightarrow j}
+# \end{align*}
+# $$
 # 
-# A sell order for symbol $b/q$ is an order to sell up to a specified amount of the base currency at price not less than the 'ask' price given in units of the quote currency. A sell order offers a prospective buyer an opportunity to convert units of the quote currency into one unit of the base currency. A sell order is represented by a directed edge from the quote currency to the base currency labeled with a coefficient $a_{q\rightarrow b}$ equal to inverse of the ask price. The coefficient represents the conversion of one unit of the quote currency into $a_{q\rightarrow b}$ units of the base currency. The capacity of the edge, $c_{q\rightarrow b}$, is equal to the units of base currency available for trading in this sell order. The capacity is computed by multiplying the ask volume of the order book by the ask price.
+# where $a_{i\rightarrow j}$ is a 'conversion' coefficient equal to the price of $i$ expressed in terms of currency $j$. The corresponding capacity $c_{i\rightarrow j}$ of an edge $i\rightarrow j$ is specified by a relationship
+# 
+# $$x_{i\rightarrow j} \leq c_{i\rightarrow j}$$
+# 
+# A buy order in the order book for market symbol $b/q$ is an order to purchase base currency $b$ at bid price given in the quote currency. The bid volume specifies the maximum amount base currency available. For a counterparty to the exchange, the buy order is an opportunity to convert the base currency $b$ into the quote currency $q$ such that
+# 
+# $$
+# \begin{align*}
+# a_{b\rightarrow q} & = \text{bid price} \\
+# c_{b\rightarrow q} & = \text{bid volume}
+# \end{align*}
+# $$
+# 
+# A sell order for symbol $b/q$ is an order to sell the base currency at price not less than the 'ask' price given in terms of the quote currency. The ask volume is the amount of base currency to be sold. For a counterparty to the exchange, a sell order is an opportunity to convert the quote current into the base currency such that
+# 
+# $$
+# \begin{align*}
+# a_{q\rightarrow b} & = \frac{1}{\text{ask price}} \\
+# c_{q\rightarrow b} & = \text{ask volume} \times \text{ask price}
+# \end{align*}
+# $$
+# 
+# The following cell creates a directed graph using data from an exchange order book.
 
-# In[46]:
+# In[72]:
 
 
 def order_book_to_dg(order_book):
@@ -194,30 +218,30 @@ def order_book_to_dg(order_book):
     dg_order_book = nx.DiGraph()
     
     for symbol in order_book.index:
-        # buy orders
+        # buy ('bid') orders
         if not np.isnan(order_book.at[symbol, "bid_volume"]):
             src = order_book.at[symbol, "base"]
             dst = order_book.at[symbol, "quote"]
-            bid_price = order_book.at[symbol, "bid_price"]
             dg_order_book.add_edge(src, dst,
-                weight = - np.log(bid_price),
-                color = "k",
-                width = 1,
                 kind = "bid",
-                capacity = order_book.at[symbol, "bid_volume"]
+                a = order_book.at[symbol, "bid_price"],
+                capacity = order_book.at[symbol, "bid_volume"],
+                weight = - np.log(order_book.at[symbol, "bid_price"]),
+                color = "g",
+                width = 0.5,
             )
 
-        # sell orders
+        # sell ('ask') orders
         if not np.isnan(order_book.at[symbol, "ask_volume"]):
             src = order_book.at[symbol, "quote"]
             dst = order_book.at[symbol, "base"]
-            ask_price = order_book.at[symbol, "ask_price"]
             dg_order_book.add_edge(src, dst,
-                weight = - np.log(1.0 / ask_price),
-                color = "k",
-                width = 1,
                 kind = "ask",
-                capacity = order_book.at[symbol, "ask_volume"] * ask_price
+                a = 1.0 / order_book.at[symbol, "ask_price"],
+                capacity = order_book.at[symbol, "ask_volume"] * order_book.at[symbol, "ask_price"],
+                weight = - np.log(1.0 / order_book.at[symbol, "ask_price"]),
+                color = "r",
+                width = 0.5,
             )
 
     for node in dg_order_book.nodes():
@@ -232,88 +256,43 @@ draw_dg(dg_order_book, 0.05)
 
 # ## Arbitrage
 # 
-# Given a directed graph representing the order book, the challenge is determine if there is an opportunity to begin with a fixed amount of a given currency, execute a series of trades resulting in an increase in the amount of that currency. Labeling each edge with a weight equal to the negative logarithm of return, which we call "log loss". 
+# As counterparty to an exchange, an arbitrage exists if it is possible to find a closed path and a sequence of transactions in the directed graph that results in a net increase in currency holdings. Given a path
+# 
+# $$i_0 \rightarrow i_1 \rightarrow i_2 \rightarrow \cdots \rightarrow i_{n-1} \rightarrow i_n$$
+# 
+# the path is closed if $i_n = i_0$. The path has finite capacity if each edge in the path has a non-zero capacity. For a sufficiently small holding $w_{i_0}$ of currency $i_0$, the closed path with $i_0 = i_n$ represents an arbitrage opportunity if 
+# 
+# $$\prod_{k=0}^{n-1} a_{i_k\rightarrow i_{k+1}} > 1$$
+# 
+# To apply the shortest path algorithms from the NetworkX library, we assign a each edge a weight equal to the negative logarithm of the conversion coefficients.
 # 
 # $$w_{i\rightarrow j} = - \log a_{i\rightarrow j}$$
 # 
-# Given designated source and destination nodes $n_{SRC}$ and $n_{DST}$ (which may be the same node), the task is find series of nodes
-# 
-# $$n_{SRC} \rightarrow n_{i_1} \rightarrow n_{i_2} \rightarrow \cdots \rightarrow n_{i_J} \rightarrow n_{DST}$$
-# 
-# minimizing the net log loss computed as the sum
+# Given designated source and destination currencies represented by nodes $i_{0}$ and $i_{n}$, the largest return is given by a path minimizing the sum of weights computed as
 # 
 # $$
 # \begin{align*}
 # & \min\; W \\
-# & \text{s.t.}\; W = w_{n_{SRC} \rightarrow n_{i_1}} + \sum_{j=1}^J w_{n_{i_j} \rightarrow n_{i_{j+1}}} +  w_{n_{i_J} \rightarrow n_{DST}}\\
+# & \text{s.t.}\; W = \sum_{k=0}^{n-1} w_{i_k \rightarrow i_{k+1}}\\
 # \end{align*}
 # $$
 # 
-# An arbitrage exists if $W \lt 0$.
+# An arbitrage exists if $W < 0$ for any path where $i_0 = i_n$.
 
-# For the purpose of identifying arbitrage opportunities, the the node referring to USD is split into two nodes, USD-SRC and USD-DST. All edges where USD is exchanged for another currency are linked to USD-SRC. All edges where a currency is exchanged for USD are linked to USD-DST. With this distinction, shortest path path algorithms where the negative logarithmic return is interpreted as distance, can be used to find arbitrage opportunities resulting in net gain in a fiat currency.
-
-# ### Finding Arbitrage with Simple Cycles
+# ## Negative Edge Cycles
 # 
-# We compute the loss function for all simple cycles that can be constructed within a directed graph. A simple cycle is a closed path where no node appears twice. Simple cycles are distinct if they are not cyclic permutations of each other. The following cell uses `simple_cycles` from the NetworkX library to construct a dictionary of all distinct simple cycles in the order book, and a loss function to compute the log loss for each simple cycle. A existence of a simple cycle with negative log loss indicates an arbitrage opportunity.
+# A brute force search over all simple cycles has complexity $(n + e)(c + 1)$ which is impractical for larger scale applications. A more efficient search based on Bellman-Ford is embedded in the NetworkX function [`negative_edge_cycle`](https://networkx.org/documentation/networkx-1.10/reference/generated/networkx.algorithms.shortest_paths.weighted.negative_edge_cycle.html) that returns a logical True if a negative cycle exists in a directed graph. 
 
-# In[36]:
-
-
-# This cell iterates over all simple cycles in a directed graph which
-# can take inordinate time for a large, well connected graph. For that
-# reason, it is included in "raw" format to avoid automatic execution 
-# in scripts. Change to a "code" cell to execute.
-
-dg_order_book = order_book_to_dg(order_book)
-
-# compute the sum of weights given a list of nodes
-def loss(cycle):
-    return sum([dg_order_book.edges[edge]["weight"] for edge in zip(cycle[0:-1], cycle[1:])])
-
-# create a dictionary of all simple cycles
-cycles = dict()
-for cycle in nx.simple_cycles(dg_order_book):
-    cycle.append(cycle[0])
-    cycles[tuple(cycle)] = loss(cycle)
-
-print(f"There are {len(cycles)} distinct simple cycles in the order book.")
-
-log_loss = dict()
-for cycle, w in cycles.items():
-    log_loss[w] = cycle
-    
-plt.hist(cycles.values(), bins=int(np.sqrt(len(log_loss))))
-ax = plt.gca()
-ax.set_ylabel("count")
-ax.set_xlabel("log loss")
-ax.set_title("Histogram of log loss for all simple cycles")
-ax.grid(True)
-ax.axvline(0, color='r')
-
-# minimum log loss cycle
-cycle = min(cycles, key=cycles.get)
-print(f"Cycle {cycle} has loss {cycles[cycle]}")
-
-# maximum log loss cycle
-cycle = max(cycles, key=cycles.get)
-print(f"Cycle {cycle} has loss {cycles[cycle]}")
-
-
-# ### Negative Edge Cycles
-# 
-# A brute force search over all simple cycles has complexity $(n + e)(c + 1)$ which is impractical for larger scale applications. A more efficient search based on Bellman-Ford is embedded in the NetworkX function `negative_edge_cycle` that returns a logical True if a negative cycle exists in a directed graph. 
-
-# In[33]:
+# In[73]:
 
 
 dg_order_book = order_book_to_dg(order_book)
 nx.negative_edge_cycle(dg_order_book, weight="weight", heuristic=True)
 
 
-# The following cell uses `negative_edge_cycle` to test for an arbitrage opportunity in the current order book. If an arbitrage is found, the order book is saved to a `.csv` file for later analysis. If no arbitrage is found within the specified time limit, the most recent `.csv` file is returned instead.
+# ## Find Order Books that Demonstrate Arbitrage Opportunities
 
-# In[43]:
+# In[74]:
 
 
 from datetime import datetime
@@ -332,6 +311,7 @@ while time.time() <= timeout:
         order_book.to_csv(fname)
         print(f"order book saved to: {fname}")
         break
+    
 else:
     print("no arbitrage found")
     fname = sorted(glob.glob(f"{exchange}_orderbook*".replace(" ","_")))[-1]
@@ -340,220 +320,213 @@ else:
     
 
 
-# ## Locate Arbitrage Opportunities
+# The following .csv file demonstrates a particularly rich example of arbitrage.
+
+# In[100]:
+
+
+order_book = pd.read_csv("Binance_US_orderbook_2022-08-07_17:20:31.csv")
+
+
+# ## Locate Arbitrage Opportunities with `find_negative_cycle`
 # 
-# [`find_negative_cycle`](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.shortest_paths.weighted.find_negative_cycle.html)
-
-# In[94]:
-
-
-dg_order_book = order_book_to_dg(order_book)
-arb = nx.find_negative_cycle(dg_order_book, weight="weight", source="USD")
-print(arb)
-print(f"{10000 * (np.exp(-loss(arb)) - 1)} basis points")
-
-for a in arb:
-    dg_order_book.nodes[a]["color"] = "red"
-
-for a, b in zip(arb[:-1], arb[1:]):
-    dg_order_book[a][b]["color"] = "red"
-    dg_order_book[a][b]["width"] = 5
-    
-draw_dg(dg_order_book, 0.05)
-
-for a, b in zip(arb[:-1], arb[1:]):
-    dg_order_book[a][b]["color"] = "red"
-    dg_order_book[a][b]["width"] = 5
-    print(dg_order_book.edges[(a,b)])
-
-
-# ## Optimizing Wealth Creation
-
-# In[95]:
-
-
-import pyomo.environ as pyo
-
-dg_order_book = order_book_to_dg(order_book)
-
-T = 3
-
-m = pyo.ConcreteModel(f"{exchange} arbitrage")
-
-# length of the trading chain
-m.T0 = pyo.RangeSet(0, T)
-m.T1 = pyo.RangeSet(1, T)
-
-# currency nodes and trading edges
-m.NODES = pyo.Set(initialize=list(dg_order_book.nodes))
-m.EDGES = pyo.Set(initialize=list(dg_order_book.edges))
-
-# currency on hand at each node
-m.w = pyo.Var(m.NODES, m.T0, domain=pyo.NonNegativeReals)
-
-# amount traded on each edge
-m.x = pyo.Var(m.EDGES, m.T1, domain=pyo.NonNegativeReals)
-
-# "gain" on each trading edge
-@m.Param(m.EDGES)
-def a(m, src, dst):
-    return np.exp(-dg_order_book.edges[(src, dst)]["weight"])
-
-@m.Objective(sense=pyo.maximize)
-def wealth(m):
-    return m.w["USD", T]
-
-# initial assignment of 100 units on a selected currency
-@m.Constraint(m.NODES)
-def initial(m, node):
-    if node == "USD":
-        return m.w[node, 0] == 100.0
-    return m.w[node, 0] == 0.0
-
-@m.Constraint(m.NODES, m.T1)
-def no_shorting(m, node, t):
-    return m.w[node, t - 1] >= sum(
-        m.x[node, dst, t] for src, dst in m.EDGES if src == node
-    )
-
-@m.Constraint(m.NODES, m.T1)
-def balances(m, node, t):
-    return m.w[node, t] == m.w[node, t - 1] - sum(
-        m.x[node, dst, t] for src, dst in m.EDGES if src == node
-    ) + sum(m.a[src, node] * m.x[src, node, t] for src, dst in m.EDGES if dst == node)
-
-solver = pyo.SolverFactory("cbc")
-solver.solve(m)
-
-for node in m.NODES:
-    print(f"{node:8s}", end="")
-    for t in m.T0:
-        print(f" {m.w[node, t]():12.8f}", end="")
-    print()
-
-print()
-
-for t in m.T1:
-    print(f"t = {t}")
-    for src, dst in m.EDGES:
-        if m.x[src, dst, t]() > 0:
-            print(f"{src:8s} -> {dst:8s}: {m.x[src, dst, t]():0.8f}")
-    print()
-
-
-# ## Capacity Constraints
+# The NetworkX library includes a function [`find_negative_cycle`](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.shortest_paths.weighted.find_negative_cycle.html) that locates a single negative edge cycle, if one exists.
 
 # In[101]:
 
 
+dg_order_book = order_book_to_dg(order_book)
+arb = nx.find_negative_cycle(dg_order_book, weight="weight", source="USD")[:-1]
+print(arb, sum_weights(arb))
+print(f"{10000 * (np.exp(-sum_weights(arb)) - 1)} basis points")
+    
+for src, dst in zip(arb, arb[1:] + arb[:1]):
+    dg_order_book[src][dst]["width"] = 5
+    
+draw_dg(dg_order_book, 0.05)
+
+
+# ## Finding Arbitrage with Simple Cycles
+# 
+# To demonstrate the existence of arbitrage in an order book, we compute the loss function for all simple cycles that can be constructed within a directed graph. 
+# 
+# A simple cycle is a closed path where no node appears twice. Simple cycles are distinct if they are not cyclic permutations of each other. The following cell uses [`simple_cycles`](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.cycles.simple_cycles.html) from the NetworkX library to construct a dictionary of all distinct simple cycles in the order book. Cycles are represented by an ordered list of nodes comprising the cycle. The existence of a simple cycle with negative log loss indicates an arbitrage opportunity.
+
+# The following cell uses `negative_edge_cycle` to test for an arbitrage opportunity in the current order book. If an arbitrage is found, the order book is saved to a `.csv` file for later analysis. If no arbitrage is found within the specified time limit, the most recent `.csv` file is returned instead.
+
+# In[102]:
+
+
+# This cell iterates over all simple cycles in a directed graph which
+# can take inordinate time for a large, well connected graph. For that
+# reason, it is included in "raw" format to avoid automatic execution 
+# in scripts. Change to a "code" cell to execute.
+
+# convert order book to a directed graph
+dg_order_book = order_book_to_dg(order_book)
+
+# compute the sum of weights given a list of nodes
+def sum_weights(cycle):
+    return sum([dg_order_book.edges[edge]["weight"] for edge in zip(cycle, cycle[1:] + cycle[:1])])
+
+# create a dictionary of all simple cycles and sum of weights
+cycles = dict()
+for cycle in nx.simple_cycles(dg_order_book):
+    cycles[tuple(cycle)] = sum_weights(cycle)
+
+print(f"There are {len(cycles)} distinct simple cycles in the order book.")
+
+# create histogram
+plt.hist(cycles.values(), bins=int(np.sqrt(len(cycles))))
+ax = plt.gca()
+ax.set_ylabel("count")
+ax.set_xlabel("sum of log loss")
+ax.set_title("sum of log loss for all simple cycles")
+ax.grid(True)
+ax.axvline(0, color='r')
+
+
+# In[77]:
+
+
+arbitrage = [cycle for cycle in sorted(cycles, key=cycles.get) if cycles[cycle] < 0]
+
+print(f"basis points   arbitrage cycle")
+for cycle in arbitrage:
+    print(f"{10000*(np.exp(-cycles[cycle]) - 1):12.8f} {cycle}")
+
+
+# In[79]:
+
+
+for k, cycle in enumerate(arbitrage):
+    
+    dg_order_book = order_book_to_dg(order_book)
+
+    for node in cycle:
+        dg_order_book.nodes[node]['color'] = 'red'
+        
+    color = 'r'
+    for edge in zip(cycle, cycle[1:] + cycle[:1]):
+        dg_order_book.edges[edge]['width'] = 4
+        
+    draw_dg(dg_order_book, rad=0.05)
+    
+    if k > 4:
+        break
+
+
+# ## Arbitrage with Capacity Constraints
+# 
+# The preceding analysis demonstrates some of the practical limitations of relying on generic implementations of network algorithms. 
+# 
+# * More than one negative cycle may exist, so more than one arbitrage opportunity may exist.
+# * Shortest path algorithms do not account for capacity constraints. In effect, these algorithms are restricted to investments that are 'sufficiently small' to satisfy all capacity constraints on all edges.
+# 
+# The following optimization model provides an alternative to network algorithms that includes:
+# 
+# * capacity constraints
+# * multi-step trading strategies
+# * no-short constraints
+# 
+# $$
+# \begin{align*}
+# \max \quad & w_{USD}(T) \\
+# \\
+# \text{s.t.} \quad & w_{USD}(0) = w_0 \\ \\
+# & w_{j}(t) = w_{j}(t-1) + \sum_{i\in I_k} a_{i\rightarrow j}x_{i\rightarrow j}(t) - \sum_{k\in O_k} x_{j\rightarrow k}(t) & \forall j\in N, t=1, 2, \ldots, T \\
+# & w_j(t-1) \geq \sum_{k\in O_k} x_{j\rightarrow k}(t) & \forall j\in N, t = 1, 2, \ldots, T  \\
+# & \sum_{t=1}^T x_{j, k}(t) \leq c_{j\rightarrow k} & \forall (j, k) \in N \times N\\
+# \end{align*}
+# $$
+
+# In[106]:
+
+
 import pyomo.environ as pyo
+
+def crypto_model(dg_order_book, T = 10, w0 = 1.0):
+
+    m = pyo.ConcreteModel(f"{exchange} arbitrage")
+
+    # length of the trading chain
+    m.T0 = pyo.RangeSet(0, T)
+    m.T1 = pyo.RangeSet(1, T)
+
+    # currency nodes and trading edges
+    m.NODES = pyo.Set(initialize=list(dg_order_book.nodes))
+    m.EDGES = pyo.Set(initialize=list(dg_order_book.edges))
+
+    # currency on hand at each node
+    m.w = pyo.Var(m.NODES, m.T0, domain=pyo.NonNegativeReals)
+
+    # amount traded on each edge at each trade
+    m.x = pyo.Var(m.EDGES, m.T1, domain=pyo.NonNegativeReals)
+
+    # total amount traded on each edge over all trades
+    m.z = pyo.Var(m.EDGES, domain=pyo.NonNegativeReals)
+
+    # "gain" on each trading edge
+    @m.Param(m.EDGES)
+    def a(m, src, dst):
+        return dg_order_book.edges[(src, dst)]["a"]
+
+    @m.Param(m.EDGES)
+    def capacity(m, src, dst):
+        return dg_order_book.edges[(src, dst)]["capacity"]
+
+    @m.Objective(sense=pyo.maximize)
+    def wealth(m):
+        return m.w["USD", T]
+
+    @m.Constraint(m.EDGES)
+    def total_traded(m, src, dst):
+        return m.z[src, dst] == sum([m.x[src, dst, t] for t in m.T1])
+
+    @m.Constraint(m.EDGES)
+    def edge_capacity(m, src, dst):
+        return m.z[src, dst] <= m.capacity[src, dst]
+
+    # initial assignment of 100 units on a selected currency
+    @m.Constraint(m.NODES)
+    def initial(m, node):
+        if node == "USD":
+            return m.w[node, 0] == w0
+        return m.w[node, 0] == 0.0
+
+    @m.Constraint(m.NODES, m.T1)
+    def no_shorting(m, node, t):
+        return m.w[node, t - 1] >= sum(m.x[node, dst, t] for src, dst in m.EDGES if src == node)
+
+    @m.Constraint(m.NODES, m.T1)
+    def balances(m, node, t):
+        return m.w[node, t] == m.w[node, t - 1]             + sum(m.a[src, node] * m.x[src, node, t] for src, dst in m.EDGES if dst == node)             - sum(m.x[node, dst, t] for src, dst in m.EDGES if src == node) 
+
+
+    solver = pyo.SolverFactory("cbc")
+    solver.solve(m)
+    
+    return m
 
 dg_order_book = order_book_to_dg(order_book)
 
-# trading horizon
-T = 20 # = len(arb) - 1
-
-m = pyo.ConcreteModel(f"{exchange} arbitrage")
-
-# length of the trading chain
-m.T0 = pyo.RangeSet(0, T)
-m.T1 = pyo.RangeSet(1, T)
-
-# currency nodes and trading edges
-m.NODES = pyo.Set(initialize=list(dg_order_book.nodes))
-m.EDGES = pyo.Set(initialize=list(dg_order_book.edges))
-
-# currency on hand at each node
-m.w = pyo.Var(m.NODES, m.T0, domain=pyo.NonNegativeReals)
-
-# amount traded on each edge at each trade
-m.x = pyo.Var(m.EDGES, m.T1, domain=pyo.NonNegativeReals)
-
-# total amount traded on each edge over all trades
-m.z = pyo.Var(m.EDGES, domain=pyo.NonNegativeReals)
-
-# "gain" on each trading edge
-@m.Param(m.EDGES)
-def a(m, src, dst):
-    return np.exp(-dg_order_book.edges[(src, dst)]["weight"])
-
-@m.Param(m.EDGES)
-def capacity(m, src, dst):
-    return dg_order_book.edges[(src, dst)]["capacity"]
-
-@m.Objective(sense=pyo.maximize)
-def wealth(m):
-    return m.w["USD", T]
-
-@m.Constraint(m.EDGES)
-def total_traded(m, src, dst):
-    return m.z[src, dst] == sum([m.x[src, dst, t] for t in m.T1])
-
-@m.Constraint(m.EDGES)
-def edge_capacity(m, src, dst):
-    return m.z[src, dst] <= m.capacity[src, dst]
-
-# initial assignment of 100 units on a selected currency
-@m.Constraint(m.NODES)
-def initial(m, node):
-    if node == "USD":
-        return m.w[node, 0] == 100.0
-    return m.w[node, 0] == 0.0
-
-@m.Constraint(m.NODES, m.T1)
-def no_shorting(m, node, t):
-    return m.w[node, t - 1] >= sum(
-        m.x[node, dst, t] for src, dst in m.EDGES if src == node
-    )
-
-@m.Constraint(m.NODES, m.T1)
-def balances(m, node, t):
-    return m.w[node, t] == m.w[node, t - 1] - sum(
-        m.x[node, dst, t] for src, dst in m.EDGES if src == node
-    ) + sum(m.a[src, node] * m.x[src, node, t] for src, dst in m.EDGES if dst == node)
-
-solver = pyo.SolverFactory("cbc")
-solver.solve(m)
-
+m = crypto_model(dg_order_book, T=10, w0=1000)
 for src, dst in m.EDGES:
     if m.z[src, dst]() > 0:  
         dg_order_book.nodes[src]["color"] = "red"
         dg_order_book.nodes[dst]["color"] = "red"
-        dg_order_book[src][dst]["color"] = "red" 
-        dg_order_book[src][dst]["width"] = 5
-        
-        print(f" {src:>5s} -> {dst:5s}", end="")
-        print(f" {dg_order_book[src][dst]['kind']}", end="")
-        print(f" {m.capacity[src, dst]:16.6f}", end="")
-        print(f" {m.z[src, dst]():16.6f}", end="")
-        print()
-        
+        dg_order_book[src][dst]["width"] = 4
+
 draw_dg(dg_order_book, 0.05)
-
-
-for node in m.NODES:
-    print(f"{node:8s}", end="")
-    for t in m.T0:
-        print(f" {m.w[node, t]():12.6f}", end="")
-    print()
-
-print()
-
+      
 for t in m.T1:
     print(f"t = {t}")
     for src, dst in m.EDGES:
-        if m.x[src, dst, t]() > 0:
+        if m.x[src, dst, t]() > 0.0000002:
             print(f"{src:8s} -> {dst:8s}: {m.x[src, dst, t]():12.6f}")
     print()
-    
-for src, dst in m.EDGES:
-    if m.z[src, dst]() > 0:
 
-        print(f" {m.capacity[src, dst]:16.6f}", end="")
-        for t in m.T1:
-            print(f" {m.x[src, dst, t]():12.6f}", end="")
-        print()
-        
+    
 
 
 # ## Bibliographic Notes
