@@ -440,7 +440,7 @@ for k, cycle in enumerate(arbitrage):
 # \end{align*}
 # $$
 
-# In[106]:
+# In[161]:
 
 
 import pyomo.environ as pyo
@@ -510,23 +510,35 @@ def crypto_model(dg_order_book, T = 10, w0 = 1.0):
 
 dg_order_book = order_book_to_dg(order_book)
 
-m = crypto_model(dg_order_book, T=10, w0=1000)
+m = crypto_model(dg_order_book, T=6, w0=10000)
+
+print("Orders")
+print(f"      arc          capacity        traded")
 for src, dst in m.EDGES:
-    if m.z[src, dst]() > 0:  
+    if m.z[src, dst]() > 0.0000002: 
         dg_order_book.nodes[src]["color"] = "red"
         dg_order_book.nodes[dst]["color"] = "red"
         dg_order_book[src][dst]["width"] = 4
-
+        
+        print(f"{src:>5s} -> {dst:<5s} {dg_order_book.edges[(src,dst)]['kind']} {m.capacity[src, dst]:12.5f} {m.z[src, dst]():14.5f}")
+        
 draw_dg(dg_order_book, 0.05)
-      
+
+print("\nTransactions")
 for t in m.T1:
     print(f"t = {t}")
     for src, dst in m.EDGES:
         if m.x[src, dst, t]() > 0.0000002:
-            print(f"{src:8s} -> {dst:8s}: {m.x[src, dst, t]():12.6f}")
+            print(f"{src:8s} -> {dst:8s}: {m.x[src, dst, t]():14.6f}")
     print()
 
-    
+print("Balances")
+for node in dg_order_book.nodes:
+    if sum(m.w[node, t]() for t in m.T0) > 0.0000002:
+        print(f"{node:6s}: ", end="")
+        for t in m.T0:
+            print(f"{m.w[node, t]():12.4f} ", end="")
+        print()
 
 
 # ## Bibliographic Notes
