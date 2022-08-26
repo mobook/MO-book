@@ -3,20 +3,14 @@
 
 # # Caroline on robust steroids
 # 
-# <img align='right' src='https://drive.google.com/uc?export=view&id=1FYTs46ptGHrOaUMEi5BzePH9Gl3YM_2C' width=200>
-# 
-# As we know, BIM produces logic and memory chips using copper, silicon, germanium and plastic. 
-# 
-# Each chip has the following consumption of materials:
+# As we know, BIM produces logic and memory chips using copper, silicon, germanium and plastic. Each chip has the following consumption of materials:
 # 
 # | chip   | copper | silicon | germanium | plastic |
 # |:-------|-------:|--------:|----------:|--------:|
 # |Logic   |    0.4 |       1 |           |       1 |
 # |Memory  |    0.2 |         |         1 |       1 |
 # 
-# BIM hired Caroline to manage the acquisition and the inventory of these raw materials. 
-# 
-# Caroline conducted a data analysis which lead to the following prediction of monthly demands for her trophies: 
+# BIM hired Caroline to manage the acquisition and the inventory of these raw materials. Caroline conducted a data analysis which lead to the following prediction of monthly demands: 
 # 
 # | chip   | Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Sep | Oct | Nov | Dec |
 # |:-------|----:|----:|----:|----:|----:|----:|----:|----:|----:|----:|----:|----:|
@@ -49,10 +43,9 @@
 # 
 # Caroline cannot spend more than 5000 per month on acquisition.
 # 
-# Note that Caroline aims at minimizing the acquisition and holding costs of the materials while meeting the required quantities for production. 
-# The production is made to order, meaning that no inventory of chips is kept.
+# Note that Caroline aims at minimizing the acquisition and holding costs of the materials while meeting the required quantities for production. The production is made to order, meaning that no inventory of chips is kept.
 # 
-# Please help Caroline to model the material planning and solve it with the data above. 
+# Please model and solve this material planning problem with the data above. 
 
 # In[1]:
 
