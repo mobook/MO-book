@@ -47,7 +47,7 @@
 # 
 # Please model and solve this material planning problem with the data above. 
 
-# In[1]:
+# In[5]:
 
 
 import sys
@@ -61,7 +61,7 @@ if 'google.colab' in sys.modules:
     get_ipython().system('apt-get install -y -qq coinor-cbc')
 
 
-# In[2]:
+# In[6]:
 
 
 from io import StringIO
@@ -91,7 +91,7 @@ price = pd.read_csv(StringIO(price_data), index_col='product')
 display(price)
 
 
-# In[3]:
+# In[7]:
 
 
 use = dict()
@@ -122,7 +122,7 @@ def initialize_problem_data():
 problem_data = initialize_problem_data()
 
 
-# In[4]:
+# In[12]:
 
 
 # This is the old function
@@ -197,7 +197,7 @@ def BIMProductAcquisitionAndInventory(problem_data):
     return m
 
 m = BIMProductAcquisitionAndInventory(problem_data)
-pyo.SolverFactory('cbc').solve(m)
+pyo.SolverFactory('mosek').solve(m)
 print(m.total_cost())
 
 problem_data["purchases"] = ShowTableOfPyomoVariables(m.x, m.P, m.T)
@@ -207,7 +207,7 @@ display(problem_data["purchases"])
 display(problem_data["stock"])
 
 
-# In[ ]:
+# In[9]:
 
 
 m = BIMProductAcquisitionAndInventory(problem_data)
