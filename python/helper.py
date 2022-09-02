@@ -13,7 +13,7 @@ def _check_available(executable_name):
 
 def package_available(package_name):
     if package_name == "glpk":
-        return _check_available("gpsol")        
+        return _check_available("glpsol")        
     else:
         return _check_available(package_name)
 
