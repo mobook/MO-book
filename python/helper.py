@@ -3,7 +3,6 @@ import sys
 import os.path
 import os
 import requests
-
 import urllib
 
 import subprocess
@@ -81,8 +80,7 @@ def install_glpk():
         #os.system('conda install -c conda-forge glpk')
         
     # Verify package is now available
-    # assert package_available("glpk"), "glpk is not available"
-    # For some reason, this is not working on Colab. Feb-05-2021
+    assert package_available("glpk"), "glpk is not available"
 
 def install_cbc():
     if not package_available("cbc") and on_colab():
@@ -96,7 +94,6 @@ def install_cbc():
     assert package_available("cbc"), "cbc is not available"
     
     # command_with_output("./cbc -v")
-        
         
 def install_bonmin():
     if not package_available("bonmin") and on_colab():
@@ -117,7 +114,6 @@ def install_couenne():
     # Verify package is now available
     assert package_available("couenne"), "couenne is not available"
     command_with_output("./couenne -v")
-
 
 def install_gecode():
     if not package_available("gecode") and on_colab():
