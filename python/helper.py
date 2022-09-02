@@ -57,9 +57,6 @@ def install_ipopt():
             os.system("ln -s /root/.idaes/bin/ipopt ipopt")
             os.system("ln -s /root/.idaes/bin/k_aug k_aug")
             
-            command_with_output('./ipopt -v')
-            command_with_output('./k_aug -v')
-            
         # Check again if Ipopt is available
         if not package_available("ipopt"):
             if on_colab():
@@ -80,9 +77,10 @@ def install_ipopt():
     # Verify Ipopt is now available
     assert package_available("ipopt"), "Ipopt is not available"
     print("ipopt was successfully installed")
-    command_with_output("ipopt --version")
+    command_with_output("./ipopt --version")
     if package_available("k_aug"):
         print("k_aug was successfully installed")
+        command_with_output("./k_aug --version")
 
 def install_glpk():
     if not package_available("glpk") and on_colab():
