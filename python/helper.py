@@ -120,65 +120,25 @@ def install_bonmin():
     command_with_output("./bonmin -v")
 
 def install_couenne():
-    if not package_available("couenne") and on_colab():
-        print("Installing couenne via via zip file...")
-        os.system('wget -N -q "https://ampl.com/dl/open/couenne/couenne-linux64.zip"')
-        os.system('unzip -o -q couenne-linux64')
-        
-    # Verify package is now available
-    assert package_available("couenne"), "couenne is not available"
+    if package_available("couenne"):
+        print("bonmin found! No need to install.")
+    else:
+        if on_colab():
+            print("Installing couenne via via zip file...")
+            os.system('wget -N -q "https://ampl.com/dl/open/couenne/couenne-linux64.zip"')
+            os.system('unzip -o -q couenne-linux64')
+        assert package_available("couenne"), "couenne is not available"
+    
     command_with_output("./couenne -v")
 
 def install_gecode():
-    if not package_available("gecode") and on_colab():
-        print("Installing gecode via via zip file...")
-        os.system('wget -N -q "https://ampl.com/dl/open/gecode/gecode-linux64.zip"')
-        os.system('unzip -o -q gecode-linux64')
+    if package_available("gecode"):
+        print("gecode found! No need to install.")
+    else:
+        if on_colab():
+            print("Installing gecode via via zip file...")
+            os.system('wget -N -q "https://ampl.com/dl/open/gecode/gecode-linux64.zip"')
+            os.system('unzip -o -q gecode-linux64')
+        assert package_available("gecode"), "gecode is not available"
     
-    # Verify package is now available
-    assert package_available("gecode"), "gecode is not available"
     command_with_output("./gecode -v")
-    
-def _download(relative_file_names):
-
-    # GitHub pages url
-    # url = "https://ndcbe.github.io/CBE60499/"
-    url = "https://raw.githubusercontent.com/ndcbe/CBE60499/main/docs/"
-
-    # loop over all files to download
-    for file_path in relative_file_names:
-        print("Checking for",file_path)
-        # split each file_path into a folder and filename
-        stem, filename = os.path.split(file_path)
-    
-        # check if the folder name is not empty
-        if stem:
-            # add "." for Colab. Doing it here because we do not want it in the URL
-            # stem = '.' + stem
-            
-            # check if the folder exists
-            if not os.path.exists(stem):
-                print("\tCreating folder",stem)
-                # if the folder does not exist, create it
-                os.mkdir(stem)
-        # if the file does not exist, create it by downloading from GitHub pages
-        if not os.path.isfile(file_path):
-            file_url = urllib.parse.urljoin(url,
-                    urllib.request.pathname2url(file_path))
-            print("\tDownloading",file_url)
-            with open(file_path, 'wb') as f:
-                f.write(requests.get(file_url).content)
-        else:
-            print("\tFile found!")
-
-def download_data(filenames):
-    for i in range(len(filenames)):
-        filenames[i] = "./data/"+filenames[i]
-    
-    _download(filenames)
-
-def download_figures(filenames):
-    for i in range(len(filenames)):
-        filenames[i] = "./figures/"+filenames[i]
-    
-    _download(filenames)
