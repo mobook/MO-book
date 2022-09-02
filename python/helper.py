@@ -2,9 +2,6 @@ import shutil
 import sys
 import os.path
 import os
-import requests
-import urllib
-
 import subprocess
 
 def _check_available(executable_name):
@@ -29,7 +26,7 @@ def install_pyomo():
     if package_available("pyomo"):
         print("Pyomo found! No need to install.")
     else:
-        print("Installing pyomo via pip...")
+        print("Installing pyomo from idaes_pse via pip...")
         os.system("pip install -q idaes_pse")
         assert package_available("pyomo"), "Pyomo was not successfully installed."
 
@@ -105,7 +102,7 @@ def install_cbc():
             os.system('apt-get install -y -qq coinor-cbc')
         assert package_available("cbc"), "cbc installation was not successful."
     
-    command_with_output("./cbc -v")
+    command_with_output("./cbc --version")
         
 def install_bonmin():
     if package_available("bonmin"):
