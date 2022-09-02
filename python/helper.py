@@ -139,3 +139,14 @@ def install_gecode():
         assert package_available("gecode"), "gecode is not available"
     
     command_with_output("./gecode -v")
+    
+def install_mosek():
+    if package_available("mosek"):
+        print("gecode found! No need to install.")
+    else:
+        if on_colab():
+            print("Installing mosek via pip.")
+            os.system("pip install mosek")
+        assert package_available("mosek"), "mosek is not available"
+        
+    command_with_output("mosek --version")
