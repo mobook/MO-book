@@ -3,7 +3,7 @@ import sys
 import os.path
 import os
 
-def _check_available(executable_name): return (shutil.which(solver_name) or os.path.isfile(solver_name)) 
+def _check_available(executable_name): return (shutil.which(executable_name) or os.path.isfile(executable_name)) 
 
 def package_available(package_name):
     
