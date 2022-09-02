@@ -7,16 +7,19 @@ import urllib
 
 import subprocess
 
-def _check_available(executable_name): 
+def _check_available(executable_name):
+    """Return True if executable_name is found in the search path."""
     return (shutil.which(executable_name) is not None) or os.path.isfile(executable_name)
 
 def package_available(package_name):
+    """Return True if package_name is installed."""
     if package_name == "glpk":
         return _check_available("glpsol")        
     else:
         return _check_available(package_name)
 
 def on_colab(): 
+    """Return True if running on Google Colab."""
     return "google.colab" in sys.modules
 
 def command_with_output(command):
@@ -32,6 +35,7 @@ def install_idaes():
         os.system('idaes --version')
     else:
         print("IDAES found! No need to install.")
+    command_with_output("idaes --version")
 
 def install_ipopt():
     if not package_available("ipopt"):
