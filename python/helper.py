@@ -25,6 +25,16 @@ def on_colab():
 def command_with_output(command):
     r = subprocess.getoutput(command)
     print(r)
+    
+def install_pyomo():
+    if not package_available("pyomo"):
+        print("Installing pyomo via pip...")
+        os.system("pip install -q idaes_pse")
+        assert package_available("pyomo"), "pyomo was not successfully installed."
+        print("pyomo was successfully installed")
+    else:
+        print("Pyomo found! No need to install.")
+    command_with_output("pyomo --version")
 
 def install_idaes():
     if not package_available("idaes"):
@@ -32,7 +42,6 @@ def install_idaes():
         os.system("pip install -q idaes_pse")
         assert package_available("idaes"), "idaes was not successfully installed."
         print("idaes was successfully installed")
-        os.system('idaes --version')
     else:
         print("IDAES found! No need to install.")
     command_with_output("idaes --version")
