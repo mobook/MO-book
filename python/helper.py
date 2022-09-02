@@ -23,31 +23,32 @@ def on_colab():
     return "google.colab" in sys.modules
 
 def command_with_output(command):
-    r = subprocess.getoutput(command)
-    print(r)
+    print(subprocess.getoutput(command))
     
 def install_pyomo():
-    if not package_available("pyomo"):
+    if package_available("pyomo"):
+        print("Pyomo found! No need to install.")
+    else:
         print("Installing pyomo via pip...")
         os.system("pip install -q idaes_pse")
-        assert package_available("pyomo"), "pyomo was not successfully installed."
-        print("pyomo was successfully installed")
-    else:
-        print("Pyomo found! No need to install.")
+        assert package_available("pyomo"), "Pyomo was not successfully installed."
+
     command_with_output("pyomo --version")
 
 def install_idaes():
-    if not package_available("idaes"):
+    if package_available("idaes"):
+        print("IDAES found! No need to install.")
+    else:
         print("Installing idaes via pip...")
         os.system("pip install -q idaes_pse")
-        assert package_available("idaes"), "idaes was not successfully installed."
-        print("idaes was successfully installed")
-    else:
-        print("IDAES found! No need to install.")
+        assert package_available("idaes"), "Ideas installation was not successful."
+        
     command_with_output("idaes --version")
 
 def install_ipopt():
-    if not package_available("ipopt"):
+    if package_available("ipopt"):
+        print("Ipopt found! No need to install.")
+    else:
         if on_colab():
             # Install idaes solvers
             print("Running idaes get-extensions to install Ipopt and k_aug...")
@@ -60,7 +61,7 @@ def install_ipopt():
         # Check again if Ipopt is available
         if not package_available("ipopt"):
             if on_colab():
-                print("Installing Ipopt via zip file...")
+                print("Installing ipopt via zip file...")
                 os.system('wget -N -q "https://ampl.com/dl/open/ipopt/ipopt-linux64.zip"')
                 os.system('!unzip -o -q ipopt-linux64')
             # Otherwise, try conda
@@ -71,51 +72,51 @@ def install_ipopt():
                 except:
                     pass
 
-        assert package_available("ipopt"), "Ipopt is not available"       
-        print("ipopt was successfully installed")  
-
-    else:
-        print("Ipopt found! No need to install.")
+        assert package_available("ipopt"), "ipopt installation was not successful."           
         
-    # Verify Ipopt is now available
     command_with_output("./ipopt --version")
     if package_available("k_aug"):
-        print("k_aug was successfully installed")
         command_with_output("./k_aug --version")
 
 def install_glpk():
-    if not package_available("glpk") and on_colab():
-        print("Installing glpk via apt-get...")
-        os.system('apt-get install -y -qq glpk-utils')
+    if package_available("glpk"):
+        print("GLPK found! No need to install.")
+    else:
+        if on_colab():
+            print("Installing glpk via apt-get...")
+            os.system('apt-get install -y -qq glpk-utils')
+        else:
+            print("Installing glpk via conda...")
+            os.system('conda install -c conda-forge glpk')
+        assert package_available("glpk"), "glpk is not available"   
         
-        # Does not work on Colab. Feb-03-2021.
-        #print("Installing glpk via conda...")
-        #os.system('conda install -c conda-forge glpk')
-        
-    # Verify package is now available
-    assert package_available("glpk"), "glpk is not available"
+    command_with_output("glpsol --version")
 
 def install_cbc():
-    if not package_available("cbc") and on_colab():
-        #print("Installing cbc via apt-get...")
-        #os.system('apt-get install -y -qq coinor-cbc')
-        print("Installing cbc via zip file...")
-        os.system('wget -N -q "https://ampl.com/dl/open/cbc/cbc-linux64.zip"')
-        os.system('unzip -o -q cbc-linux64')
-        
-    # Verify package is now available
-    assert package_available("cbc"), "cbc is not available"
+    if package_available("cbc"):
+        print("CBC found! No need to install.")
+    else:
+        if on_colab():
+            print("Installing cbc via zip file...")
+            os.system('wget -N -q "https://ampl.com/dl/open/cbc/cbc-linux64.zip"')
+            os.system('unzip -o -q cbc-linux64')
+        else:
+            print("Installing cbc via apt-get...")
+            os.system('apt-get install -y -qq coinor-cbc')
+        assert package_available("cbc"), "cbc installation was not successful."
     
-    # command_with_output("./cbc -v")
+    command_with_output("./cbc -v")
         
 def install_bonmin():
-    if not package_available("bonmin") and on_colab():
-        print("Installing bonmin via zip file...")
-        os.system('wget -N -q "https://ampl.com/dl/open/bonmin/bonmin-linux64.zip"')
-        os.system('unzip -o -q bonmin-linux64')
-    
-    # Verify package is now available
-    assert package_available("bonmin"), "bonmin is not available"
+    if package_available("bonmin"):
+        print("bonmin found! No need to install.")
+    else:
+        if on_colab():
+            print("Installing bonmin via zip file...")
+            os.system('wget -N -q "https://ampl.com/dl/open/bonmin/bonmin-linux64.zip"')
+            os.system('unzip -o -q bonmin-linux64')
+        assert package_available("bonmin"), "bonmin is not available"
+        
     command_with_output("./bonmin -v")
 
 def install_couenne():
