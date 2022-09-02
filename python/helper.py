@@ -9,7 +9,7 @@ import urllib
 import subprocess
 
 def _check_available(executable_name): 
-    return (len(shutil.which(executable_name) > 0) or os.path.isfile(executable_name)
+    return (len(shutil.which(executable_name)) > 0) or os.path.isfile(executable_name)
 
 def package_available(package_name):
     if package_name == "glpk":
