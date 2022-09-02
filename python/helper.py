@@ -80,6 +80,7 @@ def install_ipopt():
     # Verify Ipopt is now available
     assert package_available("ipopt"), "Ipopt is not available"
     print("ipopt was successfully installed")
+    command_with_output("ipopt --version")
     if package_available("k_aug"):
         print("k_aug was successfully installed")
 
