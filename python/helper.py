@@ -55,7 +55,7 @@ def install_ipopt():
 
             # Add symbolic link for idaes solvers
             os.system("ln -s /root/.idaes/bin/ipopt ipopt")
-            os.system("ln -s /root/.idaes/bin/k_aug k_aug")
+            os.system("ln -s /root/.idaes/bin/k_aug k_aug")          
             
         # Check again if Ipopt is available
         if not package_available("ipopt"):
@@ -71,12 +71,13 @@ def install_ipopt():
                 except:
                     pass
 
+        assert package_available("ipopt"), "Ipopt is not available"       
+        print("ipopt was successfully installed")  
+
     else:
         print("Ipopt found! No need to install.")
         
     # Verify Ipopt is now available
-    assert package_available("ipopt"), "Ipopt is not available"
-    print("ipopt was successfully installed")
     command_with_output("./ipopt --version")
     if package_available("k_aug"):
         print("k_aug was successfully installed")
