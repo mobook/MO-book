@@ -5,7 +5,7 @@ import os
 import subprocess
 
 def _check_available(executable_name):
-    """Return True if executable_name is found in the search path."""
+    """Return True if the executable_name is found in the search path."""
     return (shutil.which(executable_name) is not None) or os.path.isfile(executable_name)
 
 def package_available(package_name):
@@ -26,11 +26,12 @@ def install_pyomo():
     if package_available("pyomo"):
         print("Pyomo found! No need to install.")
     else:
-        print("Installing pyomo from idaes_pse via pip...")
+        print("Installing pyomo from idaes_pse via pip ...", end="")
         os.system("pip install -q idaes_pse")
-        assert package_available("pyomo"), "Pyomo was not successfully installed."
-
-    command_with_output("pyomo --version")
+        if package_available("pyomo"):
+            print("successful.")
+        else:
+            print("failed.")
 
 def install_idaes():
     if package_available("idaes"):
@@ -140,9 +141,22 @@ def install_gecode():
     
     command_with_output("./gecode -v")
     
+def install_gurobi():
+    try:
+        import gurobi as gp
+        print("gurobi found: No need to install.")
+    except ImportError:
+        if on_colab():
+            print("Installing gurobi via pip.")
+            os.system("pip install gurobipy")
+        try:
+            import gurobi as gp
+        except ImportError:
+            assert False, "gurobi is not available"
+    
 def install_mosek():
     if package_available("mosek"):
-        print("gecode found! No need to install.")
+        print("mosek found! No need to install.")
     else:
         if on_colab():
             print("Installing mosek via pip.")
