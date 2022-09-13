@@ -7,14 +7,20 @@
 # 
 # This notebook demonstrates a technique for linear regression based on linear programming to minimize a sum of absolute errors between the model prediction and data from a training set. The sum of absolute values of  errors is the $L_1$ norm which is known to have favorable robustness characteristics in practical use. We follow closely this [paper](https://www.jstor.org/stable/1402501).
 
-# In[1]:
+# In[4]:
 
 
-# Install Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/code/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+import os.path
+
+if not os.path.exists("helper.py"):
+    import requests
+    url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+    with open("helper.py", "wb") as f:
+        f.write(requests.get(url).content)
+
+import helper
+helper.install_pyomo()
+helper.install_glpk()
 
 
 # ## Generate data
