@@ -13,14 +13,19 @@
 # 
 # This notebook demonstrates a solution to this puzzle using Pyomo disjuctions and the `gecode` solver, a constraint solving package written in C++. This same puzzle is used in the `gecode` documentation, so this notebook may provide a useful contrast between Pyomo modeling and use of a native C++ API.
 
-# In[ ]:
+# In[1]:
 
 
-# install Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+# install Pyomo and solvers
+import requests
+import imp
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = imp.new_module("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
 
 
 # ## Modeling and Solution
@@ -50,7 +55,7 @@ if "google.colab" in sys.modules:
 # \end{align*}$$
 # 
 
-# In[33]:
+# In[2]:
 
 
 import pyomo.environ as pyo

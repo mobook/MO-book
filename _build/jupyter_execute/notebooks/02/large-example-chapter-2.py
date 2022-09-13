@@ -3,8 +3,6 @@
 
 # # Caroline's raw material planning
 # 
-# <img align='right' src='https://drive.google.com/uc?export=view&id=1FYTs46ptGHrOaUMEi5BzePH9Gl3YM_2C' width=200>
-# 
 # As we know, BIM produces logic and memory chips using copper, silicon, germanium and plastic. 
 # 
 # Each chip has the following consumption of materials:
@@ -54,23 +52,24 @@
 # 
 # Please help Caroline to model the material planning and solve it with the data above. 
 
-# In[ ]:
+# In[20]:
 
 
-import sys
-if 'google.colab' in sys.modules:
-    import shutil
-    if not shutil.which('pyomo'):
-        get_ipython().system('pip install -q pyomo')
-        assert(shutil.which('pyomo'))
+# install Pyomo and solvers
+import requests
+import imp
 
-    # cbc
-    get_ipython().system('apt-get install -y -qq coinor-cbc')
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = imp.new_module("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
 
 
 # To be self contained... alternative is to upload and read a file. 
 
-# In[ ]:
+# In[3]:
 
 
 demand_data = '''chip,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
@@ -78,7 +77,7 @@ Logic,88,125,260,217,238,286,248,238,265,293,259,244
 Memory,47,62,81,65,95,118,86,89,82,82,84,66'''
 
 
-# In[ ]:
+# In[4]:
 
 
 from io import StringIO
@@ -87,7 +86,7 @@ demand_chips = pd.read_csv( StringIO(demand_data), index_col='chip' )
 demand_chips
 
 
-# In[ ]:
+# In[5]:
 
 
 price_data = '''product,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
@@ -97,7 +96,7 @@ germanium,5,5,5,3,3,3,3,2,3,4,5,6
 plastic,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1'''
 
 
-# In[ ]:
+# In[6]:
 
 
 price = pd.read_csv( StringIO(price_data), index_col='product' )
@@ -108,7 +107,7 @@ price
 
 # ## A simple dataframe with the consumptions
 
-# In[ ]:
+# In[7]:
 
 
 use = dict()
@@ -120,20 +119,20 @@ use
 
 # ## A simple matrix multiplication
 
-# In[ ]:
+# In[8]:
 
 
 demand = use.dot( demand_chips )
 demand
 
 
-# In[ ]:
+# In[9]:
 
 
 import pyomo.environ as pyo
 
 
-# In[ ]:
+# In[10]:
 
 
 def ShowTableOfPyomoVariables( X, I, J ):
@@ -142,7 +141,7 @@ def ShowTableOfPyomoVariables( X, I, J ):
 
 # # NOTE: The functions below follow closely the naming in Overleaf
 
-# In[ ]:
+# In[11]:
 
 
 def BIMProductAcquisitionAndInventory( demand, acquisition_price, existing, desired, stock_limit, month_budget ):
@@ -208,7 +207,7 @@ def BIMProductAcquisitionAndInventory( demand, acquisition_price, existing, desi
     return m
 
 
-# In[ ]:
+# In[12]:
 
 
 m = BIMProductAcquisitionAndInventory( demand, price, 
@@ -219,20 +218,20 @@ m = BIMProductAcquisitionAndInventory( demand, price,
 pyo.SolverFactory( 'cbc' ).solve(m)
 
 
-# In[ ]:
+# In[13]:
 
 
 ShowTableOfPyomoVariables( m.x, m.P, m.T )
 
 
-# In[ ]:
+# In[14]:
 
 
 stock = ShowTableOfPyomoVariables( m.s, m.P, m.T )
 stock
 
 
-# In[ ]:
+# In[15]:
 
 
 import matplotlib.pyplot as plt, numpy as np
@@ -241,7 +240,7 @@ plt.xticks(np.arange(len(stock.columns)),stock.columns)
 plt.show()
 
 
-# In[ ]:
+# In[16]:
 
 
 def VersionTwo( demand, acquisition_price, existing, desired, stock_limit, month_budget ):
@@ -310,7 +309,7 @@ def VersionTwo( demand, acquisition_price, existing, desired, stock_limit, month
     return m
 
 
-# In[ ]:
+# In[17]:
 
 
 m = VersionTwo( demand, price, 
@@ -321,13 +320,13 @@ m = VersionTwo( demand, price,
 pyo.SolverFactory( 'cbc' ).solve(m)
 
 
-# In[ ]:
+# In[18]:
 
 
 ShowTableOfPyomoVariables( m.x, m.P, m.T )
 
 
-# In[ ]:
+# In[19]:
 
 
 ShowTableOfPyomoVariables( m.s, m.P, m.T )
@@ -339,3 +338,9 @@ ShowTableOfPyomoVariables( m.s, m.P, m.T )
 # * With the given budget the solution remains integer. 
 # * Lowering the budget to 2000 forces acquiring fractional quantities. 
 # * Lower values of the budget end up making the problem infeasible.
+
+# In[ ]:
+
+
+
+

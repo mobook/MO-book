@@ -3,14 +3,19 @@
 
 # # Making the Best of the Worst
 
-# In[1]:
+# In[10]:
 
 
-# Install Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+# install Pyomo and solvers
+import requests
+import imp
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = imp.new_module("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_glpk()
 
 
 # ## Problem
@@ -56,7 +61,7 @@ if "google.colab" in sys.modules:
 
 # ## Data
 
-# In[99]:
+# In[2]:
 
 
 import pandas as pd
@@ -88,7 +93,7 @@ display(BIM_resources)
 # 
 # An implementation of the maximum worst-case profit model.
 
-# In[190]:
+# In[3]:
 
 
 import pyomo.environ as pyo
@@ -142,7 +147,7 @@ display(worst_case_plan)
 # 
 # The first step is to create a model to optimize a single scenario. Without repeating the mathematical description, the following Pyomo model is simply the `maxmin` model adapted to a single scenario.
 
-# In[191]:
+# In[4]:
 
 
 def max_profit(scenario, resources):
@@ -177,7 +182,7 @@ def max_profit(scenario, resources):
 # 
 # The next cell computes the optimal plan for the mean scenario.
 
-# In[192]:
+# In[7]:
 
 
 # create mean scenario
@@ -185,7 +190,7 @@ mean_case = max_profit(BIM_scenarios.mean(), BIM_resources)
 pyo.SolverFactory('glpk').solve(mean_case)
 
 mean_case_profit = mean_case.profit()
-mean_case_plan = pd.Series({j: m.x[j]() for j in m.J}, name="mean case")
+mean_case_plan = pd.Series({j: mean_case.x[j]() for j in mean_case.J}, name="mean case")
 
 print("\nmean case profit", mean_case_profit)
 print("\nmean case production plan\n")
@@ -196,7 +201,7 @@ print(mean_case_plan)
 # 
 # Would plan should be preferred ... one that produces a guaranteed profit of 17,500 under all scenarios, or one that produces expected profit of 17,833?
 
-# In[223]:
+# In[8]:
 
 
 mean_case_outcomes = BIM_scenarios.dot(mean_case_plan)
@@ -212,7 +217,7 @@ ax.axhline(mean_case_outcomes.mean(), linestyle='--', color='orange', label="mea
 ax.legend()
 
 
-# In[224]:
+# In[9]:
 
 
 ax = pd.concat([worst_case_plan, mean_case_plan], axis=1).plot(kind="bar")

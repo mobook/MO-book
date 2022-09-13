@@ -3,23 +3,28 @@
 
 # # Fractional BIM
 
-# In[22]:
+# In[1]:
 
 
-# Install Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+# install Pyomo and solvers
+import requests
+import imp
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = imp.new_module("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_glpk()
 
 
-# In[28]:
+# In[2]:
 
 
 import pyomo.environ as pyo
 
 
-# In[29]:
+# In[3]:
 
 
 def BIM_with_revenues_minus_costs():
@@ -44,7 +49,7 @@ def BIM_with_revenues_minus_costs():
     return model
 
 
-# In[25]:
+# In[4]:
 
 
 def BIM_with_revenues_over_costs():
@@ -70,7 +75,7 @@ def BIM_with_revenues_over_costs():
     return model
 
 
-# In[26]:
+# In[5]:
 
 
 BIM_linear = BIM_with_revenues_minus_costs()
@@ -84,7 +89,7 @@ print('X=({:.1f},{:.1f}) value={:.3f} revenue={:.3f} cost={:.3f}'.format(
     pyo.value(BIM_linear.variable_cost)+pyo.value(BIM_linear.fixed_cost)))
 
 
-# In[27]:
+# In[6]:
 
 
 BIM_fractional = BIM_with_revenues_over_costs()

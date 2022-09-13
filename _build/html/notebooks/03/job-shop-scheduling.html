@@ -800,11 +800,25 @@ title="Print to PDF"
 <p>The following cell specifies the solver to used in the subsequent calculations. Some of these problems can become quite larger, and therefore the <code class="docutils literal notranslate"><span class="pre">gurobi</span></code> solver has been set as a default. If you don’t have the <code class="docutils literal notranslate"><span class="pre">gurobi</span></code> solver then adjust the code to use the <code class="docutils literal notranslate"><span class="pre">glpk</span></code> solver, but know the calculations may take longer (and the benchmark problem will not solve at all). If you do have the <code class="docutils literal notranslate"><span class="pre">gurobi</span></code> solver, edit the location of the executable to match the location on your computer.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import Pyomo and solvers for Google Colab</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py 
-    <span class="o">%</span><span class="k">run</span> install_on_colab.py
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import Pyomo and solvers</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">imp</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py&quot;</span>
+<span class="n">helper</span> <span class="o">=</span> <span class="n">imp</span><span class="o">.</span><span class="n">new_module</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
+<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+
+<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
+<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
+cbc was previously installed
+</pre></div>
+</div>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
 </pre></div>
 </div>
 </div>
@@ -991,10 +1005,7 @@ $$</p>
     <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">TASKS</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
     
     <span class="c1"># the set of jobs is constructed from a python set</span>
-    <span class="nd">@model</span><span class="o">.</span><span class="n">Set</span><span class="p">()</span>
-    <span class="k">def</span> <span class="nf">JOBS</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">j</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">]))</span>
-    <span class="c1">#model.JOBS = pyo.Set(initialize = )))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">j</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">])))</span>
     
     <span class="c1"># set of machines is constructed from a python set</span>
     <span class="n">model</span><span class="o">.</span><span class="n">MACHINES</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">m</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">])))</span>
@@ -1044,69 +1055,7 @@ $$</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">ValueError</span><span class="g g-Whitespace">                                </span>Traceback (most recent call last)
-<span class="nn">Input In [10],</span> in <span class="ni">&lt;cell line: 59&gt;</span><span class="nt">()</span>
-<span class="g g-Whitespace">     </span><span class="mi">56</span>     <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s1">&#39;gdp.bigm&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">57</span>     <span class="k">return</span> <span class="n">model</span>
-<span class="ne">---&gt; </span><span class="mi">59</span> <span class="n">jobshop_model</span><span class="p">(</span><span class="n">TASKS</span><span class="p">)</span>
-
-<span class="nn">Input In [10],</span> in <span class="ni">jobshop_model</span><span class="nt">(TASKS)</span>
-<span class="g g-Whitespace">      </span><span class="mi">8</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span> <span class="o">=</span> <span class="n">TASKS</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">10</span> <span class="c1"># the set of jobs is constructed from a python set</span>
-<span class="g g-Whitespace">     </span><span class="mi">11</span> <span class="nd">@model</span><span class="o">.</span><span class="n">Set</span><span class="p">()</span>
-<span class="ne">---&gt; </span><span class="mi">12</span> <span class="k">def</span> <span class="nf">JOBS</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-<span class="g g-Whitespace">     </span><span class="mi">13</span>     <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">j</span> <span class="k">for</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">TASKS</span><span class="p">]))</span>
-<span class="g g-Whitespace">     </span><span class="mi">14</span> <span class="c1">#model.JOBS = pyo.Set(initialize = )))</span>
-<span class="g g-Whitespace">     </span><span class="mi">15</span> 
-<span class="g g-Whitespace">     </span><span class="mi">16</span> <span class="c1"># set of machines is constructed from a python set</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pyomo/core/base/block.py:70,</span> in <span class="ni">_generic_component_decorator.__call__</span><span class="nt">(self, rule)</span>
-<span class="g g-Whitespace">     </span><span class="mi">66</span> <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rule</span><span class="p">):</span>
-<span class="g g-Whitespace">     </span><span class="mi">67</span>     <span class="nb">setattr</span><span class="p">(</span>
-<span class="g g-Whitespace">     </span><span class="mi">68</span>         <span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="p">,</span>
-<span class="g g-Whitespace">     </span><span class="mi">69</span>         <span class="n">rule</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
-<span class="ne">---&gt; </span><span class="mi">70</span>         <span class="bp">self</span><span class="o">.</span><span class="n">_component</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_args</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="n">rule</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_kwds</span><span class="p">))</span>
-<span class="g g-Whitespace">     </span><span class="mi">71</span>     <span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">72</span>     <span class="k">return</span> <span class="n">rule</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pyomo/core/base/set.py:2252,</span> in <span class="ni">OrderedScalarSet.__init__</span><span class="nt">(self, **kwds)</span>
-<span class="g g-Whitespace">   </span><span class="mi">2249</span> <span class="n">kwds</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;ordered&#39;</span><span class="p">,</span> <span class="n">Set</span><span class="o">.</span><span class="n">InsertionOrder</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">2251</span> <span class="n">_InsertionOrderSetData</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-<span class="ne">-&gt; </span><span class="mi">2252</span> <span class="n">Set</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pyomo/core/base/set.py:1969,</span> in <span class="ni">Set.__init__</span><span class="nt">(self, *args, **kwds)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1964</span>     <span class="n">deprecation_warning</span><span class="p">(</span>
-<span class="g g-Whitespace">   </span><span class="mi">1965</span>         <span class="s2">&quot;Pyomo Sets ignore the &#39;virtual&#39; keyword argument&quot;</span><span class="p">,</span>
-<span class="g g-Whitespace">   </span><span class="mi">1966</span>         <span class="n">logger</span><span class="o">=</span><span class="s1">&#39;pyomo.core.base&#39;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s1">&#39;5.6.7&#39;</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1967</span>     <span class="n">kwds</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;virtual&#39;</span><span class="p">)</span>
-<span class="ne">-&gt; </span><span class="mi">1969</span> <span class="n">IndexedComponent</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1971</span> <span class="c1"># HACK to make the &quot;counted call&quot; syntax work.  We wait until</span>
-<span class="g g-Whitespace">   </span><span class="mi">1972</span> <span class="c1"># after the base class is set up so that is_indexed() is</span>
-<span class="g g-Whitespace">   </span><span class="mi">1973</span> <span class="c1"># reliable.</span>
-<span class="g g-Whitespace">   </span><span class="mi">1974</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_values</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> \
-<span class="g g-Whitespace">   </span><span class="mi">1975</span>    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_values</span><span class="o">.</span><span class="n">_init</span><span class="o">.</span><span class="vm">__class__</span> <span class="ow">is</span> <span class="n">IndexedCallInitializer</span><span class="p">:</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pyomo/core/base/indexed_component.py:275,</span> in <span class="ni">IndexedComponent.__init__</span><span class="nt">(self, *args, **kwds)</span>
-<span class="g g-Whitespace">    </span><span class="mi">273</span> <span class="c1">#</span>
-<span class="g g-Whitespace">    </span><span class="mi">274</span> <span class="n">kwds</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;noruleinit&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<span class="ne">--&gt; </span><span class="mi">275</span> <span class="n">Component</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">276</span> <span class="c1">#</span>
-<span class="g g-Whitespace">    </span><span class="mi">277</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">{}</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pyomo/core/base/component.py:396,</span> in <span class="ni">Component.__init__</span><span class="nt">(self, **kwds)</span>
-<span class="g g-Whitespace">    </span><span class="mi">394</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>  <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
-<span class="g g-Whitespace">    </span><span class="mi">395</span> <span class="k">if</span> <span class="n">kwds</span><span class="p">:</span>
-<span class="ne">--&gt; </span><span class="mi">396</span>     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<span class="g g-Whitespace">    </span><span class="mi">397</span>         <span class="s2">&quot;Unexpected keyword options found while constructing &#39;</span><span class="si">%s</span><span class="s2">&#39;:</span><span class="se">\n\t</span><span class="si">%s</span><span class="s2">&quot;</span>
-<span class="g g-Whitespace">    </span><span class="mi">398</span>         <span class="o">%</span> <span class="p">(</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">kwds</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span> <span class="p">))</span>
-<span class="g g-Whitespace">    </span><span class="mi">399</span> <span class="c1">#</span>
-<span class="g g-Whitespace">    </span><span class="mi">400</span> <span class="c1"># Verify that ctype has been specified.</span>
-<span class="g g-Whitespace">    </span><span class="mi">401</span> <span class="c1">#</span>
-<span class="g g-Whitespace">    </span><span class="mi">402</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ctype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-
-<span class="ne">ValueError</span>: Unexpected keyword options found while constructing &#39;AbstractOrderedScalarSet&#39;:
-	<span class="n">rule</span>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;pyomo.core.base.PyomoModel.ConcreteModel at 0x7fdc004b8580&gt;
 </pre></div>
 </div>
 </div>
@@ -1604,12 +1553,6 @@ Makespan = 15.0
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Makespan =&quot;</span><span class="p">,</span> <span class="nb">max</span><span class="p">([</span><span class="n">task</span><span class="p">[</span><span class="s1">&#39;Finish&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]))</span>
 </pre></div>
 </div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Makespan = 32.0
-</pre></div>
-</div>
-<img alt="../../_images/job-shop-scheduling_29_1.png" src="../../_images/job-shop-scheduling_29_1.png" />
 </div>
 </div>
 </section>

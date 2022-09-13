@@ -10,11 +10,16 @@
 # In[1]:
 
 
-# Import Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+# Import Pyomo and solvers
+import requests
+import imp
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = imp.new_module("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
 
 
 # ## Job Shop Scheduling
@@ -126,7 +131,7 @@ TASKS = {
 # 
 # The job shop scheduling problem is implemented below in Pyomo. The implementation consists of of a function JobShopModel(TASKS) that accepts a dictionary of tasks and returns a Pyomo model. 
 
-# In[ ]:
+# In[5]:
 
 
 import pyomo.environ as pyo
@@ -139,10 +144,7 @@ def jobshop_model(TASKS):
     model.TASKS = pyo.Set(initialize = TASKS.keys(), dimen=2)
     
     # the set of jobs is constructed from a python set
-    @model.Set()
-    def JOBS(model):
-        return list(set([j for (j, m) in model.TASKS]))
-    #model.JOBS = pyo.Set(initialize = )))
+    model.JOBS = pyo.Set(initialize = list(set([j for (j, m) in model.TASKS])))
     
     # set of machines is constructed from a python set
     model.MACHINES = pyo.Set(initialize = list(set([m for (j, m) in model.TASKS])))
@@ -190,7 +192,7 @@ def jobshop_model(TASKS):
 jobshop_model(TASKS)
 
 
-# In[8]:
+# In[6]:
 
 
 def jobshop_solve(model):
@@ -212,7 +214,7 @@ results
 
 # ## Printing schedules
 
-# In[42]:
+# In[7]:
 
 
 import pandas as pd
@@ -228,7 +230,7 @@ print(schedule.sort_values(by=['Machine','Start']).set_index(['Machine', 'Job'])
 
 # ## Visualizing Results with Gantt Charts
 
-# In[43]:
+# In[8]:
 
 
 import matplotlib.pyplot as plt
@@ -295,7 +297,7 @@ visualize(results)
 # 
 # Before going further, we create a function to streamline the generation of the TASKS dictionary.
 
-# In[44]:
+# In[9]:
 
 
 def recipe_to_tasks(jobs, machines, durations):
@@ -315,14 +317,14 @@ recipeA = recipe_to_tasks('A', ['Mixer', 'Reactor', 'Separator', 'Packaging'], [
 visualize(jobshop(recipeA))
 
 
-# In[45]:
+# In[10]:
 
 
 recipeB = recipe_to_tasks('B', ['Separator', 'Packaging'], [4.5, 1])
 visualize(jobshop(recipeB))
 
 
-# In[46]:
+# In[11]:
 
 
 recipeC = recipe_to_tasks('C', ['Separator', 'Reactor', 'Packaging'], [5, 3, 1.5])
@@ -333,7 +335,7 @@ visualize(jobshop(recipeC))
 # 
 # Let's now consider an optimal scheduling problem where we are wish to make two batches of Product A.
 
-# In[47]:
+# In[12]:
 
 
 TASKS = recipe_to_tasks(['A1','A2','A3', 'A4'],['Mixer','Reactor','Separator','Packaging'],[1,5,4,1.5])
@@ -346,7 +348,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # Let's next consider production of a single batch each of products A, B, and C.
 
-# In[48]:
+# In[13]:
 
 
 # update is used to append dictionaries
@@ -366,7 +368,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # As we see below, each additional set of three products takes an additionl 13 hours.  So there is considerable efficiency gained by scheduling over longer intervals whenever possible.
 
-# In[49]:
+# In[14]:
 
 
 TASKS = recipe_to_tasks(['A1','A2'],['Mixer','Reactor','Separator','Packaging'],[1,5,4,1.5])
@@ -394,7 +396,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # For this purpose, we write a new JobShopModel_Clean
 
-# In[50]:
+# In[15]:
 
 
 def jobshop_model_clean(TASKS, tclean=0):
@@ -480,7 +482,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # While this could be implemented on an equipment or product specific basis, here we add an optional ZW flag to the JobShop function that, by default, is set to False.
 
-# In[61]:
+# In[ ]:
 
 
 def jobshop_model_clean_zw(TASKS, tclean=0, ZW=False):
@@ -561,3 +563,9 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # ### Computational impact of a zero-wait policy
 # 
 # Repeat the benchmark problem calculation, but with a zero-wait policy. Does the execution time increase or descrease as a consequence of specifying zero-wait?
+
+# In[ ]:
+
+
+
+
