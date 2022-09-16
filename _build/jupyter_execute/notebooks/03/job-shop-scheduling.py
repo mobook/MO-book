@@ -86,11 +86,11 @@ TASKS = {
 
 # ## Model formulation
 # 
-# Each task is indexed by an ordered pair $(j, m)$ where $j$ refers to a job, and $m$ refers to a machine. Associated with each task is data describing the time needed to perform the task, and a preceeding task that must be completed before the index task can start.
+# Each task is indexed by an ordered pair $(j, m)$ where $j$ refers to a job, and $m$ refers to a machine. Associated with each task is data describing the time needed to perform the task, and a preceding task that must be completed before the index task can start.
 # 
 # | Parameter | Description |
 # | :-------- | :-----------|
-# | $\text{duration}_{j,m}$ | Duration of task $(j,m)$ | 
+# | $\text{dur}_{j,m}$ | Duration of task $(j,m)$ | 
 # | $\text{prec}_{j,m}$ | A task $(k,n) = \text{prec}_{j,m}$ that must be completed before task $(j,m)$| 
 # 
 # The choice of decision variables for this problem are key to modeling. We introduce $makespan$ as the time needed to complete all tasks. $makespan$ is a candidate objective function. Variable $start_{j,m}$ denotes the time when task $(j,m)$ begins.  
@@ -102,14 +102,14 @@ TASKS = {
 # 
 # The constraints include lower bounda on the start and an upper bound on the completion of each task $(j,m)$
 # 
-# 44
+# $$
 # \begin{align}
 # \text{start}_{j,m} & \geq 0\\
 # \text{start}_{j,m}+\text{dur}_{j,m} & \leq \text{makespan}
 # \end{align}
 # $$
 # 
-# Any preceeding tasks must be completed before task $(j,m)$ can start.
+# Any preceding tasks must be completed before task $(j,m)$ can start.
 # 
 # $$
 # \begin{align}
@@ -121,7 +121,7 @@ TASKS = {
 # 
 # $$
 # \begin{align}
-# \left[\text{start}_{j,m}+\text{dur}_{j,m} \leq \text{start}_{k,m}\right] \vee \left[\text{start}_{k,m}+\text{dur}_{k,m} \leq \text{start}_{j,m}\right]
+# \left[\text{start}_{j,m}+\text{dur}_{j,m} \leq \text{start}_{k,m}\right] \veebar \left[\text{start}_{k,m}+\text{dur}_{k,m} \leq \text{start}_{j,m}\right]
 # \end{align}
 # $$
 # 
@@ -482,7 +482,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # While this could be implemented on an equipment or product specific basis, here we add an optional ZW flag to the JobShop function that, by default, is set to False.
 
-# In[ ]:
+# In[16]:
 
 
 def jobshop_model_clean_zw(TASKS, tclean=0, ZW=False):
