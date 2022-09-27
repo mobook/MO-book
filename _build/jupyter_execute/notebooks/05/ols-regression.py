@@ -18,6 +18,7 @@ exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
 helper.install_glpk()
+helper.install_ipopt()
 
 
 # ## Generate data
