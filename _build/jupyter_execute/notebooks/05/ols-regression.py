@@ -5,15 +5,15 @@
 # 
 # In Chapter 2 we introduced linear regression with least absolute deviations (LAD). Here we consider the same problem setting, but slightly change the underlying optimization problem, in particular its objective function, obtaining the classical ordinary least squares (OLS) regression.
 
-# In[2]:
+# In[1]:
 
 
 # install Pyomo and solvers
 import requests
-import imp
+import types
 
 url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
-helper = imp.new_module("helper")
+helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
@@ -24,7 +24,7 @@ helper.install_glpk()
 # 
 # The Python [scikit learn](https://scikit-learn.org/stable/) library for machine learning provides a full-featured collection of tools for regression. The following cell uses `make_regression` from scikit learn to generate a synthetic data set for use in subsequent cells. The data consists of a numpy array `y` containing `n_samples` of one dependent variable $y$, and an array `X` containing `n_samples` observations of `n_features` independent explanatory variables.
 
-# In[43]:
+# In[2]:
 
 
 from sklearn.datasets import make_regression
@@ -43,7 +43,7 @@ X, y = make_regression(n_samples=n_samples, n_features=n_features, noise=noise)
 # 
 # Before going further, it is generally useful to prepare an initial visualization of the data. The following cell presents a scatter plot of $y$ versus $x$ for the special case of one explanatory variable, and a histogram of the difference between $y$ and the mean value $\bar{y}$. This histogram will provide a reference against which to compare the residual error in $y$ after regression.
 
-# In[44]:
+# In[3]:
 
 
 import matplotlib.pyplot as plt
@@ -63,17 +63,21 @@ plt.ylabel('counts')
 # ## Model
 # 
 # Similarly to the LAD regression example, suppose we have a finite dataset consisting of $n$ points $\{({X}^{(i)}, y^{(i)})\}_{i=1,\dots,n}$ with ${X}^{(i)} \in \mathbb R^k$ and $y^{(i)} \in \mathbb R$. We want to fit a linear model with intercept, whose error or deviation term $e_i$ is equal to
+# 
 # $$
 #     e_i = y^{(i)} - {m}^\top {X}^{(i)} - b = y^{(i)} - \sum_{j=1}^k X^{(i)}_j m_j - b,
 # $$
+# 
 # for some real numbers $b, m_1,\dots,m_k$. The Ordinary Least Squares (OLS) is a possible statistical optimality criterion for such a linear regression, which tries to minimize the sum of the errors squares, that is $\sum_{i=1}^n e_i^2$. The OLS regression can thus be formulated as an optimization with the coefficients $b$ and $m_i$'s and the errors $e_i$'s as the decision variables, namely
 # 
+# $$
 # \begin{align}
 #     \min \quad & \sum_{i=1}^n e_i^2\\
 #     \text{s.t.} \quad & e_i = y^{(i)} - {m}^\top {X}^{(i)} - b, \qquad \forall\, i=1,\dots,n.
 # \end{align}
+# $$
 
-# In[45]:
+# In[4]:
 
 
 import pyomo.environ as pyo
@@ -142,7 +146,7 @@ m.b.display()
 
 # ## Visualizing the results and comparison with LAD regression
 
-# In[46]:
+# In[5]:
 
 
 def lad_regression(X, y):
@@ -177,7 +181,7 @@ m2.m.display()
 m2.b.display()
 
 
-# In[47]:
+# In[6]:
 
 
 y_fit = np.array([sum(x[j]*m.m[j]() for j in m.J) + m.b() for x in X])
@@ -199,4 +203,10 @@ plt.hist(y - y_fit2, bins=int(np.sqrt(len(y))), color='g', alpha=0.8, label="y -
 plt.title('histogram of residuals')
 plt.ylabel('counts')
 plt.legend()
+
+
+# In[ ]:
+
+
+
 

@@ -677,10 +677,10 @@ title="Print to PDF"
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
 <span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">imp</span>
+<span class="kn">import</span> <span class="nn">types</span>
 
 <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">imp</span><span class="o">.</span><span class="n">new_module</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
+<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
 <span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
 
 <span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
@@ -749,15 +749,19 @@ glpk was previously installed
 </section>
 <section id="model">
 <h2>Model<a class="headerlink" href="#model" title="Permalink to this headline">#</a></h2>
-<p>Similarly to the LAD regression example, suppose we have a finite dataset consisting of <span class="math notranslate nohighlight">\(n\)</span> points <span class="math notranslate nohighlight">\(\{({X}^{(i)}, y^{(i)})\}_{i=1,\dots,n}\)</span> with <span class="math notranslate nohighlight">\({X}^{(i)} \in \mathbb R^k\)</span> and <span class="math notranslate nohighlight">\(y^{(i)} \in \mathbb R\)</span>. We want to fit a linear model with intercept, whose error or deviation term <span class="math notranslate nohighlight">\(e_i\)</span> is equal to
-$<span class="math notranslate nohighlight">\(
+<p>Similarly to the LAD regression example, suppose we have a finite dataset consisting of <span class="math notranslate nohighlight">\(n\)</span> points <span class="math notranslate nohighlight">\(\{({X}^{(i)}, y^{(i)})\}_{i=1,\dots,n}\)</span> with <span class="math notranslate nohighlight">\({X}^{(i)} \in \mathbb R^k\)</span> and <span class="math notranslate nohighlight">\(y^{(i)} \in \mathbb R\)</span>. We want to fit a linear model with intercept, whose error or deviation term <span class="math notranslate nohighlight">\(e_i\)</span> is equal to</p>
+<div class="math notranslate nohighlight">
+\[
     e_i = y^{(i)} - {m}^\top {X}^{(i)} - b = y^{(i)} - \sum_{j=1}^k X^{(i)}_j m_j - b,
-\)</span><span class="math notranslate nohighlight">\(
-for some real numbers \)</span>b, m_1,\dots,m_k<span class="math notranslate nohighlight">\(. The Ordinary Least Squares (OLS) is a possible statistical optimality criterion for such a linear regression, which tries to minimize the sum of the errors squares, that is \)</span>\sum_{i=1}^n e_i^2<span class="math notranslate nohighlight">\(. The OLS regression can thus be formulated as an optimization with the coefficients \)</span>b<span class="math notranslate nohighlight">\( and \)</span>m_i<span class="math notranslate nohighlight">\('s and the errors \)</span>e_i$’s as the decision variables, namely</p>
-<p>\begin{align}
-\min \quad &amp; \sum_{i=1}^n e_i^2\
-\text{s.t.} \quad &amp; e_i = y^{(i)} - {m}^\top {X}^{(i)} - b, \qquad \forall, i=1,\dots,n.
-\end{align}</p>
+\]</div>
+<p>for some real numbers <span class="math notranslate nohighlight">\(b, m_1,\dots,m_k\)</span>. The Ordinary Least Squares (OLS) is a possible statistical optimality criterion for such a linear regression, which tries to minimize the sum of the errors squares, that is <span class="math notranslate nohighlight">\(\sum_{i=1}^n e_i^2\)</span>. The OLS regression can thus be formulated as an optimization with the coefficients <span class="math notranslate nohighlight">\(b\)</span> and <span class="math notranslate nohighlight">\(m_i\)</span>’s and the errors <span class="math notranslate nohighlight">\(e_i\)</span>’s as the decision variables, namely</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align}
+    \min \quad &amp; \sum_{i=1}^n e_i^2\\
+    \text{s.t.} \quad &amp; e_i = y^{(i)} - {m}^\top {X}^{(i)} - b, \qquad \forall\, i=1,\dots,n.
+\end{align}
+\end{split}\]</div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
@@ -799,8 +803,8 @@ for some real numbers \)</span>b, m_1,\dots,m_k<span class="math notranslate noh
     Key : Lower : Value             : Upper : Fixed : Stale : Domain
       0 :  None : 53.49847313217242 :  None : False : False :  Reals
 b : Size=1, Index=None
-    Key  : Lower : Value               : Upper : Fixed : Stale : Domain
-    None :  None : 0.42809468044768995 :  None : False : False :  Reals
+    Key  : Lower : Value            : Upper : Fixed : Stale : Domain
+    None :  None : 0.42809468044769 :  None : False : False :  Reals
 </pre></div>
 </div>
 </div>
@@ -906,7 +910,7 @@ b : Size=1, Index=None
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;matplotlib.legend.Legend at 0x132cebca0&gt;
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;matplotlib.legend.Legend at 0x7febb1a84fa0&gt;
 </pre></div>
 </div>
 <img alt="../../_images/ols-regression_11_1.png" src="../../_images/ols-regression_11_1.png" />
