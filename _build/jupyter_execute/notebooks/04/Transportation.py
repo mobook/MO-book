@@ -76,7 +76,7 @@ if "google.colab" in sys.modules:
 # 
 # The data is stored into Pandas DataFrame and Series objects. Note the use of a large rates to avoid assigning shipments to destination, source pairs not allowed by the problem statement.
 
-# In[17]:
+# In[2]:
 
 
 import pandas as pd
