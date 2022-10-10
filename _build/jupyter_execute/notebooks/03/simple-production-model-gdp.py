@@ -3,14 +3,19 @@
 
 # # Production Model with Disjuncts
 
-# In[2]:
+# In[1]:
 
 
-# Import Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
 
 
 # ## Production Model
@@ -28,7 +33,7 @@ if "google.colab" in sys.modules:
 # \end{align*}
 # $$
 
-# In[3]:
+# In[2]:
 
 
 import pyomo.environ as pyo
@@ -96,7 +101,7 @@ print(f"Production Y = {model.production_y()}")
 # \end{align*}
 # $$
 
-# In[4]:
+# In[3]:
 
 
 import pyomo.environ as pyo
@@ -147,7 +152,7 @@ print(f"Production X = {model.production_x()}")
 print(f"Production Y = {model.production_y()}")
 
 
-# In[5]:
+# In[4]:
 
 
 model = pyo.ConcreteModel()

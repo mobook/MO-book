@@ -17,29 +17,32 @@
 # May you want to use on your own python distribution, then you should care for  the installation of the required packages and subsidiary applications. 
 # 
 
-# In[ ]:
+# In[1]:
 
 
-import sys
-at_colab = "google.colab" in sys.modules
+# install Pyomo and solvers
+import requests
+import types
 
-if at_colab:
-    _ = get_ipython().getoutput('pip install -q pyomo')
-    _ = get_ipython().getoutput('wget -N -q "https://ampl.com/dl/open/ipopt/ipopt-linux64.zip"')
-    _ = get_ipython().getoutput('unzip -o -q ipopt-linux64')
-    _ = get_ipython().getoutput('apt-get install -y -q coinor-cbc')
-    _ = get_ipython().getoutput('pip install -q cplex')
-    _ = get_ipython().getoutput('pip install -q gurobipy')
-    _ = get_ipython().getoutput('pip install -q xpress')
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
+helper.install_ipopt()
+helper.install_gurobi()
+helper.install_xpress()
+helper.install_cplex()
 
 
-# In[ ]:
+# In[2]:
 
 
 get_ipython().system('pyomo help --solvers')
 
 
-# In[ ]:
+# In[3]:
 
 
 import pyomo.environ as pyo
@@ -50,7 +53,7 @@ gurobi = pyo.SolverFactory('gurobi_direct')
 xpress = pyo.SolverFactory('xpress_direct')
 
 
-# In[ ]:
+# In[4]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -89,7 +92,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 # \end{array}
 # $$
 
-# In[ ]:
+# In[5]:
 
 
 trophies = [ 'Football', 'Golf' ]
@@ -108,7 +111,7 @@ Alice.plaques   = pyo.Constraint(expr = sum([Alice.x[t] for t in trophies]) <= 1
 Alice.wood      = pyo.Constraint(expr = sum(wood[t]*Alice.x[t] for t in trophies) <= 4800 ) 
 
 
-# In[ ]:
+# In[6]:
 
 
 get_ipython().run_line_magic('time', 'results = cbc.solve(Alice)')
@@ -120,13 +123,13 @@ print([Alice.x[t].value for t in trophies])
 Alice.display()
 
 
-# In[ ]:
+# In[7]:
 
 
 Alice.pprint()
 
 
-# In[ ]:
+# In[8]:
 
 
 def ShowModelComponents( model ):
@@ -147,13 +150,13 @@ def ShowModelComponents( model ):
             print ("     ",index, varobject[index].uslack())
 
 
-# In[ ]:
+# In[9]:
 
 
 ShowModelComponents( Alice )
 
 
-# In[ ]:
+# In[10]:
 
 
 def ShowDuals( model ):
@@ -166,7 +169,7 @@ def ShowDuals( model ):
             print ("      ", index, str(fractions.Fraction(model.dual[c[index]])))
 
 
-# In[ ]:
+# In[11]:
 
 
 Alice.dual = pyo.Suffix(direction=pyo.Suffix.IMPORT)
@@ -175,20 +178,20 @@ get_ipython().run_line_magic('time', 'results = cbc.solve(Alice)')
 print(results.solver.status, results.solver.termination_condition )
 
 
-# In[ ]:
+# In[12]:
 
 
 ShowDuals( Alice )
 
 
-# In[ ]:
+# In[13]:
 
 
 def JustSolution( model ):
   return [ pyo.value(model.profit) ] + [ pyo.value(model.x[i]) for i in trophies ]
 
 
-# In[ ]:
+# In[14]:
 
 
 JustSolution( Alice )
@@ -199,7 +202,7 @@ JustSolution( Alice )
 # 
 # We start by simulating two samples of observed wood lengths for `f` football trophies and `g` golf trophies.
 
-# In[ ]:
+# In[15]:
 
 
 import numpy as np 
@@ -211,20 +214,20 @@ f = np.random.lognormal(np.log(4.), .005, n)
 g = np.random.lognormal(np.log(2.), .005, n)
 
 
-# In[ ]:
+# In[16]:
 
 
 print(f)
 print(g)
 
 
-# In[ ]:
+# In[17]:
 
 
 print( min(f), max(f), min(g), max(g) )
 
 
-# In[ ]:
+# In[18]:
 
 
 import matplotlib.pyplot as plt
@@ -237,7 +240,7 @@ plt.show()
 # What is the consequence of uncertainty? 
 # We compare the cumulative lengths with the nominal ones.
 
-# In[ ]:
+# In[19]:
 
 
 cs = np.cumsum(g) - np.cumsum( [2]*len(g) )
@@ -245,7 +248,7 @@ plt.plot(cs)
 plt.show()
 
 
-# In[ ]:
+# In[20]:
 
 
 plt.pie( [ sum( cs > 0 ), sum( cs <= 0 ) ], labels = [ 'trouble!', 'ok' ], autopct='%1.1f%%', shadow=True, startangle=90, colors=[ 'red', 'green' ])
@@ -254,7 +257,7 @@ plt.show()
 
 # A very simple and somehow naïf uncertainty region can be taken as the observed minimal box around the data.
 
-# In[ ]:
+# In[21]:
 
 
 import matplotlib.patches as patches
@@ -330,7 +333,7 @@ print( min(f), max(f), min(g), max(g) )
 
 # # A model in `pyomo`
 
-# In[ ]:
+# In[22]:
 
 
 def AliceWithBoxUncertainty( lower, upper, domain=pyo.NonNegativeReals ):
@@ -358,7 +361,7 @@ def AliceWithBoxUncertainty( lower, upper, domain=pyo.NonNegativeReals ):
     return Alice
 
 
-# In[ ]:
+# In[23]:
 
 
 lower = upper = {}
@@ -375,7 +378,7 @@ print(results.solver.status, results.solver.termination_condition )
 JustSolution( Alice )
 
 
-# In[ ]:
+# In[24]:
 
 
 # you can play with the amount of uncertainty. 
@@ -399,7 +402,7 @@ JustSolution( Alice )
 # Alice's model gave integer solutions, but not the robust version. 
 # If we need integer solutions then we should impose that to the nature of the variables, which in this case of _box uncertainty_ is easy to do since the model remains linear, although it will be mixed integer. 
 
-# In[ ]:
+# In[25]:
 
 
 Alice = AliceWithBoxUncertainty( lower, upper, domain=pyo.NonNegativeIntegers )
@@ -410,7 +413,7 @@ print(results.solver.status, results.solver.termination_condition )
 JustSolution( Alice )
 
 
-# In[ ]:
+# In[26]:
 
 
 import pandas
@@ -425,13 +428,13 @@ for delta in np.linspace(0,.5,21):
 df
 
 
-# In[ ]:
+# In[27]:
 
 
 df.plot()
 
 
-# In[ ]:
+# In[28]:
 
 
 df[['Football','Golf']].plot()
@@ -467,7 +470,7 @@ df[['Football','Golf']].plot()
 # \end{array}
 # $$
 
-# In[ ]:
+# In[29]:
 
 
 def AliceWithGammaUncertainty( delta, gamma, domain=pyo.NonNegativeReals ):
@@ -497,7 +500,7 @@ def AliceWithGammaUncertainty( delta, gamma, domain=pyo.NonNegativeReals ):
     return Alice
 
 
-# In[ ]:
+# In[30]:
 
 
 Alice = AliceWithGammaUncertainty( 0.01, 2, domain=pyo.NonNegativeIntegers )
@@ -543,7 +546,7 @@ JustSolution(Alice)
 
 # ## Documentation says that we need to use the kernel now
 
-# In[ ]:
+# In[31]:
 
 
 import pyomo.kernel as pyk
@@ -583,7 +586,7 @@ def AliceWithBallUncertainty( omega, domain_type=pyk.RealSet ):
 
 # ## Now the problem is nonlinear
 
-# In[ ]:
+# In[32]:
 
 
 Alice = AliceWithBallUncertainty( 0.1 )
@@ -596,13 +599,13 @@ print( [pyk.value(Alice.x[i]) for i in range(len(Alice.x))] )
 
 # ## But `cplex`, `gurobi` and `xpress` support second order cones
 
-# In[ ]:
+# In[33]:
 
 
 conicsolver = gurobi
 
 
-# In[ ]:
+# In[34]:
 
 
 get_ipython().run_line_magic('time', 'results = conicsolver.solve(Alice)')
@@ -613,7 +616,7 @@ print( [pyk.value(Alice.x[i]) for i in range(len(Alice.x))] )
 
 # ## And therefore we can also have mixed integer models 
 
-# In[ ]:
+# In[35]:
 
 
 Alice = AliceWithBallUncertainty( 0.1, domain_type=pyk.IntegerSet )
@@ -626,13 +629,13 @@ print( [pyk.value(Alice.x[i]) for i in range(len(Alice.x))] )
 
 # ## Final note: maybe useful to recall that in python you can always ask for help...
 
-# In[ ]:
+# In[36]:
 
 
 help(Alice.y)
 
 
-# In[ ]:
+# In[37]:
 
 
 help(Alice.robust)
@@ -644,7 +647,7 @@ help(Alice.robust)
 # 
 # Note that the essential part to make the model convex is having the rght hand side nonnegative.
 
-# In[ ]:
+# In[38]:
 
 
 def AliceWithBallUncertaintyAsSquaredSecondOrderCone(omega,domain=pyo.NonNegativeReals):
@@ -665,7 +668,7 @@ def AliceWithBallUncertaintyAsSquaredSecondOrderCone(omega,domain=pyo.NonNegativ
   return Alice
 
 
-# In[ ]:
+# In[39]:
 
 
 Alice = AliceWithBallUncertaintyAsSquaredSecondOrderCone( 0.1, domain=pyo.NonNegativeIntegers )
@@ -677,7 +680,7 @@ JustSolution(Alice)
 
 # Note how the verbose `xpress` solver confirms that the convex quadratic constraint is recognized as conic.
 
-# In[ ]:
+# In[40]:
 
 
 Alice = AliceWithBallUncertaintyAsSquaredSecondOrderCone( 0.1, domain=pyo.NonNegativeIntegers )

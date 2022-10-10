@@ -7,21 +7,26 @@
 # 
 # This would be an good test case for valuing a commodity production facility using real options.
 
-# In[4]:
+# In[1]:
 
 
-get_ipython().system('curl -s https://raw.githubusercontent.com/jckantor/MO-book/main/tools/_mobook.py -o mobook.py')
-import mobook
-mobook.setup_pyomo()
-mobook.setup_glpk()
-mobook.svg()
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
 
 
 # This example derived from Example 19.3 from Seborg, Edgar, Mellichamp, and Doyle. The changes include updating prices, new solutions using optimization modeling languages, adding constraints, and adjusting parameter values to demonstrate the significance of duals and their interpretation as shadow prices.
 
 # ## Problem data
 
-# In[3]:
+# In[2]:
 
 
 import pandas as pd
@@ -51,7 +56,7 @@ display(yields)
 
 # ## Pyomo Model
 
-# In[7]:
+# In[3]:
 
 
 import pyomo.environ as pyo
@@ -108,7 +113,7 @@ print(m.profit())
 # 
 # The following cell demonstrates these differences by presenting a `CVXPY` model for the small refinery example. 
 
-# In[8]:
+# In[4]:
 
 
 import numpy as np
@@ -138,7 +143,7 @@ problem.solve()
 
 # ## Crude oil feed results
 
-# In[1]:
+# In[5]:
 
 
 results_crudes = crudes
@@ -150,7 +155,7 @@ display(results_crudes.round(1))
 
 # ## Refinery production results
 
-# In[10]:
+# In[6]:
 
 
 results_products = products
@@ -163,7 +168,7 @@ display(results_products.round(1))
 
 # ## Why is the shadow price of kerosine so high?
 
-# In[11]:
+# In[7]:
 
 
 import matplotlib.pyplot as plt

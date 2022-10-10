@@ -6,11 +6,22 @@
 # In[1]:
 
 
-# Install Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
+
+
+# In[11]:
+
+
+get_ipython().system('pip install pyperclip')
 
 
 # ## Problem
@@ -29,7 +40,7 @@ if "google.colab" in sys.modules:
 
 # # Resolution
 
-# In[2]:
+# In[12]:
 
 
 import pyomo.environ as pyo
@@ -39,13 +50,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-# In[3]:
+# In[13]:
 
 
 solver = pyo.SolverFactory('cbc')
 
 
-# In[4]:
+# In[14]:
 
 
 # %%writefile tableseat_1.py
@@ -72,7 +83,7 @@ def TableSeat( members, capacity, k, domain=pyo.NonNegativeReals ):
     return m
 
 
-# In[5]:
+# In[15]:
 
 
 def TableSeatAsMaxFlow( members, capacity, k, domain=pyo.NonNegativeReals ):
@@ -98,7 +109,7 @@ def TableSeatAsMaxFlow( members, capacity, k, domain=pyo.NonNegativeReals ):
     return m
 
 
-# In[6]:
+# In[16]:
 
 
 def Reset( model ) -> None:
@@ -122,7 +133,7 @@ def Report( model, results, type=float ):
         print('members seated  ', list(sol.sum(axis=1)))
 
 
-# In[7]:
+# In[17]:
 
 
 seatplan = TableSeat( [6,8,2,9,13,1], [8,8,10,4,9], 3 )
@@ -132,14 +143,14 @@ get_ipython().run_line_magic('time', 'results = solver.solve(seatplan)')
 Report( seatplan,results )
 
 
-# In[8]:
+# In[18]:
 
 
 import pyperclip 
 pyperclip.copy( GetSolution(seatplan).astype(int).style.to_latex() )
 
 
-# In[ ]:
+# In[19]:
 
 
 def TableSeatMinimizeMaxGroupAtTable( members, capacity, nature=pyo.NonNegativeReals ):
@@ -170,7 +181,7 @@ def TableSeatMinimizeMaxGroupAtTable( members, capacity, nature=pyo.NonNegativeR
     return m
 
 
-# In[ ]:
+# In[20]:
 
 
 seatplan = TableSeatMinimizeMaxGroupAtTable( [6,8,2,9,13,1], [8,8,10,4,9], nature=pyo.NonNegativeReals )
@@ -180,13 +191,13 @@ get_ipython().run_line_magic('time', 'results = solver.solve(seatplan)')
 Report( seatplan, results )
 
 
-# In[ ]:
+# In[21]:
 
 
 pyperclip.copy( GetSolution(seatplan).astype(float).style.format(precision=2).to_latex() )
 
 
-# In[ ]:
+# In[22]:
 
 
 def TableSeatMinimizeNumberOfTables( members, capacity, k, nature=pyo.NonNegativeReals ):
@@ -213,7 +224,7 @@ def TableSeatMinimizeNumberOfTables( members, capacity, k, nature=pyo.NonNegativ
     return m
 
 
-# In[ ]:
+# In[23]:
 
 
 seatplan = TableSeatMinimizeNumberOfTables( [6,8,2,9,13,1], [8,8,10,4,9], 3, pyo.NonNegativeIntegers )
@@ -225,7 +236,7 @@ Report( seatplan, results, int )
 
 # # Note: this is an example of a max flow!
 
-# In[9]:
+# In[24]:
 
 
 
@@ -242,7 +253,7 @@ default_size_inches = (3.54,3.54)
 plt.rcParams['figure.figsize'] = default_size_inches
 
 
-# In[10]:
+# In[25]:
 
 
 def ModelAsNetwork( members, capacity, k ):
@@ -265,25 +276,25 @@ def ModelAsNetwork( members, capacity, k ):
     return G
 
 
-# In[11]:
+# In[26]:
 
 
 G = ModelAsNetwork( [6,8,2,9,13,1], [8,8,10,4,9], 3 )
 
 
-# In[12]:
+# In[27]:
 
 
 pos = nx.multipartite_layout(G, subset_key='layer')
 
 
-# In[13]:
+# In[28]:
 
 
 labels = { (e[0],e[1]) : e[2] for e in G.edges(data='capacity') }
 
 
-# In[14]:
+# In[29]:
 
 
 plt.rcParams['text.usetex'] =False
@@ -295,13 +306,13 @@ with plt.xkcd():
     fig.savefig( 'net_flow.pdf', bbox_inches='tight', pad_inches=0 )
 
 
-# In[15]:
+# In[30]:
 
 
 get_ipython().run_line_magic('time', "flow_value, flow_dict = nx.maximum_flow(G, 'door', 'seat')")
 
 
-# In[16]:
+# In[31]:
 
 
 members, capacity = [6,8,2,9,13,1], [8,8,10,4,9]
@@ -310,14 +321,14 @@ tables = [f't{j}' for j in range(len(capacity))]
 pd.DataFrame(flow_dict).loc[tables,families]
 
 
-# In[17]:
+# In[32]:
 
 
 flow_edges = [(a,b) for a,B in flow_dict.items() for b,v in B.items() if v>0 and a != 'door' and b != 'seat']
 flow_nodes = [n for n in G.nodes if n.startswith('f') or n.startswith('t')]
 
 
-# In[18]:
+# In[33]:
 
 
 with plt.xkcd():
@@ -325,20 +336,20 @@ with plt.xkcd():
     nx.draw_networkx(G,ax=fig.add_subplot(111),pos=pos,node_size=300,edge_color='blue',edgelist=flow_edges,nodelist=flow_nodes)
 
 
-# In[19]:
+# In[34]:
 
 
 fig.savefig( 'flow.pdf', bbox_inches='tight', pad_inches=0 )
 
 
-# In[20]:
+# In[35]:
 
 
 cbc    = pyo.SolverFactory('cbc')
 gurobi = pyo.SolverFactory('gurobi_direct')
 
 
-# In[21]:
+# In[36]:
 
 
 from pathlib import Path
@@ -372,25 +383,25 @@ else:
     df.to_excel('dina_times.xlsx')
 
 
-# In[22]:
+# In[37]:
 
 
 aux = df.T
 
 
-# In[23]:
+# In[38]:
 
 
 df
 
 
-# In[24]:
+# In[39]:
 
 
 aux
 
 
-# In[25]:
+# In[40]:
 
 
 import numpy as np
@@ -402,7 +413,7 @@ plt.xticks(np.arange(len(df.columns)),df.columns,rotation = 45)
 plt.show()
 
 
-# In[26]:
+# In[41]:
 
 
 fig.savefig( 'dina_times.pdf', bbox_inches='tight', pad_inches=0 )

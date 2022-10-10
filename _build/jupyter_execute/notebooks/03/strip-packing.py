@@ -23,11 +23,16 @@
 # In[1]:
 
 
-# Import Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_mosek()
 
 
 # ## Problem Statment
@@ -37,7 +42,7 @@ if "google.colab" in sys.modules:
 # 
 # We'll start by creating a function to generate a table of $N$ boxes. For concreteness, we assume the dimensions are in millimeters.
 
-# In[1]:
+# In[2]:
 
 
 import random
@@ -81,7 +86,7 @@ print("Shelf Depth = ", D)
 # 
 # An additional binary variable $r_i$ designates whether the rectangle has been rotated. The following cell performs these calculations to create and display a dataframe showing the bounding boxes.
 
-# In[2]:
+# In[3]:
 
 
 def pack_boxes_V0(boxes):
@@ -158,7 +163,7 @@ show_boxes(soln, D)
 # The corresponding Pyomo model is a direct implementation of this model. One feature of the implementation is the use of a set `m.PAIRS` to identify the disjunctions. Defining this set simplifies coding for the corresponding disjunction.
 # 
 
-# In[3]:
+# In[4]:
 
 
 import pyomo.environ as pyo
@@ -196,7 +201,7 @@ def pack_boxes_V1(boxes):
                 m.x2[j] <= m.x1[i]]
 
     pyo.TransformationFactory("gdp.bigm").apply_to(m)
-    solver = pyo.SolverFactory("gurobi_direct")
+    solver = pyo.SolverFactory("mosek_direct")
     solver.solve(m)
 
     soln = boxes.copy()
@@ -241,7 +246,7 @@ show_boxes(soln, D)
 # 
 # For this version of the model the boxes will be lined up against the edge of the shelf with $y_{i,1} = 0$. Decision variables are now included in the model for rotation $r$ to the $y$ dimension of the bounding boxes.
 
-# In[4]:
+# In[5]:
 
 
 import pyomo.environ as pyo
@@ -292,7 +297,7 @@ def pack_boxes_V2(boxes):
                 m.x2[j] <= m.x1[i]]
 
     pyo.TransformationFactory("gdp.bigm").apply_to(m)
-    solver = pyo.SolverFactory("gurobi_direct")
+    solver = pyo.SolverFactory("mosek_direct")
     solver.solve(m)
 
     soln = boxes.copy()
@@ -353,7 +358,7 @@ show_boxes(soln, D)
 # $$
 # 
 
-# In[5]:
+# In[7]:
 
 
 import pyomo.environ as pyo
@@ -408,7 +413,7 @@ def pack_boxes_V3(boxes, D):
                 m.y2[j] <= m.y1[i]]
 
     pyo.TransformationFactory("gdp.bigm").apply_to(m)
-    solver = pyo.SolverFactory("gurobi_direct")
+    solver = pyo.SolverFactory("mosek_direct")
     solver.solve(m)
 
     soln = boxes.copy()
@@ -435,7 +440,7 @@ show_boxes(soln, D)
 # Trespalacios, F., & Grossmann, I. E. (2017). Symmetry breaking for generalized disjunctive programming formulation of the strip packing problem. Annals of Operations Research, 258(2), 747-759.
 # 
 
-# In[6]:
+# In[8]:
 
 
 import pyomo.environ as pyo
@@ -498,7 +503,7 @@ def pack_boxes_V4(boxes, D):
                ]
 
     pyo.TransformationFactory("gdp.bigm").apply_to(m)
-    solver = pyo.SolverFactory("gurobi_direct")
+    solver = pyo.SolverFactory("mosek_direct")
     solver.solve(m)
 
     soln = boxes.copy()

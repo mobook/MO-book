@@ -19,11 +19,16 @@
 # In[1]:
 
 
-import sys
+# install Pyomo and solvers
+import requests
+import types
 
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
 
 
 # ## Problem: Distributing Gasoline to Franchise Operators

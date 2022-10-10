@@ -10,11 +10,16 @@
 # In[1]:
 
 
-# Import Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
 
 
 # ## Learning Goals
@@ -26,7 +31,7 @@ if "google.colab" in sys.modules:
 # 
 # The problem is to schedule a sequence of jobs for a single machine. The problem data as a nested Python dictionary of jobs. Each job is labeled by a key. For each key there is an associated data dictionary giving the time at which the job is released to the for machine processing, the expected duration of the job, and the due date. The optimization objective is to find a sequence the jobs on the machine that meets the the due dates. If no such schedule exists, then the objective is to find a schedule minimizing some measure of "badness".
 
-# In[39]:
+# In[2]:
 
 
 import pandas as pd
@@ -48,7 +53,7 @@ jobs
 # 
 # A traditional means of visualizing scheduling data in the form of a Gantt chart. The next cell presents a function `gantt` that plots a Gantt chart given jobs and schedule information. If no schedule information is given, the jobs are performed in the order listed in the jobs dataframe.
 
-# In[52]:
+# In[3]:
 
 
 import matplotlib.pyplot as plt
@@ -158,7 +163,7 @@ gantt(jobs)
 # 
 # This model and constraints can be directly translated to Pyomo.
 
-# In[55]:
+# In[4]:
 
 
 import pyomo.environ as pyo

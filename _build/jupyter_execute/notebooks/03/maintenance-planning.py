@@ -15,6 +15,21 @@
 # In[1]:
 
 
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
+
+
+# In[2]:
+
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -78,7 +93,7 @@ import pyomo.gdp as gdp
 
 # ### Parameter values
 
-# In[2]:
+# In[3]:
 
 
 # problem parameters
@@ -94,7 +109,7 @@ c = {k: np.random.uniform() for k in range(1, T+1)}
 # 
 # The disjunctive constraints can be represented directly in Pyomo using the [Generalized Disjunctive Programming](https://pyomo.readthedocs.io/en/latest/modeling_extensions/gdp.html) extension. The GDP extension transforms the disjunctive constraints to an MILP using convex hull and cutting plane methods.
 
-# In[3]:
+# In[4]:
 
 
 def maintenance_planning(c, M, P):
@@ -168,14 +183,14 @@ plot_schedule(model)
 # 
 # We begin the Pyomo model by specifying the constraints, then modifying the Big-M formulation to add the features described above.
 
-# In[4]:
+# In[5]:
 
 
 upos_max = 0.3334
 uneg_max = 0.5000
 
 
-# In[5]:
+# In[6]:
 
 
 def maintenance_planning_ramp(c, M, P):
@@ -248,13 +263,13 @@ plot_schedule(m)
 # 
 # The following cell implements both sets of constraints. 
 
-# In[6]:
+# In[7]:
 
 
 N = 10  # minimum number of operational days between maintenance periods
 
 
-# In[7]:
+# In[8]:
 
 
 def maintenance_planning_ramp_operational(c, T, M, P, N):

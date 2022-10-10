@@ -7,6 +7,21 @@
 # 
 # Kürschner (talk) 17:51, 1 December 2020 (UTC), CC0, via Wikimedia Commons
 
+# In[ ]:
+
+
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_glpk()
+
+
 # In[3]:
 
 

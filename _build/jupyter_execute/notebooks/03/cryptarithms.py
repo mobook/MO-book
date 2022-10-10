@@ -18,10 +18,10 @@
 
 # install Pyomo and solvers
 import requests
-import imp
+import types
 
 url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
-helper = imp.new_module("helper")
+helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()

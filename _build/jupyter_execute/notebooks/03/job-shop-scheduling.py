@@ -10,12 +10,12 @@
 # In[1]:
 
 
-# Import Pyomo and solvers
+# install Pyomo and solvers
 import requests
-import imp
+import types
 
 url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
-helper = imp.new_module("helper")
+helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
@@ -131,7 +131,7 @@ TASKS = {
 # 
 # The job shop scheduling problem is implemented below in Pyomo. The implementation consists of of a function JobShopModel(TASKS) that accepts a dictionary of tasks and returns a Pyomo model. 
 
-# In[5]:
+# In[3]:
 
 
 import pyomo.environ as pyo
@@ -192,7 +192,7 @@ def jobshop_model(TASKS):
 jobshop_model(TASKS)
 
 
-# In[6]:
+# In[4]:
 
 
 def jobshop_solve(model):
@@ -214,7 +214,7 @@ results
 
 # ## Printing schedules
 
-# In[7]:
+# In[5]:
 
 
 import pandas as pd
@@ -230,7 +230,7 @@ print(schedule.sort_values(by=['Machine','Start']).set_index(['Machine', 'Job'])
 
 # ## Visualizing Results with Gantt Charts
 
-# In[8]:
+# In[6]:
 
 
 import matplotlib.pyplot as plt
@@ -297,7 +297,7 @@ visualize(results)
 # 
 # Before going further, we create a function to streamline the generation of the TASKS dictionary.
 
-# In[9]:
+# In[7]:
 
 
 def recipe_to_tasks(jobs, machines, durations):
@@ -317,14 +317,14 @@ recipeA = recipe_to_tasks('A', ['Mixer', 'Reactor', 'Separator', 'Packaging'], [
 visualize(jobshop(recipeA))
 
 
-# In[10]:
+# In[8]:
 
 
 recipeB = recipe_to_tasks('B', ['Separator', 'Packaging'], [4.5, 1])
 visualize(jobshop(recipeB))
 
 
-# In[11]:
+# In[9]:
 
 
 recipeC = recipe_to_tasks('C', ['Separator', 'Reactor', 'Packaging'], [5, 3, 1.5])
@@ -335,7 +335,7 @@ visualize(jobshop(recipeC))
 # 
 # Let's now consider an optimal scheduling problem where we are wish to make two batches of Product A.
 
-# In[12]:
+# In[10]:
 
 
 TASKS = recipe_to_tasks(['A1','A2','A3', 'A4'],['Mixer','Reactor','Separator','Packaging'],[1,5,4,1.5])
@@ -348,7 +348,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # Let's next consider production of a single batch each of products A, B, and C.
 
-# In[13]:
+# In[11]:
 
 
 # update is used to append dictionaries
@@ -368,7 +368,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # As we see below, each additional set of three products takes an additionl 13 hours.  So there is considerable efficiency gained by scheduling over longer intervals whenever possible.
 
-# In[14]:
+# In[12]:
 
 
 TASKS = recipe_to_tasks(['A1','A2'],['Mixer','Reactor','Separator','Packaging'],[1,5,4,1.5])
@@ -396,7 +396,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # For this purpose, we write a new JobShopModel_Clean
 
-# In[15]:
+# In[13]:
 
 
 def jobshop_model_clean(TASKS, tclean=0):
@@ -482,7 +482,7 @@ print("Makespan =", max([task['Finish'] for task in results]))
 # 
 # While this could be implemented on an equipment or product specific basis, here we add an optional ZW flag to the JobShop function that, by default, is set to False.
 
-# In[16]:
+# In[14]:
 
 
 def jobshop_model_clean_zw(TASKS, tclean=0, ZW=False):

@@ -9,14 +9,19 @@
 # * [Crypto Trading and Arbitrage Identification Strategies](https://nbviewer.org/github/rcroessmann/sharing_public/blob/master/arbitrage_identification.ipynb)
 # 
 
-# In[1]:
+# In[9]:
 
 
-# install Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_glpk()
 
 
 # ## Problem
@@ -60,7 +65,7 @@ if "google.colab" in sys.modules:
 # 
 # This data set shows no net cost and no arbitrage for conversion from one currency to another and back again.
 
-# In[2]:
+# In[10]:
 
 
 import pandas as pd
@@ -91,7 +96,7 @@ print(df.loc['EUR', 'JPY'] * df.loc['JPY', 'EUR'])
 # 
 # By direct calculation we see there is a three-way **triangular** arbitrage opportunity for this data set that returns a 50% increase in wealth.
 
-# In[3]:
+# In[11]:
 
 
 I = 'USD'
@@ -124,7 +129,7 @@ print(df.loc[I, K] * df.loc[K, J] * df.loc[J, I])
 # The goal of this calculation is to find a set of transactions $x_{i\leftarrow j}(t) \geq 0$ to maximize the value of portfolio after a specified number of trades $T$.
 # 
 
-# In[86]:
+# In[12]:
 
 
 import pyomo.environ as pyo
@@ -198,7 +203,7 @@ print(m.w['EUR', 3]())
 
 # ## Display graph
 
-# In[89]:
+# In[13]:
 
 
 import networkx as nx
@@ -245,7 +250,7 @@ display_graph(m)
 # 
 # https://www.tradingview.com/markets/currencies/cross-rates-overview-prices/
 
-# In[90]:
+# In[14]:
 
 
 # data extracted 2022-03-17
@@ -269,13 +274,13 @@ df = pd.read_csv(io.StringIO(bloomberg.replace('-', '1.0')), sep='\t', index_col
 display(df)
 
 
-# In[91]:
+# In[15]:
 
 
 m = arbitrage(3, df, 'USD')
 
 
-# In[92]:
+# In[16]:
 
 
 display_graph(m)

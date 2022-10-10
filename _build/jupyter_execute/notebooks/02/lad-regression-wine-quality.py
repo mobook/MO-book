@@ -5,16 +5,15 @@
 # 
 # Regression is the task of fitting a model to data. If things go well, the model might provide useful predictions in response to new data. This notebook shows how linear programming and least absolute deviation (LAD) regression can be used to create a linear model for predicting wine quality based on physical and chemical properties. The example uses a well known data set from the machine learning community.
 
-# In[11]:
+# In[1]:
 
 
 # install Pyomo and solvers
-import os.path
 import requests
-import imp
+import types
 
 url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
-helper = imp.new_module("helper")
+helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()

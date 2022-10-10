@@ -14,14 +14,19 @@
 # * For personal installations of Mosek or Gurobi (free licenses available for academic use), use `mosek_direct` or `gurobi_direct`.
 # * For use without Gurobi or Mosek, use the `ipopt` solver.
 
-# In[3]:
+# In[1]:
 
 
-# Install Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_mosek()
 
 
 # ## Bibliographic notes

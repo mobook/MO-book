@@ -10,11 +10,16 @@
 # In[1]:
 
 
-# install Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
 
 
 # ## Problem Statement
@@ -282,7 +287,7 @@ visualize(m)
 # 
 # The data is categorical consisting of a unique id for each worker, a day of the week, or the name of a shift. Each of the categories has a natural ordering that should be used in creating reports. This is implemented using the `CategoricalDtype` class.
 
-# In[5]:
+# In[4]:
 
 
 import pandas as pd
@@ -310,7 +315,7 @@ schedule.sort_values(by=["day", "shift", "worker"])
 # 
 # Each worker should receive a report detailing their shift assignments. The reports are created by sorting the master schedule by worker, day, and shift, then grouping by worker. 
 
-# In[12]:
+# In[5]:
 
 
 # sort schedule by worker
@@ -330,7 +335,7 @@ for worker, worker_schedule in schedule.groupby('worker'):
 # 
 # The store managers need reports listing workers by assigned day and shift.
 
-# In[42]:
+# In[6]:
 
 
 # sort by day, shift, worker

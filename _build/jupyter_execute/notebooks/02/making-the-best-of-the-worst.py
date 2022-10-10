@@ -3,15 +3,15 @@
 
 # # Making the Best of the Worst
 
-# In[10]:
+# In[1]:
 
 
 # install Pyomo and solvers
 import requests
-import imp
+import types
 
 url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
-helper = imp.new_module("helper")
+helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
@@ -182,7 +182,7 @@ def max_profit(scenario, resources):
 # 
 # The next cell computes the optimal plan for the mean scenario.
 
-# In[7]:
+# In[5]:
 
 
 # create mean scenario
@@ -201,7 +201,7 @@ print(mean_case_plan)
 # 
 # Would plan should be preferred ... one that produces a guaranteed profit of 17,500 under all scenarios, or one that produces expected profit of 17,833?
 
-# In[8]:
+# In[6]:
 
 
 mean_case_outcomes = BIM_scenarios.dot(mean_case_plan)
@@ -217,7 +217,7 @@ ax.axhline(mean_case_outcomes.mean(), linestyle='--', color='orange', label="mea
 ax.legend()
 
 
-# In[9]:
+# In[7]:
 
 
 ax = pd.concat([worst_case_plan, mean_case_plan], axis=1).plot(kind="bar")

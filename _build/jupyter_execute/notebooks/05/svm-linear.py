@@ -11,6 +11,21 @@
 # 
 # The dual optimization problem is the basis for a second implementation. A technical feature of the dual problem extends support vector machines to nonlinear classifiers that have proven highly successful in a wide range of applications.  
 
+# In[8]:
+
+
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_mosek()
+
+
 # ## Bibliographic Notes
 # 
 # The development of support vector machines is largely attributed to Vladimir Vapnik and colleagues at AT&T Bell Laboratories during the 1990's. The seminal papers are highly readable and entry points to the literature.
@@ -51,7 +66,7 @@
 
 # ### Read data
 
-# In[13]:
+# In[3]:
 
 
 import matplotlib.pyplot as plt
@@ -68,7 +83,7 @@ df.describe()
 
 # ### Select features and training sets
 
-# In[60]:
+# In[4]:
 
 
 # create training and validation test sets
@@ -208,7 +223,7 @@ plot_Xy(X_train, y_train)
 # $$
 # 
 
-# In[191]:
+# In[5]:
 
 
 import pyomo.kernel as pmo
@@ -353,7 +368,7 @@ for i in range(n):
 # $$
 # 
 
-# In[148]:
+# In[6]:
 
 
 import pyomo.kernel as pmo
@@ -398,7 +413,7 @@ for i in range(n):
 
 # ## Pyomo Implementation
 
-# In[147]:
+# In[7]:
 
 
 import numpy as np

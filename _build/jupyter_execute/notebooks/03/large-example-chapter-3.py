@@ -3,14 +3,19 @@
 
 # # BIM Production
 
-# In[60]:
+# In[1]:
 
 
-# install Pyomo and solvers for Google Colab
-import sys
-if "google.colab" in sys.modules:
-    get_ipython().system('wget -N -q https://raw.githubusercontent.com/jckantor/MO-book/main/tools/install_on_colab.py ')
-    get_ipython().run_line_magic('run', 'install_on_colab.py')
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
 
 
 # We consider Caroline's material planning again, but now with more sophisticated pricing and acquisition protocols. 
@@ -59,7 +64,7 @@ if "google.colab" in sys.modules:
 # The production is made to order, meaning that no inventory of chips is kept.
 # 
 
-# In[61]:
+# In[2]:
 
 
 from io import StringIO
@@ -75,7 +80,7 @@ demand_chips = pd.read_csv(StringIO(demand_data), index_col='chip' )
 display(demand_chips)
 
 
-# In[62]:
+# In[3]:
 
 
 use = dict()
@@ -85,14 +90,14 @@ use = pd.DataFrame.from_dict(use).fillna(0).astype(int)
 display(use)
 
 
-# In[63]:
+# In[4]:
 
 
 demand = use.dot(demand_chips)
 display(demand)
 
 
-# In[64]:
+# In[5]:
 
 
 def Table1d(m, J, retriever ):
@@ -106,7 +111,7 @@ def Table3d(m, I, J, names, K, retriever ):
     return pd.DataFrame.from_records([ [ 0+retriever(m,i,j,k) for k in K ] for i in I for j in J ],index=index,columns=K )
 
 
-# In[69]:
+# In[6]:
 
 
 import pyomo.environ as pyo
@@ -218,7 +223,7 @@ def VersionOne(demand, existing, desired, stock_limit,
     return m
 
 
-# In[70]:
+# In[7]:
 
 
 m1 = VersionOne(demand = demand, 
@@ -240,14 +245,14 @@ m1 = VersionOne(demand = demand,
 pyo.SolverFactory('cbc' ).solve(m1).write()
 
 
-# In[72]:
+# In[8]:
 
 
 stock = Table2d(m1, demand.index, demand.columns, lambda m,i,j : pyo.value(m.s[i,j]) )
 display(stock)
 
 
-# In[73]:
+# In[9]:
 
 
 import matplotlib.pyplot as plt, numpy as np
@@ -256,31 +261,31 @@ plt.xticks(np.arange(len(stock.columns)),stock.columns)
 plt.show()
 
 
-# In[74]:
+# In[10]:
 
 
 Table1d(m1, J = demand.columns, retriever = lambda m, j : pyo.value(m.p[j] ) )
 
 
-# In[75]:
+# In[11]:
 
 
 Table2d(m1, demand.index, demand.columns, lambda m,i,j : pyo.value(m.u[i,j]) )
 
 
-# In[76]:
+# In[12]:
 
 
 Table2d(m1, [ 'A', 'C' ], demand.columns, lambda m,i,j : pyo.value(m.b[j,i]) )
 
 
-# In[77]:
+# In[13]:
 
 
 Table2d(m1, [ 'B', 'C' ], demand.columns, lambda m,i,j : pyo.value(m.y[j,i]) )
 
 
-# In[78]:
+# In[14]:
 
 
 x = Table3d(m1, 
@@ -293,7 +298,7 @@ x = Table3d(m1,
 x
 
 
-# In[90]:
+# In[15]:
 
 
 def VersionTwo(demand, existing, desired, 
@@ -392,7 +397,7 @@ def VersionTwo(demand, existing, desired,
     return m
 
 
-# In[91]:
+# In[16]:
 
 
 m2 = VersionTwo(demand = demand, 
@@ -414,7 +419,7 @@ m2 = VersionTwo(demand = demand,
 pyo.SolverFactory('cbc' ).solve(m2).write()
 
 
-# In[92]:
+# In[17]:
 
 
 Table3d(m2, 
@@ -426,7 +431,7 @@ Table3d(m2,
         )
 
 
-# In[93]:
+# In[18]:
 
 
 def VersionThree( demand, existing, desired, 
@@ -531,7 +536,7 @@ def VersionThree( demand, existing, desired,
     return m
 
 
-# In[94]:
+# In[19]:
 
 
 m3 = VersionThree( demand = demand, 
@@ -553,37 +558,37 @@ m3 = VersionThree( demand = demand,
 pyo.SolverFactory('cbc' ).solve(m3).write()
 
 
-# In[95]:
+# In[20]:
 
 
 Table1d( m3, J = m3.T, retriever = lambda m, j : pyo.value( m.A[j].p ) )
 
 
-# In[96]:
+# In[21]:
 
 
 Table2d( m3, I=m3.P, J=m3.T, retriever = lambda m, i, j : pyo.value( 0+m.x[i,j] ) )
 
 
-# In[97]:
+# In[22]:
 
 
 Table2d( m3, I=['B','C'], J=m3.T, retriever = lambda m, i, j : pyo.value( 0+m.A[j].y[i] ) )
 
 
-# In[98]:
+# In[23]:
 
 
 Table2d( m3, I=m3.P, J=m3.T, retriever = lambda m, i, j : pyo.value( m.I[j].s[i] ) )
 
 
-# In[99]:
+# In[24]:
 
 
 Table2d( m3, I=['A','C'], J=m3.T, retriever=lambda m, i, j : pyo.value( m.A[j].b[i] ) )
 
 
-# In[100]:
+# In[25]:
 
 
 Table3d( m3, 
@@ -593,12 +598,6 @@ Table3d( m3,
         K        = m3.T, 
         retriever= lambda m,i,j,k : 0+pyo.value( m.A[k].x[i,j] ) 
         )
-
-
-# In[ ]:
-
-
-
 
 
 # In[ ]:

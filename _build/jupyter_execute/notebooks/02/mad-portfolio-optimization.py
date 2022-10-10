@@ -7,15 +7,15 @@
 # 
 # In a [remarkable 1991 paper, Konno and Yamazaki](https://www.jstor.org/stable/2632458?seq=1) proposed a different approach using the mean absolute deviation in portfolio return as a measure of financial risk. The proposed implementation directly incorporates historical price data into a large scale linear programming problem. 
 
-# In[16]:
+# In[1]:
 
 
 # install Pyomo and solvers
 import requests
-import imp
+import types
 
 url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
-helper = imp.new_module("helper")
+helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
