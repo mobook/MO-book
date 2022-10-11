@@ -3,7 +3,7 @@
 
 # # Portfolio optimization with chance constraint
 
-# In[20]:
+# In[26]:
 
 
 # install Pyomo and solvers
@@ -19,7 +19,7 @@ helper.install_cbc()
 helper.install_cplex()
 
 
-# In[21]:
+# In[27]:
 
 
 from IPython.display import Markdown, HTML
@@ -65,48 +65,62 @@ cbc_solver = pyo.SolverFactory("cbc")
 #     &  x \geq 0.
 # \end{align*}
 
-# In[22]:
+# In[46]:
 
 
 # we import the inverse CDF or quantile function for the standard normal norm.ppf() from scipy.stats
 from scipy.stats import norm
 
-# We set our risk threshold and risk levels (sometimes you may get an infeasible problem if the chance constraint becomes too tight!)
+# We set our risk threshold and risk levels (sometimes you may get an infeasible problem if the chance
+# constraint becomes too tight!)
 alpha = 0.5
 beta = 0.3
 
 # We specify the number of assets, their expected returns and their covariance matrix. 
 n = 3
 z_mean = np.array([1.05, 1.15, 1.3])
-z_cov = np.array([[1, 0.5, 2],[0.5, 2, 0],[2, 0, 5]])
+z_cov = np.array([[1, 0.5, 2], [0.5, 2, 0], [2, 0, 5]])
 
 # Check how dramatically the optimal solution changes if we assume i.i.d. deviations for the returns.
-# z_cov = np.array([[1, 0, 0],[0, 1, 0],[0, 0, 1]])
+# z_cov = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
 # If you want to change covariance matriix, make sure you input a semi-definite positive one.
-# The easiest way to generate a random covariance matrix is first generating a random n x n matrix A and then taking the matrix A^T A (which is always semi-definite positive)
+# The easiest way to generate a random covariance matrix is first generating a random n x n matrix A 
+# and then taking the matrix A^T A (which is always semi-definite positive)
 # N = 3
-# A = np.random.rand(N,N)
+# A = np.random.rand(N, N)
 # z_cov = A.T @ A
 
 model = pyo.ConcreteModel("Portfolio problem")
 
-model.x = pyo.Var(range(n), within=pyo.NonNegativeReals)
-model.y = pyo.Var(within=pyo.Reals)
+model.x = pyo.Var(range(n), domain=pyo.NonNegativeReals)
+model.y = pyo.Var(domain=pyo.Reals)
 
-model.objective = pyo.Objective(expr=z_mean @ model.x, sense=pyo.maximize)
+@model.Objective(sense=pyo.maximize)
+def objective(model):
+    return z_mean @ model.x
 
-model.chance_constraint = pyo.Constraint(expr=norm.ppf(1-beta) * (model.x @ (z_cov @ model.x)) <= (z_mean @ model.x - alpha))
-model.total_assets = pyo.Constraint(expr=sum(model.x[i] for i in range(n)) == 1)
+@model.Constraint()
+def chance_constraint(model):
+    return norm.ppf(1-beta) * (model.x @ (z_cov @ model.x)) <= (z_mean @ model.x - alpha)
+
+@model.Constraint()
+def total_assets(model):
+    return sum(model.x[i] for i in range(n)) == 1
 
 result = cplex_solver.solve(model)
 
+df = pd.Series({f"$x_{i+1}$": model.x[i].value for i in range(n)})
+df = pd.DataFrame(df, columns=["Solution"])
+display(df)
+
 display(Markdown(f"**Solver status:** *{result.solver.status}, {result.solver.termination_condition}*"))
-display(Markdown(f"**Solution:** $x_1 = {model.x[0].value:.3f}$,  $x_2 = {model.x[1].value:.3f}$,  $x_3 = {model.x[2].value:.3f}$"))
+display(Markdown(f"**Solution:** $x_1 = {model.x[0].value:.3f}$,  \$x_2 = {model.x[1].value:.3f}$,  $x_3 = {model.x[2].value:.3f}$"))
 display(Markdown(f"**Maximizes objective value to:** ${model.objective():.2f}$"))
 
 
 # # Exercise 2: Portfolio selection with cardinality-constrained uncertainty set
+# 
 # Remember that, if all the return rates $\xi_i$ for every asset $i$ are known, the classical deterministic portfolio selection problem can be formulated as the following LP:
 # \begin{align*}
 # \max \; & \xi^T {x} \\

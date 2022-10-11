@@ -29,33 +29,6 @@ helper.install_pyomo()
 helper.install_mosek()
 
 
-# ## Bibliographic notes
-# 
-# The original formulation and solution of the economic order quantity problem is attributed to Ford Harris, but in a curious twist has been [incorrectly cited ince 1931](https://pubsonline.informs.org/doi/abs/10.1287/mnsc.35.7.898). The correct citation is:
-# 
-# >Harris, F. W. (1915). Operations and Cost (Factory Management Series). A. W. Shaw Company, Chap IV, pp.48-52. Chicago. 
-# 
-# Harris later developed an extensive consulting business and the concept has become embedded in business practice for over 100 years. Harris's single item model was later extended to multiple items sharing a resource constraint. There may be earlier citations, but this model is generally attributed to Ziegler (1982):
-# 
-# > Ziegler, H. (1982). Solving certain singly constrained convex optimization problems in production planning. Operations Research Letters, 1(6), 246-252.
-# 
-# > Bretthauer, K. M., & Shetty, B. (1995). The nonlinear resource allocation problem. Operations research, 43(4), 670-683. https://www.jstor.org/stable/171693?seq=1
-# 
-# Reformulation of the multi-item EOQ model as a conic program is attributed to Kuo and Mittleman (2004) using techniques described by Lobo, et al. (1998):
-# 
-# > Kuo, Y. J., & Mittelmann, H. D. (2004). Interior point methods for second-order cone programming and OR applications. Computational Optimization and Applications, 28(3), 255-285. https://link.springer.com/content/pdf/10.1023/B:COAP.0000033964.95511.23.pdf
-# 
-# > Lobo, M. S., Vandenberghe, L., Boyd, S., & Lebret, H. (1998). Applications of second-order cone programming. Linear algebra and its applications, 284(1-3), 193-228. https://web.stanford.edu/~boyd/papers/pdf/socp.pdf
-# 
-# The multi-item model has been used didactically many times since 2004. These are representative examples 
-# 
-# > Letchford, A. N., & Parkes, A. J. (2018). A guide to conic optimisation and its applications. RAIRO-Operations Research, 52(4-5), 1087-1106. http://www.cs.nott.ac.uk/~pszajp/pubs/conic-guide.pdf
-# 
-# > El Ghaoui, Laurent (2018). Lecture notes on Optimization Models. https://inst.eecs.berkeley.edu/~ee127/fa19/Lectures/12_socp.pdf
-# 
-# > Mosek Modeling Cookbook, section 3.3.5.  https://docs.mosek.com/modeling-cookbook/cqo.html.
-# 
-
 # ## EOQ Model
 # 
 # ### Classical formulation for a Single Item
@@ -552,6 +525,33 @@ df_large
 m = eoq(df_large, 100000)
 eoq_display_results(df_large, m)
 
+
+# ## Bibliographic notes
+# 
+# The original formulation and solution of the economic order quantity problem is attributed to Ford Harris, but in a curious twist has been [incorrectly cited ince 1931](https://pubsonline.informs.org/doi/abs/10.1287/mnsc.35.7.898). The correct citation is:
+# 
+# >Harris, F. W. (1915). Operations and Cost (Factory Management Series). A. W. Shaw Company, Chap IV, pp.48-52. Chicago. 
+# 
+# Harris later developed an extensive consulting business and the concept has become embedded in business practice for over 100 years. Harris's single item model was later extended to multiple items sharing a resource constraint. There may be earlier citations, but this model is generally attributed to Ziegler (1982):
+# 
+# > Ziegler, H. (1982). Solving certain singly constrained convex optimization problems in production planning. Operations Research Letters, 1(6), 246-252.
+# 
+# > Bretthauer, K. M., & Shetty, B. (1995). The nonlinear resource allocation problem. Operations research, 43(4), 670-683. https://www.jstor.org/stable/171693?seq=1
+# 
+# Reformulation of the multi-item EOQ model as a conic program is attributed to Kuo and Mittleman (2004) using techniques described by Lobo, et al. (1998):
+# 
+# > Kuo, Y. J., & Mittelmann, H. D. (2004). Interior point methods for second-order cone programming and OR applications. Computational Optimization and Applications, 28(3), 255-285. https://link.springer.com/content/pdf/10.1023/B:COAP.0000033964.95511.23.pdf
+# 
+# > Lobo, M. S., Vandenberghe, L., Boyd, S., & Lebret, H. (1998). Applications of second-order cone programming. Linear algebra and its applications, 284(1-3), 193-228. https://web.stanford.edu/~boyd/papers/pdf/socp.pdf
+# 
+# The multi-item model has been used didactically many times since 2004. These are representative examples 
+# 
+# > Letchford, A. N., & Parkes, A. J. (2018). A guide to conic optimisation and its applications. RAIRO-Operations Research, 52(4-5), 1087-1106. http://www.cs.nott.ac.uk/~pszajp/pubs/conic-guide.pdf
+# 
+# > El Ghaoui, Laurent (2018). Lecture notes on Optimization Models. https://inst.eecs.berkeley.edu/~ee127/fa19/Lectures/12_socp.pdf
+# 
+# > Mosek Modeling Cookbook, section 3.3.5.  https://docs.mosek.com/modeling-cookbook/cqo.html.
+# 
 
 # ## Appendix: Formulation with SOCP constraints
 # 
