@@ -1,6 +1,28 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# # Airline seat allocation problem
+# 
+# An airlines is trying to decide how to partition a new plane for the Amsterdam-Buenos Aires route. This plane can seat 200 economy class passengers. A section can be created for first class seats but each of these seats takes the space of 2 economy class seats. A business class section can also be created, but each of these seats takes as much space as 1.5 economy class seats. The profit on a first class ticket is, however, three times the profit of an economy ticket, while a business class ticket has a profit of two times an economy ticket's profit. Once the plane is partitioned into these seating classes, it cannot be changed. The airlines knows, however, that the plane will not always be full in each section. They have decided that three scenarios will occur with about the same frequency: 
+# 
+# (1) weekday morning and evening traffic, 
+# 
+# (2) weekend traffic, 
+# 
+# (3) weekday midday traffic. 
+# 
+# Under Scenario 1, they think they can sell as many as 20 first class tickets, 50 business class tickets, and 200 economy tickets. Under Scenario 2, these figures are $10 , 25 $, and $175$, while under Scenario 3, they are $5 , 10$, and $150$. The following table reports the forecast demand in the three scenarios.
+# 
+# | Scenario | First class seats | Business class seats | Economy class seats |
+# | :-: | :-: | :-: | :-: |
+# | Scenario 1 | 20 | 50 | 200 |
+# | Scenario 2 | 10 | 25 | 175 |
+# | Scenario 3 | 5 | 10 | 150 |
+# 
+# Despite these estimates, the airline will not sell more tickets than seats in each of the sections (hence no overbooking strategy).
+# 
+# (a) Implement and solve the extensive form of the stochastic program for the optimal seat allocation aiming to maximize the airline profit.
+
 # In[1]:
 
 
@@ -36,27 +58,7 @@ glpk_solver = pyo.SolverFactory('glpk')
 ipopt_solver = pyo.SolverFactory('ipopt')
 
 
-# # Airline seat allocation problem
-# 
-# An airlines is trying to decide how to partition a new plane for the Amsterdam-Buenos Aires route. This plane can seat 200 economy class passengers. A section can be created for first class seats but each of these seats takes the space of 2 economy class seats. A business class section can also be created, but each of these seats takes as much space as 1.5 economy class seats. The profit on a first class ticket is, however, three times the profit of an economy ticket, while a business class ticket has a profit of two times an economy ticket's profit. Once the plane is partitioned into these seating classes, it cannot be changed. The airlines knows, however, that the plane will not always be full in each section. They have decided that three scenarios will occur with about the same frequency: 
-# 
-# (1) weekday morning and evening traffic, 
-# 
-# (2) weekend traffic, 
-# 
-# (3) weekday midday traffic. 
-# 
-# Under Scenario 1, they think they can sell as many as 20 first class tickets, 50 business class tickets, and 200 economy tickets. Under Scenario 2, these figures are $10 , 25 $, and $175$, while under Scenario 3, they are $5 , 10$, and $150$. The following table reports the forecast demand in the three scenarios.
-# 
-# | Scenario | First class seats | Business class seats | Economy class seats |
-# | :-: | :-: | :-: | :-: |
-# | Scenario 1 | 20 | 50 | 200 |
-# | Scenario 2 | 10 | 25 | 175 |
-# | Scenario 3 | 5 | 10 | 150 |
-# 
-# Despite these estimates, the airline will not sell more tickets than seats in each of the sections (hence no overbooking strategy).
-# 
-# (a) Implement and solve the extensive form of the stochastic program for the optimal seat allocation aiming to maximize the airline profit.
+# ## Model
 
 # In[3]:
 
@@ -128,6 +130,92 @@ display(Markdown(f"(recourse sell action scenario 3) $s_F = {model.sell['F',3].v
 display(Markdown(f"**Optimal objective value:** ${model.total_expected_profit():.0f}$ (in units of economy ticket price)"))
 
 
+# In[23]:
+
+
+# seat data
+seat_data = {
+    "F": {"price factor": 3.0, "seat factor": 2.0},
+    "B": {"price factor": 2.0, "seat factor": 1.5},
+    "E": {"price factor": 1.0, "seat factor": 1.0},
+}
+
+# scenario data
+scenario_data = {
+    1: {'F': 20, 'B': 50, 'E': 200},
+    2: {'F': 10, 'B': 25, 'E': 175},
+    3: {'F':  5, 'B': 10, 'E': 150}
+}
+
+
+# In[22]:
+
+
+model = pyo.ConcreteModel()
+
+model.total_seats = pyo.Param(initialize=200)
+
+model.classes = pyo.Set(initialize=seat_data.keys())
+
+@model.Param(model.classes)
+def price_factor(model, c):
+    return seat_data[c]["price factor"]
+
+@model.Param(model.classes)
+def seat_factor(model, c):
+    return seat_data[c]["seat factor"]  
+
+# first stage variables
+model.seats = pyo.Var(model.classes, domain=pyo.NonNegativeIntegers) 
+
+@model.Expression(model.classes)
+def equivalent_seats(model, c):
+    return model.seats[c] * model.seat_factor[c]
+
+@model.Constraint()
+def plane_seats(model):
+    return sum(model.equivalent_seats[c] for c in model.classes) <= model.total_seats
+
+model.scenarios = pyo.Set(initialize=scenario_data.keys())
+
+# second stage variables (labeled as 1,2,3 depending on the scenario)
+model.sell = pyo.Var(model.classes, model.scenarios, domain=pyo.NonNegativeIntegers)
+
+# second stage constraints
+@model.Constraint(model.classes, model.scenarios)
+def demand(model, c, s):
+    return model.sell[c, s] <= scenario_data[s][c]
+
+@model.Constraint(model.classes, model.scenarios)
+def limit(model, c, s):
+    return model.sell[c, s] <= model.seats[c]
+
+# objective
+@model.Expression()
+def second_stage_profit(model):
+    total =  sum(sum(model.sell[c, s] * model.price_factor[c] for s in model.scenarios) for c in model.classes)
+    return total / len(model.scenarios)
+
+@model.Objective(sense=pyo.maximize)
+def total_expected_profit(model):
+    return model.second_stage_profit
+
+result = cbc_solver.solve(model)
+
+sout = f"**Optimal objective value:** ${model.total_expected_profit():.0f}$ (in units of economy ticket price) <p>"
+sout += "**Solution:** <p>"
+sout += "\n\n"
+sout += "| Variable " + "".join(f"| ${c}$ " for c in model.classes)
+sout += "\n| :--- " + "".join(["| :--: "] * len(model.classes))
+sout += "\n| seat allocation" + "".join(f"| ${model.seats[c]():.0f}$" for c in model.classes)
+sout += "\n| equivalent seat allocation" + "".join(f"| ${model.equivalent_seats[c].expr():.0f}$" for c in model.classes)
+for s in model.scenarios:
+    sout += f"\n| recourse sell action scenario {s}"
+    sout += "".join(f"| ${model.sell[c, s]():.0f}$" for c in model.classes)
+    
+display(Markdown(sout))
+
+
 # Assume now that the airline wishes a special guarantee for its clients enrolled in its loyalty program. In particular, it wants $98\%$ probability to cover the demand of first-class seats and $95\%$ probability to cover the demand of business class seats (by clients of the loyalty program). First-class passengers are covered if they get a first-class seat. Business class passengers are covered if they get either a business or a first-class seat (upgrade). Assume weekday demands of loyalty-program passengers are normally distributed, say $\xi_F \sim \mathcal N(16,16)$ and $\xi_B \sim \mathcal N(30,48)$ for first-class and business, respectively. Also assume that the demands for first-class and business class seats are independent.
 # Let $x_1$ be the number of first-class seats and $x_2$ the number of business seats. The probabilistic constraints are simply
 # 
@@ -143,7 +231,7 @@ display(Markdown(f"**Optimal objective value:** ${model.total_expected_profit():
 # 
 # (b) Add to your implementation of the extensive form the two equivalent deterministic constraints corresponding to the two chance constraints and find the new optimal solution meeting these additional constraints. How is it different from the previous one?
 
-# In[4]:
+# In[6]:
 
 
 model = pyo.ConcreteModel()
