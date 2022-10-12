@@ -8,9 +8,9 @@ Welcome to this repository of companion notebooks for *Data-Driven Mathematical 
 
 ## Getting started
 
-The notebooks in this repository make extensive use of [Pyomo](https://en.wikipedia.org/wiki/Pyomo) which is the a complete and versatile mathematical optimization package for the python ecosystem. Pyomo provides a means to build models for optimization using the concepts of decision variables, constraints, and objectives from mathematical optimization, then transform and generate solutions using open source or commercial solvers.
+The notebooks in this repository make extensive use of [Pyomo](https://en.wikipedia.org/wiki/Pyomo) which is a complete and versatile mathematical optimization package for the Python ecosystem. Pyomo provides a means to build models for optimization using the concepts of decision variables, constraints, and objectives from mathematical optimization, then transform and generate solutions using open source or commercial solvers.
 
-Most notebooks in this library can be opened and run in Google Colab. A launch icon appearing at the top of a page (look for the rocket) indicates the notebook can be opened as executable document. Selecting Colab will reopen in the notebook in Google Colab. Cells inside of the notebooks will perform any necessary installations of Pyomo and solvers needed to execute the code within the notebook.
+Most notebooks in this library can be opened and run in Google Colab. A launch icon appearing at the top of a page (look for the rocket) indicates the notebook can be opened as executable document. Selecting Colab will reopen the notebook in Google Colab. Cells inside of the notebooks will perform any necessary installations of Pyomo and solvers needed to execute the code within the notebook.
 
 ## Help us!
 
