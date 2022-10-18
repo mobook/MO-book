@@ -3,7 +3,7 @@
 
 # # Portfolio optimization with chance constraint
 
-# In[26]:
+# In[47]:
 
 
 # install Pyomo and solvers
@@ -19,21 +19,16 @@ helper.install_cbc()
 helper.install_cplex()
 
 
-# In[27]:
+# In[59]:
 
 
 from IPython.display import Markdown, HTML
-import io
 import pyomo.environ as pyo
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import time 
-import requests
 import math
-
-cplex_solver = pyo.SolverFactory("cplex_direct")
-cbc_solver = pyo.SolverFactory("cbc")
 
 
 # Consider the following canonical stochastic optimization problem, the so-called _portfolio selection problem_. Assuming there is an initial unit capital $C=1$ that needs to be invested in a selection of $n$ possible assets, each of them with a unknown return rate $z_i$, $i=1,\dots,n$. Let $x$ be the vector whose $i$-th component $x_i$ describes the fraction of the capital invested in asset $i$. The return rate vector $z$ can be modelled by a multivariate Gaussian distribution with mean $\bar{z}$ and covariance $\Sigma$. 
@@ -65,7 +60,7 @@ cbc_solver = pyo.SolverFactory("cbc")
 #     &  x \geq 0.
 # \end{align*}
 
-# In[46]:
+# In[49]:
 
 
 # we import the inverse CDF or quantile function for the standard normal norm.ppf() from scipy.stats
@@ -108,7 +103,7 @@ def chance_constraint(model):
 def total_assets(model):
     return sum(model.x[i] for i in range(n)) == 1
 
-result = cplex_solver.solve(model)
+result = pyo.SolverFactory("cplex_direct").solve(model)
 
 df = pd.Series({f"$x_{i+1}$": model.x[i].value for i in range(n)})
 df = pd.DataFrame(df, columns=["Solution"])
@@ -147,29 +142,28 @@ display(Markdown(f"**Maximizes objective value to:** ${model.objective():.2f}$")
 # \end{align*}
 # *Note that the inequality has a different sign than the one in the lectures notes, hence the argument there has to be adopted accordingly*
 
-# In[23]:
+# In[87]:
 
 
-def portfolio(Gamma=1, printflag=False):
+def portfolio(Gamma=1, print_flag=False):
 
     model = pyo.ConcreteModel()
 
     model.n = 100
 
-    def indices_rule(model):
-        return range(1,model.n+1)
-
-    model.indices = pyo.Set(initialize=indices_rule)
+    model.indices = pyo.Set(initialize=range(1, model.n + 1))
 
     model.capital = 1000
-    model.x = pyo.Var(model.indices, within=pyo.NonNegativeReals) 
-    model.w = pyo.Var(within=pyo.NonNegativeReals) 
+    model.x = pyo.Var(model.indices, domain=pyo.NonNegativeReals) 
+    model.w = pyo.Var(domain=pyo.NonNegativeReals) 
 
-    model.budget = pyo.Constraint(expr=pyo.summation(model.x) == model.capital)
+    @model.Constraint()
+    def budget(model):
+        return pyo.summation(model.x) == model.capital
 
     # introduce variable for tractable robust counterpart
-    model.z = pyo.Var(model.indices, within=pyo.NonNegativeReals)
-    model.l = pyo.Var(within=pyo.NonNegativeReals)
+    model.z = pyo.Var(model.indices, domain=pyo.NonNegativeReals)
+    model.l = pyo.Var(domain=pyo.NonNegativeReals)
 
     def deltareturn(j):
         return (0.05/300) * math.sqrt(45300 * j)
@@ -178,36 +172,43 @@ def portfolio(Gamma=1, printflag=False):
         return 1.15 + j * (0.05/100)
 
     # tractable robust counterpart, two for every initial constraints with varying parameter
-    model.lower = pyo.ConstraintList()
-    model.upper = pyo.ConstraintList()
-    model.cardinalityconstraint = pyo.Constraint(expr= -sum([nominalreturn(j)*model.x[j] for j in model.indices]) + model.l * Gamma + pyo.summation(model.z) <= -model.w)
-    for j in model.indices:
-        model.lower.add(expr=model.z[j] >= -model.x[j]*deltareturn(j) - model.l)
-        model.upper.add(expr=model.z[j] >= model.x[j]*deltareturn(j) - model.l)
+    @model.Constraint(model.indices)
+    def lower(model, j):
+        return model.z[j] >= -model.x[j]*deltareturn(j) - model.l
+    
+    @model.Constraint(model.indices)
+    def upper(model, j):
+        return model.z[j] >= model.x[j]*deltareturn(j) - model.l
+    
+    @model.Constraint()
+    def cardinality_constraint(model):
+        return -sum([nominalreturn(j)*model.x[j] for j in model.indices]) + model.l * Gamma + pyo.summation(model.z) <= -model.w
 
-    def total_return(model):
+    @model.Objective(sense=pyo.maximize)
+    def profit(model):
         return model.w
-    model.profit = pyo.Objective(rule=total_return, sense=pyo.maximize)
 
-    result = cbc_solver.solve(model)
-    if printflag:
+    result = pyo.SolverFactory('cbc').solve(model)
+    
+    if print_flag:
         display(Markdown(f"**Solver status:** *{result.solver.status}, {result.solver.termination_condition}*"))
         display(Markdown(f"**Solution:**"))
-        for i in model.indices:
-            display(Markdown(f" $x_{ {i} } = {model.x[i].value:.3f}$"))
+        df = pd.Series({f"$x_{ {i} }$": f"{model.x[i].value:0.3f}" for i in model.indices})
+        display(Markdown(pd.DataFrame(df, columns=["Solution"]).to_markdown()))
         display(Markdown(f"**Maximizes objective value to:** ${model.profit():.2f}$€"))
-    return model.profit(), [round(model.x[i].value,3) for i in model.indices]
+        
+    return model.profit(), [round(model.x[i].value, 3) for i in model.indices]
 
-profit, x = portfolio(Gamma=20, printflag=True)
+profit, x = portfolio(Gamma=20, print_flag=True)
 
 
 # We now solve the same problem by varying $\Gamma$ from $1$ to $50$ and observe how the optimal decision $x^*$ changes accordingly.
 
-# In[24]:
+# In[89]:
 
 
 for gamma in range(51):
-    profit, x = portfolio(Gamma=gamma, printflag=False)
+    profit, x = portfolio(Gamma=gamma, print_flag=False)
     display(Markdown(f"$\Gamma={gamma:.0f}$"))
     display(Markdown(f"**Profit:** {profit:.2f}€"))
     display(Markdown(f"**Optimal solution:** ${x}$"))

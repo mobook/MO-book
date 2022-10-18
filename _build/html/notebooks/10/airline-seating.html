@@ -56,7 +56,7 @@ const thebe_selector_output = ".output, .cell_output"
     <script>mermaid.initialize({startOnLoad:true});</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Stochastic Programming" href="stochastic-farmer.html" />
+    <link rel="next" title="Farmer’s problem and some of its variants" href="farmer.html" />
     <link rel="prev" title="10. Two Stage Problems" href="10.00.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
@@ -392,11 +392,6 @@ const thebe_selector_output = ".output, .cell_output"
      Stock optimization for seafood distribution center
     </a>
    </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="../09/farmer.html">
-     Exercise 1: Farmer’s problem and some of its variants
-    </a>
-   </li>
   </ul>
  </li>
  <li class="toctree-l1 current active has-children">
@@ -412,6 +407,11 @@ const thebe_selector_output = ".output, .cell_output"
    <li class="toctree-l2 current active">
     <a class="current reference internal" href="#">
      Airline seat allocation problem
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="farmer.html">
+     Farmer’s problem and some of its variants
     </a>
    </li>
    <li class="toctree-l2">
@@ -610,6 +610,16 @@ title="Print to PDF"
    Model
   </a>
  </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#chance-constraints">
+   Chance Constraints
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#sample-average">
+   Sample Average
+  </a>
+ </li>
 </ul>
 
     </nav>
@@ -632,6 +642,16 @@ title="Print to PDF"
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#model">
    Model
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#chance-constraints">
+   Chance Constraints
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#sample-average">
+   Sample Average
   </a>
  </li>
 </ul>
@@ -716,9 +736,7 @@ ipopt was previously installed
 <span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">Markdown</span>
-<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
 
 <span class="n">cbc_solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
 <span class="n">glpk_solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;glpk&#39;</span><span class="p">)</span>
@@ -729,87 +747,6 @@ ipopt was previously installed
 </div>
 <section id="model">
 <h2>Model<a class="headerlink" href="#model" title="Permalink to this headline">#</a></h2>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
-
-<span class="n">model</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">totalseats</span> <span class="o">=</span> <span class="mi">200</span>
-<span class="n">model</span><span class="o">.</span><span class="n">pricefactor_F</span> <span class="o">=</span> <span class="mf">3.0</span>
-<span class="n">model</span><span class="o">.</span><span class="n">pricefactor_B</span> <span class="o">=</span> <span class="mf">2.0</span>
-<span class="n">model</span><span class="o">.</span><span class="n">seatfactor_F</span> <span class="o">=</span> <span class="mf">2.0</span> 
-<span class="n">model</span><span class="o">.</span><span class="n">seatfactor_B</span> <span class="o">=</span> <span class="mf">1.5</span>
-
-<span class="c1"># first stage variables</span>
-<span class="n">model</span><span class="o">.</span><span class="n">seats</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span> 
-
-<span class="c1"># first stage constraint</span>
-<span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsF</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">model</span><span class="o">.</span><span class="n">seatfactor_F</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsB</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">model</span><span class="o">.</span><span class="n">seatfactor_B</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsE</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">planeseats</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsF</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsB</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsE</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">totalseats</span><span class="p">)</span>
-
-<span class="n">model</span><span class="o">.</span><span class="n">scenarios</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
-
-<span class="c1"># second stage variables (labelled as 1,2,3 depending on the scenario)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">sell</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">scenarios</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
-
-<span class="c1"># second stage constraints</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandF_1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">20</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitF_1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandF_2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitF_2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandF_3</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">5</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitF_3</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandB_1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">50</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitB_1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandB_2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">25</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitB_2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandB_3</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitB_3</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandE_1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">200</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitE_1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandE_2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">175</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitE_2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandE_3</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">150</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitE_3</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">])</span>
-
-<span class="k">def</span> <span class="nf">second_stage_profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="n">total_1</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">pricefactor_F</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">pricefactor_B</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">total_2</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">pricefactor_F</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">pricefactor_B</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
-    <span class="n">total_3</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">pricefactor_F</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">pricefactor_B</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">total_1</span> <span class="o">+</span> <span class="n">total_2</span> <span class="o">+</span> <span class="n">total_3</span><span class="p">)</span><span class="o">/</span><span class="mf">3.0</span>
-
-<span class="n">model</span><span class="o">.</span><span class="n">second_stage_profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="n">second_stage_profit</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">total_profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">second_stage_profit</span>
-
-<span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="n">total_profit</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-
-<span class="n">result</span> <span class="o">=</span> <span class="n">cbc_solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;**Solver status:** *</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="si">}</span><span class="s2">*&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;**Solution:**&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(seat allocation) $x_F = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $e_B = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $e_E = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(equivalent seat allocation) $e_F = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsF</span><span class="o">.</span><span class="n">expr</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $e_B = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsB</span><span class="o">.</span><span class="n">expr</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $e_E = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsE</span><span class="o">.</span><span class="n">expr</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(recourse sell action scenario 1) $s_F = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $s_B = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $s_E = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(recourse sell action scenario 2) $s_F = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $s_B = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $s_E = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(recourse sell action scenario 3) $s_F = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $s_B = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $s_E = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;**Optimal objective value:** $</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$ (in units of economy ticket price)&quot;</span><span class="p">))</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<p><strong>Solver status:</strong> <em>ok, optimal</em></p>
-<p><strong>Solution:</strong></p>
-<p>(seat allocation) $x_F = 10$, $e_B = 20$, $e_E = 150$</p>
-<p>(equivalent seat allocation) $e_F = 20$, $e_B = 30$, $e_E = 150$</p>
-<p>(recourse sell action scenario 1) $s_F = 10$, $s_B = 20$, $s_E = 150$</p>
-<p>(recourse sell action scenario 2) $s_F = 10$, $s_B = 20$, $s_E = 150$</p>
-<p>(recourse sell action scenario 3) $s_F = 5$, $s_B = 10$, $s_E = 150$</p>
-<p><strong>Optimal objective value:</strong> $208$ (in units of economy ticket price)</p>
-</div>
-</div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># seat data</span>
@@ -831,327 +768,91 @@ ipopt was previously installed
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">seat_data</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">class, price factor, seat factor</span>
-<span class="s2">F, 3.0, 2.0</span>
-<span class="s2">B, 2.0, 1.5</span>
-<span class="s2">E, 1.0, 1.0</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">airline</span><span class="p">():</span>
 
-<span class="n">seat_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">StringIO</span><span class="p">(</span><span class="n">seat_data</span><span class="p">),</span> <span class="n">index_col</span><span class="o">=</span><span class="s2">&quot;class&quot;</span><span class="p">)</span>
-<span class="n">display</span><span class="p">(</span><span class="n">seat_data</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
 
-<span class="n">scenario_data</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">F, B, E</span>
-<span class="s2">20, 50, 200</span>
-<span class="s2">10, 25, 175</span>
-<span class="s2">5, 10, 150</span>
-<span class="s2">&quot;&quot;&quot;</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">seat_data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">scenarios</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">scenario_data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
-<span class="n">scenario_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">StringIO</span><span class="p">(</span><span class="n">scenario_data</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">scenario_data</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output text_html"><div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
+    <span class="n">m</span><span class="o">.</span><span class="n">total_seats</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
 
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">price_factor</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">seat_data</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="s2">&quot;price factor&quot;</span><span class="p">]</span>
 
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>price factor</th>
-      <th>seat factor</th>
-    </tr>
-    <tr>
-      <th>class</th>
-      <th></th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>F</th>
-      <td>3.0</td>
-      <td>2.0</td>
-    </tr>
-    <tr>
-      <th>B</th>
-      <td>2.0</td>
-      <td>1.5</td>
-    </tr>
-    <tr>
-      <th>E</th>
-      <td>1.0</td>
-      <td>1.0</td>
-    </tr>
-  </tbody>
-</table>
-</div></div><div class="output text_html"><div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">seat_factor</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">seat_data</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="s2">&quot;seat factor&quot;</span><span class="p">]</span>  
 
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
+    <span class="c1"># first stage variables</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">seats</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span> 
 
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>F</th>
-      <th>B</th>
-      <th>E</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>20</td>
-      <td>50</td>
-      <td>200</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>10</td>
-      <td>25</td>
-      <td>175</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>5</td>
-      <td>10</td>
-      <td>150</td>
-    </tr>
-  </tbody>
-</table>
-</div></div></div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">equivalent_seats</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">seat_factor</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">total_seats</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">plane_seats</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">equivalent_seats</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">total_seats</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">seat_data</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="c1"># second stage variables</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">sell</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">scenarios</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
 
-<span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">price_factor</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">seat_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;price factor&quot;</span><span class="p">]</span>
+    <span class="c1"># second stage constraints</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">scenarios</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">demand</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">scenario_data</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">c</span><span class="p">]</span>
 
-<span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">seat_factor</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">seat_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;seat factor&quot;</span><span class="p">]</span>  
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">scenarios</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">limit</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
 
-<span class="c1"># first stage variables</span>
-<span class="n">model</span><span class="o">.</span><span class="n">seats</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span> 
+    <span class="c1"># objective</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">second_stage_profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="n">total</span> <span class="o">=</span>  <span class="nb">sum</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">price_factor</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">scenarios</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">total</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">scenarios</span><span class="p">)</span>
 
-<span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">equivalent_seats</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">seat_factor</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">total_expected_profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">second_stage_profit</span>
+    
+    <span class="k">return</span> <span class="n">m</span>
 
-<span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">plane_seats</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">equivalent_seats</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">total_seats</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">scenarios</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">scenario_data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">airline</span><span class="p">()</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
-<span class="c1"># second stage variables (labeled as 1,2,3 depending on the scenario)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">sell</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">scenarios</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
-
-<span class="c1"># second stage constraints</span>
-<span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">scenarios</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">demand</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">scenario_data</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">c</span><span class="p">]</span>
-
-<span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">scenarios</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">limit</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
-
-<span class="c1"># objective</span>
-<span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">second_stage_profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="n">total</span> <span class="o">=</span>  <span class="nb">sum</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">price_factor</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">scenarios</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">total</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">scenarios</span><span class="p">)</span>
-
-<span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">total_expected_profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">second_stage_profit</span>
-
-<span class="n">result</span> <span class="o">=</span> <span class="n">cbc_solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-
-<span class="n">sout</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;**Optimal objective value:** $</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$ (in units of economy ticket price) &lt;p&gt;&quot;</span>
+<span class="n">sout</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;**Optimal objective value:** $</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">total_expected_profit</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$ (in units of economy ticket price) &lt;p&gt;&quot;</span>
 <span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;**Solution:** &lt;p&gt;&quot;</span>
 <span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;| Variable &quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;| $</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">$ &quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
-<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| :--- &quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;| :--: &quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">))</span>
-<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| seat allocation&quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;| $</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="n">c</span><span class="p">]()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
-<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| equivalent seat allocation&quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;| $</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">equivalent_seats</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">expr</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
+<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;| Variable &quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;| $</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">$ &quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
+<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| :--- &quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;| :--: &quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">))</span>
+<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| seat allocation&quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;| $</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="n">c</span><span class="p">]()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
+<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| equivalent seat allocation&quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;| $</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">equivalent_seats</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">expr</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
     <span class="n">sout</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| recourse sell action scenario </span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;| $</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">]()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
+    <span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;| $</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">]()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
     
 <span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="n">sout</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>ERROR: Rule failed for Param &#39;price_factor&#39; with index F: KeyError: &#39;price
-    factor&#39;
-ERROR: Constructing component &#39;price_factor&#39; from data=None failed: KeyError:
-    &#39;price factor&#39;
-</pre></div>
-</div>
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">KeyError</span><span class="g g-Whitespace">                                  </span>Traceback (most recent call last)
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pandas/core/indexes/base.py:3621,</span> in <span class="ni">Index.get_loc</span><span class="nt">(self, key, method, tolerance)</span>
-<span class="g g-Whitespace">   </span><span class="mi">3620</span> <span class="k">try</span><span class="p">:</span>
-<span class="ne">-&gt; </span><span class="mi">3621</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">casted_key</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">3622</span> <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pandas/_libs/index.pyx:136,</span> in <span class="ni">pandas._libs.index.IndexEngine.get_loc</span><span class="nt">()</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pandas/_libs/index.pyx:163,</span> in <span class="ni">pandas._libs.index.IndexEngine.get_loc</span><span class="nt">()</span>
-
-<span class="nn">File pandas/_libs/hashtable_class_helper.pxi:5198,</span> in <span class="ni">pandas._libs.hashtable.PyObjectHashTable.get_item</span><span class="nt">()</span>
-
-<span class="nn">File pandas/_libs/hashtable_class_helper.pxi:5206,</span> in <span class="ni">pandas._libs.hashtable.PyObjectHashTable.get_item</span><span class="nt">()</span>
-
-<span class="ne">KeyError</span>: &#39;price factor&#39;
-
-<span class="n">The</span> <span class="n">above</span> <span class="n">exception</span> <span class="n">was</span> <span class="n">the</span> <span class="n">direct</span> <span class="n">cause</span> <span class="n">of</span> <span class="n">the</span> <span class="n">following</span> <span class="n">exception</span><span class="p">:</span>
-
-<span class="ne">KeyError</span><span class="g g-Whitespace">                                  </span>Traceback (most recent call last)
-<span class="nn">Input In [33],</span> in <span class="ni">&lt;cell line: 7&gt;</span><span class="nt">()</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="n">model</span><span class="o">.</span><span class="n">total_seats</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="n">model</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">seat_data</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
-<span class="ne">----&gt; </span><span class="mi">8</span> <span class="k">def</span> <span class="nf">price_factor</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
-<span class="g g-Whitespace">      </span><span class="mi">9</span>     <span class="k">return</span> <span class="n">seat_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;price factor&quot;</span><span class="p">]</span>
-<span class="g g-Whitespace">     </span><span class="mi">11</span> <span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">12</span> <span class="k">def</span> <span class="nf">seat_factor</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pyomo/core/base/block.py:67,</span> in <span class="ni">_generic_component_decorator.__call__</span><span class="nt">(self, rule)</span>
-<span class="g g-Whitespace">     </span><span class="mi">66</span> <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rule</span><span class="p">):</span>
-<span class="ne">---&gt; </span><span class="mi">67</span>     <span class="nb">setattr</span><span class="p">(</span>
-<span class="g g-Whitespace">     </span><span class="mi">68</span>         <span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="p">,</span>
-<span class="g g-Whitespace">     </span><span class="mi">69</span>         <span class="n">rule</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
-<span class="g g-Whitespace">     </span><span class="mi">70</span>         <span class="bp">self</span><span class="o">.</span><span class="n">_component</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_args</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="n">rule</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_kwds</span><span class="p">))</span>
-<span class="g g-Whitespace">     </span><span class="mi">71</span>     <span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">72</span>     <span class="k">return</span> <span class="n">rule</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pyomo/core/base/block.py:542,</span> in <span class="ni">_BlockData.__setattr__</span><span class="nt">(self, name, val)</span>
-<span class="g g-Whitespace">    </span><span class="mi">537</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">538</span>     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">Component</span><span class="p">):</span>
-<span class="g g-Whitespace">    </span><span class="mi">539</span>         <span class="c1">#</span>
-<span class="g g-Whitespace">    </span><span class="mi">540</span>         <span class="c1"># Pyomo components are added with the add_component method.</span>
-<span class="g g-Whitespace">    </span><span class="mi">541</span>         <span class="c1">#</span>
-<span class="ne">--&gt; </span><span class="mi">542</span>         <span class="bp">self</span><span class="o">.</span><span class="n">add_component</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">543</span>     <span class="k">else</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">544</span>         <span class="c1">#</span>
-<span class="g g-Whitespace">    </span><span class="mi">545</span>         <span class="c1"># Other Python objects are added with the standard __setattr__</span>
-<span class="g g-Whitespace">    </span><span class="mi">546</span>         <span class="c1"># method.</span>
-<span class="g g-Whitespace">    </span><span class="mi">547</span>         <span class="c1">#</span>
-<span class="g g-Whitespace">    </span><span class="mi">548</span>         <span class="nb">super</span><span class="p">(</span><span class="n">_BlockData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pyomo/core/base/block.py:1087,</span> in <span class="ni">_BlockData.add_component</span><span class="nt">(self, name, val)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1083</span>     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Constructing </span><span class="si">%s</span><span class="s2"> &#39;</span><span class="si">%s</span><span class="s2">&#39; on </span><span class="si">%s</span><span class="s2"> from data=</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
-<span class="g g-Whitespace">   </span><span class="mi">1084</span>                  <span class="n">val</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span>
-<span class="g g-Whitespace">   </span><span class="mi">1085</span>                  <span class="n">_blockName</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
-<span class="g g-Whitespace">   </span><span class="mi">1086</span> <span class="k">try</span><span class="p">:</span>
-<span class="ne">-&gt; </span><span class="mi">1087</span>     <span class="n">val</span><span class="o">.</span><span class="n">construct</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1088</span> <span class="k">except</span><span class="p">:</span>
-<span class="g g-Whitespace">   </span><span class="mi">1089</span>     <span class="n">err</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pyomo/core/base/param.py:762,</span> in <span class="ni">Param.construct</span><span class="nt">(self, data)</span>
-<span class="g g-Whitespace">    </span><span class="mi">758</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constructed</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="g g-Whitespace">    </span><span class="mi">759</span> <span class="c1">#</span>
-<span class="g g-Whitespace">    </span><span class="mi">760</span> <span class="c1"># Step #1: initialize data from rule value</span>
-<span class="g g-Whitespace">    </span><span class="mi">761</span> <span class="c1">#</span>
-<span class="ne">--&gt; </span><span class="mi">762</span> <span class="bp">self</span><span class="o">.</span><span class="n">_construct_from_rule_using_setitem</span><span class="p">()</span>
-<span class="g g-Whitespace">    </span><span class="mi">763</span> <span class="c1">#</span>
-<span class="g g-Whitespace">    </span><span class="mi">764</span> <span class="c1"># Step #2: allow any user-specified (external) data to override</span>
-<span class="g g-Whitespace">    </span><span class="mi">765</span> <span class="c1"># the initialization</span>
-<span class="g g-Whitespace">    </span><span class="mi">766</span> <span class="c1">#</span>
-<span class="g g-Whitespace">    </span><span class="mi">767</span> <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pyomo/core/base/indexed_component.py:710,</span> in <span class="ni">IndexedComponent._construct_from_rule_using_setitem</span><span class="nt">(self)</span>
-<span class="g g-Whitespace">    </span><span class="mi">708</span>     <span class="k">else</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">709</span>         <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_set</span><span class="p">():</span>
-<span class="ne">--&gt; </span><span class="mi">710</span>             <span class="bp">self</span><span class="o">.</span><span class="n">_setitem_when_not_present</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">rule</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">index</span><span class="p">))</span>
-<span class="g g-Whitespace">    </span><span class="mi">711</span> <span class="k">except</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">712</span>     <span class="n">err</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pyomo/core/base/initializer.py:252,</span> in <span class="ni">IndexedCallInitializer.__call__</span><span class="nt">(self, parent, idx)</span>
-<span class="g g-Whitespace">    </span><span class="mi">250</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fcn</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="o">*</span><span class="n">idx</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">251</span> <span class="k">else</span><span class="p">:</span>
-<span class="ne">--&gt; </span><span class="mi">252</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fcn</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
-
-<span class="nn">Input In [33],</span> in <span class="ni">price_factor</span><span class="nt">(model, c)</span>
-<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">8</span> <span class="k">def</span> <span class="nf">price_factor</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
-<span class="ne">----&gt; </span><span class="mi">9</span>     <span class="k">return</span> <span class="n">seat_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="s2">&quot;price factor&quot;</span><span class="p">]</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pandas/core/indexing.py:960,</span> in <span class="ni">_LocationIndexer.__getitem__</span><span class="nt">(self, key)</span>
-<span class="g g-Whitespace">    </span><span class="mi">958</span>     <span class="n">key</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">com</span><span class="o">.</span><span class="n">apply_if_callable</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">key</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">959</span>     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_scalar_access</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
-<span class="ne">--&gt; </span><span class="mi">960</span>         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="o">*</span><span class="n">key</span><span class="p">,</span> <span class="n">takeable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_takeable</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">961</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_getitem_tuple</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">962</span> <span class="k">else</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">963</span>     <span class="c1"># we by definition only have the 0th axis</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pandas/core/frame.py:3615,</span> in <span class="ni">DataFrame._get_value</span><span class="nt">(self, index, col, takeable)</span>
-<span class="g g-Whitespace">   </span><span class="mi">3612</span>     <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ixs</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">3613</span>     <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">_values</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
-<span class="ne">-&gt; </span><span class="mi">3615</span> <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_item_cache</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">3616</span> <span class="n">engine</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">_engine</span>
-<span class="g g-Whitespace">   </span><span class="mi">3618</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">MultiIndex</span><span class="p">):</span>
-<span class="g g-Whitespace">   </span><span class="mi">3619</span>     <span class="c1"># CategoricalIndex: Trying to use the engine fastpath may give incorrect</span>
-<span class="g g-Whitespace">   </span><span class="mi">3620</span>     <span class="c1">#  results if our categories are integers that dont match our codes</span>
-<span class="g g-Whitespace">   </span><span class="mi">3621</span>     <span class="c1"># IntervalIndex: IntervalTree has no get_loc</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pandas/core/frame.py:3931,</span> in <span class="ni">DataFrame._get_item_cache</span><span class="nt">(self, item)</span>
-<span class="g g-Whitespace">   </span><span class="mi">3926</span> <span class="n">res</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">3927</span> <span class="k">if</span> <span class="n">res</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<span class="g g-Whitespace">   </span><span class="mi">3928</span>     <span class="c1"># All places that call _get_item_cache have unique columns,</span>
-<span class="g g-Whitespace">   </span><span class="mi">3929</span>     <span class="c1">#  pending resolution of GH#33047</span>
-<span class="ne">-&gt; </span><span class="mi">3931</span>     <span class="n">loc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">3932</span>     <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ixs</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">3934</span>     <span class="n">cache</span><span class="p">[</span><span class="n">item</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span>
-
-<span class="nn">File ~/opt/anaconda3/lib/python3.9/site-packages/pandas/core/indexes/base.py:3623,</span> in <span class="ni">Index.get_loc</span><span class="nt">(self, key, method, tolerance)</span>
-<span class="g g-Whitespace">   </span><span class="mi">3621</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">casted_key</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">3622</span> <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
-<span class="ne">-&gt; </span><span class="mi">3623</span>     <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">err</span>
-<span class="g g-Whitespace">   </span><span class="mi">3624</span> <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
-<span class="g g-Whitespace">   </span><span class="mi">3625</span>     <span class="c1"># If we have a listlike key, _check_indexing_error will raise</span>
-<span class="g g-Whitespace">   </span><span class="mi">3626</span>     <span class="c1">#  InvalidIndexError. Otherwise we fall through and re-raise</span>
-<span class="g g-Whitespace">   </span><span class="mi">3627</span>     <span class="c1">#  the TypeError.</span>
-<span class="g g-Whitespace">   </span><span class="mi">3628</span>     <span class="bp">self</span><span class="o">.</span><span class="n">_check_indexing_error</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-
-<span class="ne">KeyError</span>: &#39;price factor&#39;
-</pre></div>
+<p><strong>Optimal objective value:</strong> $208$ (in units of economy ticket price) <p><strong>Solution:</strong> <p></p>
+<p>| Variable | $F$ | $B$ | $E$
+| :--- | :--: | :--: | :--:
+| seat allocation| $10$| $20$| $150$
+| equivalent seat allocation| $20$| $30$| $150$
+| recourse sell action scenario 1| $10$| $20$| $150$
+| recourse sell action scenario 2| $10$| $20$| $150$
+| recourse sell action scenario 3| $5$| $10$| $150$</p>
 </div>
 </div>
-</div>
+</section>
+<section id="chance-constraints">
+<h2>Chance Constraints<a class="headerlink" href="#chance-constraints" title="Permalink to this headline">#</a></h2>
 <p>Assume now that the airline wishes a special guarantee for its clients enrolled in its loyalty program. In particular, it wants <span class="math notranslate nohighlight">\(98\%\)</span> probability to cover the demand of first-class seats and <span class="math notranslate nohighlight">\(95\%\)</span> probability to cover the demand of business class seats (by clients of the loyalty program). First-class passengers are covered if they get a first-class seat. Business class passengers are covered if they get either a business or a first-class seat (upgrade). Assume weekday demands of loyalty-program passengers are normally distributed, say <span class="math notranslate nohighlight">\(\xi_F \sim \mathcal N(16,16)\)</span> and <span class="math notranslate nohighlight">\(\xi_B \sim \mathcal N(30,48)\)</span> for first-class and business, respectively. Also assume that the demands for first-class and business class seats are independent.
 Let <span class="math notranslate nohighlight">\(x_1\)</span> be the number of first-class seats and <span class="math notranslate nohighlight">\(x_2\)</span> the number of business seats. The probabilistic constraints are simply</p>
 <div class="math notranslate nohighlight">
@@ -1166,87 +867,48 @@ Let <span class="math notranslate nohighlight">\(x_1\)</span> be the number of f
 <p>(b) Add to your implementation of the extensive form the two equivalent deterministic constraints corresponding to the two chance constraints and find the new optimal solution meeting these additional constraints. How is it different from the previous one?</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">airline_loyalty</span><span class="p">():</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">totalseats</span> <span class="o">=</span> <span class="mi">200</span>
-<span class="n">model</span><span class="o">.</span><span class="n">pricefactor_F</span> <span class="o">=</span> <span class="mf">3.0</span>
-<span class="n">model</span><span class="o">.</span><span class="n">pricefactor_B</span> <span class="o">=</span> <span class="mf">2.0</span>
-<span class="n">model</span><span class="o">.</span><span class="n">seatfactor_F</span> <span class="o">=</span> <span class="mf">2.0</span> 
-<span class="n">model</span><span class="o">.</span><span class="n">seatfactor_B</span> <span class="o">=</span> <span class="mf">1.5</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">airline</span><span class="p">()</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">loyaltyF</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">24.22</span><span class="p">)</span> <span class="c1">#loyalty constraint 1</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">loyaltyFB</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">59.16</span><span class="p">)</span>  <span class="c1">#loyalty constraint 2</span>
+    
+    <span class="k">return</span> <span class="n">m</span>
 
-<span class="c1"># first stage variables</span>
-<span class="n">model</span><span class="o">.</span><span class="n">seats</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span> 
+<span class="n">m</span> <span class="o">=</span> <span class="n">airline_loyalty</span><span class="p">()</span>
 
-<span class="c1"># first stage constraint</span>
-<span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsF</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">model</span><span class="o">.</span><span class="n">seatfactor_F</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsB</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">model</span><span class="o">.</span><span class="n">seatfactor_B</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsE</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">planeseats</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsF</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsB</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsE</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">totalseats</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">loyaltyF</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">24.22</span><span class="p">)</span> <span class="c1">#loyalty constraint 1</span>
-<span class="n">model</span><span class="o">.</span><span class="n">loyaltyFB</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">59.16</span><span class="p">)</span>  <span class="c1">#loyalty constraint 2</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">scenarios</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
-<span class="c1"># second stage variables (labelled as 1,2,3 depending on the scenario)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">sell</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">scenarios</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
-
-<span class="c1"># second stage constraints</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandF_1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">20</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitF_1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandF_2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitF_2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandF_3</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">5</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitF_3</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandB_1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">50</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitB_1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandB_2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">25</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitB_2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandB_3</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitB_3</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandE_1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">200</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitE_1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandE_2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">175</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitE_2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">])</span>
-<span class="n">model</span><span class="o">.</span><span class="n">demandE_3</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">150</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">limitE_3</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">])</span>
-
-<span class="k">def</span> <span class="nf">second_stage_profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="n">total_1</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">pricefactor_F</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">pricefactor_B</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">total_2</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">pricefactor_F</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">pricefactor_B</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
-    <span class="n">total_3</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">pricefactor_F</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">pricefactor_B</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">total_1</span> <span class="o">+</span> <span class="n">total_2</span> <span class="o">+</span> <span class="n">total_3</span><span class="p">)</span><span class="o">/</span><span class="mf">3.0</span>
-
-<span class="n">model</span><span class="o">.</span><span class="n">second_stage_profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="n">second_stage_profit</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">total_profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">second_stage_profit</span>
-
-<span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="n">total_profit</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-
-<span class="n">result</span> <span class="o">=</span> <span class="n">cbc_solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;**Solver status:** *</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="si">}</span><span class="s2">*&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;**Solution:**&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(seat allocation) $x_F = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $e_B = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $e_E = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(equivalent seat allocation) $e_F = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsF</span><span class="o">.</span><span class="n">expr</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $e_B = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsB</span><span class="o">.</span><span class="n">expr</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $e_E = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">equivalentseatsE</span><span class="o">.</span><span class="n">expr</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(recourse sell action scenario 1) $s_F = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $s_B = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $s_E = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(recourse sell action scenario 2) $s_F = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $s_B = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $s_E = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(recourse sell action scenario 3) $s_F = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $s_B = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$, $s_E = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;**Optimal objective value:** $</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$ (in units of economy ticket price)&quot;</span><span class="p">))</span>
+<span class="n">sout</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;**Optimal objective value:** $</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">total_expected_profit</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$ (in units of economy ticket price) &lt;p&gt;&quot;</span>
+<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;**Solution:** &lt;p&gt;&quot;</span>
+<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;| Variable &quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;| $</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">$ &quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
+<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| :--- &quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;| :--: &quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">))</span>
+<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| seat allocation&quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;| $</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="n">c</span><span class="p">]()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
+<span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| equivalent seat allocation&quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;| $</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">equivalent_seats</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">expr</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">scenarios</span><span class="p">:</span>
+    <span class="n">sout</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| recourse sell action scenario </span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">sout</span> <span class="o">+=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;| $</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">sell</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">]()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">$&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">classes</span><span class="p">)</span>
+    
+<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="n">sout</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<p><strong>Solver status:</strong> <em>ok, optimal</em></p>
-<p><strong>Solution:</strong></p>
-<p>(seat allocation) $x_F = 25$, $e_B = 35$, $e_E = 97$</p>
-<p>(equivalent seat allocation) $e_F = 50$, $e_B = 52$, $e_E = 97$</p>
-<p>(recourse sell action scenario 1) $s_F = 20$, $s_B = 35$, $s_E = 97$</p>
-<p>(recourse sell action scenario 2) $s_F = 10$, $s_B = 25$, $s_E = 97$</p>
-<p>(recourse sell action scenario 3) $s_F = 5$, $s_B = 10$, $s_E = 97$</p>
-<p><strong>Optimal objective value:</strong> $179$ (in units of economy ticket price)</p>
+<p><strong>Optimal objective value:</strong> $179$ (in units of economy ticket price) <p><strong>Solution:</strong> <p></p>
+<p>| Variable | $F$ | $B$ | $E$
+| :--- | :--: | :--: | :--:
+| seat allocation| $25$| $35$| $97$
+| equivalent seat allocation| $50$| $52$| $97$
+| recourse sell action scenario 1| $20$| $35$| $97$
+| recourse sell action scenario 2| $10$| $25$| $97$
+| recourse sell action scenario 3| $5$| $10$| $97$</p>
 </div>
 </div>
+</section>
+<section id="sample-average">
+<h2>Sample Average<a class="headerlink" href="#sample-average" title="Permalink to this headline">#</a></h2>
 <p>Assume now that the ticket demand for the three categories is captured by a <span class="math notranslate nohighlight">\(3\)</span>-dimensional multivariate normal with mean <span class="math notranslate nohighlight">\(\mu=(16,30,180)\)</span> and covariance matrix
 $<span class="math notranslate nohighlight">\(
 \Sigma= \left(
@@ -1327,7 +989,7 @@ $<span class="math notranslate nohighlight">\(
 
 <span class="n">N</span> <span class="o">=</span> <span class="mi">1000</span>
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">([</span><span class="mi">16</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">180</span><span class="p">],[[</span><span class="mf">3.5</span><span class="p">,</span> <span class="mf">3.7</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">],[</span><span class="mf">3.7</span><span class="p">,</span> <span class="mf">6.5</span><span class="p">,</span> <span class="mf">7.5</span><span class="p">],[</span><span class="mf">2.5</span><span class="p">,</span> <span class="mf">7.5</span><span class="p">,</span> <span class="mf">25.2</span><span class="p">]],</span> <span class="n">N</span><span class="p">)</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">([</span><span class="mi">16</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">180</span><span class="p">],</span> <span class="p">[[</span><span class="mf">3.5</span><span class="p">,</span> <span class="mf">3.7</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">],</span> <span class="p">[</span><span class="mf">3.7</span><span class="p">,</span> <span class="mf">6.5</span><span class="p">,</span> <span class="mf">7.5</span><span class="p">],</span> <span class="p">[</span><span class="mf">2.5</span><span class="p">,</span> <span class="mf">7.5</span><span class="p">,</span> <span class="mf">25.2</span><span class="p">]],</span> <span class="n">N</span><span class="p">)</span>
 <span class="n">AirlineSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">samples</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1377,10 +1039,10 @@ $<span class="math notranslate nohighlight">\(
             <p class="prev-next-title">10. Two Stage Problems</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="stochastic-farmer.html" title="next page">
+    <a class='right-next' id="next-link" href="farmer.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Stochastic Programming</p>
+        <p class="prev-next-title">Farmer’s problem and some of its variants</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>
