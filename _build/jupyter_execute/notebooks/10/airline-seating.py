@@ -23,7 +23,7 @@
 # 
 # (a) Implement and solve the extensive form of the stochastic program for the optimal seat allocation aiming to maximize the airline profit.
 
-# In[1]:
+# In[14]:
 
 
 # install Pyomo and solvers
@@ -40,7 +40,7 @@ helper.install_cbc()
 helper.install_ipopt()
 
 
-# In[4]:
+# In[15]:
 
 
 import pyomo.environ as pyo
@@ -58,7 +58,7 @@ ipopt_solver = pyo.SolverFactory('ipopt')
 
 # ## Model
 
-# In[6]:
+# In[16]:
 
 
 # seat data
@@ -76,7 +76,7 @@ scenario_data = {
 }
 
 
-# In[29]:
+# In[21]:
 
 
 def airline():
@@ -99,7 +99,7 @@ def airline():
     # first stage variables
     m.seats = pyo.Var(m.classes, domain=pyo.NonNegativeIntegers) 
 
-    @m.Expression(model.classes)
+    @m.Expression(m.classes)
     def equivalent_seats(m, c):
         return m.seats[c] * m.seat_factor[c]
 
@@ -131,22 +131,24 @@ def airline():
     
     return m
 
+def report(m):
 
-m = airline()
-result = pyo.SolverFactory('cbc').solve(m)
-
-sout = f"**Optimal objective value:** ${m.total_expected_profit():.0f}$ (in units of economy ticket price) <p>"
-sout += "**Solution:** <p>"
-sout += "\n\n"
-sout += "| Variable " + "".join(f"| ${c}$ " for c in m.classes)
-sout += "\n| :--- " + "".join(["| :--: "] * len(m.classes))
-sout += "\n| seat allocation" + "".join(f"| ${m.seats[c]():.0f}$" for c in m.classes)
-sout += "\n| equivalent seat allocation" + "".join(f"| ${m.equivalent_seats[c].expr():.0f}$" for c in m.classes)
-for s in model.scenarios:
-    sout += f"\n| recourse sell action scenario {s}"
-    sout += "".join(f"| ${m.sell[c, s]():.0f}$" for c in model.classes)
+    sout = f"**Optimal objective value:** ${m.total_expected_profit():.0f}$ (in units of economy ticket price) <p>"
+    sout += "**Solution:** <p>"
+    sout += "\n\n"
+    sout += "| Variable " + "".join(f"| ${c}$ " for c in m.classes)
+    sout += "\n| :--- " + "".join(["| :--: "] * len(m.classes))
+    sout += "\n| seat allocation" + "".join(f"| ${m.seats[c]():.0f}$" for c in m.classes)
+    sout += "\n| equivalent seat allocation" + "".join(f"| ${m.equivalent_seats[c].expr():.0f}$" for c in m.classes)
+    for s in m.scenarios:
+        sout += f"\n| recourse sell action scenario {s}"
+        sout += "".join(f"| ${m.sell[c, s]():.0f}$" for c in m.classes)
     
-display(Markdown(sout))
+    display(Markdown(sout))
+    
+m = airline()
+pyo.SolverFactory('cbc').solve(m)
+report(m)
 
 
 # ## Chance Constraints
@@ -166,7 +168,7 @@ display(Markdown(sout))
 # 
 # (b) Add to your implementation of the extensive form the two equivalent deterministic constraints corresponding to the two chance constraints and find the new optimal solution meeting these additional constraints. How is it different from the previous one?
 
-# In[32]:
+# In[23]:
 
 
 def airline_loyalty():
@@ -178,27 +180,14 @@ def airline_loyalty():
     return m
 
 m = airline_loyalty()
-
-
-result = pyo.SolverFactory('cbc').solve(m)
-
-sout = f"**Optimal objective value:** ${m.total_expected_profit():.0f}$ (in units of economy ticket price) <p>"
-sout += "**Solution:** <p>"
-sout += "\n\n"
-sout += "| Variable " + "".join(f"| ${c}$ " for c in m.classes)
-sout += "\n| :--- " + "".join(["| :--: "] * len(m.classes))
-sout += "\n| seat allocation" + "".join(f"| ${m.seats[c]():.0f}$" for c in m.classes)
-sout += "\n| equivalent seat allocation" + "".join(f"| ${m.equivalent_seats[c].expr():.0f}$" for c in m.classes)
-for s in model.scenarios:
-    sout += f"\n| recourse sell action scenario {s}"
-    sout += "".join(f"| ${m.sell[c, s]():.0f}$" for c in model.classes)
-    
-display(Markdown(sout))
+pyo.SolverFactory('cbc').solve(m)
+report(m)
 
 
 # ## Sample Average
 # 
 # Assume now that the ticket demand for the three categories is captured by a $3$-dimensional multivariate normal with mean $\mu=(16,30,180)$ and covariance matrix 
+# 
 # $$
 # \Sigma= \left(
 # \begin{array}{ccc}
@@ -211,7 +200,7 @@ display(Markdown(sout))
 # 
 # (c) Solve approximately the airline seat allocation problem (with the loyalty constraints) using the Sample Average Approximation method. More specifically, sample $N=1000$ points from the multivariate normal distribution and solve the extensive form for the stochastic LP resulting from those $N=1000$ scenarios.
 
-# In[33]:
+# In[19]:
 
 
 def AirlineSAA(N, sample):
