@@ -23,7 +23,7 @@
 # 
 # (a) Implement and solve the extensive form of the stochastic program for the optimal seat allocation aiming to maximize the airline profit.
 
-# In[28]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -38,7 +38,7 @@ helper.install_pyomo()
 helper.install_cbc()
 
 
-# In[57]:
+# In[2]:
 
 
 import pyomo.environ as pyo
@@ -48,33 +48,36 @@ import pandas as pd
 
 # ## Model
 
-# In[16]:
+# In[3]:
 
 
 # seat data
-seat_data = {
+seat_data = pd.DataFrame({
     "F": {"price factor": 3.0, "seat factor": 2.0},
     "B": {"price factor": 2.0, "seat factor": 1.5},
     "E": {"price factor": 1.0, "seat factor": 1.0},
-}
+}).T
 
 # scenario data
-scenario_data = {
+scenario_data = pd.DataFrame({
     1: {'F': 20, 'B': 50, 'E': 200},
     2: {'F': 10, 'B': 25, 'E': 175},
     3: {'F':  5, 'B': 10, 'E': 150}
-}
+}).T
+
+display(seat_data)
+display(scenario_data)
 
 
-# In[70]:
+# In[4]:
 
 
 def airline(total_seats, seat_data, scenario_data):
 
     m = pyo.ConcreteModel()
     
-    m.classes = pyo.Set(initialize=seat_data.keys())
-    m.scenarios = pyo.Set(initialize=scenario_data.keys())
+    m.classes = pyo.Set(initialize=seat_data.index)
+    m.scenarios = pyo.Set(initialize=scenario_data.index)
 
     # first stage variables and constraints
     
@@ -82,7 +85,7 @@ def airline(total_seats, seat_data, scenario_data):
 
     @m.Expression(m.classes)
     def equivalent_seats(m, c):
-        return m.seats[c] * seat_data[c]["seat factor"]
+        return m.seats[c] * seat_data.loc[c, "seat factor"]
 
     @m.Constraint()
     def plane_seats(m):
@@ -94,7 +97,7 @@ def airline(total_seats, seat_data, scenario_data):
 
     @m.Constraint(m.classes, m.scenarios)
     def demand(m, c, s):
-        return m.sell[c, s] <= scenario_data[s][c]
+        return m.sell[c, s] <= scenario_data.loc[s, c]
 
     @m.Constraint(m.classes, m.scenarios)
     def sell_limit(m, c, s):
@@ -104,7 +107,7 @@ def airline(total_seats, seat_data, scenario_data):
     
     @m.Expression()
     def second_stage_profit(m):
-        total =  sum(sum(m.sell[c, s] * seat_data[c]["price factor"] for s in m.scenarios) for c in m.classes)
+        total =  sum(sum(m.sell[c, s] * seat_data.loc[c, "price factor"] for s in m.scenarios) for c in m.classes)
         return total / len(m.scenarios)
 
     @m.Objective(sense=pyo.maximize)
@@ -120,7 +123,7 @@ def report_seats(m):
     seats["equivalent seat allocation"] = {c: m.equivalent_seats[c].expr() for c in m.classes}
     display(pd.DataFrame(seats).T)
     
-def report_sales(m):
+def report_scenarios(m):
     sales = {}
     for s in m.scenarios:
         sales[f"recourse sell action scenario {s}"] = {c: m.sell[c, s]() for c in m.classes} 
@@ -129,7 +132,7 @@ def report_sales(m):
 m = airline(200, seat_data, scenario_data)
 pyo.SolverFactory('cbc').solve(m)
 report_seats(m)
-report_sales(m)
+report_scenarios(m)
 
 
 # ## Chance Constraints
@@ -149,7 +152,7 @@ report_sales(m)
 # 
 # (b) Add to your implementation of the extensive form the two equivalent deterministic constraints corresponding to the two chance constraints and find the new optimal solution meeting these additional constraints. How is it different from the previous one?
 
-# In[71]:
+# In[5]:
 
 
 def airline_loyalty(total_seats, seat_data, scenario_data):
@@ -161,7 +164,7 @@ def airline_loyalty(total_seats, seat_data, scenario_data):
 m = airline_loyalty(200, seat_data, scenario_data)
 pyo.SolverFactory('cbc').solve(m)
 report_seats(m)
-report_sales(m)
+report_scenarios(m)
 
 
 # ## Sample Average
@@ -180,78 +183,17 @@ report_sales(m)
 # 
 # (c) Solve approximately the airline seat allocation problem (with the loyalty constraints) using the Sample Average Approximation method. More specifically, sample $N=1000$ points from the multivariate normal distribution and solve the extensive form for the stochastic LP resulting from those $N=1000$ scenarios.
 
-# In[65]:
+# In[6]:
 
-
-def airline_SAA(N, sample):
-
-    model = pyo.ConcreteModel()
-
-    def indices_rule(model):
-        return range(N)
-
-    model.scenarios = pyo.Set(initialize=indices_rule)
-    model.demandF = pyo.Param(model.scenarios, initialize=dict(enumerate(sample[:,0])))
-    model.demandB = pyo.Param(model.scenarios, initialize=dict(enumerate(sample[:,1])))
-    model.demandE = pyo.Param(model.scenarios, initialize=dict(enumerate(sample[:,2])))
-
-    model.classes = pyo.Set(initialize=['F', 'B', 'E'])
-    model.totalseats = 200
-    model.pricefactor_F = 3.0
-    model.pricefactor_B = 2.0
-    model.seatfactor_F = 2.0 
-    model.seatfactor_B = 1.5
-
-    # first stage variables
-    model.seats = pyo.Var(model.classes, within=pyo.NonNegativeIntegers) 
-
-    # first stage constraint
-    model.equivalentseatsF = pyo.Expression(expr=model.seats['F']*model.seatfactor_F)
-    model.equivalentseatsB = pyo.Expression(expr=model.seats['B']*model.seatfactor_B)
-    model.equivalentseatsE = pyo.Expression(expr=model.seats['E'])
-    model.planeseats = pyo.Constraint(expr=model.equivalentseatsF + model.equivalentseatsB + model.equivalentseatsE <= model.totalseats)
-    model.loyaltyF = pyo.Constraint(expr = model.seats['F'] >= 24.22)
-    model.loyaltyFB = pyo.Constraint(expr = model.seats['F']+model.seats['B'] >= 59.16)
-
-    # second stage variables
-    model.sell = pyo.Var(model.classes, model.scenarios, within=pyo.NonNegativeIntegers)
-
-    # second stage constraints
-    model.demandFlim = pyo.ConstraintList()
-    model.limitF = pyo.ConstraintList()
-    model.demandBlim = pyo.ConstraintList()
-    model.limitB = pyo.ConstraintList()
-    model.demandElim = pyo.ConstraintList()
-    model.limitE = pyo.ConstraintList()
-    for i in model.scenarios:
-        model.demandFlim.add(expr= model.sell['F',i] <= model.demandF[i])
-        model.limitF.add(expr= model.sell['F',i] <= model.seats['F'])
-        model.demandBlim.add(expr= model.sell['B',i] <= model.demandB[i])
-        model.limitB.add(expr= model.sell['B',i] <= model.seats['B'])
-        model.demandElim.add(expr= model.sell['E',i] <= model.demandE[i])
-        model.limitE.add(expr= model.sell['E',i] <= model.seats['E'])
-
-    def second_stage_profit(model):
-        return sum([model.sell['F',i] * model.pricefactor_F + model.sell['B',i] * model.pricefactor_B + model.sell['E',i] for i in model.scenarios])/float(N)
-
-    model.second_stage_profit = pyo.Expression(rule=second_stage_profit)
-
-    def total_profit(model):
-        return model.second_stage_profit
-
-    model.total_expected_profit = pyo.Objective(rule=total_profit, sense=pyo.maximize)
-
-    result = cbc_solver.solve(model)
-    display(Markdown(f"**Solver status:** *{result.solver.status}, {result.solver.termination_condition}*"))
-    display(Markdown(f"**Solution:**"))
-    display(Markdown(f"(seat allocation) $x_F = {model.seats['F'].value:.0f}$, $e_B = {model.seats['B'].value:.0f}$, $e_E = {model.seats['E'].value:.0f}$"))
-    display(Markdown(f"(equivalent seat allocation) $e_F = {model.equivalentseatsF.expr():.0f}$, $e_B = {model.equivalentseatsB.expr():.0f}$, $e_E = {model.equivalentseatsE.expr():.0f}$"))
-    display(Markdown(f"**Optimal objective value:** ${model.total_expected_profit():.0f}$ (in units of economy ticket price)"))
 
 N = 1000
 np.random.seed(1)
 samples = np.random.multivariate_normal([16, 30, 180], [[3.5, 3.7, 2.5], [3.7, 6.5, 7.5], [2.5, 7.5, 25.2]], N)
-AirlineSAA(N, samples)
+
+saa_data = pd.DataFrame(samples, columns=seat_data.index)
+m = airline_loyalty(200, seat_data, saa_data)
+pyo.SolverFactory('cbc').solve(m)
+report_seats(m)
 
 
 # In[ ]:
