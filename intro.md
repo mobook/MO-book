@@ -35,6 +35,6 @@ title     = "Data-Driven Mathematical Optimization in Python",
 author    = "Postek, Krzysztof and Zocca, Alessandro and Gromicho, Joaquim and Kantor, Jeffrey"
 year      = 2022,
 publisher = "Online",
-url       = "https://jckantor.github.io/MO-book/"
+url       = "https://mobook.github.io/MO-book/"
 }
 ```
