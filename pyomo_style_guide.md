@@ -83,7 +83,7 @@ Consistent with good programming practice, non-constant global parameters should
 
 Pyomo modelers may prefer to use native Python data structures rather declare and use instances of parameters created with the `pyo.Param()` class. In these cases, best practice is to limit the scope of parameters by constructing the model within a Python function, using the arguments of the function to provide a clear interface to the global scope.
 
-Pyomo parameter created with `pyo.Param()` localize parameter values to a specific model or block. By default, Pyomo parameters are immutable which assures their values will be consistent throughout the model construction and transformations. Parameters determining the size of index sets, or fixed upper and lower bounds on decision variables, are examples where using an immutable Pyomo is good practice.
+Pyomo parameters created with `pyo.Param()` localize parameter values to a specific model or block. By default, Pyomo parameters are immutable which assures their values will be consistent throughout the model construction and transformations. Parameters determining the size of index sets, or fixed upper and lower bounds on decision variables, are examples where using an immutable Pyomo parameter is good practice.
 
 Pyomo parameters created with `mutable=True` are used to build models that can be re-solved for parametric or sensitivity analysis.
 
@@ -109,7 +109,7 @@ The `pyo.ConstraintList()` class is useful for creating a collection of constrai
 
 #### Use decorators to improve readability
 
-Indexed Pyomo constraints are constructed by a rule.  When using `pyo.Constraint()`  rules are normally named by adding `_rule` as a suffix to the name of the associated constraint. For example, assuming model `m`  and the associated sets, parameters, and variables have been previously defined, 
+Indexed Pyomo constraints are constructed by a rule.  When using `pyo.Constraint()`, rules are normally named by adding `_rule` as a suffix to the name of the associated constraint. For example, assuming model `m`  and the associated sets, parameters, and variables have been previously defined, 
 
 ```python
 def new_constraint_rule(m, s):
@@ -151,9 +151,9 @@ def demand_constraint(model, dst):
   return sum(model.ship[src, dst] for dst in model.SOURCES) <= model.demand[dst]
 ```
 
-## Naming Conventions
+## Naming conventions
 
-The choice of constraint and variables names is important for readable Pyomo models. Good practice is to use descriptive lower case names with words separated by underscores consistent with PEP 8 recommendations. 
+The choice of constraint and variables names is important for readable Pyomo models. Good practice is to use descriptive lower case names with words separated by underscores consistent with [PEP 8](https://peps.python.org/pep-0008/) recommendations. 
 
 Pyomo models commonly use alternative conventions to enhance readability by visually distinguishing components of a model.
 
@@ -166,9 +166,11 @@ Complex models may require more descriptive names for readability.
 ### Set and RangeSet names may be all caps
 
 Consistent with common mathematical conventions in optimization modeling, use of upper-case names to denote Pyomo sets is an acceptable deviation from PEP style guidelines. Corresponding lower case name can then be used to denote elements of the set. For example, the objective
+
 $$
 \tau^\text{total} = \min \sum_{\text{machine} \in \text{MACHINES}} \tau^\text{finish}_\text{machine}
 $$
+
 may be implemented as
 
 ```python
@@ -195,7 +197,7 @@ As an exception for small tutorial examples where mathematical formulation accom
 
 $$
 \begin{aligned}
-& & f = \max_{x,  y}\quad & 3x + 4y\\
+& & f = \max_{x,  y}\quad & 40x + 30y\\
 \\
 & \text{subject to}
 \\
@@ -227,7 +229,7 @@ m.b = pyo.Constraint(expr = m.x + 2*m.y <= 15)
 m.pprint()
 ```
 
-This practice is generally discouraged. However, because the resulting models are not easily read without reference to the accompanying mathematical notes. Pyomo includes a `.doc`  attribute that can be used to document relationships between the Pyomo model and any reference materials.
+This practice is generally discouraged, because the resulting models are not easily read without reference to the accompanying mathematical notes. Pyomo includes a `.doc`  attribute that can be used to document relationships between the Pyomo model and any reference materials.
 
 ```python
 import pyomo.environ as pyo
@@ -251,7 +253,7 @@ m.pprint()
 
 ```
 
-## Data Styles and Conventions
+## Data styles and conventions
 
 Reading, manipulating, and writing data sets often consumes a considerable amount of time and coding in routine projects. Standardizing on a basic set of principles for organizing data can streamline coding and model development. Below we promote the use of [Tidy Data](https://vita.had.co.nz/papers/tidy-data.html) for managing data sets associated with Pyomo models.
 
@@ -279,7 +281,7 @@ scenarios = {
 
 Alternative structures may include nested lists, lists of dictionaries, or numpy arrays. In each case a single data will be referenced as `data[obs][var]` where `obs` identifies a particular observation or slice of observations, and `var` identifies a variable.  
 
-## Multi-dimensional or Multi-indexed Data
+## Multi-dimensional or multi-indexed data
 
 Pyomo models frequently require $n$-dimensional data, or data with $n$ indices. Following the principles of Tidy Data, variable values should appear in a single column, with additional columns to uniquely index each value.
 
