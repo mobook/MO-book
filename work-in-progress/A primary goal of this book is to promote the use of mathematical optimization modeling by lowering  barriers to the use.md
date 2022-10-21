@@ -1,2 +1,0 @@
-A primary goal of this book is to promote the use of mathematical optimization modeling by lowering  barriers to the use of high-quality, open-source software tools. For this purpose we have adopted the Python language and the extensive Python programming ecosystem of code libraries and software tools.  Key among them are the Pyomo libary for optimization, and the Pandas library for data management.
-
