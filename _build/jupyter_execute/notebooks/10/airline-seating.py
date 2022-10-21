@@ -14,7 +14,7 @@
 import requests
 import types
 
-url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+url = "https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py"
 helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
@@ -225,7 +225,7 @@ for c in m.classes:
 
 # ## Model 3. Sample Average Approximation
 # 
-# Now assume the ticket demand for the three categories is captured by a $3$-dimensional multivariate normal distribution mean $\mu=(\mu_F, \mu_B, \mu_E)$, variances $(\sigma_F^2, \sigma_B^2, \sigma_E^2)$, and symmetric correlation matrix 
+# Now assume the ticket demand for the three categories is captured by a $3$-dimensional multivariate normal distribution mean $\mu=(\mu_F, \mu_B, \mu_E)$, variances $(\sigma_F^2, \sigma_B^2, \sigma_E^2)$, and a symmetric correlation matrix 
 # 
 # $$
 # P = \left(
@@ -255,14 +255,13 @@ for c in m.classes:
 
 # ### Scenario Generation
 
-# In[424]:
+# In[459]:
 
 
 # create covariance matrix
 P = np.array([[1, 0.6, 0.2], [0.6, 1, 0.4], [0.2, 0.4, 1]])
 s = np.array(list(sigma.values()))
 S = np.diag(s) @ P @ np.diag(s)
-print(S)
 
 # create samples
 N = 1000
@@ -271,8 +270,14 @@ samples = np.random.multivariate_normal(list(mu), S, N).round()
 saa_data = pd.DataFrame(samples, columns=seat_data.index)
 saa_data[saa_data < 0] = 0
 saa_data.hist(bins=30, layout=(1, 3), figsize=(12, 3))
+
+print("\nsample means")
 print(saa_data.mean())
+
+print("\nsample standard deviations")
 print(saa_data.std())
+
+print("\nsample covariance")
 print(saa_data.cov())
 
 

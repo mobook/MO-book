@@ -54,7 +54,7 @@
 import requests
 import types
 
-url = "https://raw.githubusercontent.com/jckantor/MO-book/main/python/helper.py"
+url = "https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py"
 helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 

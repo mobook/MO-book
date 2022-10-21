@@ -8,7 +8,7 @@
 # The `import` statement is special... it imports programmer's wisdom!
 # The common usage is to acquire access to python packages.
 
-# In[1]:
+# In[3]:
 
 
 import sympy
@@ -73,7 +73,7 @@ import math
 
 # ### With $\pi$ as a number
 
-# In[2]:
+# In[4]:
 
 
 # x is a symbol and pi is a number
@@ -95,7 +95,7 @@ sol
 # 
 # You may recall that the sign of the second derivative tells you whether the root of the first derivative is a *maximum*, a *minimum* or a *saddle point*.
 
-# In[3]:
+# In[5]:
 
 
 opt = max(sol)
@@ -106,7 +106,7 @@ sympy.diff(hprime, x).subs(x,opt).evalf()
 
 # ### With $\pi$ as a symbol
 
-# In[4]:
+# In[6]:
 
 
 # now pi is a symbol, just like x
@@ -125,7 +125,7 @@ solution
 
 # ### From a symbolic $\pi$ to a numeric $\pi$
 
-# In[5]:
+# In[7]:
 
 
 s = max(solution.subs(pi, math.pi).evalf())
@@ -134,7 +134,7 @@ print(s)
 
 # ### A picture says more than thousand words
 
-# In[6]:
+# In[8]:
 
 
 import matplotlib.pyplot as plt
@@ -157,7 +157,7 @@ def plot_alice(h, s, start, stop, width=18, height=8):
     plt.show() 
 
 
-# In[7]:
+# In[9]:
 
 
 plot_alice( h, s, 0, 20 )
@@ -178,7 +178,7 @@ plot_alice( h, s, 0, 20 )
 # Note that [this notebook](https://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/01.02-Running-Pyomo-on-Google-Colab.ipynb) explains how to run `Pyomo` on Google Colab. 
 # For a complete overview please check the [cookbook](https://jckantor.github.io/ND-Pyomo-Cookbook/).
 
-# In[8]:
+# In[10]:
 
 
 import shutil
@@ -187,7 +187,7 @@ if not shutil.which('pyomo'):
     assert(shutil.which('pyomo'))
 
 
-# In[9]:
+# In[11]:
 
 
 import pyomo.environ as pyo
@@ -204,7 +204,7 @@ alice.pprint()
 
 # We will use `ipopt`. We refer again to [this notebook](https://nbviewer.jupyter.org/github/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/01.02-Running-Pyomo-on-Google-Colab.ipynb) explains how to run `Pyomo` **and how to install solvers** on Google Colab. For a complete overview please check the [cookbook](https://jckantor.github.io/ND-Pyomo-Cookbook/).
 
-# In[10]:
+# In[12]:
 
 
 import sys
@@ -213,7 +213,7 @@ if 'google.colab' in sys.modules:
     get_ipython().system('unzip -o -q ipopt-linux64')
 
 
-# In[11]:
+# In[13]:
 
 
 results = pyo.SolverFactory('ipopt').solve(alice)
