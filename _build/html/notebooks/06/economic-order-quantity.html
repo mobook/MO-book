@@ -840,10 +840,10 @@ title="Print to PDF"
 <section id="usage-notes">
 <h2>Usage notes<a class="headerlink" href="#usage-notes" title="Permalink to this headline">#</a></h2>
 <ul class="simple">
-<li><p>The notebook requires a solver that can handle a conic constraint. Pyomo provides direct interface to the commercial solvers Gurobi and Mosek that include conic solvers. Other nonlinear solvers may solve this problems using more general numerical techniques.</p></li>
-<li><p>On Google Colab use the <code class="docutils literal notranslate"><span class="pre">gurobi_direct</span></code> solver to use the demo version of Gurobi that is included with Google Colab. Note there are size limits for problems using the demo version of Gurobi.</p></li>
+<li><p>The notebook requires a solver that can handle a conic constraint. Pyomo provides a direct interface to the commercial solvers Gurobi and Mosek that include conic solvers. Other nonlinear solvers may solve this problems using more general techniques that are not specific to conic constraints.</p></li>
+<li><p>On Google Colab use the <code class="docutils literal notranslate"><span class="pre">gurobi_direct</span></code> solver to use the demo version of Gurobi that can be installed for Google Colab. Note there are size limits for problems using the demo version of Gurobi.</p></li>
 <li><p>For personal installations of Mosek or Gurobi (free licenses available for academic use), use <code class="docutils literal notranslate"><span class="pre">mosek_direct</span></code> or <code class="docutils literal notranslate"><span class="pre">gurobi_direct</span></code>.</p></li>
-<li><p>For use without Gurobi or Mosek, use the <code class="docutils literal notranslate"><span class="pre">ipopt</span></code> solver.</p></li>
+<li><p>If you do not have access to the Gurobi or Mosek, you can use the <code class="docutils literal notranslate"><span class="pre">ipopt</span></code> solver. Note, however, that <code class="docutils literal notranslate"><span class="pre">ipopt</span></code> is a general purpose interior point solver, and does not have algorithms specific to conic problems.</p></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -857,6 +857,8 @@ title="Print to PDF"
 
 <span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
 <span class="n">helper</span><span class="o">.</span><span class="n">install_mosek</span><span class="p">()</span>
+<span class="c1">#helper.install_gurobi()</span>
+<span class="c1">#helper.install_ipopt()</span>
 </pre></div>
 </div>
 </div>
@@ -872,11 +874,11 @@ mosek was previously installed
 <h2>EOQ Model<a class="headerlink" href="#eoq-model" title="Permalink to this headline">#</a></h2>
 <section id="classical-formulation-for-a-single-item">
 <h3>Classical formulation for a Single Item<a class="headerlink" href="#classical-formulation-for-a-single-item" title="Permalink to this headline">#</a></h3>
-<p>The economic order quantity (EOQ) is a classical problem in inventory management attributed in Ford Harris (1915). The problem is to find the size of a that minimizes the cost of maintaining that item in an inventory.</p>
-<p>The cost <span class="math notranslate nohighlight">\(f(x)\)</span> for maintaining an item in inventory given given an order size <span class="math notranslate nohighlight">\(x\)</span> is</p>
+<p>The economic order quantity (EOQ) is a classical problem in inventory management attributed to Ford Harris (1915). The problem is to find the order quantity that minimizes the cost of maintaining a specific item in inventory</p>
+<p>The cost for maintaining an item in inventory given an order size <span class="math notranslate nohighlight">\(x\)</span> is given by</p>
 <div class="math notranslate nohighlight">
 \[f(x) = \frac{h x}{2} + \frac{c d}{x}\]</div>
-<p>where <span class="math notranslate nohighlight">\(x\)</span> is the <span class="math notranslate nohighlight">\(h\)</span> is the annual cost of holding an item including any financing charges, <span class="math notranslate nohighlight">\(c\)</span> are the fixed costs of placing and receiving an order, and <span class="math notranslate nohighlight">\(d\)</span> is the annual demand. The factor <span class="math notranslate nohighlight">\(\frac{1}{2}\)</span> is a result of demand depletes the inventory at a constant rate over the year. The economic order quantity is the value of <span class="math notranslate nohighlight">\(x\)</span> minimizing <span class="math notranslate nohighlight">\(f(x)\)</span></p>
+<p>where <span class="math notranslate nohighlight">\(h\)</span> is the annual cost of holding an item including financing charges, <span class="math notranslate nohighlight">\(c\)</span> is the fixed cost of placing and receiving an order, and <span class="math notranslate nohighlight">\(d\)</span> is the annual demand. The factor <span class="math notranslate nohighlight">\(\frac{1}{2}\)</span> is a result of demand depletes the inventory at a constant rate over the year. The economic order quantity is the value of <span class="math notranslate nohighlight">\(x\)</span> that minimizes <span class="math notranslate nohighlight">\(f(x)\)</span></p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -921,7 +923,7 @@ f^{opt} &amp; = \sqrt{2 c d h}
            <span class="n">arrowprops</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">shrink</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">headwidth</span><span class="o">=</span><span class="mi">6</span><span class="p">))</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">eoq</span><span class="p">,</span> <span class="n">eoq</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">fopt</span><span class="p">,</span> <span class="n">fopt</span><span class="p">],</span> <span class="s1">&#39;r--&#39;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6000</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6000</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -929,10 +931,7 @@ f^{opt} &amp; = \sqrt{2 c d h}
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Optimal order size = 3651.5 items with cost 2738.61
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(0.0, 6000.0)
-</pre></div>
-</div>
-<img alt="../../_images/economic-order-quantity_3_2.png" src="../../_images/economic-order-quantity_3_2.png" />
+<img alt="../../_images/economic-order-quantity_3_1.png" src="../../_images/economic-order-quantity_3_1.png" />
 </div>
 </div>
 </section>
@@ -947,7 +946,7 @@ f^{opt} &amp; = \sqrt{2 c d h}
 x, y &amp; &gt; 0 \\
 \end{align*}
 \end{split}\]</div>
-<p>As the following diagrams the solution to this optimization problem.</p>
+<p>This constraint and the linear contours of the objective function are shown in the following diagrams. The solution of optimization problem occurs at a point where the constraint is tangent to  contours of the objective function.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -983,24 +982,20 @@ x, y &amp; &gt; 0 \\
 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">.0008</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;x = order size&#39;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;EOQ reformulation as linear objective with a hyperbolic constraint&quot;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;matplotlib.legend.Legend at 0x7f89d6f3e0a0&gt;
-</pre></div>
-</div>
-<img alt="../../_images/economic-order-quantity_5_1.png" src="../../_images/economic-order-quantity_5_1.png" />
+<img alt="../../_images/economic-order-quantity_5_0.png" src="../../_images/economic-order-quantity_5_0.png" />
 </div>
 </div>
 </section>
 </section>
 <section id="reformulating-eoq-as-a-linear-objective-with-second-order-cone-constraint">
 <h2>Reformulating EOQ as a linear objective with second order cone constraint<a class="headerlink" href="#reformulating-eoq-as-a-linear-objective-with-second-order-cone-constraint" title="Permalink to this headline">#</a></h2>
-<p>Given that a hyperbola results from the intersection of plane with cone, the hyperbola described by the constraint <span class="math notranslate nohighlight">\(x y \leq 1\)</span> invites the question of another reformulation of EOQ with a cone constraint.</p>
-<p>The following diagram draws the intersection of a plane with Lorenz cone. The Lorenz cone is define by</p>
+<p>In elementary geometry, a hyperbola can be constructed from the intersection of a linear plane with cone. For this application,  the hyperbola described by the constraint <span class="math notranslate nohighlight">\(x y \geq 1\)</span> invites the question of whether there is reformulation of EOQ that includes a cone constraint.</p>
+<p>The following diagram draws the intersection of a plane with Lorenz cone. The Lorenz cone is defined by</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
@@ -1032,7 +1027,7 @@ t &amp; \sim x + y
 <span class="n">w</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="n">n</span> <span class="o">=</span> <span class="mi">40</span>
 
-<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
 <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">t_max</span><span class="p">,</span> <span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
@@ -1074,11 +1069,18 @@ t &amp; \sim x + y
 
 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;u&#39;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;v&#39;</span><span class="p">);</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/economic-order-quantity_7_0.png" src="../../_images/economic-order-quantity_7_0.png" />
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(1.0, 4.0)
+</pre></div>
+</div>
+<img alt="../../_images/economic-order-quantity_7_1.png" src="../../_images/economic-order-quantity_7_1.png" />
 </div>
 </div>
 <p>The result is a reformulation of the EOQ problem as a second order conic program (SOCP).</p>
@@ -1212,7 +1214,7 @@ z &amp; = \sqrt{2} \\
 x, y &amp; &gt; 0 \\
 \end{align*}
 \end{split}\]</div>
-<p>which is demonstrated below. Note the improvement in accuracy of this calculation compared to the analytical solution. Also note the use of <code class="docutils literal notranslate"><span class="pre">.as_domain()</span></code> eliminates the need to specify a variable <span class="math notranslate nohighlight">\(z\)</span>.</p>
+<p>which is demonstrated below. Note the improvement in accuracy of this calculation compared to the previous solutions. Also note the use of <code class="docutils literal notranslate"><span class="pre">.as_domain()</span></code> eliminates the need to specify a variable <span class="math notranslate nohighlight">\(z\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
@@ -1577,153 +1579,153 @@ y_i &amp; \geq 0 &amp; \forall i\in 1, \dots, n \\
   <tbody>
     <tr>
       <th>product 000</th>
-      <td>150.5</td>
-      <td>3849.3</td>
+      <td>256.0</td>
+      <td>3854.9</td>
     </tr>
     <tr>
       <th>product 001</th>
-      <td>74.6</td>
-      <td>1907.3</td>
+      <td>82.2</td>
+      <td>1238.6</td>
     </tr>
     <tr>
       <th>product 002</th>
-      <td>149.9</td>
-      <td>3834.1</td>
+      <td>264.9</td>
+      <td>3989.3</td>
     </tr>
     <tr>
       <th>product 003</th>
-      <td>73.2</td>
-      <td>1872.2</td>
+      <td>92.6</td>
+      <td>1393.9</td>
     </tr>
     <tr>
       <th>product 004</th>
-      <td>120.9</td>
-      <td>3092.3</td>
+      <td>157.7</td>
+      <td>2374.7</td>
     </tr>
     <tr>
       <th>product 005</th>
-      <td>160.1</td>
-      <td>4095.3</td>
+      <td>306.6</td>
+      <td>4618.0</td>
     </tr>
     <tr>
       <th>product 006</th>
-      <td>160.6</td>
-      <td>4107.1</td>
+      <td>108.9</td>
+      <td>1639.6</td>
     </tr>
     <tr>
       <th>product 007</th>
-      <td>161.7</td>
-      <td>4136.1</td>
+      <td>139.6</td>
+      <td>2102.9</td>
     </tr>
     <tr>
       <th>product 008</th>
-      <td>154.8</td>
-      <td>3960.0</td>
+      <td>257.7</td>
+      <td>3881.1</td>
     </tr>
     <tr>
       <th>product 009</th>
-      <td>141.7</td>
-      <td>3624.1</td>
+      <td>271.5</td>
+      <td>4089.4</td>
     </tr>
     <tr>
       <th>product 010</th>
-      <td>94.0</td>
-      <td>2405.2</td>
+      <td>325.9</td>
+      <td>4908.1</td>
     </tr>
     <tr>
       <th>product 011</th>
-      <td>107.5</td>
-      <td>2750.6</td>
+      <td>221.6</td>
+      <td>3337.3</td>
     </tr>
     <tr>
       <th>product 012</th>
-      <td>112.2</td>
-      <td>2869.0</td>
+      <td>246.8</td>
+      <td>3717.4</td>
     </tr>
     <tr>
       <th>product 013</th>
-      <td>161.6</td>
-      <td>4134.9</td>
+      <td>201.4</td>
+      <td>3033.3</td>
     </tr>
     <tr>
       <th>product 014</th>
-      <td>76.7</td>
-      <td>1962.5</td>
+      <td>279.9</td>
+      <td>4215.6</td>
     </tr>
     <tr>
       <th>product 015</th>
-      <td>85.0</td>
-      <td>2174.2</td>
+      <td>136.6</td>
+      <td>2056.9</td>
     </tr>
     <tr>
       <th>product 016</th>
-      <td>173.8</td>
-      <td>4447.0</td>
+      <td>245.9</td>
+      <td>3702.9</td>
     </tr>
     <tr>
       <th>product 017</th>
-      <td>28.2</td>
-      <td>720.9</td>
+      <td>254.7</td>
+      <td>3835.4</td>
     </tr>
     <tr>
       <th>product 018</th>
-      <td>193.0</td>
-      <td>4936.8</td>
+      <td>317.8</td>
+      <td>4786.2</td>
     </tr>
     <tr>
       <th>product 019</th>
-      <td>191.4</td>
-      <td>4895.7</td>
+      <td>124.1</td>
+      <td>1868.2</td>
     </tr>
     <tr>
       <th>product 020</th>
-      <td>109.2</td>
-      <td>2792.7</td>
+      <td>219.6</td>
+      <td>3307.6</td>
     </tr>
     <tr>
       <th>product 021</th>
-      <td>106.4</td>
-      <td>2721.7</td>
+      <td>319.3</td>
+      <td>4808.2</td>
     </tr>
     <tr>
       <th>product 022</th>
-      <td>143.0</td>
-      <td>3658.2</td>
+      <td>280.3</td>
+      <td>4221.7</td>
     </tr>
     <tr>
       <th>product 023</th>
-      <td>162.9</td>
-      <td>4166.6</td>
+      <td>337.5</td>
+      <td>5083.4</td>
     </tr>
     <tr>
       <th>product 024</th>
-      <td>96.0</td>
-      <td>2455.3</td>
+      <td>186.4</td>
+      <td>2807.7</td>
     </tr>
     <tr>
       <th>product 025</th>
-      <td>141.8</td>
-      <td>3626.8</td>
+      <td>283.5</td>
+      <td>4270.0</td>
     </tr>
     <tr>
       <th>product 026</th>
-      <td>62.1</td>
-      <td>1588.7</td>
+      <td>58.0</td>
+      <td>873.9</td>
     </tr>
     <tr>
       <th>product 027</th>
-      <td>187.4</td>
-      <td>4792.6</td>
+      <td>321.9</td>
+      <td>4847.7</td>
     </tr>
     <tr>
       <th>product 028</th>
-      <td>188.9</td>
-      <td>4831.1</td>
+      <td>211.8</td>
+      <td>3189.9</td>
     </tr>
     <tr>
       <th>product 029</th>
-      <td>140.4</td>
-      <td>3591.8</td>
+      <td>129.2</td>
+      <td>1946.0</td>
     </tr>
   </tbody>
 </table>
@@ -1733,13 +1735,13 @@ y_i &amp; \geq 0 &amp; \forall i\in 1, \dots, n \\
 </section>
 <section id="bibliographic-notes">
 <h2>Bibliographic notes<a class="headerlink" href="#bibliographic-notes" title="Permalink to this headline">#</a></h2>
-<p>The original formulation and solution of the economic order quantity problem is attributed to Ford Harris, but in a curious twist has been <a class="reference external" href="https://pubsonline.informs.org/doi/abs/10.1287/mnsc.35.7.898">incorrectly cited ince 1931</a>. The correct citation is:</p>
+<p>The original formulation and solution of the economic order quantity problem is attributed to Ford Harris, but in a curious twist has been <a class="reference external" href="https://pubsonline.informs.org/doi/abs/10.1287/mnsc.35.7.898">cited incorrectly since 1931</a>. The correct citation is:</p>
 <blockquote>
 <div><p>Harris, F. W. (1915). Operations and Cost (Factory Management Series). A. W. Shaw Company, Chap IV, pp.48-52. Chicago.</p>
 </div></blockquote>
 <p>Harris later developed an extensive consulting business and the concept has become embedded in business practice for over 100 years. Harris’s single item model was later extended to multiple items sharing a resource constraint. There may be earlier citations, but this model is generally attributed to Ziegler (1982):</p>
 <blockquote>
-<div><p>Ziegler, H. (1982). Solving certain singly constrained convex optimization problems in production planning. Operations Research Letters, 1(6), 246-252.</p>
+<div><p>Ziegler, H. (1982). Solving certain singly constrained convex optimization problems in production planning. Operations Research Letters, 1(6), 246-252. <a class="reference external" href="https://www.sciencedirect.com/science/article/abs/pii/016763778290030X">https://www.sciencedirect.com/science/article/abs/pii/016763778290030X</a></p>
 </div></blockquote>
 <blockquote>
 <div><p>Bretthauer, K. M., &amp; Shetty, B. (1995). The nonlinear resource allocation problem. Operations research, 43(4), 670-683. <a class="reference external" href="https://www.jstor.org/stable/171693?seq=1">https://www.jstor.org/stable/171693?seq=1</a></p>

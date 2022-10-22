@@ -9,10 +9,10 @@
 # 
 # ## Usage notes
 # 
-# * The notebook requires a solver that can handle a conic constraint. Pyomo provides direct interface to the commercial solvers Gurobi and Mosek that include conic solvers. Other nonlinear solvers may solve this problems using more general numerical techniques. 
-# * On Google Colab use the `gurobi_direct` solver to use the demo version of Gurobi that is included with Google Colab. Note there are size limits for problems using the demo version of Gurobi.
+# * The notebook requires a solver that can handle a conic constraint. Pyomo provides a direct interface to the commercial solvers Gurobi and Mosek that include conic solvers. Other nonlinear solvers may solve this problems using more general techniques that are not specific to conic constraints. 
+# * On Google Colab use the `gurobi_direct` solver to use the demo version of Gurobi that can be installed for Google Colab. Note there are size limits for problems using the demo version of Gurobi.
 # * For personal installations of Mosek or Gurobi (free licenses available for academic use), use `mosek_direct` or `gurobi_direct`.
-# * For use without Gurobi or Mosek, use the `ipopt` solver.
+# * If you do not have access to the Gurobi or Mosek, you can use the `ipopt` solver. Note, however, that `ipopt` is a general purpose interior point solver, and does not have algorithms specific to conic problems.
 
 # In[1]:
 
@@ -27,19 +27,21 @@ exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
 helper.install_mosek()
+#helper.install_gurobi()
+#helper.install_ipopt()
 
 
 # ## EOQ Model
 # 
 # ### Classical formulation for a Single Item
 # 
-# The economic order quantity (EOQ) is a classical problem in inventory management attributed in Ford Harris (1915). The problem is to find the size of a that minimizes the cost of maintaining that item in an inventory. 
+# The economic order quantity (EOQ) is a classical problem in inventory management attributed to Ford Harris (1915). The problem is to find the order quantity that minimizes the cost of maintaining a specific item in inventory 
 # 
-# The cost $f(x)$ for maintaining an item in inventory given given an order size $x$ is
+# The cost for maintaining an item in inventory given an order size $x$ is given by
 # 
 # $$f(x) = \frac{h x}{2} + \frac{c d}{x}$$
 # 
-# where $x$ is the $h$ is the annual cost of holding an item including any financing charges, $c$ are the fixed costs of placing and receiving an order, and $d$ is the annual demand. The factor $\frac{1}{2}$ is a result of demand depletes the inventory at a constant rate over the year. The economic order quantity is the value of $x$ minimizing $f(x)$
+# where $h$ is the annual cost of holding an item including financing charges, $c$ is the fixed cost of placing and receiving an order, and $d$ is the annual demand. The factor $\frac{1}{2}$ is a result of demand depletes the inventory at a constant rate over the year. The economic order quantity is the value of $x$ that minimizes $f(x)$
 # 
 # $$
 # \begin{align*}
@@ -88,7 +90,7 @@ ax.annotate(f"EOQ = {eoq:0.2f}", xy=(eoq, 0), xytext=(1.2*eoq, 0.2*fopt),
            arrowprops=dict(facecolor="black", shrink=0.15, width=1, headwidth=6))
 ax.plot([eoq, eoq, 0], [0, fopt, fopt], 'r--')
 ax.set_xlim(0, 10000)
-ax.set_ylim(0, 6000)
+ax.set_ylim(0, 6000);
 
 
 # ### Reformulating EOQ as a linear objective with hyperbolic constraint
@@ -103,7 +105,7 @@ ax.set_ylim(0, 6000)
 # \end{align*}
 # $$
 # 
-# As the following diagrams the solution to this optimization problem.
+# This constraint and the linear contours of the objective function are shown in the following diagrams. The solution of optimization problem occurs at a point where the constraint is tangent to  contours of the objective function.
 # 
 
 # In[3]:
@@ -142,15 +144,14 @@ ax.set_xlim(0, 8000)
 ax.set_ylim(0, .0008)
 ax.set_xlabel('x = order size')
 ax.set_ylabel('y')
-ax.set_title("EOQ reformulation as linear objective with a hyperbolic constraint")
-ax.legend()
+ax.legend();
 
 
 # ## Reformulating EOQ as a linear objective with second order cone constraint
 # 
-# Given that a hyperbola results from the intersection of plane with cone, the hyperbola described by the constraint $x y \leq 1$ invites the question of another reformulation of EOQ with a cone constraint.
+# In elementary geometry, a hyperbola can be constructed from the intersection of a linear plane with cone. For this application,  the hyperbola described by the constraint $x y \geq 1$ invites the question of whether there is reformulation of EOQ that includes a cone constraint.
 # 
-# The following diagram draws the intersection of a plane with Lorenz cone. The Lorenz cone is define by
+# The following diagram draws the intersection of a plane with Lorenz cone. The Lorenz cone is defined by
 # 
 # $$
 # \begin{align*}
@@ -187,7 +188,7 @@ t_max = 4
 w = 2
 n = 40
 
-fig = plt.figure(figsize=(10, 10))
+fig = plt.figure(figsize=(10, 8))
 ax = plt.axes(projection='3d')
 
 for t in np.linspace(0, t_max, n+1):
@@ -229,6 +230,10 @@ ax.axis('off')
 
 ax.set_xlabel('u')
 ax.set_ylabel('v');
+
+ax.set_xlim(-3, 3)
+ax.set_ylim(-3, 3)
+ax.set_zlim(1, 4)
 
 
 # The result is a reformulation of the EOQ problem as a second order conic program (SOCP).
@@ -359,7 +364,7 @@ print(f"\nEOQ = {(m.t() + m.v())/2:0.2f}")
 # \end{align*}
 # $$
 # 
-# which is demonstrated below. Note the improvement in accuracy of this calculation compared to the analytical solution. Also note the use of `.as_domain()` eliminates the need to specify a variable $z$.
+# which is demonstrated below. Note the improvement in accuracy of this calculation compared to the previous solutions. Also note the use of `.as_domain()` eliminates the need to specify a variable $z$.
 
 # In[7]:
 
@@ -528,13 +533,13 @@ eoq_display_results(df_large, m)
 
 # ## Bibliographic notes
 # 
-# The original formulation and solution of the economic order quantity problem is attributed to Ford Harris, but in a curious twist has been [incorrectly cited ince 1931](https://pubsonline.informs.org/doi/abs/10.1287/mnsc.35.7.898). The correct citation is:
+# The original formulation and solution of the economic order quantity problem is attributed to Ford Harris, but in a curious twist has been [cited incorrectly since 1931](https://pubsonline.informs.org/doi/abs/10.1287/mnsc.35.7.898). The correct citation is:
 # 
 # >Harris, F. W. (1915). Operations and Cost (Factory Management Series). A. W. Shaw Company, Chap IV, pp.48-52. Chicago. 
 # 
 # Harris later developed an extensive consulting business and the concept has become embedded in business practice for over 100 years. Harris's single item model was later extended to multiple items sharing a resource constraint. There may be earlier citations, but this model is generally attributed to Ziegler (1982):
 # 
-# > Ziegler, H. (1982). Solving certain singly constrained convex optimization problems in production planning. Operations Research Letters, 1(6), 246-252.
+# > Ziegler, H. (1982). Solving certain singly constrained convex optimization problems in production planning. Operations Research Letters, 1(6), 246-252. https://www.sciencedirect.com/science/article/abs/pii/016763778290030X
 # 
 # > Bretthauer, K. M., & Shetty, B. (1995). The nonlinear resource allocation problem. Operations research, 43(4), 670-683. https://www.jstor.org/stable/171693?seq=1
 # 
