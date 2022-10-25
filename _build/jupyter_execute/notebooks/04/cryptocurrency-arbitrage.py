@@ -11,7 +11,7 @@
 # 
 # This notebook requires multiple libraries. The following cell performs the required installations for Google Colab. To run in your own environment you will need to install `pyomo`,`ccxt`, and `networkx` python libraries, and a linear solver for Pyomo.
 
-# In[2]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -26,7 +26,7 @@ helper.install_pyomo()
 helper.install_cbc()
 
 
-# In[3]:
+# In[2]:
 
 
 import os
@@ -45,7 +45,7 @@ import pyomo.environ as pyo
 # 
 # Cryptocurrency exchanges are digital marketplaces for buying and trading cryptocurrencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, to buy and sell currencies, and to use cryptocurrencies for financial transactions. The [open-source library `ccxt`](https://github.com/ccxt/ccxt) currently supports real-time APIs for the largest and most common exchanges on which cryptocurrencies are traded. Here we import the library and list current exchanges supported by `ccxt`.
 
-# In[5]:
+# In[3]:
 
 
 import ccxt
@@ -66,7 +66,7 @@ for i, exchange in enumerate(ccxt.exchanges):
 # 
 # 
 
-# In[9]:
+# In[4]:
 
 
 # global variables used in subsequent cells
@@ -144,7 +144,7 @@ print(f"Number of edges = {len(dg_symbols.edges()):3d}")
 # 
 # The following cell uses the `ccxt` library to fetch the highest bid and lowest ask from the order book for all trading symbols in a directed graph.
 
-# In[11]:
+# In[5]:
 
 
 import pandas as pd
@@ -220,7 +220,7 @@ display(order_book[['base', 'quote', 'bid_price', 'bid_volume', 'ask_price', 'as
 # 
 # The following cell creates a directed graph using data from an exchange order book.
 
-# In[12]:
+# In[6]:
 
 
 def order_book_to_dg(order_book):
@@ -294,7 +294,7 @@ draw_dg(dg_order_book, 0.05)
 # 
 # A brute force search over all simple cycles has complexity $(n + e)(c + 1)$ which is impractical for larger scale applications. A more efficient search based on Bellman-Ford is embedded in the NetworkX function [`negative_edge_cycle`](https://networkx.org/documentation/networkx-1.10/reference/generated/networkx.algorithms.shortest_paths.weighted.negative_edge_cycle.html) that returns a logical True if a negative cycle exists in a directed graph. 
 
-# In[13]:
+# In[7]:
 
 
 dg_order_book = order_book_to_dg(order_book)
@@ -303,7 +303,7 @@ nx.negative_edge_cycle(dg_order_book, weight="weight", heuristic=True)
 
 # ## Find Order Books that Demonstrate Arbitrage Opportunities
 
-# In[14]:
+# In[17]:
 
 
 from datetime import datetime
@@ -317,8 +317,8 @@ while time.time() <= timeout:
     order_book = fetch_order_book(dg_symbols)
     dg_order_book = order_book_to_dg(order_book)
     if nx.negative_edge_cycle(dg_order_book, weight="weight", heuristic=True):
-        print("arbitrage found")
-        fname = f"{exchange} orderbook {datetime.utcnow().strftime('%Y%m%d_%H:%M:%S')}.csv".replace(" ", "_")
+        print("arbitrage found!")
+        fname = f"{exchange} orderbook {datetime.utcnow().strftime('%Y%m%d_%H_%M_%S')}.csv".replace(" ", "_")
         order_book.to_csv(fname)
         print(f"order book saved to: {fname}")
         break

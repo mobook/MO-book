@@ -81,7 +81,7 @@ def BIM_with_revenues_over_costs():
 BIM_linear = BIM_with_revenues_minus_costs()
 results = pyo.SolverFactory('glpk').solve(BIM_linear)
 
-print('X=({:.1f},{:.1f}) value={:.3f} revenue={:.3f} cost={:.3f}'.format(
+print('x=({:.1f},{:.1f}) value={:.3f} revenue={:.3f} cost={:.3f}'.format(
     pyo.value(BIM_linear.x1),
     pyo.value(BIM_linear.x2),
     pyo.value(BIM_linear.profit),
@@ -95,7 +95,7 @@ print('X=({:.1f},{:.1f}) value={:.3f} revenue={:.3f} cost={:.3f}'.format(
 BIM_fractional = BIM_with_revenues_over_costs()
 results = pyo.SolverFactory('glpk').solve(BIM_fractional)
 t = pyo.value(BIM_fractional.t)
-print('X=({:.1f},{:.1f}) value={:.3f} revenue={:.3f} cost={:.3f}'.format(
+print('x=({:.1f},{:.1f}) value={:.3f} revenue={:.3f} cost={:.3f}'.format(
     pyo.value(BIM_fractional.y1/t),
     pyo.value(BIM_fractional.y2/t),
     pyo.value(BIM_fractional.profit/(BIM_fractional.variable_cost+BIM_fractional.fixed_cost*t)),

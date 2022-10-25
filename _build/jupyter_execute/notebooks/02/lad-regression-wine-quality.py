@@ -5,7 +5,7 @@
 # 
 # Regression is the task of fitting a model to data. If things go well, the model might provide useful predictions in response to new data. This notebook shows how linear programming and least absolute deviation (LAD) regression can be used to create a linear model for predicting wine quality based on physical and chemical properties. The example uses a well known data set from the machine learning community.
 
-# In[1]:
+# In[6]:
 
 
 # install Pyomo and solvers
@@ -26,7 +26,7 @@ helper.install_cbc()
 # 
 # Cortez, P., Cerdeira, A., Almeida, F., Matos, T., & Reis, J. (2009). Modeling wine preferences by data mining from physicochemical properties. Decision support systems, 47(4), 547-553. https://doi.org/10.1016/j.dss.2009.05.016
 
-# In[2]:
+# In[7]:
 
 
 import pandas as pd
@@ -39,24 +39,12 @@ display(wines)
 
 # ## Model Objective: Mean Absolute Deviation (MAD)
 # 
-# Given a n repeated observations of a response variable $y_i$ (in this wine quality), the **mean absolute deviation** (MAD) of $y_i$ from the mean value $\bar{y}$ is
+# Given $n$ repeated observations of a response variable $y_i$ (in this wine quality), the **mean absolute deviation** (MAD) of $y_i$ from the mean value $\bar{y}$ is
 # 
 # $$\text{MAD}\,(y) = \frac{1}{n} \sum_{i=1}^n | y_i - \bar{y}|$$
 # 
-# The goal of the regression is find coefficients $m_j$ and $b$ to minimize
-# 
-# $$
-# \begin{align*}
-# \text{MAD}\,(\hat{y}) & = \min \frac{1}{n} \sum_{i=1}^n | y_i - \hat{y}_i| \\
-# \\
-# \text{s. t.}\quad \hat{y}_i & = \sum_{j=1}^J x_{i, j} m_j + b & \forall i = 1, \dots, n\
-# \end{align*}
-# $$
-# 
-# where $x_{i, j}$ are values of 'explanatory' variables. A successful model would demonstrate a substantial reduction from $\text{MAD}\,(y)$ to $\text{MAD}\,(\hat{y})$. The value of $\text{MAD}\,(y)$ sets a benchmark for the regression.
-# 
 
-# In[3]:
+# In[8]:
 
 
 def MAD(df):
@@ -74,12 +62,14 @@ ax.axhline(wines["quality"].mean() - mad, color='g', lw=3)
 ax.legend(["y", "mean", "mad"])
 ax.set_xlabel("observation")
 
+plt.show()
+
 
 # ## A preliminary look at the data
 # 
 # The data consists of 1,599 measurements of eleven physical and chemical characteristics plus an integer measure of sensory quality recorded on a scale from 3 to 8. Histograms provides insight into the values and variability of the data set.
 
-# In[4]:
+# In[9]:
 
 
 fig, axes = plt.subplots(3, 4, figsize=(12, 8), sharey=True)
@@ -97,13 +87,13 @@ plt.tight_layout()
 # 
 # The art of regression is to identify the features that have explanatory value for a response of interest. This is where a person with deep knowledge of an application area, in this case an experienced onenologist will have a head start compared to the naive data scientist. In the absence of the experience, we proceed by examining the correlation among the variables in the data set.
 
-# In[5]:
+# In[10]:
 
 
 wines.corr()["quality"].plot(kind="bar", grid=True)
 
 
-# In[6]:
+# In[11]:
 
 
 wines[["volatile acidity", "density", "alcohol", "quality"]].corr()
@@ -123,7 +113,7 @@ wines[["volatile acidity", "density", "alcohol", "quality"]].corr()
 # 
 # This computation has been presented in a prior notebook.
 
-# In[7]:
+# In[12]:
 
 
 import pyomo.environ as pyo
@@ -172,7 +162,7 @@ print(m.mean_absolute_deviation())
 
 # This calculation is performed for all variables to determine which variables are the best candidates to explain deviations in wine quality.
 
-# In[8]:
+# In[13]:
 
 
 mad = (wines["alcohol"] - wines["alcohol"].mean()).abs().mean()
@@ -184,7 +174,7 @@ ax.axhline(mad, color='r', lw=3)
 ax.set_title('mean absolute deviation following regression')
 
 
-# In[9]:
+# In[14]:
 
 
 wines["prediction"] = [m.prediction[i]() for i in m.I]
@@ -193,14 +183,26 @@ wines["quality"].hist(label="data")
 wines.plot(x="quality", y="prediction", kind="scatter")
 
 
-# ## Multivariable Regression
+# ## Multivariate $L_1$-regression
 
-# In[10]:
+# Let us now perform a full multivariate $L_1$-regression on the wine dataset to predict the wine quality $y$ using the provided wine features. We aim to find the coefficients $m_j$'s and $b$ that minimize the mean absolute deviation (MAD) by solving the following problem:
+# 
+# $$
+# \begin{align*}
+# \text{MAD}\,(\hat{y}) = \min_{m, \, b} \quad & \frac{1}{n} \sum_{i=1}^n | y_i - \hat{y}_i| \\
+# \\
+# \text{s. t.}\quad & \hat{y}_i = \sum_{j=1}^J x_{i, j} m_j + b & \forall i = 1, \dots, n,
+# \end{align*}
+# $$
+# 
+# where $x_{i, j}$ are values of 'explanatory' variables, i.e., the 11 physical and chemical characteristics of the wines. By taking care of the absolute value appearing in the objective function, this can be implemented in Pyomo as an LP as follows:
+
+# In[20]:
 
 
 import pyomo.environ as pyo
 
-def l1_fit_2(df, y_col, x_cols):
+def l1_fit(df, y_col, x_cols):
 
     m = pyo.ConcreteModel("L1 Regression Model")
 
@@ -238,23 +240,25 @@ def l1_fit_2(df, y_col, x_cols):
     
     return m
 
-m = l1_fit_2(wines, "quality", 
+m = l1_fit(wines, "quality", 
                     ["alcohol", "volatile acidity", "citric acid", "sulphates", \
                      "total sulfur dioxide", "density", "fixed acidity"])
-print(m.mean_absolute_deviation())
+print("MAD =",m.mean_absolute_deviation(),"\n")
 
 for j in m.J:
     print(f"{j}  {m.a[j]()}")
+print("\n")
 
 wines["prediction"] = [m.prediction[i]() for i in m.I]
 wines["quality"].hist(label="data")
 
 wines.plot(x="quality", y="prediction", kind="scatter")
+plt.show()
 
 
 # ## How do these models perform?
 # 
-# The linear regression model clearly has some capability to explain the observed deviations in wine quality. Tabulating the results of the regression using the MAD statistic we find
+# A successful regression model would demonstrate a substantial reduction from $\text{MAD}\,(y)$ to $\text{MAD}\,(\hat{y})$. The value of $\text{MAD}\,(y)$ sets a benchmark for the regression. The linear regression model clearly has some capability to explain the observed deviations in wine quality. Tabulating the results of the regression using the MAD statistic we find
 # 
 # | Regressors | MAD |
 # | :--- | ---: |
@@ -263,9 +267,3 @@ wines.plot(x="quality", y="prediction", kind="scatter")
 # | all | 0.500 |
 # 
 # Are these models good enough to replace human judgment of wine quality? The reader can be the judge.
-
-# In[ ]:
-
-
-
-
