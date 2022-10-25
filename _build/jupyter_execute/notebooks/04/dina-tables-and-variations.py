@@ -239,7 +239,6 @@ Report( seatplan, results, int )
 # In[24]:
 
 
-
 get_ipython().run_line_magic('matplotlib', 'inline')
 
 # https://stackoverflow.com/questions/17687213/how-to-obtain-the-same-font-style-size-etc-in-matplotlib-output-as-in-latex

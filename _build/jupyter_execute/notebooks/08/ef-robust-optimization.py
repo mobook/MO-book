@@ -487,7 +487,10 @@ def AliceWithGammaUncertainty( delta, gamma, domain=pyo.NonNegativeReals ):
     Alice.z   = pyo.Var(trophies,domain=pyo.NonNegativeReals)
     Alice.lam = pyo.Var(domain=pyo.NonNegativeReals)
 
-    Alice.robustWood = pyo.Constraint(      expr = sum([wood[t]*Alice.x[t] for t in trophies])           + gamma * Alice.lam           + sum(Alice.z[t] for t in trophies) <= 4800)
+    Alice.robustWood = pyo.Constraint( \
+     expr = sum([wood[t]*Alice.x[t] for t in trophies]) \
+          + gamma * Alice.lam \
+          + sum(Alice.z[t] for t in trophies) <= 4800)
 
     def up_rule( model, t ):
         return model.z[t] >=  delta * model.x[t] - model.lam

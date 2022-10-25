@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # MAD Portfolio Optimization
+# # Mean Absolute Deviation (MAD) portfolio optimization
 # 
 # Portfolio optimization and modern portfolio theory has a long and important history in finance and investment. The principal idea is to find a blend of investments in financial securities that achieves  an optimal trade-off between financial risk and return. The introduction of modern portfolio theory is generally attributed to the 1952 doctoral thesis of [Harry Markowitz](https://en.wikipedia.org/wiki/Harry_Markowitz) who subsequently was award a share of the 1990 Nobel Memorial Prize in Economics for his fundamental contributions to this field. The well-known "Markowitz Model" models measure risk using covariance of the portfolio with respect to constituent assets, then solves a minimum variance problem by quadratic optimization problem subject to constraints to allocate of wealth among assets.
 # 
-# In a [remarkable 1991 paper, Konno and Yamazaki](https://www.jstor.org/stable/2632458?seq=1) proposed a different approach using the mean absolute deviation in portfolio return as a measure of financial risk. The proposed implementation directly incorporates historical price data into a large scale linear programming problem. 
+# In a [remarkable 1991 paper](https://www.jstor.org/stable/2632458?seq=1), Konno and Yamazaki proposed a different approach using the mean absolute deviation in portfolio return as a measure of financial risk. The proposed implementation directly incorporates historical price data into a large scale linear programming problem. 
 
 # In[1]:
 
@@ -22,7 +22,17 @@ helper.install_pyomo()
 helper.install_cbc()
 
 
-# In[2]:
+# ## Download historical stock data
+# 
+# The following cells download daily trading data for a group of the stocks from Yahoo Finance. The trading data is stored in a designated sub-directory (default `./data/stocks/`) as individual `.csv` files for each stock. Subsequent notebooks can read and consolidate the stock price data. 
+# 
+# Run the cells in the notebook once to create data sets for use by other notebook, or to refresh a previously stored set of data. The function will overwrite any existing data sets.
+
+# ### Installing and testing `pandas_datareader`
+# 
+# The notebook uses the `pandas_datareader` module to read data from Yahoo Finance. Web interfaces for financial services are notoriously fickle and subject to change, and a particular issue with Google Colaboratory. The following cell tests if `pandas_datareader` installed and functional. It will attempt to upgrade and restart the Python kernel. If you encounter repeated errors please report this as an issue for this notebook. 
+
+# In[3]:
 
 
 import matplotlib.dates as mdates
@@ -31,28 +41,10 @@ import numpy as np
 import pandas as pd
 import random
 import scipy.stats as stats
-
 import datetime as datetime
-
 import sys
 import os
 import glob
-
-import pyomo.environ as pyo
-
-
-# ## Download Historical Stock Data
-# 
-# The following cells download daily trading data for a group of the stocks from Yahoo Finance. The trading data is stored in a designated sub-directory (default `./data/stocks/`) as individual `.csv` files for each stock. Subsequent notebooks can read and consolidate the stock price data. 
-# 
-# Run the cells in the notebook once to create data sets for use by other notebook, or to refresh a previously stored set of data. The function will overwrite any existing data sets.
-
-# ### Installing and Testing `pandas_datareader`
-# 
-# The notebook uses the `pandas_datareader` module to read data from Yahoo Finance. Web interfaces for financial services are notoriously fickle and subject to change, and a particular issue with Google Colaboratory. The following cell tests if `pandas_datareader` installed and functional. It will attempt to upgrade and restart the Python kernel. If you encounter repeated errors please report this as an issue for this notebook. 
-
-# In[3]:
-
 
 # attempt to install. If not found then try install
 try:
@@ -72,7 +64,7 @@ except:
     
 
 
-# ### Stocks to Download
+# ### Stocks to download
 # 
 # Edit the following cell to download a list of stock symbols from Yahoo Finance,  `n_years` to change the historical period, or change the data directory.
 
@@ -80,7 +72,9 @@ except:
 
 
 # list of stock symbols
-assets = ['AXP', 'AAPL', 'AMGN', 'BA', 'CAT', 'CRM', 'CSCO', 'CVX', 'DIS', 'DOW',          'GS', 'HD', 'IBM', 'INTC', 'JNJ', 'JPM', 'KO', 'MCD', 'MMM', 'MRK',          'MSFT', 'NKE', 'PG','TRV', 'UNH', 'V', 'VZ', 'WBA', 'WMT', 'XOM']
+assets = ['AXP', 'AAPL', 'AMGN', 'BA', 'CAT', 'CRM', 'CSCO', 'CVX', 'DIS', 'DOW', \
+         'GS', 'HD', 'IBM', 'INTC', 'JNJ', 'JPM', 'KO', 'MCD', 'MMM', 'MRK', \
+         'MSFT', 'NKE', 'PG','TRV', 'UNH', 'V', 'VZ', 'WBA', 'WMT', 'XOM']
 
 # number of years
 n_years = 3.0
@@ -120,7 +114,7 @@ for s in assets:
     
 
 
-# ## Daily Return and Mean Absolute Deviation of Historical Asset Prices
+# ## Daily return and Mean Absolute Deviation of historical asset prices
 
 # ### Read historical asset prices
 # 
@@ -147,7 +141,7 @@ assets.plot(logy=True, figsize=(12, 8), grid=True, lw=1, title="Adjusted Close")
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 
 
-# ### Scaled Asset Prices
+# ### Scaled asset prices
 # 
 # The historical prices are scaled to a value to have unit value at the start of the historical period. Scaling facilitates plotting and subsequent calculations while preserving arithmetic and logarithmic returns needed for analysis. 
 
@@ -160,7 +154,7 @@ assets_scaled.plot(figsize=(12, 8), grid=True, lw=1, title="Adjusted Close: Scal
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 
 
-# ### Statistics of Daily Returns
+# ### Statistics of daily returns
 # 
 # The scaled price of asset $j$ on trading day $t$ is designated $S_{j, i}$. The daily return is computed as
 # 
@@ -252,7 +246,7 @@ ax.set_ylabel('Mean Daily Return')
 ax.grid(True)
 
 
-# ## Analysis of a Portfolio of Assets
+# ## Analysis of a portfolio of assets
 
 # ### Return on a portfolio
 # 
@@ -296,7 +290,7 @@ ax.grid(True)
 # 
 # on a single interval extending from $t$ to $t + \delta t$.
 
-# ### Mean Absolute Deviation in Portfolio Returns
+# ### Mean Absolute Deviation in portfolio returns
 # 
 # The return on a portfolio of $J$ assets over a period of $T$ intervals with weights $w_j$ for asset $j$ is given by
 # 
@@ -308,7 +302,7 @@ ax.grid(True)
 # 
 # where $r_{t, j}$ is the return on asset $j$ at time $t$, $\bar{r}_j$ is the mean return for asset $j$, and $w_j$ is the fraction of the total portfolio that is invested in asset $j$. Note that due to the use of absolute values, MAD for the portfolio is *not* the weighted sum of $\text{MAD}_j$ for individual assets
 
-# ## MAD Portfolio Optimization
+# ## MAD portfolio optimization
 # 
 # The portfolio optimization problem is to find an allocation of investments weights $w_j$ to minimize the portfolio measure of risk subject to constraints on required return and any other constraints an investor wishes to impose. Assume that we can make investment decisions at every trading day $t$ over a fixed time horizon ranging from $t=1,\dots,T$ and that there is a set of $J$ assets in which we can choose to invest."
 # 
@@ -341,7 +335,7 @@ ax.grid(True)
 # $$
 # 
 
-# ## Pyomo Model
+# ## Pyomo model
 
 # In[12]:
 
@@ -433,7 +427,7 @@ pyo.SolverFactory('cbc').solve(m)
 mad_visualization(assets, m)
 
 
-# ## MAD Risk versus Return
+# ## MAD risk versus return
 # 
 # The portfolio optimization problem has been formulated as the minimization of a risk measure, MAD, subject to a lower bound $R$ on mean portfolio return. Increasing the required return for the portfolio therefore comes at the cost of tolerating a higher level of risk. Finding the optimal trade off between risk and return is a central aspect of any investment strategy.
 # 
@@ -595,7 +589,7 @@ pyo.SolverFactory('cbc').solve(m)
 mad_visualization(assets, m)
 
 
-# ## MAD Risk versus return with a risk-free asset 
+# ## MAD risk versus return with a risk-free asset 
 # 
 # As above, it is instructive to plot the MAD risk versus required return $R$. The result is similar, but not exactly the same, as  the standard presentation from modern portfolio theory (MPT) for efficient frontier of investing, and the capital market line. A careful look at the the plot below shows minor difference at very high levels of return and risk that departs from the MPT analysis. 
 
