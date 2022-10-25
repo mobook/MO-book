@@ -1,4 +1,4 @@
-# Pyomo Style Guide
+# Appendix: Pyomo style guide
 
 This style guide supports the development and deployment of consistent, readable, and maintainable Pyomo code for modeling and optimization. These guidelines supplement standard Python style guides conventions, such as [PEP 8](https://www.python.org/dev/peps/pep-0008/), with specific recommendations for Pyomo. Comments and suggestions are welcome.
 

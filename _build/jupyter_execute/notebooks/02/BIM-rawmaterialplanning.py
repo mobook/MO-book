@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Optimal raw material acquisition planning for BIM based on demand forecasts
+# # Optimal material acquisition and production planning using demand forecasts
 # 
 # This example is a continuation of the BIM chip production problem illustrated [here](bim base url). Recall hat BIM produces logic and memory chips using copper, silicon, germanium, and plastic and that each chip requires the following quantities of raw materials:
 # 
@@ -44,7 +44,7 @@
 # 
 # Let us model the material acquisition planning and solve it optimally based on the forecasted chip demand above.
 
-# In[30]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -61,7 +61,7 @@ helper.install_cbc()
 
 # Let us import both the price and forecast chip demand as Pandas dataframes.
 
-# In[31]:
+# In[2]:
 
 
 import numpy as np
@@ -87,7 +87,7 @@ price
 
 # We can also add a small dataframe with the consumptions and obtain the monthly demand for each raw material using a simple matrix multiplication.
 
-# In[32]:
+# In[3]:
 
 
 use = dict()
@@ -142,13 +142,13 @@ demand
 # 
 # Here is the Pyomo implementation of this LP.
 
-# In[33]:
+# In[4]:
 
 
 import pyomo.environ as pyo
 
 def ShowTableOfPyomoVariables( X, I, J ):
-    return pd.DataFrame.from_records( [ [ pyo.value( X[i,j] ) for j in J ] for i in I ], index=I, columns=J )
+    return pd.DataFrame.from_records( [ [ pyo.value( X[i,j] ) for j in J ] for i in I ], index=I, columns=J ).round(decimals = 2)
 
 def BIMProductAcquisitionAndInventory( demand, acquisition_price, existing, desired, stock_limit, month_budget ):
     m = pyo.ConcreteModel( 'BIM product acquisition and inventory' )
@@ -214,7 +214,7 @@ def BIMProductAcquisitionAndInventory( demand, acquisition_price, existing, desi
 
 # We now can create an instance of the model using the provided data and solve it.
 
-# In[34]:
+# In[5]:
 
 
 budget = 5000
@@ -238,7 +238,7 @@ plt.show()
 
 # Here is a different solution corresponding to the situation where the budget is much lower, namely 2000.
 
-# In[35]:
+# In[6]:
 
 
 budget = 2000
@@ -270,7 +270,7 @@ plt.show()
 # 
 # We can create a more parsimonious model with fewer variabels by getting rid of the auxiliary variables $s_{pt}$. Here is the corresponding implementation in Pyomo:
 
-# In[36]:
+# In[7]:
 
 
 def BIMProductAcquisitionAndInventory_v2( demand, acquisition_price, existing, desired, stock_limit, month_budget ):
@@ -339,7 +339,7 @@ def BIMProductAcquisitionAndInventory_v2( demand, acquisition_price, existing, d
     return m
 
 
-# In[37]:
+# In[8]:
 
 
 m = BIMProductAcquisitionAndInventory_v2( demand, price, 
