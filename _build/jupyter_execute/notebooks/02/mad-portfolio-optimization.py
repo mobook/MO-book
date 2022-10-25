@@ -302,7 +302,7 @@ ax.grid(True)
 # 
 # $$
 # \begin{align*}
-# \text{MAD} & =  \frac{1}{T} \sum_{t=1}^T \left| \sum_{j=1}^J w_{j} (r_{t, j} - \bar{r}_j) \right|
+# \text{MAD} & =  \frac{1}{T} \sum_{t=1}^T \Big| \sum_{j=1}^J w_{j} (r_{t, j} - \bar{r}_j) \Big|,
 # \end{align*}
 # $$
 # 
@@ -314,28 +314,29 @@ ax.grid(True)
 # 
 # $$
 # \begin{align*}
-# \text{MAD} \qquad \min\ & \frac{1}{T} \sum_{t=1}^T \left| \sum_{j=1}^J w_{j} (r_{t, j} - \bar{r}_j) \right| \\
-# \\
-# \sum_{j=1}^J w_j \bar{r}_j  & \geq R \\
-# \sum_{j=1}^J w_j & = 1 \\
-# w_j & \geq 0 & \forall j\in 1,\dots, J \\
-# w_j & \leq w^{ub}_j & \forall j\in 1, \dots, J \\
+#     \text{MAD} = \min \quad & \frac{1}{T} \sum_{t=1}^T \Big| \sum_{j=1}^J w_{j} (r_{t, j} - \bar{r}_j) \Big| \\
+#     \text{s.t.} \quad 
+#     & \sum_{j=1}^J w_j \bar{r}_j  \geq R \\
+#     & \sum_{j=1}^J w_j  = 1 \\
+#     & w_j  \geq 0 & \forall \, j\in J\\
+#     & w_j  \leq w^{ub}_j & \forall \, j\in J.
 # \end{align*}
 # $$
 # 
 # where $R$ is the minimum required portfolio return. The lower bound $w_j \geq 0$ is a "no short sales" constraint. The upper bound $w_j \leq w^{ub}_j$ enforces a required level of diversification in the portfolio. 
 # 
-# Defining $u_t \geq 0$ and $v_t \geq 0$ leads to a reformulation of the 
+# Defining two sets of auxiliary variables $u_t \geq 0$ and $v_t \geq 0$ for every $t=1,\dots,T$, leads to a reformulation of the problem as an LP:
 # 
 # $$
 # \begin{align*}
-# \text{MAD} \qquad \min\ & \frac{1}{T} \sum_{t=1}^T (u_t + v_t) \\
-# \\
-# u_t - v_t & = \sum_{j=1}^J w_j(r_{t,j} - \bar{r}_j) & \forall t\in 1, \dots, T \\
-# \sum_{j=1}^J w_j \bar{r}_j  & \geq R \\
-# \sum_{j=1}^J w_j & = 1 \\
-# w_j & \geq 0 & \forall j\in 1,\dots, J \\
-# w_j & \leq w^{ub}_j & \forall j\in 1, \dots, J \\
+#     \text{MAD} = \min \quad & \frac{1}{T} \sum_{t=1}^T (u_t + v_t) \\
+#     \text{s.t.} \quad 
+#     & u_t - v_t  = \sum_{j=1}^J w_j(r_{t,j} - \bar{r}_j) & \forall t\in 1, \dots, T \\
+#     & \sum_{j=1}^J w_j \bar{r}_j  \geq R \\
+#     & \sum_{j=1}^J w_j = 1 \\
+#     & w_j  \geq 0 & \forall \, j\in J\\
+#     & w_j  \leq w^{ub}_j & \forall \, j\in J\\
+#     & u_t, v_t \geq 0 &t = 1, \dots, T.
 # \end{align*}
 # $$
 # 
@@ -472,34 +473,33 @@ for R in np.linspace(0, mean_return.max(), 20):
 
 # ## Addition of a Risk-free Asset
 # 
-# The option of a holding a risk-free asset as a component of investment can substantially reduce financial risk. The risk-free asset is designated as $j=0$ with a fixed return $\bar{r}_0$. The fraction invested in asset $j=0$ will be $w_0 = 1 - \sum_{j=1}^J w_j$.
-# 
-# The optimization model becomes
+# The option of a holding a risk-free asset as a component of investment can substantially reduce financial risk. The risk-free asset is designated as $j=0$ with a fixed return $\bar{r}_0$. The fraction invested in asset $j=0$ will be $w_0 = 1 - \sum_{j=1}^J w_j$. The optimization model becomes
 # 
 # $$
 # \begin{align*}
-# \text{MAD} \qquad \min\ & \frac{1}{T} \sum_{t=1}^T \left| \sum_{j=1}^J w_{j} (r_{t, j} - \bar{r}_j) \right| \\
-# \\
-# \sum_{j=1}^J w_j (\bar{r}_j - \bar{r}_0)  & \geq R - \bar{r}_0 \\
-# \sum_{j=1}^J w_j & \leq 1 \\
-# w_j & \geq 0 & \forall j\in 1,\dots, J \\
-# w_j & \leq w^{ub}_j & \forall j\in 1, \dots, J \\
+# \text{MAD} = \min \quad & \frac{1}{T} \sum_{t=1}^T \Big| \sum_{j=1}^J w_{j} (r_{t, j} - \bar{r}_j) \Big| \\
+# \text{s.t.} \quad 
+#     & \sum_{j=1}^J w_j (\bar{r}_j - \bar{r}_0) \geq R - \bar{r}_0 \\
+#     & \sum_{j=1}^J w_j \leq 1 \\
+#     & w_j \geq 0 & \forall j\in 1,\dots, J \\
+#     & w_j \leq w^{ub}_j & \forall j\in 1, \dots, J \\
 # \end{align*}
 # $$
 # 
 # where $R$ is the minimum required portfolio return. The lower bound $w_j \geq 0$ is a "no short sales" constraint. The upper bound $w_j \leq w^{ub}_j$ enforces a required level of diversification in the portfolio. 
 # 
-# Defining $u_t \geq 0$ and $v_t \geq 0$ leads to a reformulation of the 
+# Defining two sets of auxiliary variables $u_t \geq 0$ and $v_t \geq 0$ for every $t=1,\dots,T$, leads to a reformulation of the problem as an LP:
 # 
 # $$
 # \begin{align*}
-# \text{MAD} \qquad \min\ & \frac{1}{T} \sum_{t=1}^T (u_t + v_t) \\
-# \\
-# u_t - v_t & = \sum_{j=1}^J w_j(r_{t,j} - \bar{r}_j) & \forall t\in 1, \dots, T \\
-# \sum_{j=1}^J w_j (\bar{r}_j - \bar{r}_0)  & \geq R - \bar{r}_0 \\
-# \sum_{j=1}^J w_j & \leq 1 \\
-# w_j & \geq 0 & \forall j\in 1,\dots, J \\
-# w_j & \leq w^{ub}_j & \forall j\in 1, \dots, J \\
+# \text{MAD} = \min \quad & \frac{1}{T} \sum_{t=1}^T (u_t + v_t) \\
+# \text{s.t.} \quad 
+#     & u_t - v_t = \sum_{j=1}^J w_j(r_{t,j} - \bar{r}_j) & \forall t\in 1, \dots, T \\
+#     & \sum_{j=1}^J w_j (\bar{r}_j - \bar{r}_0) \geq R - \bar{r}_0 \\
+#     & \sum_{j=1}^J w_j \leq 1 \\
+#     & w_j \geq 0 & \forall j\in 1,\dots, J \\
+#     & w_j \leq w^{ub}_j & \forall j\in 1, \dots, J \\
+#     & u_t, v_t \geq 0 & \forall t\in 1, \dots, T.
 # \end{align*}
 # $$
 # 
@@ -628,10 +628,4 @@ for color, m in zip(['ro', 'go'], [mad_portfolio(assets), mad_portfolio_cash(ass
         portfolio_mean_return = portfolio_returns.mean()
         portfolio_mean_absolute_deviation = abs(portfolio_returns - portfolio_mean_return).mean()
         ax.plot(portfolio_mean_absolute_deviation, portfolio_mean_return, color, ms=10)
-
-
-# In[ ]:
-
-
-
 
