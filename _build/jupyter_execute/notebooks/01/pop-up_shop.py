@@ -230,11 +230,11 @@ print("Expected Profit:", m.EV())
 # 
 # $$
 # \begin{align*}
-# \text{EVPI} = & \max_{x_s, y_s} \mathbb E[f] = \sum_{s\in S} p_s f_s \\
-# \text{subject to:} \\
-# f_s & = r y_s + w(x_s - y_s) - c x_s & \forall s \in S\\
-# y_s & \leq x_s & \forall s \in S \\
-# y_s & \leq d_s & \forall s \in S
+# \text{EVPI} =  \max_{x_s, y_s} \quad & \mathbb E[f] = \sum_{s\in S} p_s f_s \\
+# \text{s.t.} \quad
+# & f_s = r y_s + w(x_s - y_s) - c x_s & \forall s \in S\\
+# & y_s \leq x_s & \forall s \in S \\
+# & y_s \leq d_s & \forall s \in S
 # \end{align*}
 # $$
 # 

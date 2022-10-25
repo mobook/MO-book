@@ -3,7 +3,7 @@
 
 # # Optimal material acquisition and production planning using demand forecasts
 # 
-# This example is a continuation of the BIM chip production problem illustrated [here](bim base url). Recall hat BIM produces logic and memory chips using copper, silicon, germanium, and plastic and that each chip requires the following quantities of raw materials:
+# This example is a continuation of the BIM chip production problem illustrated [here](bim.ipynb). Recall hat BIM produces logic and memory chips using copper, silicon, germanium, and plastic and that each chip requires the following quantities of raw materials:
 # 
 # | chip   | copper | silicon | germanium | plastic |
 # |:-------|-------:|--------:|----------:|--------:|

@@ -18,7 +18,7 @@ helper.install_pyomo()
 helper.install_glpk()
 
 
-# Recall the BIM production model introduced earlier [here](BIM.ipynb), that is
+# Recall the BIM production model introduced earlier [here](bim.ipynb), that is
 # 
 # $$
 # \begin{array}{rrcrclr}
@@ -29,7 +29,7 @@ helper.install_glpk()
 #         &       &   &  x_2 & \leq & 1500 &\text{(germanium)}\\
 #         &   x_1 & + &  x_2 & \leq & 1750 &\text{(plastic)}\\
 #         &  4x_1 & + & 2x_2 & \leq & 4800 &\text{(copper)}\\
-#         &   x_1 & , &  x_2 & \geq & 0    \\
+#         &   x_1 & , &  x_2 & \geq & 0.
 # \end{array}
 # $$
 # 

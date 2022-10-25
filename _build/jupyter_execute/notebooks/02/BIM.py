@@ -21,6 +21,7 @@ helper.install_cbc()
 # ## General LP formulation
 # 
 # The simplest and most scalable class of optimization problems is the one where the objective function and the constraints are formulated using the simplest possible type of functions - linear functions. A **linear program (LP)** is an optimization problem of the form
+# 
 # $$
 # \begin{align*}
 #     \min \quad & c^\top x\\
@@ -28,6 +29,7 @@ helper.install_cbc()
 #     & x \geq 0, \nonumber 
 # \end{align*}
 # $$
+# 
 # where the $n$ (decision) variables are grouped in a vector $x \in \mathbb{R}^n$, $c \in \mathbb{R}^n$ are the objective coefficients, and the $m$ linear constraints are described by the matrix $A \in \mathbb{R}^{m \times n}$ and the vector $b \in \mathbb{R}^m$. 
 # 
 # Of course, linear problems could also (i) be maximization problems, (ii) involve equality constraints and constraints of the form $\geq$, and (iii) have unbounded or non-positive decision variables $x_i$'s. In fact, any LP problem with such features can be easily converted to the 'canonical' LP form by adding/removing variables and/or multiplying specific inequalities by $-1$.
@@ -45,12 +47,14 @@ helper.install_cbc()
 #     &       &   &  x_2 & \leq & 1500 &\text{(germanium)}\\
 #     &   x_1 & + &  x_2 & \leq & 1750 &\text{(plastic)}\\
 #     &  4x_1 & + & 2x_2 & \leq & 4800 &\text{(copper)}\\
-#     &   x_1 & , &  x_2 & \geq & 0.    \\
+#     &   x_1 & , &  x_2 & \geq & 0.    
 # \end{array}
 # $$
 
 # The problem has $n=2$ decision variables and $m=4$ constraints. Using the standard notation introduced above, denote the vector of decision variables by $x = \begin{pmatrix} x_1 \\ x_2 \end{pmatrix}$ and define the problem coefficients as
+# 
 # $$
+# \begin{align*}
 #     c = \begin{pmatrix} 12 \\ 9 \end{pmatrix},
 #     \qquad
 #     A = 
@@ -62,6 +66,7 @@ helper.install_cbc()
 #     \end{bmatrix},
 #     \quad \text{ and } \quad
 #     b = \begin{pmatrix} 1000 \\ 1500 \\ 1750 \\ 4800 \end{pmatrix}.
+# \end{align*}
 # $$
 # 
 # This model can be implemented and solved in Pyomo as follows.
