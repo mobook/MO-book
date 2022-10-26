@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # A variant of the BIM problem: maximizing the lowest possible profit
+# # BIM production for worst case
 
-# In[6]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -15,7 +15,7 @@ helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
-helper.install_glpk()
+helper.install_cbc()
 
 
 # ## Minmax objective function
@@ -40,11 +40,11 @@ helper.install_glpk()
 # This trick works because if *all* the quantities corresponding to different indices $ k \in K$ are below the auxiliary variable $z$, then we are guaranteed that also their maximum is also below $z$ and vice versa. Note that the absolute value function can be rewritten $|x_i|= \max\{x_i,-x_i\}$, hence the linearization of the optimization problem involving absolute values in the objective functions is a special case of this. 
 # 
 
-# ## BIM problem variant: description and formulation
+# ## BIM problem variant: Maximizing the lowest possible profit
 # 
 # In the same way we can minimize a maximum like above, we can also maximize the minimum. Let us consider the [BIM microchip production problem](bim.ipynb), but suppose that there is uncertainty regarding the selling prices of the microchips. Instead of the just the nominal prices 12 € and 9 €, BIM estimates that the prices may more generally take the values $P=\{ (12,9), (11,10), (8, 11) \}$. The optimization problem for a production plan that achieves the maximum among the lowest possible profits can be formulated using the trick mentioned above and can be implemented in Pyomo as follows.
 
-# In[7]:
+# In[2]:
 
 
 import pyomo.environ as pyo
@@ -71,7 +71,7 @@ def BIM_maxmin( costs ):
     return m
     
 BIM = BIM_maxmin( [[12,9], [11,10], [8, 11]] )
-pyo.SolverFactory('glpk').solve(BIM)
+pyo.SolverFactory('cbc').solve(BIM)
 print('x=({:.1f},{:.1f}) revenue={:.3f}'.format(
     pyo.value(BIM.x1),
     pyo.value(BIM.x2),

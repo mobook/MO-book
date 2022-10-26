@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Two variants of the BIM problem: fractional objective and additional fixed costs
+# # BIM production variants
 
-# In[10]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -15,9 +15,11 @@ helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
-helper.install_glpk()
+helper.install_cbc()
 
 
+# ## Two variants of the BIM problem: fractional objective and additional fixed costs
+# 
 # Recall the BIM production model introduced earlier [here](bim.ipynb), that is
 # 
 # $$
@@ -35,7 +37,7 @@ helper.install_glpk()
 # 
 # Assume the pair $(12,9)$ reflects the sales price (revenues) in € and not the profits made per unit produced. We then need to account for the production costs. Suppose that the production costs for $(x_1,x_2)$ chips are equal to a fixed cost of 100 (independent of the number of units produced) plus $7/6 x_1$ plus $5/6 x_2$. It is reasonable to maximize the difference between the revenues and the costs. This approach yields the following linear model:
 
-# In[11]:
+# In[2]:
 
 
 import pyomo.environ as pyo
@@ -61,7 +63,7 @@ def BIM_with_revenues_minus_costs():
     return m
 
 BIM_linear = BIM_with_revenues_minus_costs()
-pyo.SolverFactory('glpk').solve(BIM_linear)
+pyo.SolverFactory('cbc').solve(BIM_linear)
 
 print('x=({:.1f},{:.1f}) value={:.3f} revenue={:.2f} cost={:.2f}'.format(
     pyo.value(BIM_linear.x1),
@@ -106,7 +108,7 @@ print('x=({:.1f},{:.1f}) value={:.3f} revenue={:.2f} cost={:.2f}'.format(
 # 
 # Despite the change of variables, we can always recover the solution as $(x_1,x_2)= (y_1/t,y_2/t)$.
 
-# In[12]:
+# In[3]:
 
 
 def BIM_with_revenues_over_costs():
@@ -132,7 +134,7 @@ def BIM_with_revenues_over_costs():
     return m
 
 BIM_fractional = BIM_with_revenues_over_costs()
-pyo.SolverFactory('glpk').solve(BIM_fractional)
+pyo.SolverFactory('cbc').solve(BIM_fractional)
 
 t = pyo.value(BIM_fractional.t)
 print('x=({:.1f},{:.1f}) value={:.3f} revenue={:.2f} cost={:.2f}'.format(

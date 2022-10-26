@@ -1,7 +1,24 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Optimal material acquisition and production planning using demand forecasts
+# # BIM production using demand forecasts
+
+# In[1]:
+
+
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_cbc()
+
+
+# ## The problem: Optimal material acquisition and production planning using demand forecasts
 # 
 # This example is a continuation of the BIM chip production problem illustrated [here](bim.ipynb). Recall hat BIM produces logic and memory chips using copper, silicon, germanium, and plastic and that each chip requires the following quantities of raw materials:
 # 
@@ -44,22 +61,7 @@
 # 
 # Let us model the material acquisition planning and solve it optimally based on the forecasted chip demand above.
 
-# In[1]:
-
-
-# install Pyomo and solvers
-import requests
-import types
-
-url = "https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py"
-helper = types.ModuleType("helper")
-exec(requests.get(url).content, helper.__dict__)
-
-helper.install_pyomo()
-helper.install_cbc()
-
-
-# Let us import both the price and forecast chip demand as Pandas dataframes.
+# Let us first import both the price and forecast chip demand as Pandas dataframes.
 
 # In[2]:
 

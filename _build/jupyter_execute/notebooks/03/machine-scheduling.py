@@ -2,10 +2,6 @@
 # coding: utf-8
 
 # # Machine Scheduling
-# 
-# "Which job should be done next?" is a questiona one face in modern life, whetherfor a busy student working on course assignments, a courier delivering packages, a server waiting on tables in a busy restaurant, a computer processing threads, or a machine on a complex assembly line. There are empirical answers to this question, among them "first in, first  out", "last  in, first out", or "shortest job first".  
-# 
-# What we consider in this notebook is the modeling finding solutions to this class of problem using optimiziation techniques. This notebook demonstrates the formulation of a model for scheduling a single machine scheduling using disjuctive programming in Pyomo. The problem is to schedule a set of jobs on a single machine given the release time, duration, and due time for each job. Date for the example problem is from Christelle Gueret, Christian Prins, Marc Sevaux, "Applications of Optimization with Xpress-MP," Chapter 5, Dash Optimization, 2000.
 
 # In[1]:
 
@@ -22,12 +18,13 @@ helper.install_pyomo()
 helper.install_cbc()
 
 
-# ## Learning Goals
+# ## Problem description
 # 
-# * Optimal scheduling for a single machine
-# * Disjuctive programming in Pyomo
+# "Which job should be done next?" is a questiona one face in modern life, whetherfor a busy student working on course assignments, a courier delivering packages, a server waiting on tables in a busy restaurant, a computer processing threads, or a machine on a complex assembly line. There are empirical answers to this question, among them "first in, first  out", "last  in, first out", or "shortest job first".  
+# 
+# What we consider in this notebook is the modeling finding solutions to this class of problem using optimiziation techniques. This notebook demonstrates the formulation of a model for scheduling a single machine scheduling using disjuctive programming in Pyomo. The problem is to schedule a set of jobs on a single machine given the release time, duration, and due time for each job. Date for the example problem is from Christelle Gueret, Christian Prins, Marc Sevaux, "Applications of Optimization with Xpress-MP," Chapter 5, Dash Optimization, 2000.
 
-# ## Example
+# ### Job data
 # 
 # The problem is to schedule a sequence of jobs for a single machine. The problem data as a nested Python dictionary of jobs. Each job is labeled by a key. For each key there is an associated data dictionary giving the time at which the job is released to the for machine processing, the expected duration of the job, and the due date. The optimization objective is to find a sequence the jobs on the machine that meets the the due dates. If no such schedule exists, then the objective is to find a schedule minimizing some measure of "badness".
 
@@ -49,7 +46,7 @@ jobs = pd.DataFrame({
 jobs
 
 
-# ## Gantt chart
+# ### Gantt chart
 # 
 # A traditional means of visualizing scheduling data in the form of a Gantt chart. The next cell presents a function `gantt` that plots a Gantt chart given jobs and schedule information. If no schedule information is given, the jobs are performed in the order listed in the jobs dataframe.
 
@@ -171,7 +168,7 @@ import pyomo.gdp as gdp
 
 def build_model(jobs):
 
-    m = pyo.ConcreteModel()
+    m = pyo.ConcreteModel('Job machine scheduling')
 
     m.JOBS = pyo.Set(initialize=jobs.index)
     m.PAIRS = pyo.Set(initialize=m.JOBS * m.JOBS, filter = lambda m, i, j: i < j)
@@ -220,10 +217,4 @@ schedule = solve_model(model)
 display(jobs)
 display(schedule)
 gantt(jobs, schedule)
-
-
-# In[ ]:
-
-
-
 

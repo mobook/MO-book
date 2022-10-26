@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # A first LP example: the microchip production problem of the BIM company
+# # BIM production
 
-# In[1]:
+# In[8]:
 
 
 # install Pyomo and solvers
@@ -71,7 +71,7 @@ helper.install_cbc()
 # 
 # This model can be implemented and solved in Pyomo as follows.
 
-# In[27]:
+# In[9]:
 
 
 import pyomo.environ as pyo
@@ -88,10 +88,81 @@ m.germanium = pyo.Constraint(expr =             m.x2 <= 1500)
 m.plastic   = pyo.Constraint(expr =    m.x1 +   m.x2 <= 1750)
 m.copper    = pyo.Constraint(expr =  4*m.x1 + 2*m.x2 <= 4800)
 
-pyo.SolverFactory('glpk').solve(m)
+pyo.SolverFactory('cbc').solve(m)
 
-print('x = ({:.1f},{:.1f}) optimal value = {:.2f}'.format(
+print('x = ({:.1f}, {:.1f}) optimal value = {:.2f}'.format(
     pyo.value(m.x1),
     pyo.value(m.x2),
     pyo.value(m.profit)))
 
+
+# ## Dual problem
+# 
+# One can construct bounds for the value of objective function by multiplyingthe constraints by non-negative numbers and adding them to each other so that the left-hand side looks like the objective function, while the right-hand side is the corresponding bound.
+# 
+# Let $\lambda_1,\lambda_2,\lambda_3,\lambda_4$ be non-negative numbers. If we multiply each of these variables by one of the four constraints of the original problem and sum all of them side by side to obtain the inequality
+# 
+# $$
+# \begin{align*}
+#         (\lambda_1+\lambda_3+4\lambda_4) x_1 + (\lambda_2+\lambda_3+2 \lambda_4) x_2 \leq 1000 \lambda_1 + 1500 \lambda_2 + 1750 \lambda_3 + 4800 \lambda_4.
+# \end{align*}
+# $$
+# 
+# It is clear that if $\lambda_1,\lambda_2,\lambda_3,\lambda_4 \geq 0$ satisfy
+# 
+# $$
+# \begin{align*}
+#         & \lambda_1+\lambda_3+4\lambda_4 \geq 12,\\
+#         & \lambda_2+\lambda_3+2 \lambda_4 \geq 9,
+# \end{align*}
+# $$
+# 
+# then we have the following:
+# 
+# $$
+# \begin{align*}
+# 12x_1+9x_2 \leq (\lambda_1+\lambda_3+4\lambda_4) x_1 + (\lambda_2+\lambda_3+2 \lambda_4) x_2 \leq 1000 \lambda_1 + 1500 \lambda_2 + 1750 \lambda_3 + 4800 \lambda_4,
+# \end{align*}
+# $$
+# 
+# where the first inequality follows from the fact that $x_1, x_2 \geq 0$, and the most right-hand expression becomes an upper bound on the optimal value of the objective.
+# 
+# If we seek $\lambda_1,\lambda_2,\lambda_3,\lambda_4 \geq 0$ such that the upper bound on the RHS is as tight as possible, that means that we need to \emph{minimize} the expression $1000 \lambda_1 + 1500 \lambda_2 + 1750 \lambda_3 + 4800 \lambda_4$. This can be formulated as the following LP, which we name the \emph{dual problem}:
+# 
+# $$
+# \begin{align*}
+#         \min \quad & 1000 \lambda_1 + 1500 \lambda_2 + 1750 \lambda_3 + 4800 \lambda_4  \\
+#         \text{s.t.} \quad & \lambda_1+\lambda_3+4\lambda_4 \geq 12,\\
+#         & \lambda_2+\lambda_3+2 \lambda_4 \geq 9,\\
+#         & \lambda_1,\lambda_2,\lambda_3,\lambda_4 \geq 0.
+# \end{align*}
+# $$
+# 
+# It is easy to solve and find the optimal solution $(\lambda_1,\lambda_2,\lambda_3,\lambda_4)=(0,0,6,1.5)$, for which the objective functions takes the value $17700$. Such a value is (the tightest) upper bound for the original problem. Here, we present the Pyomo code for this example.
+
+# In[10]:
+
+
+m    = pyo.ConcreteModel('BIM dual')
+
+m.y1 = pyo.Var( within = pyo.NonNegativeReals )
+m.y2 = pyo.Var( within = pyo.NonNegativeReals )
+m.y3 = pyo.Var( within = pyo.NonNegativeReals )
+m.y4 = pyo.Var( within = pyo.NonNegativeReals )
+
+m.obj = pyo.Objective( sense= pyo.minimize
+                     , expr = 1000*m.y1 + 1500*m.y2 + 1750*m.y3 + 4800*m.y4 )
+
+m.x1 = pyo.Constraint( expr =      m.y1             +      m.y3 +    4*m.y4 >= 12 )
+m.x2 = pyo.Constraint( expr =                  m.y2 +      m.y3 +    2*m.y4 >=  9 )
+
+pyo.SolverFactory('cbc').solve(m)
+print('y = ({:.1f}, {:.1f}, {:.1f}, {:.1f}) optimal value = {:.2f}'.format(
+    pyo.value(m.y1),
+    pyo.value(m.y2),
+    pyo.value(m.y3),
+    pyo.value(m.y4),
+    pyo.value(m.obj)))
+
+
+# Note that since the original LP is feasible and bounded, strong duality holds and the optimal value of the primal problem coincides with the optimal value of the dual problem.

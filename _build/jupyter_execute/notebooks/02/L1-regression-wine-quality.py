@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # L1 regression for wine quality prediction
-# 
-# Regression is the task of fitting a model to data. If things go well, the model might provide useful predictions in response to new data. This notebook shows how linear programming and least absolute deviation (LAD) regression can be used to create a linear model for predicting wine quality based on physical and chemical properties. The example uses a well known data set from the machine learning community.
+# # Wine quality prediction with L1 regression
 
 # In[6]:
 
@@ -20,11 +18,15 @@ helper.install_pyomo()
 helper.install_cbc()
 
 
-# ## Downloading the data set
+# ## Problem description
+# 
+# Regression is the task of fitting a model to data. If things go well, the model might provide useful predictions in response to new data. This notebook shows how linear programming and least absolute deviation (LAD) regression can be used to create a linear model for predicting wine quality based on physical and chemical properties. The example uses a well known data set from the machine learning community.
 # 
 # Physical, chemical, and sensory quality properties were collected for a large number of red and white wines produced in the Portugal then donated to the UCI machine learning repository (Cortez, Paulo, Cerdeira, A., Almeida, F., Matos, T. & Reis, J.. (2009). Wine Quality. UCI Machine Learning Repository.) The following cell reads the data for red wines directly from the UCI machine learning repository.
 # 
 # Cortez, P., Cerdeira, A., Almeida, F., Matos, T., & Reis, J. (2009). Modeling wine preferences by data mining from physicochemical properties. Decision support systems, 47(4), 547-553. https://doi.org/10.1016/j.dss.2009.05.016
+# 
+# Let us first download the data
 
 # In[7]:
 
@@ -37,7 +39,7 @@ wines = pd.read_csv("https://archive.ics.uci.edu/ml/machine-learning-databases/w
 display(wines)
 
 
-# ## Model Objective: Mean Absolute Deviation (MAD)
+# ## Model objective: Mean Absolute Deviation (MAD)
 # 
 # Given $n$ repeated observations of a response variable $y_i$ (in this wine quality), the **mean absolute deviation** (MAD) of $y_i$ from the mean value $\bar{y}$ is
 # 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Maximizing the profit of a pop-up shop
+# # Pop-up shop
 
 # In[1]:
 
@@ -15,10 +15,10 @@ helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
-helper.install_glpk()
+helper.install_cbc()
 
 
-# ## The problem
+# ## The problem: Maximizing the net profit of a pop-up shop
 # 
 # There is an opportunity to operate a pop-up shop to sell a unique commemorative item for events held at a famous location. The items cost 12 &euro; each when bought from the supplier and will sell for 40 &euro;. Unsold items can be returned to the supplier at a value of only 2 &euro; due to their commemorative nature.
 # 
@@ -63,7 +63,7 @@ helper.install_glpk()
 # 
 # These calculations can be executed using operations on the pandas dataframe. First, we create a pandas DataFrame object to store the scenario data and calculate the expected demand.
 
-# In[1]:
+# In[2]:
 
 
 import numpy as np
@@ -193,8 +193,8 @@ def sales_less_than_order(m, s):
 def sales_less_than_demand(m, s):
     return m.y[s] <= scenarios[s]["demand"]
 
-# solve the problem using the GLPK solver
-solver = pyo.SolverFactory('glpk')
+# solve the problem using the cbc solver
+solver = pyo.SolverFactory('cbc')
 results = solver.solve(m)
 
 print("Solver Termination Condition:", results.solver.termination_condition)
@@ -240,7 +240,7 @@ print("Expected Profit:", m.EV())
 # 
 # The following implementation is a variation of the prior cell.
 
-# In[6]:
+# In[5]:
 
 
 import pyomo.environ as pyo
@@ -288,7 +288,7 @@ def sales_less_than_demand(m, s):
     return m.y[s] <= scenarios[s]["demand"]
 
 # solve
-solver = pyo.SolverFactory('glpk')
+solver = pyo.SolverFactory('cbc')
 results = solver.solve(m)
 
 # display solution using Pandas

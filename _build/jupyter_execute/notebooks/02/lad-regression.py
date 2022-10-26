@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Least Absolute Deviation (LAD) Regression
+# # LAD Regression
 # 
 # Linear regression is a supervised machine learning technique that produces a linear model predicting values of a dependent variable from known values of one or more independent variables. Linear regression has a long history dating back to at least the 19th century and is a mainstay of modern data analysis. 
 # 
-# This notebook demonstrates a technique for linear regression based on linear programming to minimize a sum of absolute errors between the model prediction and data from a training set. The sum of absolute values of  errors is the $L_1$ norm which is known to have favorable robustness characteristics in practical use. We follow closely this [paper](https://www.jstor.org/stable/1402501).
+# This notebook demonstrates a technique for linear regression based on LP that use the Least Absolute Deviation (LAD) as the metric to quantify the goodness of the model prediction. The sum of absolute values of errors is the $L_1$ norm which is known to have favorable robustness characteristics in practical use. We follow closely this [paper](https://www.jstor.org/stable/1402501).
 
 # In[1]:
 
@@ -19,7 +19,7 @@ helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
-helper.install_glpk()
+helper.install_cbc()
 
 
 # ## Generate data
@@ -125,7 +125,7 @@ def lad_regression(X, y):
     def sum_of_abs_errors(m):
         return sum(m.ep[i] + m.em[i] for i in m.I)
 
-    pyo.SolverFactory('glpk').solve(m)
+    pyo.SolverFactory('cbc').solve(m)
     
     return m
 

@@ -3,9 +3,6 @@
 
 # # Shift Scheduling
 # 
-# An article entitled ["Modeling and optimization of a weekly workforce with Python and Pyomo"](https://towardsdatascience.com/modeling-and-optimization-of-a-weekly-workforce-with-python-and-pyomo-29484ba065bb) by [Christian Carballo Lozano](https://medium.com/@ccarballolozano) posted on the [Towards Data Science](https://towardsdatascience.com/) blog showed how to build a Pyomo model to schedule weekly shifts for a small campus food store. The article was primarily intended as a tutorial introduction to Pyomo (see the [github](https://github.com/ccarballolozano/blog-post-codes/blob/master/Modeling-and-optimization-of-a-weekly-workforce-with-Python-and-Pyomo/Modeling%20and%20optimization%20of%20a%20weekly%20workforce%20with%20Python%20and%20Pyomo.ipynb) repository for the code). 
-# 
-# Here we revisit the example with a new model demonstrating  use of Pyomo decorators and of Pyomo sets, and how to use the model solution to create useful visualizations and reports for workers and managers.
 
 # In[1]:
 
@@ -24,16 +21,18 @@ helper.install_cbc()
 
 # ## Problem Statement
 # 
+# An article entitled ["Modeling and optimization of a weekly workforce with Python and Pyomo"](https://towardsdatascience.com/modeling-and-optimization-of-a-weekly-workforce-with-python-and-pyomo-29484ba065bb) by [Christian Carballo Lozano](https://medium.com/@ccarballolozano) posted on the [Towards Data Science](https://towardsdatascience.com/) blog showed how to build a Pyomo model to schedule weekly shifts for a small campus food store. The article was primarily intended as a tutorial introduction to Pyomo (see the [github](https://github.com/ccarballolozano/blog-post-codes/blob/master/Modeling-and-optimization-of-a-weekly-workforce-with-Python-and-Pyomo/Modeling%20and%20optimization%20of%20a%20weekly%20workforce%20with%20Python%20and%20Pyomo.ipynb) repository for the code). 
+# 
 # From the original article:
 # 
 # > A new food store has been opened at the University Campus which will be open 24 hours a day, 7 days a week. Each day, there are three eight-hour shifts. Morning shift is from 6:00 to 14:00, evening shift is from 14:00 to 22:00 and night shift is from 22:00 to 6:00 of the next day.
-# 
 # > During the night there is only one worker while during the day there are two, except on Sunday that there is only one for each shift. Each worker will not exceed a maximum of 40 hours per week and have to rest for 12 hours between two shifts.
-# 
 # > As for the weekly rest days, an employee who rests one Sunday will also prefer to do the same that Saturday.
 # In principle, there are available ten employees, which is clearly over-sized. The less the workers are needed, the more the resources for other stores.
+# 
+# Here we revisit the example with a new model demonstrating how to use of Pyomo decorators and of Pyomo sets, and how to use the model solution to create useful visualizations and reports for workers and managers.
 
-# ## Analysis
+# ## Model formulation
 
 # ### Model sets
 # 
@@ -110,7 +109,7 @@ helper.install_cbc()
 # \\
 # \end{align*}$$
 # 
-# Indicator if worker has been assigned any shift.
+# Do not assign any shift to a worker that is not needed during the week.
 # 
 # $$\begin{align*}
 # \\
@@ -118,7 +117,7 @@ helper.install_cbc()
 # \\
 # \end{align*}$$
 # 
-# Indicator if worker has been assigned a weekend shift.
+# Do not assign any weekend shift to a worker that is not needed during the weekend.
 # 
 # $$\begin{align*}
 # \\
@@ -136,7 +135,7 @@ helper.install_cbc()
 # \right)\end{align*}
 # $$
 
-# ## Pyomo Modeling
+# ## Pyomo implementation
 
 # In[2]:
 
@@ -146,7 +145,7 @@ import pyomo.environ as pyo
 def shift_schedule(N=10, hours=40):
     """return a solved model assigning N workers to shifts"""
 
-    m = pyo.ConcreteModel('workforce')
+    m = pyo.ConcreteModel('Workforce Shift Scheduling')
 
     # ordered set of avaiable workers
     m.WORKERS = pyo.Set(initialize=[f"W{i:02d}" for i in range(1, N+1)])
@@ -222,7 +221,7 @@ def shift_schedule(N=10, hours=40):
 m = shift_schedule(10, 40)
 
 
-# ## Visualizing the Solution
+# ## Visualizing the solution
 # 
 # Scheduling applications generate a considerable amount of data to be used by the participants. The following cells demonstrate the preparation of charts and reports that can be used to communicate scheduling information to the store management and shift workers.
 
@@ -359,10 +358,4 @@ for day, day_schedule in schedule.groupby(["day"]):
 # 
 # 4. Modify the problem formulation and objective to spread the shifts out amongst all workers, attempting to equalize the total number of assigned shifts, and similar numbers of day, evening, night, and weekend shifts.
 # 
-# 5. Find the minimum cost staffing plan assuming managers cost 30 euros per hour + 100 euros per week in fixed benefits, regular workers cost 20 euros per hour plus 80 euros per week in fixed benefits, and part time workers cosst 15 euros per week with no benefits.
-
-# In[ ]:
-
-
-
-
+# 5. Find the minimum cost staffing plan assuming managers cost 30 euros per hour + 100 euros per week in fixed benefits, regular workers cost 20 euros per hour plus 80 euros per week in fixed benefits, and part time workers cost 15 euros per week with no benefits.

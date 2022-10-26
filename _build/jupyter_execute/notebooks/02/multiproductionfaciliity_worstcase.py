@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Extra material: Multi-product facility production problem
+# # Extra material: Multi-product facility production
 
 # In[1]:
 
@@ -15,10 +15,10 @@ helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
-helper.install_glpk()
+helper.install_cbc()
 
 
-# ## Multi-product facility production problem: Maximizing the profit in the worst case
+# ## Maximizing the profit in the worst case for a multi-product facility
 # 
 # A common formulation for the problem of maximizing profit of a multi-product facility in a resource constrained environment is given by the following LP
 # 
@@ -131,7 +131,7 @@ def maxmin(scenarios, resources):
     return model
 
 BIM = maxmin(BIM_scenarios, BIM_resources)
-pyo.SolverFactory('glpk').solve(BIM)
+pyo.SolverFactory('cbc').solve(BIM)
 
 worst_case_plan = pd.Series({j: BIM.x[j]() for j in BIM.J}, name="worst case")
 worst_case_profit = BIM.profit()
@@ -187,7 +187,7 @@ def max_profit(scenario, resources):
 
 # create mean scenario
 mean_case = max_profit(BIM_scenarios.mean(), BIM_resources)
-pyo.SolverFactory('glpk').solve(mean_case)
+pyo.SolverFactory('cbc').solve(mean_case)
 
 mean_case_profit = mean_case.profit()
 mean_case_plan = pd.Series({j: mean_case.x[j]() for j in mean_case.J}, name="mean case")
