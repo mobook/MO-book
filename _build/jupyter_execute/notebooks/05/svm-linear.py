@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Support Vector Machines for Binary Classifcation
-# 
-# (NEEDS TO BE REWRITTEN FOR CONSISTENCY WITH FINAL VERSION OF THE NOTEBOOK).
+# # Support Vector Machines for Binary Classification
 # 
 # Creating binary classifiers from sample data is an example of supervised machine learning. This notebook shows how to create a class of binary classifiers  known as support vector machines (SVM) from sample data using linear, quadratic, and conic programming. The first implementation produces linear support vector machines that separates the "feature space" with a hyperplane. The  implementation uses a dual formulation that extends naturally to non-linear classification.
 # 
@@ -11,7 +9,7 @@
 # 
 # The dual optimization problem is the basis for a second implementation. A technical feature of the dual problem extends support vector machines to nonlinear classifiers that have proven highly successful in a wide range of applications.  
 
-# In[8]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -66,7 +64,7 @@ helper.install_mosek()
 
 # ### Read data
 
-# In[3]:
+# In[2]:
 
 
 import matplotlib.pyplot as plt
@@ -83,7 +81,7 @@ df.describe()
 
 # ### Select features and training sets
 
-# In[4]:
+# In[3]:
 
 
 # create training and validation test sets
@@ -118,21 +116,21 @@ plot_Xy(X_train, y_train)
 
 # ## Linear Support Vector Machines (SVM)
 # 
-# A linear support vector machine is a binary classifier that uses a linear expression to determine the classification. 
+# A linear support vector machine (SVM) is a binary classifier that uses a linear expression to determine the classification. 
 # 
 # $$y = \text{sgn}\ ( w^\top x + b)$$
 # 
 # where $w\in \mathbb{R}^p$ is a set of coefficients and $w^\top x$ is the dot product. In effect, the linear function divides the feature space $\mathbb{R}^p$ with a hyperplane specified by $w$ and $b$.
 # 
-# A training or validation set consists of $n$ observations $(x_i, y_i)$ where $y_i = \pm 1$ and $x_i\in\mathbb{R}^p$ for $i=1, \dots, n$. The training task is to find coefficients $w\in\mathbb{R}^p$ and $b\in\mathbb{R}$ to achieve high precision and high recall for a validation set. All points  $(x_i, y_i)$ for $i\in 1, \dots, n$ in a training or validation set are successfully classified if the
+# A training or validation set consists of $n$ observations $(x_i, y_i)$ where $y_i = \pm 1$ and $x_i\in\mathbb{R}^p$ for $i=1, \dots, n$. The training task is to find coefficients $w\in\mathbb{R}^p$ and $b\in\mathbb{R}$ to achieve high precision and high recall for a validation set. All points $(x_i, y_i)$ for $i\in 1, \dots, n$ in a training or validation set are successfully classified if the
 #  
 # $$
-# \begin{align*}
-# y_i (w^\top x_i + b) & > 0 & \forall i = 1, 2, \dots, n
-# \end{align*}
+# \begin{align}
+#     y_i (w^\top x_i + b) & > 0 & \forall i = 1, 2, \dots, n.
+# \end{align}
 # $$
 # 
-# The strict inequality can be replaced by
+# For numerical reasons, however, it is convenient to add a margin and impose a slightly modified condition for correctly classified points, namely
 # 
 # $$
 # \begin{align*}
@@ -140,32 +138,39 @@ plot_Xy(X_train, y_train)
 # \end{align*}
 # $$
 # 
-# which defines a **hard-margin** classifier where the size of the margin is determined by the scale of $w$ and $b$. The sample data displayed above shows it is not always possible to perfectly separate a data set into two classes. For that reason a **soft-margin** classifier is defined by slack variables $z_i \geq 0$ 
+# which defines a **hard-margin** classifier where the size of the margin is determined by the scale of $w$ and $b$. 
 # 
-# $$y_i (w^\top x_i + b) \geq 1 - z_i $$
+# In practice, however, it is not always possible to find $w$ and $b$ that separate all the data perfectly. The sample data displayed above for instance cannot be perfectly separated into two classes. Therefore, we need to minimize a measure of "things going wrong". For that reason, when fitting SVMs to the data, it is common to use a **soft-margin** classifier. Given parameters $w$ and $b$, the **hinge-loss** function is defined as
 # 
-# For parameters $w$ and $b$, every point that satisfies the constraint with $z_i = 0$ is correctly classified with a hard margin ??? from the separating hyperplane. Points where $0 < z_i < 1$ will also be correctly classified. Point with slack variable $z_i > 1$ will be misclassified.
+# $$
+# \ell(x, y) = \left(1 - y(w^\top x + b)\right)^+,
+# $$
 # 
-# Given parameters $w$ and $b$, the **hinge-loss** function is defined as
+# using the notation $z^+ = \max(0, z)$. 
 # 
-# $$\ell(x, y) = \left(1 - y(w^\top x + b)\right)_+$$
+# The hinge-loss function has properties that make it useful fitting linear support vector machine. For a properly classified point the hinge-loss will be less than one but never smaller than zero. For a misclassified point, however, the hinge-loss function is greater than one and will grows in proportion to how far away the feature vector is from the separation plane. Minimizing the sum of hinge-loss functions locates an hyperplane that trades off between a margin for correctly classified points and minimizing the distance between the hyperplane and misclassified points.
 # 
-# using the notation $\left(z\right)_+ = \max(0, z)$. 
-# 
-# The hinge-loss function has properties that make it useful fitting linear support vector machine.  For a properly classified point the hinge-loss will be less than one but never smaller than zero. For a mis-classified point, however, the hinge-loss function is greater than one and will grows in proportion to how far away the feature vector is from the separation plane. Minimizing the sum of hinge-loss functions locates hyperplane a that trades off between a margin for correctly classified points and minimizing the distance between the hyperplane and mis-classified points.
-# 
-# 
-# One approach to fitting a linear SVM is to assign a regularization term for $w$. In most formulations a norm $\|w\|$ is used for regularization, commonly a sum of squares such as $\|w\|_2^2$. Another choice is $\|w\|_1$ which, similar to Lasso regression, may result in sparse weighting vectors $w$ indicating which elements of the feature vector can be neglected for classification purpose. These considerations result i the objective function
-# 
-# $$\min_{w, b}\left[ \frac{1}{n}\sum_{i=1}^n \left(1 - y_i(w^\top x_i + b)\right)_+ + \lambda \|w\|_1\right]$$
-# 
-# which can be solved by linear programming.
+# The fitting problem is formulated as the problem of minimizing the hinge-loss function over all the data samples:
 # 
 # $$
 # \begin{align*}
-# \min_{z, w, b}\ & \frac{1}{n}  \sum_{i=1}^n z_i + \lambda \|w\|_1 \\
-# \text{s.t.}\qquad z_i & \geq 1 - y_i(w^\top x_i + b) & \forall i = 1, 2, \dots, n \\
-# z_i & \geq 0 & \forall i = 1, 2, \dots, n
+#     \min_{w, b} \frac{1}{n}\sum_{i=1}^n \left(1 - y_i(w^\top x_i + b)\right)^+ .
+# \end{align*}
+# $$
+# 
+# However, the practice has shown that minimizing this term alone leads to classifiers with a potentially large magnitude of the entries of $w$ and which potentially perform poorly on new data samples. For that reason, the concept of \emph{regularization} was invented that adds a term that penalizes the magnitude of $w$. In most formulations a norm $\|w\|$ is used for regularization, commonly a sum of squares such as $\|w\|_2^2$. Another choice is $\|w\|_1$ which, similarly to Lasso regression, may result in sparse weighting vector $w$ indicating which elements of the feature vector can be neglected for classification purposes. These considerations result in the objective function
+# 
+# $$
+#     \min_{w, b}\left[ \frac{1}{n}\sum_{i=1}^n \left(1 - y_i(w^\top x_i + b)\right)^+ + \lambda \|w\|_1\right]
+# $$
+# 
+# which by introducing $n$ auxiliary nonnegative variables $z$'s can be solved by the following LP:
+# 
+# $$
+# \begin{align*}
+# \min_{z, w, b}\quad  & \frac{1}{n}  \sum_{i=1}^n z_i + \lambda \|w\|_1 \\
+# \text{s.t.} \quad &  z_i \geq 1 - y_i(w^\top x_i + b) & \forall i = 1, \dots, n \\
+# & z_i \geq 0 & \forall i = 1, \dots, n.
 # \end{align*}
 # $$
 # 
@@ -223,7 +228,7 @@ plot_Xy(X_train, y_train)
 # $$
 # 
 
-# In[5]:
+# In[4]:
 
 
 import pyomo.kernel as pmo
@@ -368,7 +373,7 @@ for i in range(n):
 # $$
 # 
 
-# In[6]:
+# In[5]:
 
 
 import pyomo.kernel as pmo
@@ -402,8 +407,8 @@ def svm_conic_dual(X, y, c):
     return m
 
 c = 1.0
-get_ipython().run_line_magic('timeit', 'svm_conic(X_train, y_train, c)')
-m = svm_conic(X_train, y_train, c)
+get_ipython().run_line_magic('timeit', 'svm_conic_dual(X_train, y_train, c)')
+m = svm_conic_dual(X_train, y_train, c)
 print(m.r.value)
 n = len(m.a)
 for i in range(n):
@@ -413,7 +418,7 @@ for i in range(n):
 
 # ## Pyomo Implementation
 
-# In[7]:
+# In[6]:
 
 
 import numpy as np
@@ -465,7 +470,7 @@ def svm_fit(X, y, lambd=0):
 get_ipython().run_line_magic('timeit', 'svm = svm_fit(X_train, y_train)')
 
 
-# In[16]:
+# In[7]:
 
 
 def svm_test(svm, X, y, plot=False):
@@ -522,7 +527,7 @@ svm = svm_fit(X_train, y_train)
 svm_test(svm, X_test, y_test, plot=True)
 
 
-# In[17]:
+# In[8]:
 
 
 features = df.columns
@@ -626,7 +631,7 @@ svm_test(svm, X_test_full, y_test_full)
 # 
 # This is result has important consequences. The key point is that is that the dual optimization problem can be solved with knowledge of the inner products appearing in the Gram matrix $K$, and the resulting classifier needs only inner products of training set data with the difference $x - x_k$ for some $k$ found in the optimization calculation.
 
-# In[7]:
+# In[9]:
 
 
 import numpy as np
@@ -670,15 +675,9 @@ def svm_dual_fit(X, y, lambd=0):
 m = svm_dual_fit(X_test, y_test)
 
 
-# In[8]:
+# In[10]:
 
 
 m = svm_dual_fit(X_test, y_test)
 pyo.SolverFactory("mosek_direct").solve(m)
-
-
-# In[ ]:
-
-
-
 

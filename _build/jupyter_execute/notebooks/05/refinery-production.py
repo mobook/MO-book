@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Refinery Production and Shadow Pricing
+# # Extra material: Refinery production and shadow pricing
 # 
-# This is a work in progress.  This is a simple linear programming problem in six variables, but with four equality constraints it allows for a graphical explanation of some unusually large shadow prices for manufacturing capacity.  The notebook presents also contrasts Pyomo with CVXPY modeling.
-# 
-# This would be an good test case for valuing a commodity production facility using real options.
+# This is a simple linear programming problem in six variables, but with four equality constraints it allows for a graphical explanation of some unusually large shadow prices for manufacturing capacity. The notebook presents also contrasts Pyomo with CVXPY modeling.
 
 # In[1]:
 
@@ -204,9 +202,3 @@ ax.set_ylim(0, ylim)
 # 2. How do prices of crudes and products change the location of the optimum operating point?
 # 
 # 2. A refinery is a financial asset for the conversion of commodity crude oils into commodity hydrocarbons. What economic value can be assigned to owning the option to convert crude oils into other commodities?
-
-# In[ ]:
-
-
-
-

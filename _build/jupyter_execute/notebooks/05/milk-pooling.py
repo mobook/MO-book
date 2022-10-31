@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Pooling and Blending
+# # Milk pooling and blending
 # 
 # This notebook presents an overview of bilinear pooling and blending problems in the context of a simple milk blending operation. The essential non-convex nature of the problem is demonstrated, and the two basic formulations (the P- and Q- parameterizations) are shown.
 
@@ -46,7 +46,7 @@ helper.install_couenne()
 # 
 # Applications for pooling and blending are probably underappreciated. In particular, what role might pooling and blending problems have in projects like the World Food Programme (WFP)?
 
-# ## Example: Pooling Milk for Wholesale Blending and Distribution
+# ## Problem description: Pooling milk for wholesale blending and distribution
 # 
 # A bulk distributor supplies several customers with deliveries of raw milk purchased from local farms. The deliveries may be blended to meet the minimum milk fat content specified by each customer.
 # 
@@ -689,9 +689,3 @@ report_solution(m_global)
 # 3. Revise the Pyomo model using 'cbc', 'gurobi_direct', 'ipopt', and 'bonmin' to find a solution. Did you find a solver that could solve this nonlinear problem?
 # 
 # 4. The above analysis assumed unlimited transport. If the truck turns out to have a limit of 4,000 units of milk, write the mathematical constraint necessary to introduce that limit into the model. Add that constraint to the Pyomo model and discuss the impact on profit.
-
-# In[ ]:
-
-
-
-

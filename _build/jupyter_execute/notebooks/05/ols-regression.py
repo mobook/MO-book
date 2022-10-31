@@ -3,7 +3,7 @@
 
 # # Ordinary Least Squares (OLS) Regression
 # 
-# In Chapter 2 we introduced linear regression with least absolute deviations (LAD). Here we consider the same problem setting, but slightly change the underlying optimization problem, in particular its objective function, obtaining the classical ordinary least squares (OLS) regression.
+# In Chapter 2 we introduced linear regression with least absolute deviations (LAD), see [this notebook](../02/lad-regression.ipynb). Here we consider the same problem setting, but slightly change the underlying optimization problem, in particular its objective function, obtaining the classical ordinary least squares (OLS) regression.
 
 # In[1]:
 

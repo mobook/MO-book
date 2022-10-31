@@ -225,13 +225,13 @@ Report( seatplan, results, type=int )
 # * the nodes on the left-hand side stand for the tables and the numbers next to them provide the table size
 # * each left-to-right arrow stand comes with a number denoting the capacity of arc $(f, t)$ -- how many people of family $f$ can be assigned to table $t$.
 # 
-# ![Basic graph visualization](dina_model_basic.pdf)
-# 
+# ![](dina_model_basic.png)
+
 # If we see each family as a place of supply (people) and tables as places of demand (people), then we can see our original problem as literally sending people from families $f$ to tables $t$ so that everyone is assigned to some table, the tables' capacities are respected, and no table gets more than $k = 3$ members of the same family.
 # 
 # By adding two more nodes to the graph above, we can formulate the problem as a slightly different flow problem where all the data is formulated as the arc capacity, see figure beloow. In a network like this, we can imagine a problem of sending resources from the _root node_ "door" to the _sink node_ "seat", subject to the restriction that for any node apart from $s$ and $t$, the sum of incoming and outgoing flows are equal (_balance constraint_). If there exists a flow in this new graph that respects the arc capacities and the sum of outgoing flows at $s$ is equal to $\sum_{f \in F} m_f = 39$, it means that there exists a family-to-table assignment that meets our requirements.
 # 
-# ![Graph visualization using source and sink nodes](dina_model.pdf)
+# ![](dina_model.png)
 
 # In[12]:
 
