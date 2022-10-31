@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Crypto Currency Analysis
+# # Cryptocurrency Arbitrage
 # 
 # Crpytocurrency exchanges are web services that enable the purchase, sale, and exchange of cryptocurrencies. These exchanges provide liquidity for owners and establish the relative value of these currencies. As of this writing (mid-2022), [it is estimated](https://www.statista.com/statistics/730876/cryptocurrency-maket-value/) cryptocurrencies have a collective market capitalization of more than 2 trillion USD. Cryptocurrency markets are constantly changing with new currencies, exchanges, the occasional collapse of a currency, and highly volatile prices.
 # 
 # The purpose of this notebook is to explore the efficiency of cryptocurrency exchanges by testing for arbitrage opportunities. An arbitrage exists if a customer can realize a net profit through a sequence of risk-free trades. The efficient market hypothesis assumes arbitrage opportunities are quickly identified and exploited by investors. As a result of their trading, prices would reach a new equilibrium so that in an efficient market, any arbitrage opportunities would be small and fleeting. The question here is whether it is possible, with real-time data and rapid execution, for a trader to profit from these fleeting arbitrage opportunities.
 
 # ## Installations and Imports
-# 
-# This notebook requires multiple libraries. The following cell performs the required installations for Google Colab. To run in your own environment you will need to install `pyomo`,`ccxt`, and `networkx` python libraries, and a linear solver for Pyomo.
 
 # In[1]:
 
@@ -41,7 +39,7 @@ import pandas as pd
 import pyomo.environ as pyo
 
 
-# ## Cryptocurrency Exchanges
+# ## Cryptocurrency exchanges
 # 
 # Cryptocurrency exchanges are digital marketplaces for buying and trading cryptocurrencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, to buy and sell currencies, and to use cryptocurrencies for financial transactions. The [open-source library `ccxt`](https://github.com/ccxt/ccxt) currently supports real-time APIs for the largest and most common exchanges on which cryptocurrencies are traded. Here we import the library and list current exchanges supported by `ccxt`.
 
@@ -54,7 +52,7 @@ for i, exchange in enumerate(ccxt.exchanges):
     print(f"{i+1:3d}) {exchange.ljust(20)}", end="" if (i+1) % 4 else "\n")
 
 
-# ## Representing an Exchange as a Directed Graph
+# ## Representing an exchange as a directed graph
 # 
 # Exchanges provide for trading between currencies. Trading done between two specific currencies is called a *market*; each exchange hosting multiple markets. `ccxt` labels each market with a market symbol that is common across exchanges and suitable for within-exchange and cross-exchange arbitrage analyses.
 # 
@@ -132,7 +130,7 @@ print(f"Number of nodes = {len(dg_symbols.nodes()):3d}")
 print(f"Number of edges = {len(dg_symbols.edges()):3d}")
 
 
-# ## Exchange Order Book
+# ## Exchange order book
 
 # The order book for a currency exchange is the real-time inventory of trading orders. 
 # 
@@ -148,7 +146,6 @@ print(f"Number of edges = {len(dg_symbols.edges()):3d}")
 
 
 import pandas as pd
-
 
 def fetch_order_book(dg):
 
@@ -184,7 +181,7 @@ order_book = fetch_order_book(dg_symbols)
 display(order_book[['base', 'quote', 'bid_price', 'bid_volume', 'ask_price', 'ask_volume']])
 
 
-# ## The Order Book as a Directed Graph
+# ## The order book as a directed graph
 
 # Here we represent the order book as a directed graph where nodes correspond to individual currencies. 
 # 
@@ -290,7 +287,7 @@ draw_dg(dg_order_book, 0.05)
 # 
 # An arbitrage exists if $W < 0$ for any path where $i_0 = i_n$.
 
-# ## Negative Edge Cycles
+# ## Negative edge cycles
 # 
 # A brute force search over all simple cycles has complexity $(n + e)(c + 1)$ which is impractical for larger scale applications. A more efficient search based on Bellman-Ford is embedded in the NetworkX function [`negative_edge_cycle`](https://networkx.org/documentation/networkx-1.10/reference/generated/networkx.algorithms.shortest_paths.weighted.negative_edge_cycle.html) that returns a logical True if a negative cycle exists in a directed graph. 
 
@@ -301,7 +298,7 @@ dg_order_book = order_book_to_dg(order_book)
 nx.negative_edge_cycle(dg_order_book, weight="weight", heuristic=True)
 
 
-# ## Find Order Books that Demonstrate Arbitrage Opportunities
+# ## Find order books that demonstrate arbitrage opportunities
 
 # In[17]:
 
@@ -342,7 +339,7 @@ else:
 # order_book = pd.read_csv("Binance_US_orderbook_20220926_18:41:53.csv")   # small order book with a 1 bp arb opportunity
 
 
-# ## Locate Arbitrage Opportunities with `find_negative_cycle`
+# ## Locate arbitrage opportunities with `find_negative_cycle`
 # 
 # The NetworkX library includes a function [`find_negative_cycle`](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.shortest_paths.weighted.find_negative_cycle.html) that locates a single negative edge cycle, if one exists.
 
@@ -366,7 +363,7 @@ for src, dst in zip(arb, arb[1:] + arb[:1]):
 draw_dg(dg_order_book, 0.05)
 
 
-# ## Finding Arbitrage with Simple Cycles
+# ## Finding arbitrage with simple cycles
 # 
 # To demonstrate the existence of arbitrage in an order book, we compute the loss function for all simple cycles that can be constructed within a directed graph. 
 # 
@@ -587,6 +584,7 @@ for node in dg_order_book.nodes:
 
 display(balances.T)
 balances.plot(kind="bar", subplots=True, figsize=(10, 15))
+plt.show()
 
 
 # ## Bibliographic Notes
@@ -696,8 +694,3 @@ for src, dst in trade_edges:
 display(dg)
 dg.format = "png"
 dg.view("exchange-symbol-map")
-# In[ ]:
-
-
-
-
