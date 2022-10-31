@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Shift Scheduling
-# 
+# # Workforce shift scheduling
 
 # In[1]:
 

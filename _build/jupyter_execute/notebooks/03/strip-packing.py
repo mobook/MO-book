@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Strip Packing: Placing Boxes on a Shelf
+# # Extra material: Strip packing
 # 
 # *Strip packing* (SP) refers to the problem of packing rectanges onto a two dimensional strip of fixed width. 
 # 
@@ -39,8 +39,7 @@ helper.install_mosek()
 # 
 # Imagine a collection of $N$ boxes that are to placed on shelf. The shelf depth is $D$, and the dimensions of the boxes are $(w_i, d_i)$ for $i=0, \ldots, N-1$. The boxes can be rotated, if needed, to fit on the shelf. How wide of a shelf is needed?
 # 
-# 
-# We'll start by creating a function to generate a table of $N$ boxes. For concreteness, we assume the dimensions are in millimeters.
+# We will start by creating a function to generate a table of $N$ boxes. For concreteness, we assume the dimensions are in millimeters.
 
 # In[2]:
 

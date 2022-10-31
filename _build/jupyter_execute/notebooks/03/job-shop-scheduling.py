@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Job Shop Scheduling
+# # Extra material: Job shop scheduling
 
 # ## Imports
 # 

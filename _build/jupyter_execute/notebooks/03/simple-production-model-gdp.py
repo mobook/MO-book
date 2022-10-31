@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Production Model using Disjunctions
+# # Production model using disjunctions
 
-# In[12]:
+# In[4]:
 
 
 # install Pyomo and solvers
@@ -41,19 +41,19 @@ helper.install_cbc()
 # This notebook shows how to express disjunctions in Pyomo models using the Generalized Disjunctive Programming (GDP) extension for a simple production model.
 # 
 
-# ## Multi-product factory
+# ## Multi-product factory optimization
 # 
 # A small production facility produces two products, $X$ and $Y$. With current technology $\alpha$, the facility is subject to the following conditions and constraints:
 # 
-# * Product $X$ requires 1 hour of labor A, 2 hours of labor B, and \\$100 of raw material. Product $X$ sells for \\$270 per unit. The daily demand is limited to 40 units.
+# * Product $X$ requires 1 hour of labor A, 2 hours of labor B, and 100€ of raw material. Product $X$ sells for 270€ per unit. The daily demand is limited to 40 units.
 # 
-# * Product $Y$ requires 1 hour of labor A, 1 hour of labor B, and \\$90 of raw material. Product $Y$ sells for \\$210 per unit with unlimited demand. 
+# * Product $Y$ requires 1 hour of labor A, 1 hour of labor B, and 90€ of raw material. Product $Y$ sells for 210€ per unit with unlimited demand. 
 # 
-# * There are 50 hours per day of labor A available at a cost of \\$50/hour.
+# * There are 50 hours per day of labor A available at a cost of 50€/hour.
 # 
-# * There are 100 hours per day of labor B available at a cost of \\$40/hour.
+# * There are 100 hours per day of labor B available at a cost of 40€/hour.
 # 
-# Using the given data we see that the net profit for each unit of $X$ and $Y$ is \\$40 and \\$30, respectively. The optimal product strategy is the solution to a linear program
+# Using the given data we see that the net profit for each unit of $X$ and $Y$ is 40€ and 30€, respectively. The optimal product strategy is the solution to a linear program
 # 
 # $$
 # \begin{align*}
@@ -67,7 +67,7 @@ helper.install_cbc()
 # $$
 # 
 
-# In[13]:
+# In[5]:
 
 
 import pyomo.environ as pyo
@@ -103,16 +103,16 @@ def laborB(model):
 
 pyo.SolverFactory('cbc').solve(m)
 
-print(f"Profit = {m.profit()}")
+print(f"Profit = {m.profit():.2f} €")
 print(f"Production X = {m.production_x()}")
 print(f"Production Y = {m.production_y()}")
 
 
 # Now suppose a new technology $\beta$ is available that affects that lowers the cost of product $X$. With the new technology, only 1.5 hours of labor B is required per unit of $X$.
 # 
-# The net profit for unit of product $X$ without technology $\beta$ is equal to $270 - 100 - 50 - 2 \cdot 40 = \$40$
+# The net profit for unit of product $X$ without technology $\beta$ is equal to $270 - 100 - 50 - 2 \cdot 40 = 40$€
 # 
-# The net profit for unit of product $X$ with technology $\beta$ is equal to $270 - 100 - 50 - 1.5 \cdot 40 = \$60$
+# The net profit for unit of product $X$ with technology $\beta$ is equal to $270 - 100 - 50 - 1.5 \cdot 40 = 60$€
 # 
 # In a machine scheduling problem, for example, the choice may be to start one job ("A") either before or after a different job ("B"), where $\tau_A$ and $\tau_B$ denote the start time of the jobs. Since one or the other of the two constraints must hold, but not both, this situation corresponds to an exclusive-or disjunction of the two constraints represented as
 # 
@@ -139,7 +139,7 @@ print(f"Production Y = {m.production_y()}")
 # 
 # where the variable $z \in \{ 0, 1\}$ "activates" the constraints related to the old or new technology, respectively, and $M$ is a big enough number. The corresponding Pyomo implementation is given by:
 
-# In[14]:
+# In[6]:
 
 
 m = pyo.ConcreteModel("Multi-Product Factory - MILP")
@@ -183,7 +183,7 @@ def laborB_2(m):
 
 pyo.SolverFactory('cbc').solve(m)
 
-print(f"Profit = {m.profit()}")
+print(f"Profit = {m.profit():.2f} €")
 print(f"Production X = {m.production_x()}")
 print(f"Production Y = {m.production_y()}")
 
@@ -212,7 +212,7 @@ print(f"Production Y = {m.production_y()}")
 # 
 # This formulation, if allowed by the software at hand, has the benefit that the software can smartly divide the solution of this problem into sub-possibilities depending on the disjunction. Pyomo natively supports disjunctions, as illustrated in the following implementation:
 
-# In[15]:
+# In[7]:
 
 
 import pyomo.environ as pyo
@@ -261,12 +261,12 @@ def technology(model):
 pyo.TransformationFactory("gdp.bigm").apply_to(m)
 pyo.SolverFactory('cbc').solve(m)
 
-print(f"Profit = {m.profit()}")
+print(f"Profit = {m.profit():.2f} €")
 print(f"Production X = {m.production_x()}")
 print(f"Production Y = {m.production_y()}")
 
 
-# In[16]:
+# In[8]:
 
 
 m = pyo.ConcreteModel()
@@ -299,7 +299,7 @@ def technologies(model):
 pyo.TransformationFactory("gdp.bigm").apply_to(m)
 pyo.SolverFactory('cbc').solve(m)
 
-print(f"Profit = {m.profit()}")
+print(f"Profit = {m.profit():.2f} €")
 print(f"x = {m.x()}")
 print(f"y = {m.y()}")
 

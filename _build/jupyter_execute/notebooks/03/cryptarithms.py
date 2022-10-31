@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Cryptarithms: Send More Money
+# # Extra material: Cryptarithms puzzle
 # 
-# The July, 1924, issue of the famous British magazine *The Strand* included a word puzzle by Henry E. Dudeney in his regular contribution "Perplexities".  The puzzle is to assign a unique digit to each letter appearing in the equation
+# The July 1924 issue of the famous British magazine *The Strand* included a word puzzle by Henry E. Dudeney in his regular contribution "Perplexities". The puzzle is to assign a unique digit to each letter appearing in the equation
 # 
 #         S E N D
 #       + M O R E

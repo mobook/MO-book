@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Recharging Strategy for an Electric Vehicle
+# # Recharging strategy for an electric vehicle
 # 
 # Whether it is to visit family, take a sightseeing tour or call on business associates, planning a road trip is a familiar and routine task. Here we consider a road trip on a pre-determined route for which need to plan rest and recharging stops. This example demonstrates use of Pyomo disjunctions to model the decisions on where to stop. 
 
@@ -25,13 +25,13 @@ helper.install_cbc()
 # Given the current location $x$, battery charge $c$, and planning horizon $D$, the task is to plan a series of recharging and rest stops. Data is provided for the location and the charging rate available at each charging stations. The objective is to drive from location $x$ to location $x + D$ in as little time as possible subject to the following constraints:
 # 
 # * To allow for unforeseen events, the state of charge should never drop below 20% of the maximum capacity.
-# * The the maximum charge is $c_{max} = 80$ kwh.
+# * The the maximum charge is $c_{max} = 80$ kWh.
 # * For comfort, no more than 4 hours should pass between stops, and that a rest stop should last at least $t^{rest}$.
 # * Any stop includes a $t^{lost} = 10$ minutes of "lost time".
 # 
 # For this first model we make several simplifying assumptions that can be relaxed as a later time.
 # 
-# * Travel is at a constant speed $v = 100$ km per hour and a constant discharge rate $R = 0.24$ kwh/km
+# * Travel is at a constant speed $v = 100$ km per hour and a constant discharge rate $R = 0.24$ kWh/km
 # * The batteries recharge at a constant rate determined by the charging station.
 # * Only consider stops at the recharging stations.
 
@@ -79,28 +79,25 @@ helper.install_cbc()
 # 
 # $$
 # \begin{align*}
-# \min t_{n+1}^{arr} &  \\
-# \\
-# \text{subject to}\qquad\qquad& \\
-# \\
-# r_i^{arr} & \leq r^{max} & \forall i \in I \\
-# c_i^{arr} & \geq c^{min} & \forall i \in I \\
-# c_i^{arr} & = c_{i-1}^{dep} - R (d_i - d_{i-1}) & \forall i \in I \\
-# r_i^{arr} & = r_{i-1}^{dep} + \frac{d_i - d_{i-1}}{v} & \forall i \in I \\
-# t_i^{arr} & = t_{i-1}^{dep} + \frac{d_i - d_{i-1}}{v} & \forall i \in I \\
-# \\
-# \begin{bmatrix}
-# c_i^{dep} & \leq & c^{max} \\
-# r_i^{dep} & = & 0 \\
-# t_i^{dep} & \geq & t_{i}^{arr} + t_{lost} + \frac{c_i^{dep} - c_i^{arr}}{C_i} \\
-# t_i^{dep} & \geq & t_{i}^{arr} + t_{rest}
+# \min \quad & t_{n+1}^{arr} \\
+# \text{s.t.} \quad
+#     & r_i^{arr}  \leq r^{max} & \forall \, i \in I \\
+#     & c_i^{arr}  \geq c^{min} & \forall \,i \in I \\
+#     & c_i^{arr}  = c_{i-1}^{dep} - R (d_i - d_{i-1}) & \forall \,i \in I \\
+#     & r_i^{arr}  = r_{i-1}^{dep} + \frac{d_i - d_{i-1}}{v} & \forall \,i \in I \\
+#     & t_i^{arr}  = t_{i-1}^{dep} + \frac{d_i - d_{i-1}}{v} & \forall \,i \in I \\
+# & \begin{bmatrix}
+#     c_i^{dep} & \leq & c^{max} \\
+#     r_i^{dep} & = & 0 \\
+#     t_i^{dep} & \geq & t_{i}^{arr} + t_{lost} + \frac{c_i^{dep} - c_i^{arr}}{C_i} \\
+#     t_i^{dep} & \geq & t_{i}^{arr} + t_{rest}
 # \end{bmatrix}
-# & \veebar
+# \veebar
 # \begin{bmatrix}
-# c_i^{dep} = c_i^{arr} \\
-# r_i^{dep} = r_i^{arr} \\
-# t_i^{dep} = t_i^{arr}
-# \end{bmatrix}& \forall i \in I
+#     c_i^{dep} = c_i^{arr} \\
+#     r_i^{dep} = r_i^{arr} \\
+#     t_i^{dep} = t_i^{arr}
+# \end{bmatrix} & \forall \, i \in I.
 # \end{align*}
 # $$
 # 
@@ -378,9 +375,3 @@ visualize(ev_plan(stations, 0, 2000))
 # 1. Does increasing the battery capacity $c^{max}$ significantly reduce the time required to travel 2000 km? Explain what you observe.
 # 
 # 2. "The best-laid schemes of mice and men go oft awry" (Robert Burns, "To a Mouse"). Modify this model so that it can be used to update a plans in response to real-time measurements. How does the charging strategy change as a function of planning horizon $D$?
-
-# In[ ]:
-
-
-
-

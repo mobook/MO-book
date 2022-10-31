@@ -18,17 +18,16 @@ helper.install_pyomo()
 helper.install_cbc()
 
 
-# We consider Caroline's material planning again, but now with more sophisticated pricing and acquisition protocols. 
-# There are now three suppliers. 
-# The suppliers can deliver the following materials:
+# ## Problem description
+# 
+# We consider BIM raw material planning, but now with more sophisticated pricing and acquisition protocols. There are now three suppliers, each of which can deliver the following materials:
 #  - A: **silicon**, **germanium** and **plastic**
 #  - B: **copper**
 #  - C: all of the above
-# Copper should be acquired in multiples of 100 gram, since it is delivered in sheets of 100 gram. 
-# Unitary materials such as silicon, germanium and plastic may be acquired in any number, but the price is in batches of 100. Meaning that 30 units of silicon with 10 units of germanium and 50 units of plastic cost as much as 1 unit of silicon but half as much as 30 units of silicon with 30 units of germanium and 50 units of plastic. 
-# Furthermore, supplier C sells all materials and offers a discount if purchased together: 100 gram of copper and a batch of unitary material cost just 7. This set price is only applied to pairs, meaning that 100 gram of copper and 2 batches cost 13.
+#  
+# For the suppliers, the following conditions apply. Copper should be acquired in multiples of 100 gram, since it is delivered in sheets of 100 gram. Unitary materials such as silicon, germanium and plastic may be acquired in any number, but the price is in batches of 100. Meaning that 30 units of silicon with 10 units of germanium and 50 units of plastic cost as much as 1 unit of silicon but half as much as 30 units of silicon with 30 units of germanium and 50 units of plastic. Furthermore, supplier C sells all materials and offers a discount if purchased together: 100 gram of copper and a batch of unitary material cost just 7. This set price is only applied to pairs, meaning that 100 gram of copper and 2 batches cost 13.
 # 
-# The prices are as follows in &euro;:
+# The summary of the prices in &euro; is given in the following table:
 # 
 # |Supplier|Copper per sheet of 100 gram|Batch of units|Together|
 # |:-------|---------------------:|-----------------:|-------:|
@@ -36,7 +35,7 @@ helper.install_cbc()
 # | B      |                    3 |                - |      - |
 # | C      |                    4 |                6 |      7 |
 # 
-# When stocking materials, the inventory costs are as follows per month:
+# Next, for stocked products inventory costs are incurred, whose summary is given in the following table:
 # 
 # |Copper per 10 gram| Silicon per unit| Germanium per unit|Plastic per unit|
 # |---:|-------:|---:|-----:|
@@ -44,24 +43,21 @@ helper.install_cbc()
 # 
 # The holding price of copper is per 10 gram and the copper stocked is rounded up to multiples of 10 grams, meaning that 12 grams pay for 20. 
 # 
-# The capacity limitations of the warehouse allow for a maximum of 10 kilogram of copper in stock at any moment.
-# There are no practical limitations to the number of units in stock.
+# The capacity limitations of the warehouse allow for a maximum of $10$ kilogram of copper in stock at any moment, but there are no practical limitations to the number of units of unitary products in stock.
 # 
-# As you recall, Caroline has the following stock at the moment:
+# Recall that BIM has the following stock at the beginning of the year:
 # 
 # |Copper |Silicon |Germanium |Plastic|
 # |---:|-------:|---:|-----:|
 # | 480|   1000 |1500| 1750 |
 # 
-# Caroline would like to have at least the following stock at the end of the year:
+# The company would like to have at least the following stock at the end of the year:
 # 
 # |Copper |Silicon |Germanium |Plastic|
 # |---:|-------:|---:|-----:|
 # | 200|    500 | 500| 1000 |
 # 
-# Please help her to model the material planning and solve it with the data above. 
-# Note that Caroline aims at minimizing the acquisition and holding costs of the materials while meeting the required quantities for production. 
-# The production is made to order, meaning that no inventory of chips is kept.
+# The goal is to build an optimization model using the data above and solve it to minimize the acquisition and holding costs of the products while meeting the required quantities for production. The production is made-to-order, meaning that no inventory of chips is kept.
 # 
 
 # In[2]:
@@ -72,8 +68,8 @@ import pandas as pd
 
 demand_data = '''
 chip, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
-Logic, 88, 125, 260, 217, 238, 286, 248, 238, 265, 293, 259, 244
-Memory, 47, 62, 81, 65, 95, 118, 86, 89, 82, 82, 84, 66
+logic, 88, 125, 260, 217, 238, 286, 248, 238, 265, 293, 259, 244
+memory, 47, 62, 81, 65, 95, 118, 86, 89, 82, 82, 84, 66
 '''
 
 demand_chips = pd.read_csv(StringIO(demand_data), index_col='chip' )
@@ -84,8 +80,8 @@ display(demand_chips)
 
 
 use = dict()
-use['Logic'] = {'silicon' : 1, 'plastic' : 1, 'copper' : 4}
-use['Memory'] = {'germanium' : 1, 'plastic' : 1, 'copper' : 2}
+use['logic'] = {'silicon' : 1, 'plastic' : 1, 'copper' : 4}
+use['memory'] = {'germanium' : 1, 'plastic' : 1, 'copper' : 2}
 use = pd.DataFrame.from_dict(use).fillna(0).astype(int)
 display(use)
 
@@ -116,7 +112,7 @@ def Table3d(m, I, J, names, K, retriever ):
 
 import pyomo.environ as pyo
 
-def VersionOne(demand, existing, desired, stock_limit,
+def BIMproduction_v1(demand, existing, desired, stock_limit,
                 supplying_copper, supplying_batches, 
                 price_copper_sheet, price_batch, discounted_price, 
                 batch_size, copper_sheet_mass, copper_bucket_size,
@@ -228,7 +224,7 @@ def VersionOne(demand, existing, desired, stock_limit,
 # In[7]:
 
 
-m1 = VersionOne(demand = demand, 
+m1 = BIMproduction_v1(demand = demand, 
     existing = {'silicon' : 1000, 'germanium': 1500, 'plastic': 1750, 'copper' : 4800 }, 
     desired = {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2000 }, 
     stock_limit = 10000,
@@ -244,7 +240,7 @@ m1 = VersionOne(demand = demand,
     unitary_holding_costs = { 'copper': 10, 'silicon' : 2, 'germanium': 2, 'plastic': 2 }
     )
 
-pyo.SolverFactory('cbc' ).solve(m1).write()
+pyo.SolverFactory('cbc').solve(m1).write()
 
 
 # In[8]:
@@ -258,6 +254,7 @@ display(stock)
 
 
 import matplotlib.pyplot as plt, numpy as np
+
 stock.T.plot(drawstyle='steps-mid',grid=True, figsize=(13,4))
 plt.xticks(np.arange(len(stock.columns)),stock.columns)
 plt.show()
@@ -303,7 +300,7 @@ x
 # In[15]:
 
 
-def VersionTwo(demand, existing, desired, 
+def BIMproduction_v2(demand, existing, desired, 
                 stock_limit,
                 supplying_copper, supplying_batches, price_copper_sheet, price_batch, discounted_price, 
                 batch_size, copper_sheet_mass, copper_bucket_size,
@@ -405,7 +402,7 @@ def VersionTwo(demand, existing, desired,
 # In[16]:
 
 
-m2 = VersionTwo(demand = demand, 
+m2 = BIMproduction_v2(demand = demand, 
     existing = {'silicon' : 1000, 'germanium': 1500, 'plastic': 1750, 'copper' : 4800 }, 
     desired = {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2000 }, 
     stock_limit = 10000,
@@ -421,7 +418,7 @@ m2 = VersionTwo(demand = demand,
     unitary_holding_costs = { 'copper': 10, 'silicon' : 2, 'germanium': 2, 'plastic': 2 }
     )
 
-pyo.SolverFactory('cbc' ).solve(m2).write()
+pyo.SolverFactory('cbc').solve(m2).write()
 
 
 # In[17]:
@@ -439,7 +436,7 @@ Table3d(m2,
 # In[18]:
 
 
-def VersionThree( demand, existing, desired, 
+def BIMproduction_v3( demand, existing, desired, 
                 stock_limit,
                 supplying_copper, supplying_batches, price_copper_sheet, price_batch, discounted_price, 
                 batch_size, copper_sheet_mass, copper_bucket_size,
@@ -547,7 +544,7 @@ def VersionThree( demand, existing, desired,
 # In[19]:
 
 
-m3 = VersionThree( demand = demand, 
+m3 = BIMproduction_v3( demand = demand, 
     existing = {'silicon' : 1000, 'germanium': 1500, 'plastic': 1750, 'copper' : 4800 }, 
     desired = {'silicon' :  500, 'germanium':  500, 'plastic': 1000, 'copper' : 2000 }, 
     stock_limit = 10000,
@@ -563,7 +560,7 @@ m3 = VersionThree( demand = demand,
     unitary_holding_costs = { 'copper': 10, 'silicon' : 2, 'germanium': 2, 'plastic': 2 }
     )
 
-pyo.SolverFactory('cbc' ).solve(m3).write()
+pyo.SolverFactory('cbc').solve(m3).write()
 
 
 # In[20]:
@@ -606,10 +603,4 @@ Table3d( m3,
         K        = m3.T, 
         retriever= lambda m,i,j,k : 0+pyo.value( m.A[k].x[i,j] ) 
         )
-
-
-# In[ ]:
-
-
-
 
