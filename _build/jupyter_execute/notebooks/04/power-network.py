@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Energy dispatch problem
+# # Extra material: Energy dispatch problem
 # 
 # To meet the energy demand, power plants run day and night across the country to produce electricy from a variety of sources such as fossil fuels and renewable energy. On the short-time scale, the best operating levels for electric power plants are derived every 15 minutes by solving the so-called *Optimal Power Flow (OPF)* model. The OPF model is an optimization problem with the objective of minimizing the total energy dispatching cost, while ensuring that the generation meets the total energy demand. Furthermore, the model takes into account many constraints, among which operational and physical constraints. 
 # 
@@ -586,9 +586,3 @@ plt.show()
 # - OPF3 uses expensive generators, and possibly not all the renewable energy
 # - OPF2 does only uses 1000 renewable energy power, because then it may keep using all the gas and coal generators. 
 # - OPF1 uses all renewable energy at all times, because it has the flexibility to use all generators in order to mitigate operational restrictions due to line flows.
-
-# In[ ]:
-
-
-
-

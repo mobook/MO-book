@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Transportation and Allocation
+# # Gasoline distribution
 # 
 # This notebook presents a transportation model to optimally allocate the delivery of a commodity from multiple sources to multiple destinations. The model invites a discussion of the pitfalls in optimizing a global objective for customers who may have an uneven share of the resulting benefits, then through model refinement arrives at a group cost-sharing plan to delivery costs.
 # 
@@ -31,12 +31,10 @@ helper.install_pyomo()
 helper.install_cbc()
 
 
-# ## Problem: Distributing Gasoline to Franchise Operators
+# ## Problem: Distributing gasoline to franchise operators
 # 
 # YaYa Gas-n-Grub is franchisor and operator for a network of regional convenience stores selling gasoline and convenience items in the United States. Each store is individually owned by a YaYa Gas-n-Grub franchisee who pays feea to the franchisor for services.
-# 
-# Gasoline is delivered by truck from regional distribution terminals. Each delivery truck carries 8,000 gallons delivered at a fixed charge of 700 dollars per delivery, or 8.75 cents per gallon. The franchise owners are eager to reduce delivery costs to boost profits.
-# 
+# Gasoline is delivered by truck from regional distribution terminals. Each delivery truck carries 8,000 gallons delivered at a fixed charge of 700€ per delivery, or 0.0875€  per gallon. The franchise owners are eager to reduce delivery costs to boost profits.
 # YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, "A" and "B", to supply the franchise operators. Rather than a fixed fee per delivery, they proposed pricing based on location. But they already have existing customers, "A" and "B" can only provide a limited amount of gasoline to new customers totaling 100,000 and 80,000 gallons respectively. The only difference between the new suppliers and the current supplier is the delivery charge.
 # 
 # The following chart shows the pricing of gasoline delivery in cents/gallon.
@@ -55,31 +53,23 @@ helper.install_cbc()
 # 
 # The franchisor and operator of YaYa Gas-n-Grub has the challenge of allocating the gasoline delivery to minimize the cost to the franchise owners. The following model will present a global objective to minimize the total cost of delivery to all franchise owners. 
 
-# ## Model 1: Minimize Total Delivery Cost
+# ## Model 1: Minimize total delivery cost
 # 
 # The decision variables for this example are labeled $x_{d, s}$ where subscript $d \in 1, \dots, n_d$ refers to the destination of the delivery and subscript $s \in 1, \dots, n_s$ to the source. The value of $x_{d,s}$ is the volume of gasoline shipped to destination $d$ from source $s$.
-# 
-# Given the cost rate $r_{d, s}$ for shipping one unit of goods from $d$ to $s$, the objective is to minimize the total cost of transporting gasoline from the sources to the destinations as given by
-# 
-# $$
-# \begin{align*}
-# \text{objective: total delivery cost}\qquad\min & \sum_{d=1}^{n_d} \sum_{s=1}^{n_s} r_{d, s} x_{d, s} \\
-# \end{align*}
-# $$
-# 
-# subject to meeting the demand requirements, $D_d$, at all destinations, and satisfying the supply constraints, $S_s$, at all sources.
+# Given the cost rate $r_{d, s}$ for shipping one unit of goods from $d$ to $s$, the objective is to minimize the total cost of transporting gasoline from the sources to the destinations subject to meeting the demand requirements, $D_d$, at all destinations, and satisfying the supply constraints, $S_s$, at all sources. The full mathematical formulation is:
 # 
 # $$
 # \begin{align*}
-# \text{demand constraints}\qquad\sum_{s=1}^{n_s} x_{d, s} & = D_d & \forall d\in 1, \dots, n_d \\
-# \text{supply constraints}\qquad\sum_{d=1}^{n_d} x_{d, s} & \leq S_s & \forall s\in 1, \dots, n_s \\
+#     \min \quad & \sum_{d=1}^{n_d} \sum_{s=1}^{n_s} r_{d, s} x_{d, s} \\
+#     \text{s.t.} \quad &\sum_{s=1}^{n_s} x_{d, s}  = D_d & \forall \, d\in 1, \dots, n_d & \quad \text{(demand constraints)}\\
+#     & \sum_{d=1}^{n_d} x_{d, s}  \leq S_s & \forall \, s\in 1, \dots, n_s & \quad \text{(supply constraints)}
 # \end{align*}
 # $$
 # 
 
 # ## Data Entry
 # 
-# The data is stored into Pandas DataFrame and Series objects. Note the use of a large rates to avoid assigning shipments to destination, source pairs not allowed by the problem statement.
+# The data is stored into Pandas DataFrame and Series objects. Note the use of a large rates to avoid assigning shipments to destination-source pairs not allowed by the problem statement.
 
 # In[2]:
 
@@ -126,19 +116,16 @@ display(supply.to_frame())
 display(HTML("<br><b>Gasoline Demand (Gallons)</b>"))
 display(demand.to_frame())
 
-display(HTML("<br><b>Transportation Rates (US cents per Gallon)</b>"))
+display(HTML("<br><b>Transportation Rates (€ cents per Gallon)</b>"))
 display(rates)
 
 
-# ## Pyomo Model 1: Minimize Total Delivery Cost
-# 
-# The pyomo model is an implementation of the mathematical model described above. The sets and indices have been designated with more descriptive symbols readability and maintenance. 
+# The following Pyomo model is an implementation of the mathematical optimization model described above. The sets and indices have been designated with more descriptive symbols readability and maintenance. 
 
-# In[3]:
+# In[19]:
 
 
 import pyomo.environ as pyo
-
 
 def transport(supply, demand, rates):
     m = pyo.ConcreteModel()
@@ -183,7 +170,6 @@ def transport(supply, demand, rates):
 
     return m
 
-
 m = transport(supply, demand, rates / 100)
 
 results = pd.DataFrame(
@@ -201,39 +187,30 @@ results["marginal cost"] = pd.Series(
     {dst: m.dual[m.demand_constraint[dst]] for dst in m.DESTINATIONS}
 )
 
-print(f"Old Delivery Costs = $ {sum(demand)*700/8000}")
-print(f"New Delivery Costs = $ {m.total_cost()}")
+print(f"Old Delivery Costs = {sum(demand)*700/8000:.2f}€")
+print(f"New Delivery Costs = {m.total_cost():.2f}€\n")
 display(results)
 
 results.plot(y="savings", kind="bar")
 model1_results = results
 
 
-# ## Model 2: Minimize Cost Rate for Franchise Owners
+# ## Model 2: Minimize cost rate for franchise owners
 # 
-# Minimizing total costs provides no guarantee that individual franchise owners will benefit equally, or in fact benefit at all, from minimizing total costs. In this example neither "Emma" or "Fujita" would save any money on delivery costs, and the majority of savings goes to just two of the franchisees.  Without a better distribution of the benefits there may be little enthusiasm among the franchisees to adopt change.
-# 
-# This observation motivates an attempt at a second model. In this case the objective is minimize a common rate for the cost of gasoline distribution.
+# Minimizing total costs provides no guarantee that individual franchise owners will benefit equally, or in fact benefit at all, from minimizing total costs. In this example neither Emma or Fujita would save any money on delivery costs, and the majority of savings goes to just two of the franchisees.  Without a better distribution of the benefits there may be little enthusiasm among the franchisees to adopt change. This observation motivates an attempt at a second model. In this case the objective is minimize a common rate for the cost of gasoline distribution subject to meeting the demand and supply constraints, $S_s$, at all sources. The mathematical formulation of this different problem is as follows:
 # 
 # $$
 # \begin{align*}
-# \text{objective: common distribution rate}\qquad\min \rho \\
-# \end{align*}
-# $$
-# 
-# subject to meeting the demand and supply constraints, $S_s$, at all sources.
-# 
-# $$
-# \begin{align*}
-# \text{common cost rate}\qquad\sum_{s=1}^{n_s} r_{d, s} x_{d, s} & \leq \rho D_d & \forall d\in 1, \dots, n_d\\
-# \text{demand constraints}\qquad\sum_{s=1}^{n_s} x_{d, s} & = D_d & \forall s\in 1, \dots, n_d \\
-# \text{supply constraints}\qquad\sum_{d=1}^{n_d} x_{d, s} & \leq S_s & \forall s\in 1, \dots, n_s \\
+#     \min \quad & \rho \\
+#     \text{s.t.} \quad &\sum_{s=1}^{n_s} x_{d, s}  = D_d & \forall \, d\in 1, \dots, n_d & \quad \text{(demand constraints)}\\
+#     & \sum_{d=1}^{n_d} x_{d, s}  \leq S_s & \forall \, s\in 1, \dots, n_s & \quad \text{(supply constraints)}\\
+#     & \sum_{s=1}^{n_s} r_{d, s} x_{d, s} \leq \rho D_d & \forall d\in 1, \dots, n_d & \quad \text{(common cost rate)}\\
 # \end{align*}
 # $$
 # 
 # The following Pyomo model implements this formulation.
 
-# In[4]:
+# In[20]:
 
 
 import pyomo.environ as pyo
@@ -315,39 +292,32 @@ print(f"New Delivery Costs = $ {m.total_cost()}")
 display(results)
 
 results.plot(y="savings", kind="bar")
+plt.show()
 
 
-# ## Model 3: Minimize Total Cost for a Cost-Sharing Plan
+# ## Model 3: Minimize total cost for a cost-sharing plan
 # 
 # The prior two models demonstrated some practical difficulties in realizing the benefits of a cost optimization plan. Model 1 will likely fail in a franchisor/franchisee arrangement because the realized savings would be fore the benefit of a few. 
 # 
-# Model 2 was an attempt to remedy the problem by solving for an allocation of deliveries that would lower the cost rate that would be paid by each franchisee directly to the gasoline distributors. Perhaps surprisingly, the resulting solution offered no savings to any franchisee. Inspecting the data shows the source of the problem is that two franschisees, "Emma" and "Fujita", simply have no lower cost alternative than the current supplier. Therefore finding a distribution plan with direct payments to the distributors that lowers everyone's cost is an impossible task.
+# Model 2 was an attempt to remedy the problem by solving for an allocation of deliveries that would lower the cost rate that would be paid by each franchisee directly to the gasoline distributors. Perhaps surprisingly, the resulting solution offered no savings to any franchisee. Inspecting the data shows the source of the problem is that two franschisees, Emma and Fujita, simply have no lower cost alternative than the current supplier. Therefore finding a distribution plan with direct payments to the distributors that lowers everyone's cost is an impossible task.
 # 
 # The third model addresses this problem with a plan to share the cost savings among the franchisees. In this plan, the franchisor would collect delivery fees from the franchisees to pay the gasoline distributors. The optimization objective returns to the problem to minimizing total delivery costs, but then adds a constraint that defines a common cost rate to charge all franchisees. By offering a benefit to all parties, the franchisor offers incentive for group participation in contracting for gasoline distribution services.
 # 
+# In mathematical terms, the problem can be formulated as follows:
 # 
 # $$
 # \begin{align*}
-# \text{objective: total delivery cost}\qquad\min  C \\
-# \end{align*}
-# $$
-# 
-# subject to meeting the demand and supply constraints, $S_s$, at all sources.
-# 
-# $$
-# \begin{align*}
-# \text{total cost}\qquad \sum_{d=1}^{n_d} \sum_{s=1}^{n_s} r_{d, s} x_{d, s} & = C \\
-# \text{uniform cost sharing rate}\qquad\sum_{s=1}^{n_s} r_{d, s} x_{d, s} & = \rho D_d & \forall d\in 1, \dots, n_d\\
-# \text{demand constraints}\qquad\sum_{s=1}^{n_s} x_{d, s} & = D_d & \forall d\in 1, \dots, n_d \\
-# \text{supply constraints}\qquad\sum_{d=1}^{n_d} x_{d, x} & \leq S_s & \forall s\in 1, \dots, n_s \\
+#     \min \quad & \sum_{d=1}^{n_d} \sum_{s=1}^{n_s} r_{d, s} x_{d, s} \\
+#     \text{s.t.} \quad &\sum_{s=1}^{n_s} x_{d, s}  = D_d & \forall \, d\in 1, \dots, n_d & \quad \text{(demand constraints)}\\
+#     & \sum_{d=1}^{n_d} x_{d, s}  \leq S_s & \forall \, s\in 1, \dots, n_s & \quad \text{(supply constraints)}\\
+#     & \sum_{s=1}^{n_s} r_{d, s} x_{d, s} = \rho D_d & \forall d\in 1, \dots, n_d & \quad \text{(uniform cost sharing rate)}\\
 # \end{align*}
 # $$
 
-# In[5]:
+# In[22]:
 
 
 import pyomo.environ as pyo
-
 
 def transport(supply, demand, rates):
     m = pyo.ConcreteModel()
@@ -418,15 +388,15 @@ results["marginal cost"] = pd.Series(
     {dst: m.dual[m.demand_constraint[dst]] for dst in m.DESTINATIONS}
 )
 
-print(f"Old Delivery Costs = $ {sum(demand)*700/8000}")
-print(f"New Delivery Costs = $ {m.total_cost()}")
+print(f"Old Delivery Costs = {sum(demand)*700/8000:.2f}€")
+print(f"New Delivery Costs = {m.total_cost():.2f}€\n")
 display(results)
 
 results.plot(y="savings", kind="bar")
 model3_results = results
 
 
-# ## Comparing Model Results
+# ## Comparing model results
 # 
 # The following charts demonstrate the difference in outcomes for Model 1 and Model 3 (Model 2 was left out as entirely inadequate). The group cost-sharing arrangement produces the same group savings, but distributes the benefits in a manner likely to be more acceptable to the majority of participants.
 
@@ -444,7 +414,7 @@ model1_results.plot(y="savings", marker="o", ax=ax[0], color="g", alpha=alpha)
 model3_results.plot(y="savings", kind="bar", ax=ax[0], color="r", alpha=alpha)
 model3_results.plot(y="savings", marker="o", ax=ax[0], color="r", alpha=alpha)
 ax[0].legend(["Model 1", "Model 3"])
-ax[0].set_title("delivery costs by franchise")
+ax[0].set_title("Delivery costs by franchise")
 
 model1_results.plot(y=["contract rate"], kind="bar", ax=ax[1], color="g", alpha=alpha)
 model1_results.plot(y="contract rate", marker="o", ax=ax[1], color="g", alpha=alpha)
@@ -453,10 +423,11 @@ model3_results.plot(y="contract rate", kind="bar", ax=ax[1], color="r", alpha=al
 model3_results.plot(y="contract rate", marker="o", ax=ax[1], color="r", alpha=alpha)
 ax[1].set_ylim(0.07, 0.09)
 ax[1].legend(["Model 1", "Model 3"])
-ax[1].set_title("delivery cost rate by franchise")
+ax[1].set_title("Contract rates by franchise")
+plt.show()
 
 
-# ## Didactics: Reporting Solutions
+# ## Didactics: Reporting solutions
 # 
 # Pyomo models can produce considerable amounts of data that must be summarized and presented for analysis and decision making. In this application, for example, the individual franchise owners receive differing amounts of savings which is certain to result in considerable discussion and possibly negotiation with the franchisor. 
 # 
@@ -552,7 +523,7 @@ for src in m.SOURCES:
 # 
 # The Python Pandas library provides a highly flexible framework for data science applications. The next cell demonstrates the translation of Pyomo object values to Pandas DataFrames
 
-# In[15]:
+# In[17]:
 
 
 suppliers = pd.DataFrame(
@@ -586,13 +557,14 @@ shipments = pd.DataFrame(
 ).T
 display(shipments)
 shipments.plot(kind="bar")
+plt.show()
 
 
 # ### Graphviz
 # 
 # The `graphviz` utility is a collection of tools for visually graphs and directed graphs. Unfortunately, the package can be troublesome to install on laptops in a way that is compatible with many JupyterLab installations. Accordingly, the following cell is intended for use on Google Colab which provides a preinstalled version of `graphviz`.
 
-# In[16]:
+# In[18]:
 
 
 import sys
@@ -635,10 +607,4 @@ if "google.colab" in sys.modules:
                 )
 
     display(dot)
-
-
-# In[ ]:
-
-
-
 
