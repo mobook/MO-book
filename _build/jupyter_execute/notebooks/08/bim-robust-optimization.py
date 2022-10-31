@@ -343,10 +343,7 @@ def BIMWithGammaUncertainty( delta, gamma, domain=pyo.NonNegativeReals ):
     m.z   = pyo.Var(chips,domain=pyo.NonNegativeReals)
     m.lam = pyo.Var(domain=pyo.NonNegativeReals)
 
-    m.robustcopper = pyo.Constraint( \
-     expr = sum([copper[t]*m.x[t] for t in chips]) \
-          + gamma * m.lam \
-          + sum(m.z[t] for t in chips) <= 4800)
+    m.robustcopper = pyo.Constraint(      expr = sum([copper[t]*m.x[t] for t in chips])           + gamma * m.lam           + sum(m.z[t] for t in chips) <= 4800)
 
     def up_rule( model, t ):
         return model.z[t] >=  delta * model.x[t] - model.lam

@@ -173,8 +173,7 @@ def arbitrage(T, df, R='EUR'):
     # one round of transactions
     @m.Constraint(m.NODES, m.T1)
     def balances(m, j, t):
-        return m.w[j, t] == m.w[j, t-1] - sum(m.x[i, j, t] for i in m.NODES if i != j) \
-                               + sum(df.loc[j, i]*m.x[j, i, t] for i in m.NODES if i != j)
+        return m.w[j, t] == m.w[j, t-1] - sum(m.x[i, j, t] for i in m.NODES if i != j)                                + sum(df.loc[j, i]*m.x[j, i, t] for i in m.NODES if i != j)
 
     @m.Objective(sense=pyo.maximize)
     def wealth(m):

@@ -303,9 +303,7 @@ def milk_pooling(p=0, q="fat"):
 
     @m.Objective(sense=pyo.maximize)
     def profit(m):
-        return + sum(m.z[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C) \
-               + sum(m.y[c]*customers.loc[c, "price"] for c in m.C) \
-               - sum(m.x[r]*suppliers.loc[r, "cost"] for r in m.R)
+        return + sum(m.z[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C)                + sum(m.y[c]*customers.loc[c, "price"] for c in m.C)                - sum(m.x[r]*suppliers.loc[r, "cost"] for r in m.R)
 
     @m.Constraint(m.C)
     def customer_demand(m, c):
@@ -321,8 +319,7 @@ def milk_pooling(p=0, q="fat"):
     
     @m.Constraint(m.C)
     def customer_quality(m, c):
-        return m.p * m.y[c] + sum(suppliers.loc[l, q] * m.z[l, c] for l in m.L) \
-                 >= customers.loc[c, q] * (sum(m.z[l, c] for l in m.L) + m.y[c])
+        return m.p * m.y[c] + sum(suppliers.loc[l, q] * m.z[l, c] for l in m.L)                  >= customers.loc[c, q] * (sum(m.z[l, c] for l in m.L) + m.y[c])
 
     pyo.SolverFactory('cbc').solve(m)
     
@@ -488,9 +485,7 @@ def milk_pooling_convex(q="fat"):
 
     @m.Objective(sense=pyo.maximize)
     def profit(m):
-        return + sum(m.z[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C) \
-               + sum(m.y[c]*customers.loc[c, "price"] for c in m.C) \
-               - sum(m.x[r]*suppliers.loc[r, "cost"] for r in m.R)
+        return + sum(m.z[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C)                + sum(m.y[c]*customers.loc[c, "price"] for c in m.C)                - sum(m.x[r]*suppliers.loc[r, "cost"] for r in m.R)
     
     @m.Block(m.C)
     def mccormick(b, c):
@@ -514,8 +509,7 @@ def milk_pooling_convex(q="fat"):
     
     @m.Constraint(m.C)
     def customer_quality(m, c):
-        return m.w[c] + sum(suppliers.loc[l, q] * m.z[l, c] for l in m.L) \
-                 >= customers.loc[c, q] * (sum(m.z[l, c] for l in m.L) + m.y[c])
+        return m.w[c] + sum(suppliers.loc[l, q] * m.z[l, c] for l in m.L)                  >= customers.loc[c, q] * (sum(m.z[l, c] for l in m.L) + m.y[c])
 
     pyo.SolverFactory('cbc').solve(m)
     
@@ -610,9 +604,7 @@ def milk_pooling_bilinear(q="fat"):
 
     @m.Objective(sense=pyo.maximize)
     def profit(m):
-        return + sum(m.z[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C) \
-               + sum(m.y[c]*customers.loc[c, "price"] for c in m.C) \
-               - sum(m.x[r]*suppliers.loc[r, "cost"] for r in m.R)
+        return + sum(m.z[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C)                + sum(m.y[c]*customers.loc[c, "price"] for c in m.C)                - sum(m.x[r]*suppliers.loc[r, "cost"] for r in m.R)
 
     @m.Constraint(m.C)
     def customer_demand(m, c):
@@ -628,8 +620,7 @@ def milk_pooling_bilinear(q="fat"):
     
     @m.Constraint(m.C)
     def customer_quality(m, c):
-        return m.p * m.y[c] + sum(suppliers.loc[l, q] * m.z[l, c] for l in m.L) \
-                 >= customers.loc[c, q] * (sum(m.z[l, c] for l in m.L) + m.y[c])
+        return m.p * m.y[c] + sum(suppliers.loc[l, q] * m.z[l, c] for l in m.L)                  >= customers.loc[c, q] * (sum(m.z[l, c] for l in m.L) + m.y[c])
 
     pyo.SolverFactory('couenne').solve(m)
     
