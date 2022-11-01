@@ -3,22 +3,28 @@
 
 # # Stock optimization for seafood distribution center
 # 
-# Each day a seafood distribution center buys $x$ tons of tuna at unit cost $c$. Next, a certain demand $z$ is observed from the retailers, to which the fish is sold at a unit price per ton $p > c$. The leftover fish needs to be stored in a cold warehouse for a unit holding cost $h$. The seafood distribution center cannot sell more fish than it has in stock, thus at most $\min\{z, x \}$ tons will be sold and there will possibly be $\max\{ 0, x-z\}$ tons left. Therefore, the net profit is $p \min\{z, x \} - cx - h (x-z)^+$. Provided that a reasonable estimate of the probability distribution $\mathbb P$ of the tuna demand $z$ is available, if we want to maximize the long-term net profit then we can formulate the following optimization problem:
+# Each day a seafood distribution center buys $x$ tons of tuna at unit cost $c$ per ton. The next day a demand $z$ is observed from the retailers to whom the fish is sold at a unit price $p > c$. Any leftover tuna needs to be stored in a cold warehouse at a unit holding cost $h$. The seafood distribution center cannot sell more fish than it has in stock, thus at most $\min\{z, x \}$ tons will be sold which will leave $h(x-z)^+$ tons leftover, where $h()^+$ is the positive residual. Accounting for these costs, the net profit is
+# 
+# $$\text{net profit} = p \min\{z, x \} - cx - h (x-z)^+.$$
+# 
+# Given a reasonable estimate of the probability distribution $\mathbb P$ of the tuna demand $z$, to maximize the long-term net profit then we can formulate the following optimization problem:
 # 
 # $$
-#     \max\limits_{x \geq 0} \, \mathbb E  [ p \min\{z, x \} - cx - h (x-z)^+ ].
+# \max\limits_{x \geq 0} \, \mathbb E_z  [ p \min\{z, x \} - cx - h (x-z)^+ ].
 # $$
 # 
-# Note that in the simple setting of this problem the feasible set for the decision variable $x$ is not affected by uncertainty, since we have $x \geq 0$ regardless of the demand $z$.
+# Since we have $x \geq 0$ regardless of the demand $z$, the feasible set for the decision variable $x$ is not affected by unknown demand.
 # 
-# Suppose the unit prices for a ton of tuna are $c = 10 , p = 25 , h = 3$, and that the demand for tuna in tons can $\xi$ modelled as a continuous random variable.
+
+# ## Explicit Solution
 # 
-# (a) Find the optimal solution of the seafood inventory problem using the explicit formula that features the inverse CDFs/quantile functions for the following three distributions:
-#  - a uniform distribution on the interval $[50,150]$;
-# *Hint: see [Uniform distribution CDF and its inverse](https://en.wikipedia.org/wiki/Continuous_uniform_distribution#Cumulative_distribution_function)*
-#  - a Pareto distribution on the interval $[50,+\infty)$ with $x_m=50$ and exponent $\alpha=2$. *Hint: the inverse CDF for a Pareto distribution is given by* $H^{-1}(\varepsilon) = \frac{x_m}{(1-\varepsilon)^{1/\alpha}}$.
-#  - a Weibull distribution on the interval $[0,+\infty)$ with shape parameter $k=2$ and scale parameter $\lambda=113$, see [Weibull distribution CDF and its inverse](https://en.wikipedia.org/wiki/Weibull_distribution#Cumulative_distribution_function).
+# Suppose the unit prices for a ton of tuna are $c = 10$, $p = 25$, $h = 3$, and that the demand for tuna in tons can be modeled as a continuous random variable $\xi$. Find the optimal solution of the seafood inventory problem using the explicit formula that features the inverse CDFs/quantile functions for the following three distributions:
 # 
+# 1. a uniform distribution on the interval $[50, 150]$. *Hint: see [Uniform distribution CDF and its inverse](https://en.wikipedia.org/wiki/Continuous_uniform_distribution#Cumulative_distribution_function)*
+# 
+# 2.  a Pareto distribution on the interval $[50,+\infty)$ with $x_m=50$ and exponent $\alpha=2$. *Hint: the inverse CDF for a Pareto distribution is given by* $H^{-1}(\varepsilon) = \frac{x_m}{(1-\varepsilon)^{1/\alpha}}$.
+# 
+# 3. a Weibull distribution on the interval $[0,+\infty)$ with shape parameter $k=2$ and scale parameter $\lambda=113$. See [Weibull distribution CDF and its inverse](https://en.wikipedia.org/wiki/Weibull_distribution#Cumulative_distribution_function).
 
 # In[1]:
 
@@ -37,31 +43,72 @@ helper.install_cbc()
 helper.install_ipopt()
 
 
-# In[2]:
+# In[1]:
 
 
-get_ipython().run_line_magic('matplotlib', 'inline')
 import pyomo.environ as pyo
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
 import math
-import logging
-from IPython.display import Markdown
-
-cbc_solver = pyo.SolverFactory('cbc')
-glpk_solver = pyo.SolverFactory('glpk')
-ipopt_solver = pyo.SolverFactory('ipopt')
 
 
-# In[3]:
+# In[50]:
 
 
 # Setting the parameters
 c = 10
 p = 25
 h = 3
+
+# quantile
+q = (p - c)/(p + h)
+
+# distribution functions
+import scipy.stats as stats
+
+uniform = stats.uniform(loc=50, scale=100)
+pareto = stats.pareto(scale=50, b=2)
+weibull = stats.weibull_min(scale=113, c=2)
+
+
+# In[78]:
+
+
+print(stats.uniform(loc=50, scale=100).ppf(q))
+print(stats.pareto(scale=50, b=2).ppf(q))
+print(stats.weibull_min(scale=113, c=2).ppf(q))
+
+
+# Plotting the distributions
+
+# In[77]:
+
+
+x = np.linspace(0, 300, 1000)
+
+fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+
+lu = ax[0].plot(x, uniform.pdf(x), label="uniform")
+lp = ax[0].plot(x, pareto.pdf(x), label="pareto")
+lw = ax[0].plot(x, weibull.pdf(x), label="weibull")
+ax[0].set_title("Probability Density Functions")
+ax[0].legend()
+
+ax[1].plot(x, uniform.cdf(x), label="uniform")
+ax[1].plot(x, pareto.cdf(x), label="pareto")
+ax[1].plot(x, weibull.cdf(x), label="weibull")
+ax[1].set_title("Cumulative Distributon Functions")
+ax[1].legend()
+
+ax[1].axhline(q, linestyle='--')
+ax[1].plot(uniform.ppf(q), q, '.', color=lu[0].get_color(), ms=10)
+ax[1].plot(pareto.ppf(q), q, '.', color=lp[0].get_color(), ms=10)
+ax[1].plot(weibull.ppf(q), q, '.', color=lw[0].get_color(), ms=10)
+
+
+# In[3]:
+
 
 # Definining the three inverse CDFs/quantile functions for the three distributions
 def quantileuniform(epsilon, a, b):
@@ -86,26 +133,24 @@ display(Markdown(f"**Optimal solution** for Weibull distribution: ${quantileweib
 # In[4]:
 
 
-# Two-stage stochastic LP
 
 c = 10
 p = 25
 h = 3
 
-model = pyo.ConcreteModel()
-model.xi = 100
+m = pyo.ConcreteModel()
+m.xi = 100
 
 # first stage variable
-model.x = pyo.Var(within=pyo.NonNegativeReals) #bought
+m.x = pyo.Var(domain=pyo.NonNegativeReals)
 
-def first_stage_profit(model):
-    return -c * model.x
-
-model.first_stage_profit = pyo.Expression(rule=first_stage_profit)
+@m.Expression()
+def first_stage_profit(m):
+    return -c * m.x
 
 # second stage variables
-model.y = pyo.Var(within=pyo.NonNegativeReals) #sold
-model.z = pyo.Var(within=pyo.NonNegativeReals) #unsold to be stored in cold warehouse 
+model.y = pyo.Var(domain=pyo.NonNegativeReals)
+model.z = pyo.Var(domain=pyo.NonNegativeReals)
 
 # second stage constraints
 model.cantsoldfishidonthave = pyo.Constraint(expr=model.y <= model.xi)
