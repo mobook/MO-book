@@ -18,7 +18,7 @@
 
 # ## Installations and Imports
 
-# In[6]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -35,7 +35,7 @@ helper.install_cbc()
 helper.install_ipopt()
 
 
-# In[7]:
+# In[2]:
 
 
 import pyomo.environ as pyo
@@ -56,7 +56,7 @@ import scipy.stats as stats
 # 
 # 3. a Weibull distribution on the interval $[0,+\infty)$ with shape parameter $k=2$ and scale parameter $\lambda=113$. See [Weibull distribution CDF and its inverse](https://en.wikipedia.org/wiki/Weibull_distribution#Cumulative_distribution_function).
 
-# In[65]:
+# In[3]:
 
 
 # Setting parameters
@@ -72,7 +72,7 @@ q = (p - c)/(p + h)
 
 # Plotting the distributions
 
-# In[73]:
+# In[4]:
 
 
 x = np.linspace(0, 250, 1000)
