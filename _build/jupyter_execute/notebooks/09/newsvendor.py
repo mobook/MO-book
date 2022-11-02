@@ -16,17 +16,9 @@
 # Since we have $x \geq 0$ regardless of the demand $z$, the feasible set for the decision variable $x$ is not affected by unknown demand.
 # 
 
-# ## Explicit Solution
-# 
-# Suppose the unit prices for a ton of tuna are $c = 10$, $p = 25$, $h = 3$, and that the demand for tuna in tons can be modeled as a continuous random variable $\xi$. Find the optimal solution of the seafood inventory problem using the explicit formula that features the inverse CDFs/quantile functions for the following three distributions:
-# 
-# 1. a uniform distribution on the interval $[50, 150]$. *Hint: see [Uniform distribution CDF and its inverse](https://en.wikipedia.org/wiki/Continuous_uniform_distribution#Cumulative_distribution_function)*
-# 
-# 2.  a Pareto distribution on the interval $[50,+\infty)$ with $x_m=50$ and exponent $\alpha=2$. *Hint: the inverse CDF for a Pareto distribution is given by* $H^{-1}(\varepsilon) = \frac{x_m}{(1-\varepsilon)^{1/\alpha}}$.
-# 
-# 3. a Weibull distribution on the interval $[0,+\infty)$ with shape parameter $k=2$ and scale parameter $\lambda=113$. See [Weibull distribution CDF and its inverse](https://en.wikipedia.org/wiki/Weibull_distribution#Cumulative_distribution_function).
+# ## Installations and Imports
 
-# In[1]:
+# In[6]:
 
 
 # install Pyomo and solvers
@@ -43,7 +35,7 @@ helper.install_cbc()
 helper.install_ipopt()
 
 
-# In[1]:
+# In[7]:
 
 
 import pyomo.environ as pyo
@@ -51,12 +43,23 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import math
+import scipy.stats as stats
 
 
-# In[50]:
+# ## Explicit Solution for Stochastic Demand
+# 
+# Suppose the unit prices for a ton of tuna are $c = 10$, $p = 25$, $h = 3$, and that the demand for tuna in tons can be modeled as a continuous random variable $\xi$. Find the optimal solution of the seafood inventory problem using the explicit formula that features the inverse CDFs/quantile functions for the following three distributions:
+# 
+# 1. a uniform distribution on the interval $[50, 150]$. *Hint: see [Uniform distribution CDF and its inverse](https://en.wikipedia.org/wiki/Continuous_uniform_distribution#Cumulative_distribution_function)*
+# 
+# 2.  a Pareto distribution on the interval $[50,+\infty)$ with $x_m=50$ and exponent $\alpha=2$. *Hint: the inverse CDF for a Pareto distribution is given by* $H^{-1}(\varepsilon) = \frac{x_m}{(1-\varepsilon)^{1/\alpha}}$.
+# 
+# 3. a Weibull distribution on the interval $[0,+\infty)$ with shape parameter $k=2$ and scale parameter $\lambda=113$. See [Weibull distribution CDF and its inverse](https://en.wikipedia.org/wiki/Weibull_distribution#Cumulative_distribution_function).
+
+# In[65]:
 
 
-# Setting the parameters
+# Setting parameters
 c = 10
 p = 25
 h = 3
@@ -64,73 +67,64 @@ h = 3
 # quantile
 q = (p - c)/(p + h)
 
-# distribution functions
-import scipy.stats as stats
 
-uniform = stats.uniform(loc=50, scale=100)
-pareto = stats.pareto(scale=50, b=2)
-weibull = stats.weibull_min(scale=113, c=2)
-
-
-# In[78]:
-
-
-print(stats.uniform(loc=50, scale=100).ppf(q))
-print(stats.pareto(scale=50, b=2).ppf(q))
-print(stats.weibull_min(scale=113, c=2).ppf(q))
-
+# Note that all the three distribution above have the same expected value, that is $\mathbb E \xi = 100$ tons.
 
 # Plotting the distributions
 
-# In[77]:
+# In[73]:
 
 
-x = np.linspace(0, 300, 1000)
+x = np.linspace(0, 250, 1000)
 
-fig, ax = plt.subplots(1, 2, figsize=(12, 4))
-
-lu = ax[0].plot(x, uniform.pdf(x), label="uniform")
-lp = ax[0].plot(x, pareto.pdf(x), label="pareto")
-lw = ax[0].plot(x, weibull.pdf(x), label="weibull")
+fig, ax = plt.subplots(2, 1, figsize=(10, 8))
 ax[0].set_title("Probability Density Functions")
-ax[0].legend()
-
-ax[1].plot(x, uniform.cdf(x), label="uniform")
-ax[1].plot(x, pareto.cdf(x), label="pareto")
-ax[1].plot(x, weibull.cdf(x), label="weibull")
 ax[1].set_title("Cumulative Distributon Functions")
-ax[1].legend()
-
 ax[1].axhline(q, linestyle='--')
-ax[1].plot(uniform.ppf(q), q, '.', color=lu[0].get_color(), ms=10)
-ax[1].plot(pareto.ppf(q), q, '.', color=lp[0].get_color(), ms=10)
-ax[1].plot(weibull.ppf(q), q, '.', color=lw[0].get_color(), ms=10)
+
+def plot_distribution(name, distribution, q):
+    
+    # find optimal solution using a distribution's quantile function (i.e., ppf in scipy.stats)
+    x_opt = distribution.ppf(q)
+    print(f"\nMean of {name} distribution = {distribution.std()}")    
+    print(f"Optimal solution for {name} distribution = {x_opt:0.2f}\n")
+    
+    # show pdf, cdf, and graphical solution
+    c = ax[0].plot(x, distribution.pdf(x), lw=3, label=name)[0].get_color()
+    ax[1].plot(x, distribution.cdf(x), color=c, lw=3, label=name)
+    ax[1].plot([x_opt]*2, [0, q], color=c)
+    ax[1].plot(x_opt, q, '.', color=c, ms=10)
+      
+plot_distribution("Uniform", stats.uniform(loc=50, scale=100), q)
+plot_distribution("Pareto", stats.pareto(scale=50, b=2), q)
+plot_distribution("Weibull", stats.weibull_min(scale=112.838, c=2), q)
+   
+ax[0].legend()
+ax[1].legend()
+fig.tight_layout()
 
 
-# In[3]:
+# :::{Exercise}
+# Assume the demand is specified by the Weibull distribution given in the prior problem statement. How does the optimal order size change when (changing one variable at a time)
+# 
+# * the holding costs goes from 3 to 6?
+# * the cost of goods from 10 to 15?
+# * the price to retailers goes from 25 to 20?
+# 
+# Summarize your findings with a statement regarding the relationship between financial risk and return.
+# :::
+# 
+# 
+# :::{Exercise}
+# Repeat this calculation using Normal distributions that have the same mean value of 100.0, but using standard deviations of 2, 5, 10, and 20. How does the optimal order size varying with increasing demand uncertainty?
+# :::
 
-
-# Definining the three inverse CDFs/quantile functions for the three distributions
-def quantileuniform(epsilon, a, b):
-    return a + epsilon*(b-a)
-
-def quantilepareto(epsilon, xm, alpha):
-    return xm/(1.0-epsilon)**(1.0/alpha)
-
-def quantileweibull(epsilon, k, l):
-    return l*(-np.log(1-epsilon))**(1.0/k)
-
-# Calculating the optimal decision for each of the three distributions
-display(Markdown(f"**Optimal solution** for uniform distribution: ${quantileuniform((p-c)/(p+h),50,150):.2f}$ tons"))
-display(Markdown(f"**Optimal solution** for Pareto distribution: ${quantilepareto((p-c)/(p+h),50,2):.2f}$ tons"))
-display(Markdown(f"**Optimal solution** for Weibull distribution: ${quantileweibull((p-c)/(p+h),2,113):.2f}$ tons"))
-
-
-# Note that all the three distribution above have the same expected value, that is $\mathbb E \xi = 100$ tons.
+# ## Deterministic Solution for Mean Demand
 # 
 # (b) Find the optimal solution of the deterministic LP model obtained by assuming the demand is fixed $\xi=\bar{\xi}$ and equal to the average demand $\bar{\xi} = \mathbb E \xi = 100$.
 
 # In[4]:
+
 
 
 c = 10

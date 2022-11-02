@@ -241,18 +241,14 @@ def laborA(model):
 @m.Disjunct()
 def technology_A(disjunct):
     m = disjunct.model()
-    disjunct.laborB = \
-        pyo.Constraint(expr = 2*m.production_x + m.production_y <= 100)
-    disjunct.profit_expr = \
-        pyo.Constraint(expr = m.profit == 40*m.production_x + 30*m.production_y)
+    disjunct.laborB =         pyo.Constraint(expr = 2*m.production_x + m.production_y <= 100)
+    disjunct.profit_expr =         pyo.Constraint(expr = m.profit == 40*m.production_x + 30*m.production_y)
 
 @m.Disjunct()
 def technology_B(disjunct):
     m = disjunct.model()
-    disjunct.laborB = \
-        pyo.Constraint(expr = 1.5*m.production_x + m.production_y <= 100)
-    disjunct.profit_expr = \
-        pyo.Constraint(expr = m.profit == 60*m.production_x + 30*m.production_y)
+    disjunct.laborB =         pyo.Constraint(expr = 1.5*m.production_x + m.production_y <= 100)
+    disjunct.profit_expr =         pyo.Constraint(expr = m.profit == 60*m.production_x + 30*m.production_y)
 
 @m.Disjunction(xor=True)
 def technology(model):
