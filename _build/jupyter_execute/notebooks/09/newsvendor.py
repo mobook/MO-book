@@ -86,7 +86,7 @@ def plot_distribution(name, distribution, q):
     
     # find optimal solution using a distribution's quantile function (i.e., ppf in scipy.stats)
     x_opt = distribution.ppf(q)
-    print(f"\nMean of {name} distribution = {distribution.std()}")    
+    print(f"\nMean of {name} distribution = {distribution.mean()}")    
     print(f"Optimal solution for {name} distribution = {x_opt:0.2f}\n")
     
     # show pdf, cdf, and graphical solution
@@ -104,7 +104,7 @@ ax[1].legend()
 fig.tight_layout()
 
 
-# :::{Exercise}
+# :::{admonition} Exercise
 # Assume the demand is specified by the Weibull distribution given in the prior problem statement. How does the optimal order size change when (changing one variable at a time)
 # 
 # * the holding costs goes from 3 to 6?
@@ -115,7 +115,7 @@ fig.tight_layout()
 # :::
 # 
 # 
-# :::{Exercise}
+# :::{admonition} Exercise
 # Repeat this calculation using Normal distributions that have the same mean value of 100.0, but using standard deviations of 2, 5, 10, and 20. How does the optimal order size varying with increasing demand uncertainty?
 # :::
 
