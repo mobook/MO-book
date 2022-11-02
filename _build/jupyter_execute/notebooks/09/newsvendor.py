@@ -133,7 +133,6 @@ display(Markdown(f"**Optimal solution** for Weibull distribution: ${quantileweib
 # In[4]:
 
 
-
 c = 10
 p = 25
 h = 3
