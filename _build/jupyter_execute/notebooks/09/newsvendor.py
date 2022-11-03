@@ -126,7 +126,6 @@ fig.tight_layout()
 # In[4]:
 
 
-
 c = 10
 p = 25
 h = 3
