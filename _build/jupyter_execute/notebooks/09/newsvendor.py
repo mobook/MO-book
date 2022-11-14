@@ -121,53 +121,133 @@ fig.tight_layout()
 
 # ## Deterministic Solution for Mean Demand
 # 
-# (b) Find the optimal solution of the deterministic LP model obtained by assuming the demand is fixed $\xi=\bar{\xi}$ and equal to the average demand $\bar{\xi} = \mathbb E \xi = 100$.
+# Find the optimal solution of the deterministic LP model obtained by assuming the demand is fixed $\xi=\bar{\xi}$ and equal to the average demand $\bar{\xi} = \mathbb E \xi = 100$.
 
-# In[4]:
+# In[20]:
 
 
+# problem data
 c = 10
 p = 25
 h = 3
 
 m = pyo.ConcreteModel()
-m.xi = 100
 
-# first stage variable
+# key parameter for possible parametric study
+m.mean_demand = pyo.Param(initialize=100, mutable=True)
+
+# first stage variables and expressions
 m.x = pyo.Var(domain=pyo.NonNegativeReals)
 
 @m.Expression()
 def first_stage_profit(m):
     return -c * m.x
 
-# second stage variables
-model.y = pyo.Var(domain=pyo.NonNegativeReals)
-model.z = pyo.Var(domain=pyo.NonNegativeReals)
+# second stage variables, constraints, and expressions
+m.y = pyo.Var(domain=pyo.NonNegativeReals)
+m.z = pyo.Var(domain=pyo.NonNegativeReals)
 
-# second stage constraints
-model.cantsoldfishidonthave = pyo.Constraint(expr=model.y <= model.xi)
-model.fishdonotdisappear = pyo.Constraint(expr=model.y + model.z == model.x)
+@m.Constraint()
+def cant_sell_fish_i_dont_have(m):
+    return m.y <= m.mean_demand
 
-def second_stage_profit(model):
-    return p * model.y - h * model.z
+@m.Constraint()
+def fish_do_not_disappear(m):
+    return m.y + m.z == m.x
 
-model.second_stage_profit = pyo.Expression(rule=second_stage_profit)
+@m.Expression()
+def second_stage_profit(m):
+    return p * m.y - h * m.z
 
-def total_profit(model):
-    return model.first_stage_profit + model.second_stage_profit
+# objective
+@m.Objective(sense=pyo.maximize)
+def total_profit(m):
+    return m.first_stage_profit + m.second_stage_profit
 
-model.total_expected_profit = pyo.Objective(rule=total_profit, sense=pyo.maximize)
+result = pyo.SolverFactory('cbc').solve(m)
 
-result = cbc_solver.solve(model)
+assert result.solver.status == "ok"
+assert result.solver.termination_condition == "optimal"
 
-display(Markdown(f"**Solver status:** *{result.solver.status}, {result.solver.termination_condition}*"))
-display(Markdown(f"**Optimal solution** for determistic demand equal to $100$: $x = {model.x.value:.1f}$"))
-display(Markdown(f"**Optimal deterministic profit:** ${model.total_expected_profit():.0f}$€"))
+print(f"Optimal solution for determistic demand equal to {m.mean_demand} = {m.x():.1f} tons")
+print(f"Optimal deterministic profit = {m.total_profit():.0f}€")
 
 
+# ## Profits
+# 
 # We now assess how well we perform taking the average demand as input for each of the three demand distributions above.
 # 
-# (c) For a fixed decision variable $x=100$, approximate the expected net profit of the seafood distribution center for each of the three distributions above using the Sample Average Approximation method with $N=2500$ points. More specifically, generate $N=2500$ samples from the considered distribution and solve the extensive form of the stochastic LP resulting from those $N=2500$ scenarios.
+# For a fixed decision variable $x=100$, approximate the expected net profit of the seafood distribution center for each of the three distributions above using the Sample Average Approximation method with $N=2500$ points. More specifically, generate $N=2500$ samples from the considered distribution and solve the extensive form of the stochastic LP resulting from those $N=2500$ scenarios.
+
+# In[ ]:
+
+
+# Two-stage stochastic LP
+
+c = 10
+p = 25
+h = 3
+
+# SAA of the two-stage stochastic LP to calculate the expected profit when buying the average
+
+def NaiveSeafoodStockSAA(N, distribution, distributiontype):
+
+    m = pyo.ConcreteModel()
+    
+    m.INDICES = pyo.RangeSet(N)
+
+    model.xi = pyo.Param(model.indices, initialize=dict(enumerate(sample)))
+
+    # first stage variable
+    model.x = 100.0 #bought
+
+    def first_stage_profit(model):
+        return -c * model.x
+
+    model.first_stage_profit = pyo.Expression(rule=first_stage_profit)
+
+    # second stage variables
+    model.y = pyo.Var(model.indices, within=pyo.NonNegativeReals) #sold
+    model.z = pyo.Var(model.indices, within=pyo.NonNegativeReals) #unsold to be stored in cold warehouse 
+
+    # second stage constraints
+    model.cantsoldthingsfishdonthave = pyo.ConstraintList()
+    model.fishdonotdisappear = pyo.ConstraintList()
+    for i in model.indices:
+        model.cantsoldthingsfishdonthave.add(expr=model.y[i] <= model.xi[i])
+        model.fishdonotdisappear.add(expr=model.y[i] + model.z[i] == model.x)
+
+    def second_stage_profit(model):
+        return sum([p * model.y[i] - h * model.z[i] for i in model.indices])/float(N)
+
+    model.second_stage_profit = pyo.Expression(rule=second_stage_profit)
+
+    def total_profit(model):
+        return model.first_stage_profit + model.second_stage_profit
+
+    model.total_expected_profit = pyo.Objective(rule=total_profit, sense=pyo.maximize)
+
+    result = cbc_solver.solve(model)
+
+    display(Markdown(f"**Approximate expected optimal profit when using the average** $x=100$ with {distributiontype} demand: ${model.total_expected_profit():.2f}$€"))
+    return model.total_expected_profit()
+
+np.random.seed(20122020)
+N = 2500
+
+samples = np.random.uniform(low=50.0, high=150.0, size=N)
+naiveprofit_uniform = NaiveSeafoodStockSAA(N, samples, 'uniform')
+
+shape = 2
+xm = 50
+samples = (np.random.pareto(a=shape, size=N) + 1) *  xm
+naiveprofit_pareto = NaiveSeafoodStockSAA(N, samples, 'Pareto')
+
+shape=2
+scale=113
+samples = scale*np.random.weibull(a=shape, size=N)
+naiveprofit_weibull = NaiveSeafoodStockSAA(N, samples, 'Weibull')
+
 
 # In[5]:
 
@@ -240,7 +320,9 @@ samples = scale*np.random.weibull(a=shape, size=N)
 naiveprofit_weibull = NaiveSeafoodStockSAA(N, samples, 'Weibull')
 
 
-# (d) Solve approximately the stock optimization problem for each of the three distributions above using the Sample Average Approximation method with $N=2500$ points. More specifically, generate $N=2500$ samples from the considered distribution and solve the extensive form of the stochastic LP resulting from those $N=2500$ scenarios. For each of the three distribution, compare the optimal expected profit with that obtained in (c) and calculate the value of the stochastic solution (VSS).
+# ## SAA with 2500 samples
+# 
+# Solve approximately the stock optimization problem for each of the three distributions above using the Sample Average Approximation method with $N=2500$ points. More specifically, generate $N=2500$ samples from the considered distribution and solve the extensive form of the stochastic LP resulting from those $N=2500$ scenarios. For each of the three distribution, compare the optimal expected profit with that obtained in (c) and calculate the value of the stochastic solution (VSS).
 
 # In[6]:
 

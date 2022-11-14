@@ -2,8 +2,14 @@
 # coding: utf-8
 
 # # Farmer's problem and some of its variants
+# 
+# The [Farmer's Problem](https://www.math.uh.edu/~rohop/Spring_15/Chapter1.pdf) is a teaching example presented in the well-known textbook by John Birge and Francois Louveaux 
+# 
+# * Birge, John R., and Francois Louveaux. Introduction to stochastic programming. Springer Science & Business Media, 2011.
+# 
+# and widely used in teaching notes and presentations. Here we present a solution to this problem and several variants using Pyomo.
 
-# In[1]:
+# In[2]:
 
 
 # install Pyomo and solvers
@@ -15,9 +21,7 @@ helper = types.ModuleType("helper")
 exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
-helper.install_glpk()
 helper.install_cbc()
-helper.install_ipopt()
 
 
 # In[11]:
