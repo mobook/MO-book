@@ -31,9 +31,9 @@ helper.install_mosek()
 #helper.install_ipopt()
 
 
-# ## EOQ Model
+# ## The EOQ model
 # 
-# ### Classical formulation for a Single Item
+# ### Classical formulation for a single item
 # 
 # The economic order quantity (EOQ) is a classical problem in inventory management attributed to Ford Harris (1915). The problem is to find the order quantity that minimizes the cost of maintaining a specific item in inventory 
 # 
@@ -46,11 +46,11 @@ helper.install_mosek()
 # $$
 # \begin{align*}
 # EOQ = \arg\min_x\ & f(x) = \frac{h x}{2} + \frac{c d}{x} \\
-# \text{s.t.}\quad x & > 0 \\
+# \qquad \text{s.t.}\quad & x > 0 \\
 # \end{align*}
 # $$
 # 
-# The solution to this problem is found by setting the derivative of $f(x)$ equal to zero.
+# Given the rather simple domain, we can derive analytically the solution for the EOQ problem by setting the derivative of $f(x)$ equal to zero and solving the resulting equation, obtaining
 # 
 # $$
 # \begin{align*}
@@ -95,13 +95,18 @@ ax.set_ylim(0, 6000);
 
 # ### Reformulating EOQ as a linear objective with hyperbolic constraint
 # 
+# However, if the problem involved multiple products, an analytical solution would no longer be easily available. For this reason, we need to be able to solve the problem numerically, let us see how.
+# 
+# It can be easily checked that the objective $f(x)$ is a convex function and therefore, the problem can be solved using any convex optimization solver. It is, however, a special type of convex problem which we shall show in the following reformulation.
+# 
 # The optimization objective is linearized with the use of a second decision variable $y = 1/x$. The optimization problem is now a linear objective in two decision variables with a hyperbolic constraint $xy \geq 1$.
 # 
 # $$
 # \begin{align*}
 # \min_{x, y}\ & f(x, y) = \frac{h x}{2} + c d y \\
-# \text{s.t.}\quad x\,y & \geq 1 \\
-# x, y & > 0 \\
+# \quad \text{s.t.}\quad 
+# & x y  \geq 1 \\
+# & x, y > 0 \\
 # \end{align*}
 # $$
 # 
@@ -147,11 +152,11 @@ ax.set_ylabel('y')
 ax.legend();
 
 
-# ## Reformulating EOQ as a linear objective with second order cone constraint
+# ## Reformulating the EOQ model with a linear objective and a second order cone constraint
 # 
-# In elementary geometry, a hyperbola can be constructed from the intersection of a linear plane with cone. For this application,  the hyperbola described by the constraint $x y \geq 1$ invites the question of whether there is reformulation of EOQ that includes a cone constraint.
+# In elementary geometry, a hyperbola can be constructed from the intersection of a linear plane with cone. For this application, the hyperbola described by the constraint $x y \geq 1$ invites the question of whether there is reformulation of EOQ that includes a cone constraint.
 # 
-# The following diagram draws the intersection of a plane with Lorenz cone. The Lorenz cone is defined by
+# A Lorenz cone is defined by
 # 
 # $$
 # \begin{align*}
@@ -159,13 +164,9 @@ ax.legend();
 # \end{align*}
 # $$
 # 
-# where the components of are given by 
+# where the components of are given by $z = \begin{bmatrix} u \\ v \end{bmatrix}$. The intersection of a plane aligned with the $t$ axis exactly describes a hyperbola. As described by Lobo, et al. (1998), the correspondence is given by
 # 
-# $$z = \begin{bmatrix} u \\ v \end{bmatrix}$$
-# 
-# The intersection of a plane aligned with the $t$ axis exactly describes a hyperbola. As described by Lobo, et al. (1998), the correspondence is given by
-# 
-# $$w^2 \leq x y,\ x, y\geq 0,\ \iff \|\begin{bmatrix} 2w \\ x-y \end{bmatrix} \|_2 \leq x + y $$
+# $$w^2 \leq x y,\ x, y\geq 0,\ \iff \left \|\begin{bmatrix} 2w \\ x-y \end{bmatrix} \right \|_2 \leq x + y $$
 # 
 # where the axis in the $w, x, y$ coordinates is tilted, displaced, and stretched compared to the coordinates shown in the diagram. The exact correspondence to the diagram is given by
 # 
@@ -174,8 +175,24 @@ ax.legend();
 # v & \sim x - y \\
 # t & \sim x + y
 # \end{align*}$$
+# 
+# The Python code belows draws a hyperbola precisely as the intersection of a plane with Lorenz cone.
+# 
+# Let us know rewrite the nonlinear constraint of the EOQ problem. Using the same geomtric idea as above and leveraging the nonnegativity of both variables, the constraint $xy \geq 1$ can be reformulated using the following trick:
+# 
+# $$
+#     xy \geq 1 \quad \Longleftrightarrow \quad 4xy \geq 4 \quad \Longleftrightarrow \quad (x + y)^2 - (x - y)^2 \geq 4  \quad \Longleftrightarrow \quad \left \|\begin{bmatrix} 2 \\ x-y \end{bmatrix} \right \|_2 \leq x + y,
+# $$
+# 
+# where we rely on the fact that $x + y \geq 0$. The final constraint is known as a second-order conic optimization constraint (SOCP constraint). The result is a reformulation of the EOQ problem as a second order conic program (SOCP).
+# 
+# $$\begin{align*}
+# \min_{x, y}\quad & f(x, y) = \frac{h x}{2} + c d y \\
+# \text{s.t.}\quad & \left \|\begin{bmatrix} 2 \\ x-y \end{bmatrix} \right \|_2 \leq x + y
+# \end{align*}
+# $$
 
-# In[4]:
+# In[2]:
 
 
 import matplotlib.pyplot as plt
@@ -188,7 +205,7 @@ t_max = 4
 w = 2
 n = 40
 
-fig = plt.figure(figsize=(10, 8))
+fig = plt.figure(figsize=(9, 7))
 ax = plt.axes(projection='3d')
 
 for t in np.linspace(0, t_max, n+1):
@@ -229,52 +246,45 @@ ax.grid(False)
 ax.axis('off')
 
 ax.set_xlabel('u')
-ax.set_ylabel('v');
+ax.set_ylabel('v')
 
 ax.set_xlim(-3, 3)
 ax.set_ylim(-3, 3)
 ax.set_zlim(1, 4)
+plt.show()
 
 
-# The result is a reformulation of the EOQ problem as a second order conic program (SOCP).
-# 
-# $$\begin{align*}
-# \min_{x, y}\  f(x, y) = \frac{h x}{2} + c d y \\
-# \text{s.t.}\quad \|\begin{bmatrix} 2 \\ x-y \end{bmatrix} \|_2 \leq x + y
-# \end{align*}
-# $$
-
-# ## Pyomo Modeling with `conic.quadratic`
-# 
-# The [Pyomo kernel library](https://pyomo.readthedocs.io/en/stable/library_reference/kernel/index.html#) provides an experimental modeling interface for advanced application development with Pyomo. In particular, the kernel library provides direct support for conic constraints with the Mosek or Gurobi commercial solvers (note that academic licenses are available at no cost, a demo version of Gurobi is available on Google Colab). 
-# 
-# The Pyomo interface to conic solvers includes six forms for conic constraints. The `conic.quadratic` constraint is expressed in the form
-# 
-# $$\sum_{i} x_i^2 \leq r^2, \ r \geq 0$$
-# 
-# where the $x_i$ and $r$ terms are pyomo.kernel variables. 
+# ## Pyomo modeling with `conic.quadratic`
 # 
 # The SOCP formation given above needs to be reformulated one more time to use with the Pyomo `conic.quadratic` constraint. The first step is to introduce rotated coordinates $t = x+ y$ and $v = x - y$, and introduce a new variable with fixed value $u = 2$, to fit the Pyomo model for quadratic constraints, 
 # 
 # $$\begin{align*}
-# \min_{x, y}\  f(x, y) & = \frac{h x}{2} + c d y \\
-# t & = x + y \\
-# u & = 2 \\
-# v & = x - y \\
-# u^2 + v^2 & \leq t^2 \\
-# x, y, t, u, v & \geq 0
+# \min_{x, y}\quad & f(x, y) = \frac{h x}{2} + c d y \\
+# \text{s.t.} \quad
+# & t  = x + y \\
+# & u = 2 \\
+# & v = x - y \\
+# & u^2 + v^2 \leq t^2 \\
+# & x, y, t, u, v \geq 0
 # \end{align*}$$
 # 
 # This version of the model with variables $t, u, v, x, y$ could be implemented directly in Pyomo with `conic.quadratic`. However, the model can be further reduced to yield a simpler version of the model.
 # 
 # $$\begin{align*}
-# \min_{t, u, v}\  f(u, v) & = \frac{1}{4}\left[(h + 2 cd)\,t + (h - 2 cd)\, v\right] \\
-# u & = 2 \\
-# u^2 + v^2 & \leq t^2 \\
-# t, u, v & \geq 0
+# \min_{t, u, v}\quad &  f(u, v) = \frac{1}{4}\left[(h + 2 cd)\,t + (h - 2 cd)\, v\right] \\
+# \text{s.t.} \quad
+# & u = 2 \\
+# & u^2 + v^2 \leq t^2 \\
+# & t, u, v \geq 0
 # \end{align*}$$
 # 
-# The EOQ model is now ready to implement with Pyomo.
+# The EOQ model is now ready to implement with Pyomo and specifically using the [Pyomo kernel library](https://pyomo.readthedocs.io/en/stable/library_reference/kernel/index.html#). The Pyomo kernel library provides an experimental modeling interface for advanced application development with Pyomo. In particular, the kernel library provides direct support for conic constraints with the Mosek or Gurobi commercial solvers (note that academic licenses are available at no cost, a demo version of Gurobi is available on Google Colab). 
+# 
+# The Pyomo interface to conic solvers includes six forms for conic constraints. The `conic.quadratic` constraint is expressed in the form
+# 
+# $$\sum_{i} x_i^2 \leq r^2, \ r \geq 0$$
+# 
+# where the $x_i$ and $r$ terms are pyomo.kernel variables. Note the slighly different syntax of the Pyomo kernel commands.
 
 # In[5]:
 
@@ -350,17 +360,17 @@ print(f"\nEOQ = {(m.t() + m.v())/2:0.2f}")
 # 
 # This enables a direct a expression of the hyperbolic constraint $x y \geq 1$ by introducing an auxiliary variable $z$ with fixed value $z^2 = 2$ such that 
 # 
-# $$xy \geq 1 \iff z^2 \leq x y \quad\text{where }z^2 = 2$$
+# $$xy \geq 1 \iff z^2 \leq 2 x y \quad\text{where }z^2 = 2$$
 # 
 # The model to be implemented in Pyomo is now
 # 
 # $$
 # \begin{align*}
-# \min_{x, y}\ & f(x, y) = \frac{h x}{2} + c d y \\
-# \\
-# \text{s.t.} \qquad z^2 & \leq x\,y  \\
-# z & = \sqrt{2} \\
-# x, y & > 0 \\
+# \min_{x, y}\quad & f(x, y) = \frac{h x}{2} + c d y \\
+# \text{s.t.} \quad 
+# & z^2 \leq x\,y  \\
+# & z = \sqrt{2} \\
+# & x, y > 0 \\
 # \end{align*}
 # $$
 # 
@@ -401,8 +411,9 @@ print(f"\nEOQ = {m.x():0.2f}")
 # 
 # $$
 # \begin{align*}
-# \min & \quad \sum_{i=1}^n \frac{h x_i}{2} + \frac{c_i d_i}{x_i} \\
-# \text{s.t.} & \quad \sum_{i=1}^n b_i x_i  \leq b_0 \\
+# \min \quad & \sum_{i=1}^n \frac{h x_i}{2} + \frac{c_i d_i}{x_i} \\
+# \text{s.t.} \quad
+# & \sum_{i=1}^n b_i x_i  \leq b_0 \\
 # & 0 < lb_i \leq x_i \leq ub_i & \forall i\in 1, \dots, n \\
 # \end{align*}
 # $$
@@ -414,11 +425,12 @@ print(f"\nEOQ = {m.x():0.2f}")
 # 
 # $$
 # \begin{align*}
-# \min \quad \sum_{i=1}^n \frac{h x_i}{2} & + c_i d_i y_i \\
-# \text{s.t.} \quad \sum_{i=1}^n b_i x_i &  \leq b_0 \\
-# x_i y_i & \geq 1 & \forall i\in 1, \dots, n \\
-# 0 < lb_i \leq x_i & \leq ub_i & \forall i\in 1, \dots, n \\
-# y_i & \geq 0 & \forall i\in 1, \dots, n \\
+# \min \quad & \sum_{i=1}^n \frac{h x_i}{2} + c_i d_i y_i \\
+# \text{s.t.} \quad 
+# & \sum_{i=1}^n b_i x_i  \leq b_0 \\
+# & x_i y_i \geq 1 & \forall i\in 1, \dots, n \\
+# & 0 < lb_i \leq x_i \leq ub_i & \forall i\in 1, \dots, n \\
+# & y_i \geq 0 & \forall i\in 1, \dots, n \\
 # \end{align*}
 # $$
 # 
@@ -427,12 +439,13 @@ print(f"\nEOQ = {m.x():0.2f}")
 # 
 # $$
 # \begin{align*}
-# \min \quad \sum_{i=1}^n \frac{h x_i}{2} & + c_i d_i y_i \\
-# \text{s.t.} \quad \sum_{i=1}^n b_i x_i &  \leq b_0 \\
-# z_i^2 & \leq x_i y_i & \forall i\in 1, \dots, n \\
-# z_1^2 & = 2 & \forall i\in 1, \dots, n \\
-# 0 < lb_i \leq x_i & \leq ub_i & \forall i\in 1, \dots, n \\
-# y_i & \geq 0 & \forall i\in 1, \dots, n \\
+# \min \quad & \sum_{i=1}^n \frac{h x_i}{2} + c_i d_i y_i \\
+# \text{s.t.} \quad 
+# & \sum_{i=1}^n b_i x_i  \leq b_0 \\
+# & z_i^2 \leq x_i y_i & \forall i\in 1, \dots, n \\
+# & z_1^2 = 2 & \forall i\in 1, \dots, n \\
+# & 0 < lb_i \leq x_i \leq ub_i & \forall i\in 1, \dots, n \\
+# & y_i \geq 0 & \forall i\in 1, \dots, n \\
 # \end{align*}
 # $$
 # 
@@ -577,11 +590,12 @@ eoq_display_results(df_large, m)
 # 
 # $$
 # \begin{align*}
-# \min \quad \sum_{i=1}^n \frac{h x_i}{2} & + c_i d_i y_i \\
-# \text{s.t.} \quad \sum_{i=1}^n b_i x_i &  \leq b_0 \\
-# 4 + (x_i - y_i)^2 & \leq (x_i + y_i)^2 & \forall i\in 1, \dots, n \\
-# 0 < lb_i \leq x_i & \leq ub_i & \forall i\in 1, \dots, n \\
-# y_i & \geq 0 & \forall i\in 1, \dots, n \\
+# \min \quad & \sum_{i=1}^n \frac{h x_i}{2} + c_i d_i y_i \\
+# \text{s.t.} \quad 
+# & \sum_{i=1}^n b_i x_i  \leq b_0 \\
+# & 4 + (x_i - y_i)^2 \leq (x_i + y_i)^2 & \forall i\in 1, \dots, n \\
+# & 0 < lb_i \leq x_i \leq ub_i & \forall i\in 1, \dots, n \\
+# & y_i \geq 0 & \forall i\in 1, \dots, n \\
 # \end{align*}
 # $$
 # 
@@ -589,19 +603,14 @@ eoq_display_results(df_large, m)
 # 
 # $$
 # \begin{align*}
-# \min \quad \sum_{i=1}^n \frac{h x_i}{2} & + c_i d_i y_i \\
-# \text{s.t.} \quad \sum_{i=1}^n b_i x_i &  \leq b_0 \\
-# t_i & = x_i + y_i & \forall i\in 1, \dots, n \\
-# u_i & = 2 & \forall i \in 1, \dots, n \\
-# v_i & = x_i - y_i & \forall i\in 1, \dots, n \\
-# u_i^2 + v_i^2 & \leq t_i^2 & \forall i\in 1, \dots, n \\
-# 0 < lb_i \leq x_i & \leq ub_i & \forall i\in 1, \dots, n \\
-# t_i, u_i, v_i, y_i & \geq 0 & \forall i\in 1, \dots, n \\
+# \min \quad & \sum_{i=1}^n \frac{h x_i}{2} + c_i d_i y_i \\
+# \text{s.t.} \quad 
+# & \sum_{i=1}^n b_i x_i \leq b_0 \\
+# & t_i = x_i + y_i & \forall i\in 1, \dots, n \\
+# & u_i = 2 & \forall i \in 1, \dots, n \\
+# & v_i = x_i - y_i & \forall i\in 1, \dots, n \\
+# & u_i^2 + v_i^2 \leq t_i^2 & \forall i\in 1, \dots, n \\
+# & 0 < lb_i \leq x_i \leq ub_i & \forall i\in 1, \dots, n \\
+# & t_i, u_i, v_i, y_i \geq 0 & \forall i\in 1, \dots, n \\
 # \end{align*}
 # $$
-
-# In[ ]:
-
-
-
-

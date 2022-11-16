@@ -5,7 +5,7 @@
 # 
 # ## Attribution
 # 
-# The following problem statement is adapted from an exercise presented by Birge and Louveaux (2011). 
+# This problem statement is adapted from an exercise presented by Birge and Louveaux (2011). 
 # 
 # * Birge, J. R., & Louveaux, F. (2011). Introduction to stochastic programming. Springer Science & Business Media.
 # 
@@ -64,7 +64,7 @@ import matplotlib.pyplot as plt
 # 
 # Pandas DataFrames and Pandas Series are used to encode problem data in the following cell, and to encode problem solutions in subsequent cells.
 
-# In[3]:
+# In[106]:
 
 
 # scenario data
@@ -74,7 +74,7 @@ demand = pd.DataFrame({
     "midday": {'F':  6, 'B': 10, 'E': 150}
 }).T
 
-# revenue and seat factor data|
+# global revenue and seat factor data
 capacity = 200
 revenue_factor = pd.Series({"F": 3.0, "B": 2.0, "E": 1.0})
 seat_factor = pd.Series({"F": 2.0, "B": 1.5, "E": 1.0})
@@ -84,7 +84,7 @@ seat_factor = pd.Series({"F": 2.0, "B": 1.5, "E": 1.0})
 # 
 # The first-stage decision variables are $\text{seats}_c$, the number of seats allocated or for each class $c\in C$. We would like to provide a analysis showing the operational consequences for any proposed allocation of seats. For this purpose, we create a function ``seat_report()`` that show the tickets that can be sold in each scenario, the resulting revenue, and the unsatisfied demand ('spillage'). This is demonstrated for the case where the airplane is configured as entirely economy class.
 
-# In[69]:
+# In[112]:
 
 
 # function to report analytics for any given seat allocations
@@ -101,11 +101,10 @@ def seat_report(seats, demand):
     print("\nSeat Allocation")
     display(equivalent_seats)
     
-    # tickets sold
+    # tickets sold is the minimum of available seats and demand
     tickets = pd.DataFrame()
     for c in classes:
         tickets[c] = np.minimum(seats[c], demand[c])
-
     print("\nTickets Sold")
     display(tickets)
     
@@ -126,17 +125,18 @@ def seat_report(seats, demand):
     print(f"\nExpected Revenue (in units of economy ticket price): {revenue.mean():.2f}")
 
     # charts
-    fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-    revenue.plot(ax=ax, kind="barh", title="Revenue by Scenario")
-    ax.plot([revenue.mean()]*2, ax.get_ylim(), "--", lw=1.4)
-    ax.set_xlabel("Revenue")
+    fig, ax = plt.subplots(2, 1, figsize=(8, 6))
+    revenue.plot(ax=ax[0], kind="barh", title="Revenue by Scenario")
+    ax[0].plot([revenue.mean()]*2, ax[0].get_ylim(), "--", lw=1.4)
+    ax[0].set_xlabel("Revenue")
     
-    fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-    tickets[classes].plot(ax=ax, kind="barh", rot=0, stacked=False, title="Demand Scenarios")
-    demand[classes].plot(ax=ax, kind="barh", rot=0, stacked=False, title="Demand Scenarios", alpha=0.2)
+    tickets[classes].plot(ax=ax[1], kind="barh", rot=0, stacked=False, title="Demand Scenarios")
+    demand[classes].plot(ax=ax[1], kind="barh", rot=0, stacked=False, title="Demand Scenarios", alpha=0.2)
     for c in classes:
-        ax.plot([seats[c]] * 2, ax.get_ylim(), "--", lw=1.4)
-    ax.set_xlabel("Seats")
+        ax[1].plot([seats[c]] * 2, ax[1].get_ylim(), "--", lw=1.4)
+    ax[1].set_xlabel("Seats")
+    
+    fig.tight_layout()
 
     return
 
@@ -178,7 +178,7 @@ seat_report(seats_all_economy, demand)
 # 
 # The following cell presents a Pyomo model implementing this model.
 
-# In[70]:
+# In[113]:
 
 
 def airline_EEV(demand):
@@ -251,7 +251,7 @@ seat_report(seats_eev, demand)
 # 
 # The following cell presents a Pyomo model implementing this model.
 
-# In[71]:
+# In[114]:
 
 
 def airline_SS(demand):
@@ -319,7 +319,7 @@ seat_report(seats_ss, demand)
 # 
 # Add to your implementation of the extensive form the two equivalent deterministic constraints corresponding to the two chance constraints and find the new optimal solution meeting these additional constraints. How is the solution different from the previous one?
 
-# In[72]:
+# In[115]:
 
 
 mu = demand.mean()
@@ -329,7 +329,7 @@ display(pd.DataFrame({"mu": mu, "sigma": sigma}))
 
 # The chance constraints are additional constraints imposed on the stochastic programming model. Rather than writing a function to create a whole new model, we can use the prior function to create and add the two chance constraints.
 
-# In[73]:
+# In[116]:
 
 
 def airline_CC(demand):
@@ -439,17 +439,13 @@ for i, ci  in enumerate(classes):
 fig.tight_layout()
 
 
-# In[75]:
+# In[105]:
 
 
 model_ssa = airline_CC(demand_saa)
 seats_saa = airline_solve(model_ssa)
 
-
-# In[103]:
-
-
-# function to report analytics for any given seat allocations
+# function to report analytics for SAA case
 def seat_report_saa(seats, demand):
     
     classes = seats.index
@@ -504,11 +500,7 @@ def seat_report_saa(seats, demand):
 seat_report_saa(seats_saa, demand_saa)
 
 
-# In[ ]:
-
-
-
-
+# 
 
 # In[ ]:
 
