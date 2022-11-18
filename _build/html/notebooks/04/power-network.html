@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
     <title>Extra material: Energy dispatch problem &#8212; Companion Notebooks for Data-Driven Mathematical Optimization in Python</title>
     
@@ -34,6 +34,7 @@
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
@@ -59,7 +60,7 @@ const thebe_selector_output = ".output, .cell_output"
     <link rel="next" title="5. Convex Optimization" href="../05/05.00.html" />
     <link rel="prev" title="Extra material: Shortest path in real life" href="shortest-path-road-networks.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="None">
+    <meta name="docsearch:language" content="en">
     
 
     <!-- Google Analytics -->
@@ -324,6 +325,11 @@ const thebe_selector_output = ".output, .cell_output"
    <li class="toctree-l2">
     <a class="reference internal" href="../06/economic-order-quantity.html">
      Economic Order Quantity
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../06/building-insulation.html">
+     Building Insulation
     </a>
    </li>
   </ul>
@@ -808,7 +814,7 @@ title="Print to PDF"
               <div>
                 
   <section class="tex2jax_ignore mathjax_ignore" id="extra-material-energy-dispatch-problem">
-<h1>Extra material: Energy dispatch problem<a class="headerlink" href="#extra-material-energy-dispatch-problem" title="Permalink to this headline">#</a></h1>
+<h1>Extra material: Energy dispatch problem<a class="headerlink" href="#extra-material-energy-dispatch-problem" title="Permalink to this heading">#</a></h1>
 <p>To meet the energy demand, power plants run day and night across the country to produce electricy from a variety of sources such as fossil fuels and renewable energy. On the short-time scale, the best operating levels for electric power plants are derived every 15 minutes by solving the so-called <em>Optimal Power Flow (OPF)</em> model. The OPF model is an optimization problem with the objective of minimizing the total energy dispatching cost, while ensuring that the generation meets the total energy demand. Furthermore, the model takes into account many constraints, among which operational and physical constraints.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -836,7 +842,7 @@ glpk was previously installed
 </div>
 </div>
 <section id="background-power-networks-and-power-flow-physics">
-<h2>Background: Power networks and power flow physics<a class="headerlink" href="#background-power-networks-and-power-flow-physics" title="Permalink to this headline">#</a></h2>
+<h2>Background: Power networks and power flow physics<a class="headerlink" href="#background-power-networks-and-power-flow-physics" title="Permalink to this heading">#</a></h2>
 <p>We model the nation-wide transmission power network as a directed graph <span class="math notranslate nohighlight">\(G=(V, E)\)</span>, where <span class="math notranslate nohighlight">\(V\)</span> represents the set of nodes (e.g., cities, industrial districts, power plants) and <span class="math notranslate nohighlight">\(E\)</span> denotes the set of directed edges (e.g., physical transmission lines).</p>
 <p>Each node <span class="math notranslate nohighlight">\(i \in V\)</span> has a power injection <span class="math notranslate nohighlight">\(p_i\)</span> and demand <span class="math notranslate nohighlight">\(d_i\)</span>. The set of nodes are separated into <em>generator</em> and <em>load</em> nodes. The set of generators <span class="math notranslate nohighlight">\(\mathcal{G} \subseteq V\)</span> corresponds to the nodes <span class="math notranslate nohighlight">\(i \in V\)</span> for which <span class="math notranslate nohighlight">\(p_i \geq 0\)</span> and <span class="math notranslate nohighlight">\(d_i = 0\)</span>. Each generator <span class="math notranslate nohighlight">\(i \in \mathcal{G}\)</span> has a minimum <span class="math notranslate nohighlight">\(p_i^{\min}\)</span> and maximum <span class="math notranslate nohighlight">\(p_i^{\max}\)</span> production capacity. The set of load nodes <span class="math notranslate nohighlight">\(\mathcal{D} \subseteq V\)</span> corresponds to the nodes for which <span class="math notranslate nohighlight">\(p_i = 0\)</span> and <span class="math notranslate nohighlight">\(d_i \geq 0\)</span>. The load nodes thus correspond to the places where electricity is being consumed, e.g., cities and industrial districts. We say that supply and demand is <em>matched</em> if <span class="math notranslate nohighlight">\(\sum_{i \in V} p_i - d_i = 0\)</span>. Since we cannot store electricity in large volumes, supply must meet demand at all times, hence adjusting to it every 15 minutes by solving the OPF.</p>
 <p>Each edge <span class="math notranslate nohighlight">\((i, j) \in E\)</span> carries a <em>power flow</em> <span class="math notranslate nohighlight">\(f_{ij} \in R\)</span> and has a capacity <span class="math notranslate nohighlight">\(f_{ij}^\max \geq 0\)</span>, i.e., the maximum power flow that it may carry. Note that our choice to model a <em>directed</em> graph is to make the modeling of the network easier. In particular, a directed edge <span class="math notranslate nohighlight">\((i,j)\)</span> may carry a ‘negative’ flow <span class="math notranslate nohighlight">\(f_{ij} &lt; 0\)</span>, which implies that there is flow going from <span class="math notranslate nohighlight">\(j\)</span> to <span class="math notranslate nohighlight">\(i\)</span> where <span class="math notranslate nohighlight">\(f_{ji} = -f_{ij}\)</span>. The capacity does not depend on the direction of the flow, implying that the flow capacity constraints are given by <span class="math notranslate nohighlight">\(|f_{ij}| = |f_{ji}| \leq f_{ij}^\max\)</span>.</p>
@@ -850,7 +856,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 <p>For a given matched supply and demand vector <span class="math notranslate nohighlight">\(\mathbf{p}\)</span> and <span class="math notranslate nohighlight">\(\mathbf{d}\)</span>, we can compute the power flows on the network by solving the linear equations as described above. There are exactly <span class="math notranslate nohighlight">\(|V|\)</span> and <span class="math notranslate nohighlight">\(|E|\)</span> equations for the <span class="math notranslate nohighlight">\(\theta_i\)</span> variables and <span class="math notranslate nohighlight">\(f_{ij}\)</span> variables, meaning that this system of equations admit a solution.</p>
 </section>
 <section id="optimal-power-flow">
-<h2>Optimal Power Flow<a class="headerlink" href="#optimal-power-flow" title="Permalink to this headline">#</a></h2>
+<h2>Optimal Power Flow<a class="headerlink" href="#optimal-power-flow" title="Permalink to this heading">#</a></h2>
 <p>We assumed above that the power injections <span class="math notranslate nohighlight">\(\mathbf{p}\)</span> were given. However, in practice, the power injections need to be determined for each generator in the power network, where some types of generators may be cheaper than others. Moreover, we need to take into account operational constraints, such as the maximum flow and generator limits.</p>
 <p>On the short-time scale, the power injections are calculated for each generator by solving the so-called <em>Optimal Power Flow (OPF)</em> problem. The goal of the OPF problem is to determine a solution <span class="math notranslate nohighlight">\((\mathbf{p}, \mathbf{f}, \mathbf{\theta})\)</span> with minimal costs such that:</p>
 <ul class="simple">
@@ -882,10 +888,10 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 <p>All the other quantities are instance dependent parameters.</p>
 </section>
 <section id="data">
-<h2>Data<a class="headerlink" href="#data" title="Permalink to this headline">#</a></h2>
+<h2>Data<a class="headerlink" href="#data" title="Permalink to this heading">#</a></h2>
 <p>You will solve the OPF problem on the IEEE-118 power network, which is a standard test network consisting of 118 nodes and 179 edges. In the following, we will load the data into the notebook and provide a description of the data. Make sure to run the setup code below. We will first describe the data which are initially provided as <code class="docutils literal notranslate"><span class="pre">pandas.DataFrames</span></code>. We will then provide a new network data structure to easily access the data for the implementation of the optimization model.</p>
 <section id="setup-code">
-<h3>Setup code<a class="headerlink" href="#setup-code" title="Permalink to this headline">#</a></h3>
+<h3>Setup code<a class="headerlink" href="#setup-code" title="Permalink to this heading">#</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load packages</span>
@@ -907,7 +913,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </div>
 </section>
 <section id="data-import">
-<h3>Data import<a class="headerlink" href="#data-import" title="Permalink to this headline">#</a></h3>
+<h3>Data import<a class="headerlink" href="#data-import" title="Permalink to this heading">#</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Download the data</span>
@@ -929,7 +935,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </div>
 </section>
 <section id="network-data">
-<h3>Network data<a class="headerlink" href="#network-data" title="Permalink to this headline">#</a></h3>
+<h3>Network data<a class="headerlink" href="#network-data" title="Permalink to this heading">#</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">visualize_network</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">edge_flows</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -1391,7 +1397,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </div>
 </section>
 <section id="edges">
-<h3>Edges<a class="headerlink" href="#edges" title="Permalink to this headline">#</a></h3>
+<h3>Edges<a class="headerlink" href="#edges" title="Permalink to this heading">#</a></h3>
 <p>The IEEE-118 network has 179 edges. Each edge has the following parameters:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">edge_id</span></code>: the edge indices</p></li>
@@ -1502,7 +1508,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </div>
 </section>
 <section id="network-data-structure">
-<h3>Network data structure<a class="headerlink" href="#network-data-structure" title="Permalink to this headline">#</a></h3>
+<h3>Network data structure<a class="headerlink" href="#network-data-structure" title="Permalink to this heading">#</a></h3>
 <p>When implementing optimization problems, it is often not the easiest way to access data directly through <code class="docutils literal notranslate"><span class="pre">pandas.DataFrames</span></code>. We have therefore provided a new type of data structure that will help to more easily implement an optimization problem. This data structure is also found in Exercise 5 &amp; 6 from Computer Lab 1, which is as follows:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">network</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;nodes&quot;</span><span class="p">:</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;attr1&quot;</span><span class="p">:</span>  <span class="mi">1</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span>
                        <span class="o">...</span>
@@ -1541,7 +1547,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </div>
 </section>
 <section id="instances">
-<h3>Instances<a class="headerlink" href="#instances" title="Permalink to this headline">#</a></h3>
+<h3>Instances<a class="headerlink" href="#instances" title="Permalink to this heading">#</a></h3>
 <p>Since the OPF problem is solved every 15 minutes in practice, you will be given <code class="docutils literal notranslate"><span class="pre">24</span> <span class="pre">*</span> <span class="pre">4</span> <span class="pre">=</span> <span class="pre">96</span></code> network instances that need to be solved, hence solving an entire day’s worth of OPF problems. The first instance thus corresponds to the power generation within time window <code class="docutils literal notranslate"><span class="pre">[00:00,</span> <span class="pre">00:15]</span></code>, the second instance corresponds to <code class="docutils literal notranslate"><span class="pre">[00:15,</span> <span class="pre">00:30]</span></code>, and so on. The data takes into account a realistic demand and (renewable energy) generation pattern. We assume that the decisions in each time window are independent of the previous and subsequent time windows, so every 15 minutes a new OPF instance is solved independently.</p>
 <p>The network instances are stored in the variable <code class="docutils literal notranslate"><span class="pre">I</span></code> as a list and can be accessed using indexing, i.e., <code class="docutils literal notranslate"><span class="pre">I[0]</span></code> gives the first network instance and <code class="docutils literal notranslate"><span class="pre">I[95]</span></code> gives the 96th network instance.</p>
 </section>
@@ -1549,7 +1555,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="solving-opf">
-<h1>Solving OPF<a class="headerlink" href="#solving-opf" title="Permalink to this headline">#</a></h1>
+<h1>Solving OPF<a class="headerlink" href="#solving-opf" title="Permalink to this heading">#</a></h1>
 <p>Observe that the stated OPF problem contains absolute decision values. We first rewrite the OPF problem into a linear optimization problem.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\begin{align}
@@ -1648,7 +1654,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </div>
 </section>
 <section class="tex2jax_ignore mathjax_ignore" id="strict-fossil-fuel-policy-pt-1">
-<h1>Strict fossil fuel policy pt.1<a class="headerlink" href="#strict-fossil-fuel-policy-pt-1" title="Permalink to this headline">#</a></h1>
+<h1>Strict fossil fuel policy pt.1<a class="headerlink" href="#strict-fossil-fuel-policy-pt-1" title="Permalink to this heading">#</a></h1>
 <p>Gas and coal plants emit CO2, while renewable energy sources are carbon neutral. For this reason, the Dutch government has decided to constrain the number of active fossil-fuel-based power plants for the generation of electricity. More specifically, a maximum of 2 gas plants and 1 coal plant may be <em>active</em> during a single OPF instance. Any plant that is set <em>inactive</em> for a specific instance cannot produce any electricity.</p>
 <p>We first write down the new model. To this end, we introduce new decision variables <span class="math notranslate nohighlight">\(x_i, i\in V\)</span> to the model, which indicate whether a generator <span class="math notranslate nohighlight">\(i\)</span> is active or inactive.</p>
 <div class="math notranslate nohighlight">
@@ -1762,7 +1768,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </div>
 </section>
 <section class="tex2jax_ignore mathjax_ignore" id="strict-fossil-fuel-policy-pt-2">
-<h1>Strict fossil fuel policy pt.2<a class="headerlink" href="#strict-fossil-fuel-policy-pt-2" title="Permalink to this headline">#</a></h1>
+<h1>Strict fossil fuel policy pt.2<a class="headerlink" href="#strict-fossil-fuel-policy-pt-2" title="Permalink to this heading">#</a></h1>
 <p>The restriction on the number of gas and coal plants may pose a threat to the availability of electricity production when renewable energy sources fail to deliver. For this reason, the grid operators have decided to slightly change the constraint that was introduced for OPF2. If the total production of energy from renewable energy sources (i.e., solar, wind and hydro) is above 1000, then the number of gas and coal plants is restricted to 2 and 1, respectively. Otherwise, the restriction on the number of gas and coal plants is lifted. These constraints can be modeled as <em>either-or</em> constraints.</p>
 <p>We first write down the new model, using big-<span class="math notranslate nohighlight">\(M\)</span> constraints to model the either-or constraint.</p>
 <div class="math notranslate nohighlight">
@@ -1887,7 +1893,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </div>
 </section>
 <section class="tex2jax_ignore mathjax_ignore" id="comparing-the-three-models">
-<h1>Comparing the three models<a class="headerlink" href="#comparing-the-three-models" title="Permalink to this headline">#</a></h1>
+<h1>Comparing the three models<a class="headerlink" href="#comparing-the-three-models" title="Permalink to this heading">#</a></h1>
 <p>For all three implemented models, plot the objective values for all instances. Explain the differences between the objective values in view of the different feasible regions.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">

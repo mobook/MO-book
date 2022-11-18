@@ -5,23 +5,23 @@
 # 
 # ## Attribution
 # 
-# This problem statement is adapted from an exercise presented by Birge and Louveaux (2011). 
+# The following problem statement is adapted from an exercise and examples presented by Birge and Louveaux (2011). 
 # 
 # * Birge, J. R., & Louveaux, F. (2011). Introduction to stochastic programming. Springer Science & Business Media.
 # 
-# The adaptations include a minor change in problem parameters for consistency throughout the model development, and the addition of a treatment for sample average approximation (SAA) for chance constraints.
+# The adaptations include a change to parameters for consistency among reformulations of the problem, and additional treatments for sample average approximation (SAA) with chance constraints.
 
 # ## Problem Statement
 # 
-# An airline is deciding how to partition a new plane for the Amsterdam-Buenos Aires route. This plane can seat 200 economy class passengers. A section can be created for first class seats but each of these seats takes the space of 2 economy class seats. A business class section can also be created, but each of these takes the space of 1.5 economy class seats. The profit for a first class ticket is three times the profit of an economy ticket, while a business class ticket has a profit of two times an economy ticket's profit. Once the plane is partitioned into these seating classes, it cannot be changed. 
+# An airline is deciding how to partition a new plane for the Amsterdam-Buenos Aires route. This plane can seat 200 economy class passengers. A section can be created for first class seats, but each of these seats takes the space of 2 economy class seats. A business class section can also be created, but each of these takes the space of 1.5 economy class seats. The profit for a first class ticket is three times the profit of an economy ticket, while a business class ticket has a profit of two times an economy ticket's profit. Once the plane is partitioned into these seating classes, it cannot be changed. 
 # 
-# The airlines knows that the plane will not always be full in every section. The airline has decided  three scenarios will occur with about equal frequency: 
+# The airlines knows that the plane will not always be full in every section. The airline has initially identified three scenarios to consider with about equal frequency: 
 # 
 # 1. Weekday morning and evening traffic.
 # 2. Weekend traffic.
 # 3. Weekday midday traffic. 
 # 
-# Under Scenario 1 they think they can sell as many as 20 first class tickets, 50 business class tickets, and 200 economy tickets. Under Scenario 2, these figures are 10 , 24, and 175, while under Scenario 3, they are 6, 10, and 150. The following table summarizes the forecast demand for these three scenarios.
+# Under Scenario 1 the airline thinks they can sell as many as 20 first class tickets, 50 business class tickets, and 200 economy tickets. Under Scenario 2 these figures are 10 , 24, and 175, while under Scenario 3, they are 6, 10, and 150, respectively. The following table summarizes the forecast demand for these three scenarios.
 # 
 # | Scenario | First class seats | Business class seats | Economy class seats |
 # | :-- | :-: | :-: | :-: |
@@ -30,7 +30,7 @@
 # | (3) weekday midday | 6 | 10 | 150 |
 # | **Mean Scenario** | **12** | **28** | **175** |
 # 
-# Despite these estimates, the airline will not sell more tickets than seats in each of the sections (hence no overbooking strategy). We further assume customers seeking a first-class or business class seat will not downgrade if those seats are not available.
+# For marketing purposes, the airline will not sell more tickets than seats in each of the sections (hence no overbooking strategy). We further assume customers seeking a first-class or business class seat will not downgrade if those seats are not available.
 # 
 # Implement and solve the extensive form of the stochastic program for the optimal seat allocation aiming to maximize the airline profit.
 
@@ -62,9 +62,9 @@ import matplotlib.pyplot as plt
 
 # ## Problem Data
 # 
-# Pandas DataFrames and Pandas Series are used to encode problem data in the following cell, and to encode problem solutions in subsequent cells.
+# Pandas DataFrames and Series are used to encode problem data in the following cell, and to encode problem solutions in subsequent cells.
 
-# In[106]:
+# In[3]:
 
 
 # scenario data
@@ -82,9 +82,11 @@ seat_factor = pd.Series({"F": 2.0, "B": 1.5, "E": 1.0})
 
 # ## Analytics
 # 
-# The first-stage decision variables are $\text{seats}_c$, the number of seats allocated or for each class $c\in C$. We would like to provide a analysis showing the operational consequences for any proposed allocation of seats. For this purpose, we create a function ``seat_report()`` that show the tickets that can be sold in each scenario, the resulting revenue, and the unsatisfied demand ('spillage'). This is demonstrated for the case where the airplane is configured as entirely economy class.
+# Prior to optimization, a useful first step is to prepare an analytics function to display performance for any given allocation of seats. The first-stage decision variables are the number of seats allocated for each class $c\in C$. We would like to provide a analysis showing the operational consequences for any proposed allocation of seats. For this purpose, we create a function ``seat_report()`` that show the tickets that can be sold in each scenario, the resulting revenue, and the unsatisfied demand ('spillage'). 
+# 
+# To establish a basis for analyzing possible solutions to the airline's problem, this function first is demonstrated for the case where the airplane is configured as entirely economy class.
 
-# In[112]:
+# In[4]:
 
 
 # function to report analytics for any given seat allocations
@@ -178,7 +180,7 @@ seat_report(seats_all_economy, demand)
 # 
 # The following cell presents a Pyomo model implementing this model.
 
-# In[113]:
+# In[5]:
 
 
 def airline_EEV(demand):
@@ -225,7 +227,6 @@ seat_report(seats_eev, demand)
 # 
 # The stochastic program accounts for uncertainty in demand by treating the number of tickets sold as scenario dependent, i.e., a second-stage or recourse decision variable, $\text{tickets}_{c,s}$ that is indexed by both seat class and scenario. 
 # 
-# 
 # $$
 # \begin{align}
 # \max & \frac{1}{N}\sum_{\substack{c\in \text{CLASSES} \\ s\in \text{SCENARIOS}}} r_c \text{tickets}_{c, s} 
@@ -251,7 +252,7 @@ seat_report(seats_eev, demand)
 # 
 # The following cell presents a Pyomo model implementing this model.
 
-# In[114]:
+# In[6]:
 
 
 def airline_SS(demand):
@@ -319,7 +320,7 @@ seat_report(seats_ss, demand)
 # 
 # Add to your implementation of the extensive form the two equivalent deterministic constraints corresponding to the two chance constraints and find the new optimal solution meeting these additional constraints. How is the solution different from the previous one?
 
-# In[115]:
+# In[7]:
 
 
 mu = demand.mean()
@@ -329,7 +330,7 @@ display(pd.DataFrame({"mu": mu, "sigma": sigma}))
 
 # The chance constraints are additional constraints imposed on the stochastic programming model. Rather than writing a function to create a whole new model, we can use the prior function to create and add the two chance constraints.
 
-# In[116]:
+# In[8]:
 
 
 def airline_CC(demand):
@@ -386,7 +387,7 @@ seat_report(seats_cc, demand)
 
 # ### Scenario Generation
 
-# In[74]:
+# In[9]:
 
 
 # sample size
@@ -439,7 +440,7 @@ for i, ci  in enumerate(classes):
 fig.tight_layout()
 
 
-# In[105]:
+# In[10]:
 
 
 model_ssa = airline_CC(demand_saa)
@@ -500,7 +501,107 @@ def seat_report_saa(seats, demand):
 seat_report_saa(seats_saa, demand_saa)
 
 
+# ## Model 5. Chance Constraints for Sample Average Approximation 
 # 
+# The chance constraints used used above were developed on the assumption independent Normal distributions of demand for first class and business travel. That assumption no longer holds for the case where demand scenarios are being sampled from correlated, multivariate distributions.
+# 
+# This final model replaces the chance constraints by explicitly tracking unsatisfied demand for first and business class seats.
+# 
+# $$
+# \begin{align}
+# \max & \frac{1}{N}\sum_{\substack{c\in \text{CLASSES} \\ s\in \text{SCENARIOS}}} r_c \text{tickets}_{c, s} 
+# \end{align}
+# $$
+# 
+# where $N$ is the number of scenarios. The first stage constraint remains unchanged
+# 
+# $$
+# \begin{align}
+# \sum_{c\in \text{CLASSES}} s_c \text{seats}_c & \leq \text{capacity}
+# \end{align}
+# $$
+# 
+# The second stage constraints are
+# 
+# $$
+# \begin{align}
+# \text{tickets}_c & \leq \text{seats}_c & \forall c\in \text{CLASSES} \\
+# \text{tickets}_c & \leq \text{demand}_{c, s} & \forall (c, s) \in \text{CLASSES} \times \text{SCENARIOS} \\
+# \text{seats}_F + M y_s & \geq \text{demand}_{F, s} & \forall s \in  \text{SCENARIOS}\\
+# \text{seats}_F + \text{seats}_B + M z_s & \geq \text{demand}_{F, s} + \text{demand}_{B,s} & \forall s \in  \text{SCENARIOS} \\
+# \sum_{s\in \text{SCENARIOS}} y_s & \leq 0.02 N \\
+# \sum_{s\in \text{SCENARIOS}} z_s & \leq 0.05 N
+# \end{align}
+# $$
+# 
+# where $y_s$ and $z_s$ are binary variables indicating those scenarios which do not satisfy the requirements of the airline's loyalty programs for first class and business class passengers. 
+# 
+# The following cell implements this new model. Note that the running time for the cell can be up to a few minutes for a large number of scenarios.
+
+# In[11]:
+
+
+bigM = 100
+
+def airline(demand):
+
+    m = pyo.ConcreteModel()
+    
+    m.CLASSES = pyo.Set(initialize=demand.columns)
+    m.SCENARIOS = pyo.Set(initialize=demand.index)
+
+    # first stage variables and constraints
+    m.seats = pyo.Var(m.CLASSES, domain=pyo.NonNegativeIntegers) 
+
+    @m.Constraint(m.CLASSES)
+    def plane_seats(m, c):
+        return sum(m.seats[c] * seat_factor[c] for c in m.CLASSES) <= capacity
+
+    # second stage variable and constraints
+    m.tickets = pyo.Var(m.CLASSES, m.SCENARIOS, domain=pyo.NonNegativeIntegers)
+    m.first_class = pyo.Var(m.SCENARIOS, domain=pyo.Binary)
+    m.business_class = pyo.Var(m.SCENARIOS, domain=pyo.Binary)
+
+    @m.Constraint(m.CLASSES, m.SCENARIOS)
+    def demand_limits(m, c, s):
+        return m.tickets[c, s] <= demand[c][s]
+
+    @m.Constraint(m.CLASSES, m.SCENARIOS)
+    def seat_limits(m, c, s):
+        return m.tickets[c, s] <= m.seats[c]
+    
+    @m.Constraint(m.SCENARIOS)
+    def first_class_loyality(m, s):
+        return m.seats["F"] + bigM * m.first_class[s] >= demand["F"][s]
+    
+    @m.Constraint()
+    def first_class_loyality_rate(m):
+        return sum(m.first_class[s] for s in m.SCENARIOS) <= 0.02 * len(m.SCENARIOS)
+    
+    @m.Constraint(m.SCENARIOS)
+    def business_class_loyality(m, s):
+        return m.seats["F"] + m.seats["B"] + bigM * m.business_class[s] >=             demand["B"][s] + demand["F"][s]
+
+    @m.Constraint()
+    def business_class_loyality_rate(m):
+        return sum(m.business_class[s] for s in m.SCENARIOS) <= 0.05 * len(m.SCENARIOS)
+    
+    # objective
+    @m.Objective(sense=pyo.maximize)
+    def revenue(m):
+        return sum(m.tickets[c, s] * revenue_factor[c] for c in m.CLASSES for s in m.SCENARIOS)
+    
+    return m
+
+# create model
+model = airline(demand_saa)
+seats = airline_solve(model)
+seat_report_saa(seats, demand_saa)
+
+
+# :::{admonition}Exercise
+# Compared the results of using positive correlation in demand for first and business class tickets results in lower expected revenue. What happens if there is no correlation, or there is negative correlation? Verify your predictions by simulation.
+# :::
 
 # In[ ]:
 

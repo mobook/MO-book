@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
     <title>LAD Regression &#8212; Companion Notebooks for Data-Driven Mathematical Optimization in Python</title>
     
@@ -34,6 +34,7 @@
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
@@ -59,7 +60,7 @@ const thebe_selector_output = ".output, .cell_output"
     <link rel="next" title="MAD portfolio optimization" href="mad-portfolio-optimization.html" />
     <link rel="prev" title="BIM production" href="bim.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="None">
+    <meta name="docsearch:language" content="en">
     
 
     <!-- Google Analytics -->
@@ -324,6 +325,11 @@ const thebe_selector_output = ".output, .cell_output"
    <li class="toctree-l2">
     <a class="reference internal" href="../06/economic-order-quantity.html">
      Economic Order Quantity
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../06/building-insulation.html">
+     Building Insulation
     </a>
    </li>
   </ul>
@@ -700,7 +706,7 @@ title="Print to PDF"
               <div>
                 
   <section class="tex2jax_ignore mathjax_ignore" id="lad-regression">
-<h1>LAD Regression<a class="headerlink" href="#lad-regression" title="Permalink to this headline">#</a></h1>
+<h1>LAD Regression<a class="headerlink" href="#lad-regression" title="Permalink to this heading">#</a></h1>
 <p>Linear regression is a supervised machine learning technique that produces a linear model predicting values of a dependent variable from known values of one or more independent variables. Linear regression has a long history dating back to at least the 19th century and is a mainstay of modern data analysis.</p>
 <p>This notebook demonstrates a technique for linear regression based on LP that use the Least Absolute Deviation (LAD) as the metric to quantify the goodness of the model prediction. The sum of absolute values of errors is the <span class="math notranslate nohighlight">\(L_1\)</span> norm which is known to have favorable robustness characteristics in practical use. We follow closely this <a class="reference external" href="https://www.jstor.org/stable/1402501">paper</a>.</p>
 <div class="cell docutils container">
@@ -729,7 +735,7 @@ cbc was previously installed
 </div>
 </div>
 <section id="generate-data">
-<h2>Generate data<a class="headerlink" href="#generate-data" title="Permalink to this headline">#</a></h2>
+<h2>Generate data<a class="headerlink" href="#generate-data" title="Permalink to this heading">#</a></h2>
 <p>The Python <a class="reference external" href="https://scikit-learn.org/stable/">scikit learn</a> library for machine learning provides a full-featured collection of tools for regression. The following cell uses <code class="docutils literal notranslate"><span class="pre">make_regression</span></code> from scikit learn to generate a synthetic data set for use in subsequent cells. The data consists of a numpy array <code class="docutils literal notranslate"><span class="pre">y</span></code> containing <code class="docutils literal notranslate"><span class="pre">n_samples</span></code> of one dependent variable <span class="math notranslate nohighlight">\(y\)</span>, and an array <code class="docutils literal notranslate"><span class="pre">X</span></code> containing <code class="docutils literal notranslate"><span class="pre">n_samples</span></code> observations of <code class="docutils literal notranslate"><span class="pre">n_features</span></code> independent explanatory variables.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -749,7 +755,7 @@ cbc was previously installed
 </div>
 </section>
 <section id="data-visualization">
-<h2>Data Visualization<a class="headerlink" href="#data-visualization" title="Permalink to this headline">#</a></h2>
+<h2>Data Visualization<a class="headerlink" href="#data-visualization" title="Permalink to this heading">#</a></h2>
 <p>Before going further, it is generally useful to prepare an initial visualization of the data. The following cell presents a scatter plot of <span class="math notranslate nohighlight">\(y\)</span> versus <span class="math notranslate nohighlight">\(x\)</span> for the special case of one explanatory variable, and a histogram of the difference between <span class="math notranslate nohighlight">\(y\)</span> and the mean value <span class="math notranslate nohighlight">\(\bar{y}\)</span>. This histogram will provide a reference against which to compare the residual error in <span class="math notranslate nohighlight">\(y\)</span> after regression.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -778,7 +784,7 @@ cbc was previously installed
 </div>
 </section>
 <section id="model">
-<h2>Model<a class="headerlink" href="#model" title="Permalink to this headline">#</a></h2>
+<h2>Model<a class="headerlink" href="#model" title="Permalink to this heading">#</a></h2>
 <p>Suppose we have a finite dataset consisting of <span class="math notranslate nohighlight">\(n\)</span> points <span class="math notranslate nohighlight">\(\{({X}^{(i)}, y^{(i)})\}_{i=1,\dots,n}\)</span> with <span class="math notranslate nohighlight">\({X}^{(i)} \in \mathbb{R}^k\)</span> and <span class="math notranslate nohighlight">\(y^{(i)} \in \mathbb{R}\)</span>. A linear regression model assumes the relationship between the vector of <span class="math notranslate nohighlight">\(k\)</span> regressors <span class="math notranslate nohighlight">\({X}\)</span> and the dependent variable <span class="math notranslate nohighlight">\(y\)</span> is linear. This relationship is modeled through an error or deviation term <span class="math notranslate nohighlight">\(e_i\)</span>, which quantifies how much each of the data points diverge from the model prediction and is defined as follows:</p>
 <div class="math notranslate nohighlight">
 \[
@@ -856,7 +862,7 @@ b : Size=1, Index=None
 </div>
 </section>
 <section id="visualizing-the-results">
-<h2>Visualizing the Results<a class="headerlink" href="#visualizing-the-results" title="Permalink to this headline">#</a></h2>
+<h2>Visualizing the Results<a class="headerlink" href="#visualizing-the-results" title="Permalink to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">y_fit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">sum</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">m</span><span class="p">[</span><span class="n">j</span><span class="p">]()</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">J</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">X</span><span class="p">])</span>
