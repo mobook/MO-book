@@ -352,7 +352,7 @@ print(f"\nEOQ = {(m.t() + m.v())/2:0.2f}")
 
 # ## Pyomo Modeling with `conic.rotated_quadratic`
 # 
-# The need to the natural coordinates of the EOQ problem to fit the requirements of the `conic.quadratic` constraint is not a stumbling block, but it does raise the question of whether there is a more natural way to express the hyperbolic or cone constraint in Pyomo. 
+# The need to rotate the natural coordinates of the EOQ problem to fit the programming interface to `conic.quadratic` is not a big stumbling block, but does raise the question of whether there is a more natural way to express hyperbolic or cone constraints in Pyomo. 
 # 
 # `pyomo.kernel.conic.rotated_quadratic` expresses constraints in the form
 # 
@@ -368,7 +368,7 @@ print(f"\nEOQ = {(m.t() + m.v())/2:0.2f}")
 # \begin{align*}
 # \min_{x, y}\quad & f(x, y) = \frac{h x}{2} + c d y \\
 # \text{s.t.} \quad 
-# & z^2 \leq x\,y  \\
+# & z^2 \leq 2 x\,y  \\
 # & z = \sqrt{2} \\
 # & x, y > 0 \\
 # \end{align*}
