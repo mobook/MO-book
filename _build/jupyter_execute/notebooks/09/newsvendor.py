@@ -228,11 +228,11 @@ samples = scale*np.random.weibull(a=shape, size=N)
 naiveprofit_weibull = NaiveSeafoodStockSAA(N, samples, 'Weibull')
 
 
-# ## SAA with 7500 samples
+# ## SAA with 5000 samples
 # 
-# Solve approximately the stock optimization problem for each of the three distributions above using the Sample Average Approximation method with $N=7500$ points. More specifically, generate $N=7500$ samples from the considered distribution and solve the extensive form of the stochastic LP resulting from those $N=7500$ scenarios. For each of the three distribution, compare the optimal expected profit with that obtained before and calculate the value of the stochastic solution (VSS).
+# Solve approximately the stock optimization problem for each of the three distributions above using the Sample Average Approximation method with $N=5000$ points. More specifically, generate $N=5000$ samples from the considered distribution and solve the extensive form of the stochastic LP resulting from those $N=5000$ scenarios. For each of the three distribution, compare the optimal expected profit with that obtained before and calculate the value of the stochastic solution (VSS).
 
-# In[52]:
+# In[107]:
 
 
 # Two-stage stochastic LP for uniform distribution
@@ -285,8 +285,8 @@ def SeafoodStockSAA(N, sample, distributiontype, printflag=True):
     
     return model.total_expected_profit(), model.x.value
 
-np.random.seed(0)
-N = 7500
+np.random.seed(1)
+N = 5000
 
 samples = np.random.uniform(low=25.0, high=175.0, size=N)
 smartprofit_uniform, x = SeafoodStockSAA(N, samples, 'uniform')
@@ -306,14 +306,10 @@ print(f"Value of the stochastic solution: {smartprofit_weibull:.2f}-{naiveprofit
 
 
 # ## SAA convergence
+# 
+# We now solve the randomized sampled problem for a different number of samples, with the sample size $N$ increasing from $25$ to $3000$. As we can see, the approximate solutions converge to the theoretical ones as the sample size increases.
 
-# In[86]:
-
-
-np.linspace(25, 3000, 60, dtype=int)
-
-
-# In[87]:
+# In[109]:
 
 
 shape = 2
@@ -333,19 +329,7 @@ for i, N in enumerate(np.linspace(25, 3000, levels, dtype=int)):
     samples = scale*np.random.weibull(a=shape, size=N)
     profit_weibull, xw = SeafoodStockSAA(N, samples, 'Weibull', False)
     table[i] = [N, xu, xp, xw, profit_uniform, profit_pareto, profit_weibull]
-
-
-# In[88]:
-
-
-import pandas as pd
-
-pd.DataFrame(table, columns=["Samples", "x_u", "x_p", "x_w", "profit_u", "profit_p", "profit_w"]).set_index('Samples')
-
-
-# In[100]:
-
-
+    
 plt.plot(table[:,0],table[:,1], "-b", label='SAA-approximated solution Uniform')
 plt.axhline(y=105.36, color='b', linestyle='--', label='optimal solution Uniform')
 plt.plot(table[:,0],table[:,2], "-g", label='SAA-approximated solution Pareto')
@@ -355,10 +339,4 @@ plt.axhline(y=98.84, color='r', linestyle='--', label='optimal solution Weibull'
 plt.legend(loc="upper right")
 plt.ylim(65,135)
 plt.show()
-
-
-# In[ ]:
-
-
-
 
