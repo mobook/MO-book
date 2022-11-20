@@ -44,7 +44,7 @@
 # 
 # Let us model the material acquisition planning and solve it optimally based on the forecasted chip demand above.
 
-# In[20]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -57,15 +57,18 @@ exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
 helper.install_cbc()
+helper.install_gurobi()
 
 
-# In[21]:
+# In[9]:
 
 
 from io import StringIO
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 14})
+
 import pyomo.environ as pyo
 
 demand_data = '''
@@ -88,10 +91,6 @@ plastic, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1
 price = pd.read_csv(StringIO(price_data), index_col='product')
 display(price)
 
-
-# In[22]:
-
-
 use = dict()
 use['logic'] = {'silicon': 1, 'plastic': 1, 'copper': 4}
 use['memory'] = {'germanium': 1, 'plastic': 1, 'copper': 2}
@@ -101,7 +100,11 @@ material_demand = use.dot(demand_chips)
 existing = pd.Series({'silicon': 1000, 'germanium': 1500, 'plastic': 1750, 'copper': 4800 })
 eot_inventory = pd.Series({'silicon':  500, 'germanium':  500, 'plastic': 1000, 'copper': 2000 })
 
-# we store all the problemd data in one object to easily perform folding-horizon simulations
+
+# In[3]:
+
+
+# we store all the problem data in one object to easily perform folding-horizon simulations
 def initialize_problem_data():
     problem_data = {
         "price": price.copy(deep=True),
@@ -117,16 +120,11 @@ def initialize_problem_data():
     }
     return problem_data
 
-problem_data = initialize_problem_data()
-
-
-# In[23]:
-
-
 def ShowTableOfPyomoVariables( X, I, J ):
     return pd.DataFrame.from_records( [ [ pyo.value( X[i,j] ) for j in J ] for i in I ], index=I, columns=J ).round(decimals = 2)
 
 def BIMProductAcquisitionAndInventory(problem_data):
+    
     demand = problem_data["use"].dot( problem_data["demand_chips_ref"] )
     acquisition_price = problem_data["price"]
     existing = problem_data["existing"]
@@ -194,9 +192,11 @@ def BIMProductAcquisitionAndInventory(problem_data):
     
     return m
 
+problem_data = initialize_problem_data()
 m = BIMProductAcquisitionAndInventory(problem_data)
-pyo.SolverFactory('mosek').solve(m)
-print(m.total_cost())
+pyo.SolverFactory('cbc').solve(m)
+
+print(f'The optimal solution yields a total cost of {pyo.value(m.total_cost):.2f}\n')
 
 problem_data["purchases"] = ShowTableOfPyomoVariables(m.x, m.P, m.T)
 problem_data["stock"] = ShowTableOfPyomoVariables(m.s, m.P, m.T)
@@ -205,58 +205,16 @@ display(problem_data["purchases"])
 display(problem_data["stock"])
 
 
-# In[24]:
-
-
-m = BIMProductAcquisitionAndInventory(problem_data)
-pyo.SolverFactory('cbc').solve(m)
-print('The optimal solution yields a total cost of',round(pyo.value(m.total_cost),2))
-
-
 # ## Actual performance of the robust solution
 # 
 # We now perform a stochastic simulation to assess the performance of the robust solutions that we found earlier.
 
-# In[25]:
+# In[17]:
 
-
-################# SIMULATION OF THE REAL-TIME PERFORMANCE #######################
-
-# Conceptual
-#1) Decide on how to perturb the demand
-#2) Decide what is done given the perturbed demand - which product has the most priority
-#3) Decide what data to collect along the simulation
-
-# Implementation
-#1) Create a function that given demand trajectory and solution simulates by moving step by step, calling a sub-function
-#2) Create a function that given initial state at time t-1 executes the "what do do" strategy so that we obtain the immediate decisions 
-#3) Update the data and move to the next state
-
-# How to represent a demand trajectory? Data frame with columns as period names
-# What data to output per period: 
-# (i) missed demand per each chip category, 
-# (ii) inventory for each raw material (start or end?)
-
-# Create a class to store all the data of the current solution so that it's easy to retrieve
-
-def simulation_per_trajectory(purchases, existing, demand_chips, use):
-    
-    # Set up the table to store inventory evolution
-    inventory = pd.DataFrame(index = purchases.index, columns = purchases.columns)
-    inventory = pd.concat([pd.DataFrame(existing, index = existing.index, columns = ["existing"]), inventory], axis = 1)
-    
-    #print(inventory)
-    # Set up the DF to store missed demand information
-    missed_demand = pd.DataFrame(np.zeros((len(demand_chips.index), len(purchases.columns))), index = demand_chips.index, columns = purchases.columns)
-    
-    # proper simulation
-    for period in inventory.columns[1:]:
-        minimize_missed_demand_in_period(inventory, missed_demand, purchases, existing, demand_chips, use, period)
-        
-    return inventory.iloc[:, 1:], missed_demand
 
 def minimize_missed_demand_in_period(inventory, missed_demand, purchases, existing, demand_chips, use, period = None):
-    m = pyo.ConcreteModel('In period')
+    
+    m = pyo.ConcreteModel('Missed demand in period')
     
     periods  = inventory.columns
     first    = periods[0] 
@@ -265,32 +223,35 @@ def minimize_missed_demand_in_period(inventory, missed_demand, purchases, existi
     
     m.P = pyo.Set( initialize=list(use.columns)  )
     m.M = pyo.Set( initialize=list(use.index) )
-    # decision variable: nb of chips to produce >= 0
+    
+    # Decision variable: nb of chips to produce >= 0
     m.x = pyo.Var( m.P, within=pyo.NonNegativeReals )
-    # decision variable: missed demand
+    
+    # Decision variable: missed demand
     m.s = pyo.Var( m.P, within=pyo.NonNegativeReals )
     
-    # constraint: per resource we don't use more than there is
+    # Constraint: per resource we cannot use more than there is
     @m.Constraint(m.M)
     def resource_constraint(m, i):
         return pyo.quicksum(m.x[p] * use.loc[i, p] for p in m.P) <= inventory.loc[i, prev[period]] + purchases.loc[i, period]
     
-    # constraint: production + missed demand = total demand in this period
+    # Constraint: production + missed demand = total demand in this period
     @m.Constraint(m.P)
     def produced_plus_unmet(m, p):
         return m.x[p] + m.s[p] == demand_chips.loc[p, period]
     
-    # objective - minimize the missed demand
+    # Objective - minimize the missed demand
     @m.Objective( sense=pyo.minimize )
     def total_unmet(m):
         return pyo.quicksum(m.s[p] for p in m.P)
     
     # solve
-    pyo.SolverFactory( 'gurobi' ).solve(m)
+    pyo.SolverFactory('gurobi').solve(m)
     
     # update inventory
     for i in m.M:
-        inventory.loc[i, period] = inventory.loc[i, prev[period]] + purchases.loc[i, period]                 - sum([pyo.value(m.x[p]) * use.loc[i, p] for p in m.P])
+        inventory.loc[i, period] = inventory.loc[i, prev[period]] + purchases.loc[i, period] \
+                - sum([pyo.value(m.x[p]) * use.loc[i, p] for p in m.P])
     
     # update missed demand
     for p in m.P:
@@ -298,11 +259,28 @@ def minimize_missed_demand_in_period(inventory, missed_demand, purchases, existi
     
     return 0
 
-def simulate_performance(problem_data, n = 50, rho = 0.2):
-    results = []
+def simulation_per_trajectory(purchases, existing, demand_chips, use):
+    
+    # Set up the table to store inventory evolution
+    inventory = pd.DataFrame(index = purchases.index, columns = purchases.columns)
+    inventory = pd.concat([pd.DataFrame(existing, index = existing.index, columns = ["existing"]), inventory], axis = 1)
+    
+    # Set up the DF to store missed demand information
+    missed_demand = pd.DataFrame(np.zeros((len(demand_chips.index), len(purchases.columns))), index = demand_chips.index, columns = purchases.columns)
+    
+    # Proper simulation
+    for period in inventory.columns[1:]:
+        minimize_missed_demand_in_period(inventory, missed_demand, purchases, existing, demand_chips, use, period)
+        
+    return inventory.iloc[:, 1:], missed_demand
 
+def simulate_performance(problem_data, n = 50, rho = 0.05, seed = 0):
+    
+    rng = np.random.default_rng(seed)
+    
+    results = []
     for i in range(n):
-        perturbed_demand = problem_data["demand_chips_simulation"].applymap(lambda x: x * (1 + rho * (1 - 2 * np.random.rand())))
+        perturbed_demand = problem_data["demand_chips_simulation"].applymap(lambda x: x * (1 + rho * (1 - 2 * rng.random())))
         inv, md = simulation_per_trajectory(problem_data["purchases"], problem_data["existing"], perturbed_demand, use)
         results.append({"inventory": inv, "missing_demand": md})
         
@@ -312,52 +290,52 @@ def simulate_performance(problem_data, n = 50, rho = 0.2):
     InventoryEvolution = pd.concat([i["inventory"] for i in results], keys = [i for i in range(len(results))])
     InventoryEvolution = InventoryEvolution.astype('float').swaplevel()
 
-    return {"MissingDemand": MissingDemand, 
-            "InventoryEvolution": InventoryEvolution}
+    return {"MissingDemand": MissingDemand, "InventoryEvolution": InventoryEvolution}
 
-def report(MissingDemand, InventoryEvolution, problem_data, plot_name = "Nominal"):
-    to_analyze = MissingDemand
-    
+def report(MissingDemand, InventoryEvolution, problem_data):
+        
     # list to store DFs with per-group computed quantiles at various levels
-    average_missed_demand = to_analyze.groupby(level = 0).mean().transpose()
+    average_missed_demand = MissingDemand.groupby(level = 0).mean().transpose()
 
     # build a plot with as many subplots as there are chip types
     fig, axis = plt.subplots(figsize = (11, 4))
-    average_missed_demand.plot(ax = axis, drawstyle='steps-mid',grid=True)#, xticks = average_missed_demand.index)
+    average_missed_demand.plot(ax = axis, drawstyle='steps-mid',grid=True)
     plt.xticks(ticks = np.arange(len(average_missed_demand.index)), labels = average_missed_demand.index)
-    #axis.set_xticks(ticks=average_missed_demand.index, labels=average_missed_demand.index)
-    axis.set_title("Missed demand of chips under " + str(rho * 100) + "% uncertainty")
-
+    # axis.set_title("Missed demand of chips under " + str(rho * 100) + "% uncertainty")
     fig.tight_layout(pad=3.0)
-    plt.savefig("Missed_demand_" + plot_name + ".pdf")
+    plt.savefig("bim_robust_missed_demand.pdf")
     
     realized_inv_cost = InventoryEvolution.groupby(level = 0).mean().sum(axis = 1).sum() * problem_data["inventory_cost"]
-    print("Purchasing cost: ", (problem_data["price"] * problem_data["purchases"]).sum().sum())
-    print("Assumed inventory cost: ", (problem_data["stock"] * problem_data["inventory_cost"]).sum().sum())
-    print("Simulated inventory cost:", str(realized_inv_cost))
-    print("Simulated average missing demand: ", dict(to_analyze.groupby(level = 0).mean().sum(axis = 1)))
+    print(f'Purchasing cost: {(problem_data["price"] * problem_data["purchases"]).sum().sum():.2f}')
+    print(f'Theoretical inventory cost: {(problem_data["stock"] * problem_data["inventory_cost"]).sum().sum():.2f}\n')
+    print(f'Simulated realized inventory cost: {realized_inv_cost:.2f}')
+    print(f'Simulated average missed demand for logic chips is {MissingDemand.groupby(level = 0).mean().sum(axis = 1)[0]:.3f} and for memory chips is {MissingDemand.groupby(level = 0).mean().sum(axis = 1)[1]:.3f}\n')
+    print("Plot of missed chips demand over time under " + str(rho * 100) + "% uncertainty\n")
+    plt.show()
 
 
-# In[26]:
+# We now simulate 50 trajectories assuming there is a $\rho=8\%$ uncertainty around the nominal demand.
+
+# In[18]:
 
 
-rho = 0.05
+rho = 0.08
 N_sim = 50
 
-print("================= Nominal model =====================")
 problem_data["demand_chips_ref"] = demand_chips
 m = BIMProductAcquisitionAndInventory(problem_data)
-
 pyo.SolverFactory('cbc').solve(m)
+
 problem_data["purchases"] = ShowTableOfPyomoVariables( m.x, m.P, m.T )
 problem_data["stock"] = ShowTableOfPyomoVariables( m.s, m.P, m.T )
 
-SimResults = simulate_performance(problem_data,
-                                  N_sim, 
-                                  rho)
+SimResults = simulate_performance(problem_data, N_sim, rho)
 
-report(SimResults["MissingDemand"],
-       SimResults["InventoryEvolution"],
-       problem_data,
-       "nominal")
+
+# The simulation results report a sllighly higher inventory cost and a nonzero amount of missed chip demand.
+
+# In[19]:
+
+
+report(SimResults["MissingDemand"], SimResults["InventoryEvolution"], problem_data)
 
