@@ -599,7 +599,7 @@ seats = airline_solve(model)
 seat_report_saa(seats, demand_saa)
 
 
-# :::{admonition}Exercise
+# :::{Exercise}
 # Compared the results of using positive correlation in demand for first and business class tickets results in lower expected revenue. What happens if there is no correlation, or there is negative correlation? Verify your predictions by simulation.
 # :::
 
