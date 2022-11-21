@@ -55,7 +55,7 @@
 # A plot illustrates the trade off between operating and capital costs.
 # 
 
-# In[1]:
+# In[6]:
 
 
 # application parameters
@@ -70,7 +70,7 @@ a = 5.0           # installation cost per square meter
 b = 150.0         # installed material cost per cubic meter
 
 
-# In[2]:
+# In[7]:
 
 
 import matplotlib.pyplot as plt
@@ -120,11 +120,11 @@ ax.grid(True)
 # R & = R_0 + \frac{x}{k} \\
 # z^2 & \leq 2 R U \\
 # z & = \sqrt{2} \\
-# x, R, U & \geq 0
+# x, R, U & \geq 
 # \end{align}$$
 # 
 
-# In[3]:
+# In[4]:
 
 
 import pyomo.kernel as pmo
@@ -178,15 +178,13 @@ print(f"xopt = {m.x():0.5f} meters")
 # 
 # where binary variables $y_n$ indicate whether layer $n$ is included in the insulation package, and $x_n$ is the thickness of layer $n$ if included.
 
+# ### Some Analysis
+# 
+# Locate parameter values which provide a nontrivial multi-layer solution.
+
 # ### Sample Data
 
-# | Material | k (W/mK) | a | b |
-# | :-- | :--:| :--: | :--: |
-# | Mineral Wool | 0.030 | 5.0 | 150.0
-# | Rigid Foam (high R) | 0.022 | 8.0 | 180.0 
-# | Rigid Foam (low R) | 0.028 | 8.0 | 150.0
-
-# In[4]:
+# In[87]:
 
 
 import pandas as pd
@@ -208,7 +206,7 @@ display(df)
 
 # ### Pyomo Model
 
-# In[5]:
+# In[6]:
 
 
 import pyomo.kernel as pmo

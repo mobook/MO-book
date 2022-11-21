@@ -7,9 +7,9 @@
 # 
 # * Birge, John R., and Francois Louveaux. Introduction to stochastic programming. Springer Science & Business Media, 2011.
 # 
-# and widely used in teaching notes and presentations. Here we present a solution to this problem and several variants using Pyomo.
+# This problem widely used in teaching notes and presentations. Here we present a Pyomo solution to this problem and several variants.
 
-# In[2]:
+# In[1]:
 
 
 # install Pyomo and solvers
