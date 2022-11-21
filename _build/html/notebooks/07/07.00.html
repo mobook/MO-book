@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
     <title>7. Accounting for Uncertainty: Optimization Meets Reality &#8212; Companion Notebooks for Data-Driven Mathematical Optimization in Python</title>
     
@@ -34,7 +34,6 @@
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
@@ -55,10 +54,10 @@ const thebe_selector_output = ".output, .cell_output"
     <script>mermaid.initialize({startOnLoad:true});</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Robustness analysis of BIM production plan via simulations" href="bim-robustness-analysis.html" />
+    <link rel="next" title="Fleet assignment problem" href="fleet-assignment.html" />
     <link rel="prev" title="Building Insulation" href="../06/building-insulation.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
+    <meta name="docsearch:language" content="None">
     
 
     <!-- Google Analytics -->
@@ -173,6 +172,26 @@ const thebe_selector_output = ".output, .cell_output"
     </a>
    </li>
    <li class="toctree-l2">
+    <a class="reference internal" href="../02/l1-regression-wine-quality.html">
+     Wine quality prediction with L1 regression
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../02/bim-maxmin.html">
+     BIM production for worst case
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../02/bim-fractional.html">
+     BIM production variants
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../02/bim-rawmaterialplanning.html">
+     BIM production using demand forecasts
+    </a>
+   </li>
+   <li class="toctree-l2">
     <a class="reference internal" href="../02/multiproductionfaciliity_worstcase.html">
      Extra material: Multi-product facility production
     </a>
@@ -192,6 +211,11 @@ const thebe_selector_output = ".output, .cell_output"
    <li class="toctree-l2">
     <a class="reference internal" href="../03/bim-perturbed.html">
      BIM production with perturbed data
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../03/shift-scheduling.html">
+     Workforce shift scheduling
     </a>
    </li>
    <li class="toctree-l2">
@@ -343,6 +367,11 @@ const thebe_selector_output = ".output, .cell_output"
   </label>
   <ul>
    <li class="toctree-l2">
+    <a class="reference internal" href="fleet-assignment.html">
+     Fleet assignment problem
+    </a>
+   </li>
+   <li class="toctree-l2">
     <a class="reference internal" href="bim-robustness-analysis.html">
      Robustness analysis of BIM production plan via simulations
     </a>
@@ -361,7 +390,7 @@ const thebe_selector_output = ".output, .cell_output"
   <ul>
    <li class="toctree-l2">
     <a class="reference internal" href="../08/bim-robust-optimization.html">
-     Various robust versions of BIM production problem
+     Robust BIM microchip production problem
     </a>
    </li>
   </ul>
@@ -590,12 +619,40 @@ title="Print to PDF"
               <div>
                 
   <section class="tex2jax_ignore mathjax_ignore" id="accounting-for-uncertainty-optimization-meets-reality">
-<h1>7. Accounting for Uncertainty: Optimization Meets Reality<a class="headerlink" href="#accounting-for-uncertainty-optimization-meets-reality" title="Permalink to this heading">#</a></h1>
-<p>In this chapter, there is a number of examples with companion Pyomo implementation that explore various modeling and implementation aspects of LPs:</p>
+<h1>7. Accounting for Uncertainty: Optimization Meets Reality<a class="headerlink" href="#accounting-for-uncertainty-optimization-meets-reality" title="Permalink to this headline">#</a></h1>
+<p>In this chapter, we discuss the impact that uncertainty can have on optimization problem and argue that it is often necessary to account for it while formulating our models.</p>
+<p>In all the optimization problems discussed in the previous chapters, we treated the quantities in the problem description as exact, but, in reality, they can not always be trusted or assumed to be what we think. Uncertainty might negatively affect solutions to an optimization problem in the following forms.</p>
 <ul class="simple">
+<li><p>estimation/forecast errors (increasingly important in ML-driven world):</p>
+<ul>
+<li><p>in a production planning problem, future customer demand is a forecast;</p></li>
+<li><p>in a vehicle routing problem, travel times along various roads are real-time updated forecasts; wind farm energy production level based on wind forecasts.</p></li>
+</ul>
+</li>
+<li><p>measurement errors:</p>
+<ul>
+<li><p>a warehouse manager might have errors in the data records regarding current stock levels;</p></li>
+<li><p>concentration level of a given chemical substance is different from expected.</p></li>
+</ul>
+</li>
+<li><p>implementation errors:</p>
+<ul>
+<li><p>a given quantity of an ingredient is sent to production in a chemical company, but due to device errors, a slightly smaller amount is actually received;</p></li>
+<li><p>electrical power sent to an antenna is subject to the generator’s errors.</p></li>
+</ul>
+</li>
+</ul>
+<p>Since there is so much uncertainty, natural questions are:</p>
+<ul class="simple">
+<li><p>how to check how bad <code class="docutils literal notranslate"><span class="pre">not</span> <span class="pre">knowing</span> <span class="pre">the</span> <span class="pre">numbers</span> <span class="pre">exactly</span> <span class="pre">in</span> <span class="pre">advance</span></code> can be for the performance of solutions?</p></li>
+<li><p>if a given solution is very sensitive to changes in the problem parameters, can a better solution be found by taking uncertainty into account in advance, and if so, how?</p></li>
+</ul>
+<p>We will show three examples of how one can inspect solutions for their sensitivity to data changes.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="fleet-assignment.html"><span class="doc std std-doc">Fleet assignment problem</span></a></p></li>
 <li><p><a class="reference internal" href="bim-robustness-analysis.html"><span class="doc std std-doc">Robustness analysis of BIM production plan via simulations</span></a></p></li>
 </ul>
-<p>Go to the <a class="reference internal" href="../08/08.00.html"><span class="doc std std-doc">next chapter</span></a> about robust optimization.</p>
+<p>Go to the <a class="reference internal" href="../08/08.00.html"><span class="doc std std-doc">next chapter</span></a> about robust optimization and to <a class="reference internal" href="../09/09.00.html"><span class="doc std std-doc">Chapter 9</span></a> about stochastic optimization.</p>
 <div class="toctree-wrapper compound">
 </div>
 </section>
@@ -634,10 +691,10 @@ title="Print to PDF"
             <p class="prev-next-title">Building Insulation</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="bim-robustness-analysis.html" title="next page">
+    <a class='right-next' id="next-link" href="fleet-assignment.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Robustness analysis of BIM production plan via simulations</p>
+        <p class="prev-next-title">Fleet assignment problem</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

@@ -3,9 +3,7 @@
 
 # # Economic Order Quantity
 # 
-# * Demonstrates reformulation of hyperbolic constraints as SOCP with implementation with `pyomo.kernel.conic.quadratic`.
-# * Demonstrates direct modeling of the hyperbolic constraint with `pyomo.kernel.conic.rotated_quadratic`.
-# * The example is familiar to any MBA/business student, and has a significant range of applications including warehouse operations.
+# This notebooks demonstrates the reformulation of hyperbolic constraints as SOCP with implementation with `pyomo.kernel.conic.quadratic` and also the direct modeling of the hyperbolic constraint with `pyomo.kernel.conic.rotated_quadratic`. The example is familiar to any MBA/business student, and has a significant range of applications including warehouse operations.
 # 
 # ## Usage notes
 # 
@@ -27,8 +25,7 @@ exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
 helper.install_mosek()
-#helper.install_gurobi()
-#helper.install_ipopt()
+helper.install_gurobi()
 
 
 # ## The EOQ model
