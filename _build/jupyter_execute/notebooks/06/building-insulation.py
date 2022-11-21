@@ -3,8 +3,7 @@
 
 # # Building Insulation
 
-# The decision on much it invest in insulating a building is determined by a tradeoff between the capital costs of insulation and the annual operating costs for heating and air conditioning. This notebook shows the formulation and solution of an optimization problem using conic programming.
-# 
+# Thermal insulation is installed in buildings to reduce the annual energy costs. But the installation costs money, so the decision of how much insulation to install is a a trade off between the annualized capital costs of insulation and the annual operating costs for heating and air conditioning. This notebook shows the formulation and solution of an optimization problem using conic programming.
 
 # ## A Model for Multi-Layered Insulation
 # 
@@ -38,9 +37,7 @@
 # where $T$ is an upper bound on insulation thickness.
 # 
 
-# ## Single Layer Solutions
-
-# ### Analytic Solution
+# ## Analytic Solution for $N=1$
 # 
 # The case $N=1$ has a simple analytical solution
 # 
@@ -55,7 +52,7 @@
 # A plot illustrates the trade off between operating and capital costs.
 # 
 
-# In[6]:
+# In[1]:
 
 
 # application parameters
@@ -70,7 +67,7 @@ a = 5.0           # installation cost per square meter
 b = 150.0         # installed material cost per cubic meter
 
 
-# In[7]:
+# In[2]:
 
 
 import matplotlib.pyplot as plt
@@ -108,7 +105,13 @@ ax.set_title("Annualized costs of insulation and energy per sq. meter")
 ax.grid(True)
 
 
-# ### Pyomo Model
+# ## Pyomo Model for $N=1$
+# 
+# In the [Pyomo Kernel Library](https://pyomo.readthedocs.io/en/stable/library_reference/kernel/index.html), a [conic rotated constraint](https://pyomo.readthedocs.io/en/stable/library_reference/kernel/conic.html#pyomo.core.kernel.conic.rotated_quadratic) is of the form   
+# 
+# $$\sum_{n=0}^{N-1} z_n^2 \leq 2 r_1 r_2$$ 
+# 
+# where $r_1$, $r_2$, and $z_0, z_1, \ldots, z_{N-1}$ are variables. For a single layer Pyomo model we identify $R \sim r_1$, $U\sim r_2$, and $z_0^2 \sim 2$ which leads to the model
 # 
 # $$\begin{align}
 # \min\ \alpha U + \beta(a + bx)
@@ -118,13 +121,15 @@ ax.grid(True)
 # 
 # $$\begin{align}
 # R & = R_0 + \frac{x}{k} \\
-# z^2 & \leq 2 R U \\
+# z^2 & \leq 2 R U & \text{conic constraint}\\
 # z & = \sqrt{2} \\
-# x, R, U & \geq 
+# x, R, U & \geq 0 \\
+# x & \leq T
 # \end{align}$$
 # 
+# This model can be translated directly into into a Pyomo conic program using the Pyomo Kernel Library.
 
-# In[4]:
+# In[3]:
 
 
 import pyomo.kernel as pmo
@@ -134,16 +139,13 @@ m = pmo.block()
 # decision variables
 m.R = pmo.variable(lb=0)
 m.U = pmo.variable(lb=0)
-m.x = pmo.variable(lb=0)
+m.x = pmo.variable(lb=0, ub=T)
 
 # objective
 m.cost = pmo.objective(alpha*m.U + beta*(a + b*m.x))
 
 # insulation model
-m.insulation = pmo.constraint(m.R == R0 + m.x/k)
-
-# thickness constraint
-m.thickness = pmo.constraint(m.x <= T)
+m.r = pmo.constraint(m.R == R0 + m.x/k)
 
 # conic constraint
 m.q = pmo.conic.rotated_quadratic.as_domain(m.R, m.U, [np.sqrt(2)])
@@ -178,13 +180,57 @@ print(f"xopt = {m.x():0.5f} meters")
 # 
 # where binary variables $y_n$ indicate whether layer $n$ is included in the insulation package, and $x_n$ is the thickness of layer $n$ if included.
 
-# ### Some Analysis
-# 
-# Locate parameter values which provide a nontrivial multi-layer solution.
+# In[4]:
 
-# ### Sample Data
 
-# In[87]:
+import pyomo.kernel as pmo
+
+def insulate(df, alpha, beta, R0, T):
+
+    m = pmo.block()
+
+    # index set
+    m.N = df.index
+
+    a = df["a"]
+    b = df["b"]
+    k = df["k"]
+
+    # decision variables
+    m.R = pmo.variable(lb=0)
+    m.U = pmo.variable(lb=0)
+    m.x = pmo.variable_dict({n: pmo.variable(lb=0) for n in m.N})
+    m.y = pmo.variable_dict({n: pmo.variable(domain=pmo.Binary) for n in m.N})
+
+    # objective
+    m.cost = pmo.objective(alpha*m.U + beta*sum(a[n]*m.y[n] + b[n]*m.x[n] for n in m.N))
+
+    # insulation model
+    m.insulation = pmo.constraint(m.R == R0 + sum(m.x[n]/k[n] for n in m.N))
+
+    # total thickness limit
+    m.thickness = pmo.constraint(sum(m.x[n] for n in m.N) <= T)
+
+    # layer model   
+    m.layers = pmo.constraint_dict({n: pmo.constraint(m.x[n] <= T * m.y[n]) for n in m.N})
+
+    # conic constraint
+    m.q = pmo.conic.rotated_quadratic.as_domain(m.R, m.U, [np.sqrt(2)])
+
+    # solve with 'mosek_direct' or 'gurobi_direct'
+    pmo.SolverFactory('mosek_direct').solve(m)
+    
+    for n in m.N:
+        df.loc[n, "x opt"] = m.x[n]() 
+    print(f"cost = {m.cost():0.5f} per sq. meter")
+    display(df.round(5))
+    
+    return m
+
+
+# ### Case 1. Single Layer Solution
+
+# In[5]:
 
 
 import pandas as pd
@@ -201,62 +247,55 @@ df = pd.DataFrame({
     "Rigid Foam (low R)": {"k": 0.3, "a": 8.0, "b": 120.0}
 }).T
 
-display(df)
+insulate(df, alpha, beta, R0, T)
 
 
-# ### Pyomo Model
+# ### Case 2. Multiple Layer Solution
 
 # In[6]:
 
 
-import pyomo.kernel as pmo
+# application parameters
+alpha = 30        # $ K / W annualized cost per sq meter per W/sq m/K
+beta = 0.05       # equivalent annual cost factor
+R0 = 2.0          # Watts/K/m**2
+T = 0.15          # maximum insulation thickness
 
-m = pmo.block()
+df = pd.DataFrame({
+    "Foam": {"k": 0.015, "a": 0.0, "b": 110.0},
+    "Wool": {"k": 0.010, "a": 0.0, "b": 200.0},
+}).T
 
-# parameters
-m.N = df.index
-m.a = pmo.parameter_dict()
-m.b = pmo.parameter_dict()
-m.k = pmo.parameter_dict()
-for n in m.N:
-    m.a[n] = pmo.parameter(df.loc[n, "a"])
-    m.b[n] = pmo.parameter(df.loc[n, "b"])
-    m.k[n] = pmo.parameter(df.loc[n, "k"])
+insulate(df, alpha, beta, R0, T)
 
-# decision variables
-m.R = pmo.variable(lb=0)
-m.U = pmo.variable(lb=0)
 
-m.x = pmo.variable_dict()
-m.y = pmo.variable_dict()
-for n in m.N:
-    m.x[n] = pmo.variable(lb=0)
-    m.y[n] = pmo.variable(domain=pmo.Binary)
-    
-# objective
-m.cost = pmo.objective(alpha*m.U + beta*sum(m.a[n]*m.y[n] + m.b[n]*m.x[n] for n in m.N))
+# In[7]:
 
-# insulation model
-m.insulation = pmo.constraint(m.R == R0 + sum(m.x[n]/m.k[n] for n in m.N))
 
-# thickness limit
-m.thickness = pmo.constraint(sum(m.x[n] for n in m.N) <= T)
+import numpy as np
+import matplotlib.pyplot as plt
 
-# layer model
-m.layers = pmo.constraint_dict()
-for n in m.N:
-    m.layers[n] = pmo.constraint(m.x[n] <= T * m.y[n])
-    
-# conic constraint
-m.q = pmo.conic.rotated_quadratic.as_domain(m.R, m.U, [np.sqrt(2)])
+k = list(df["k"])
+a = list(df["a"])
+b = list(df["b"])
 
-# solve with 'mosek_direct' or 'gurobi_direct'
-solver = pmo.SolverFactory('mosek_direct')
-solver.solve(m)
+f = lambda x0, x1: alpha/(R0 + x0/k[0] + x1/k[1]) + beta*(a[0] + b[0]*x0 + a[1] + b[1]*x1)
 
-print(f"cost = {m.cost():0.5f} per sq. meter")
-for n in m.N:
-    print(f"x[{n}] = {m.x[n]():0.3f} meters")
+x0 = np.linspace(0, 1.1*T, 201)
+x1 = np.linspace(0, 1.1*T, 201)
+
+X0, X1 = np.meshgrid(x0, x1)
+
+fig, ax = plt.subplots(1, 1)
+ax.contour(x0, x1, f(X0, X1), 50)
+ax.set_xlim(min(x0), max(x0))
+ax.set_ylim(min(x1), max(x1))
+ax.plot([0, T], [T, 0], 'r', lw=3)
+ax.set_aspect(1)
+
+ax.set_xlabel("x_0")
+ax.set_ylabel("y_0")
+ax.set_title("Contours of Constant Cost")
 
 
 # ## Bibliographic Notes
@@ -268,3 +307,9 @@ for n in m.N:
 # > Kaynakli, O. (2012). A review of the economical and optimum thermal insulation thickness for building applications. Renewable and Sustainable Energy Reviews, 16(1), 415-425. https://www.sciencedirect.com/science/article/pii/S1364032111004163
 # 
 # > Nyers, J., Kajtar, L., Tomić, S., & Nyers, A. (2015). Investment-savings method for energy-economic optimization of external wall thermal insulation thickness. Energy and Buildings, 86, 268-274.  https://www.sciencedirect.com/science/article/pii/S0378778814008688
+
+# In[ ]:
+
+
+
+
