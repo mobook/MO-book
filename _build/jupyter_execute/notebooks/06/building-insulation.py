@@ -5,6 +5,22 @@
 
 # Thermal insulation is installed in buildings to reduce the annual energy costs. But the installation costs money, so the decision of how much insulation to install is a a trade off between the annualized capital costs of insulation and the annual operating costs for heating and air conditioning. This notebook shows the formulation and solution of an optimization problem using conic programming.
 
+# In[1]:
+
+
+# install Pyomo and solvers
+import requests
+import types
+
+url = "https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py"
+helper = types.ModuleType("helper")
+exec(requests.get(url).content, helper.__dict__)
+
+helper.install_pyomo()
+helper.install_mosek()
+helper.install_gurobi()
+
+
 # ## A Model for Multi-Layered Insulation
 # 
 # Consider a wall or surface separating conditioned interior space in a building at temperature $T_i$ from the external environment at temperature $T_o$. Heat conduction through the wall is given by
@@ -52,7 +68,7 @@
 # A plot illustrates the trade off between operating and capital costs.
 # 
 
-# In[1]:
+# In[2]:
 
 
 # application parameters
@@ -67,7 +83,7 @@ a = 5.0           # installation cost per square meter
 b = 150.0         # installed material cost per cubic meter
 
 
-# In[2]:
+# In[3]:
 
 
 import matplotlib.pyplot as plt
@@ -129,7 +145,7 @@ ax.grid(True)
 # 
 # This model can be translated directly into into a Pyomo conic program using the Pyomo Kernel Library.
 
-# In[3]:
+# In[4]:
 
 
 import pyomo.kernel as pmo
@@ -180,7 +196,7 @@ print(f"xopt = {m.x():0.5f} meters")
 # 
 # where binary variables $y_n$ indicate whether layer $n$ is included in the insulation package, and $x_n$ is the thickness of layer $n$ if included.
 
-# In[4]:
+# In[5]:
 
 
 import pyomo.kernel as pmo
@@ -230,7 +246,7 @@ def insulate(df, alpha, beta, R0, T):
 
 # ### Case 1. Single Layer Solution
 
-# In[5]:
+# In[6]:
 
 
 import pandas as pd
@@ -252,7 +268,7 @@ insulate(df, alpha, beta, R0, T)
 
 # ### Case 2. Multiple Layer Solution
 
-# In[6]:
+# In[7]:
 
 
 # application parameters
@@ -269,7 +285,7 @@ df = pd.DataFrame({
 insulate(df, alpha, beta, R0, T)
 
 
-# In[7]:
+# In[8]:
 
 
 import numpy as np
