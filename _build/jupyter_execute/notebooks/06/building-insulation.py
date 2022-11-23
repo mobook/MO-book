@@ -282,10 +282,10 @@ df = pd.DataFrame({
     "Wool": {"k": 0.010, "a": 0.0, "b": 200.0},
 }).T
 
-insulate(df, alpha, beta, R0, T)
+m = insulate(df, alpha, beta, R0, T)
 
 
-# In[8]:
+# In[13]:
 
 
 import numpy as np
@@ -307,10 +307,15 @@ ax.contour(x0, x1, f(X0, X1), 50)
 ax.set_xlim(min(x0), max(x0))
 ax.set_ylim(min(x1), max(x1))
 ax.plot([0, T], [T, 0], 'r', lw=3)
+
 ax.set_aspect(1)
 
+x = list(m.x[n]() for n in m.N)
+ax.plot(x[0], x[1], 'r.', ms=20)
+ax.text(x[0], x[1], f"    ({x[0]:0.4f}, {x[1]:0.4f})")
+
 ax.set_xlabel("x_0")
-ax.set_ylabel("y_0")
+ax.set_ylabel("x_1")
 ax.set_title("Contours of Constant Cost")
 
 

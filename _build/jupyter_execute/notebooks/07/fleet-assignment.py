@@ -22,9 +22,9 @@ helper.install_cbc()
 # 
 # Given a set of flights to be flown, an airline company needs to determine the specific route flown by each airplane in the most cost-effective way. Clearly, the airline company should try to use as fewer airplanes as possible, but the same airplane can operate two subsequent flights only if the time interval between the arrival of the first flight and the departure of the next flight is longer than or equal to one hour.
 # 
-# The task of the airline operations team is to determine the minimum number of airplanes needed to operate the given list of flights. This problem, known as the **fleet assignment problem** or **aircraft rotation problem**.
+# The task of the airline operations team is to determine the minimum number of airplanes needed to operate the given list of flights. This problem is known as the **fleet assignment problem** or **aircraft rotation problem**.
 
-# In[2]:
+# In[324]:
 
 
 import numpy as np
@@ -32,39 +32,165 @@ import pandas as pd
 import pyomo.environ as pyo
 import matplotlib.pyplot as plt
 from numpy.random import RandomState
-plt.rcParams.update({'font.size': 22})
 
-def generate_flight_list(N_flights = 30, min_duration = 1, max_duration = 4, max_departure = 24, seed = 0):
-
+# python generator to create departure and arrival times from single airport
+def generate_flights(N_flights=30, min_duration=1, max_duration=4, max_departure=24, seed=0):
     rs = RandomState(seed)
-
-    flight_times = np.zeros((N_flights, 2), 'int64')
-
-    for i_flight in range(N_flights):
-        good = False
-
-        start_flight = 0
-        end_flight = 0
-
-        while not good:
+    for flight in range(N_flights):
+        end_flight = max_departure + 1
+        while end_flight > max_departure:
             start_flight = np.floor(max_departure * rs.rand())
-            end_flight = start_flight + 3 * np.ceil((max_duration + 1 - min_duration) * rs.rand())
+            end_flight = start_flight + 3 * np.ceil((max_duration + 1 - min_duration) * rs.rand()) 
+        yield flight + 1, int(start_flight), int(end_flight)
 
-            if end_flight <= max_departure:
-                good = True
-
-        flight_times[i_flight, :] = start_flight, end_flight
-
-    FlightData = pd.DataFrame(flight_times)
-    FlightData.columns = ["Departure", "Arrival"]
-    
-    return FlightData, seed
+# generate flight data
+FlightData = pd.DataFrame([[flight, departure, arrival] for flight, departure, arrival in generate_flights()])
+FlightData.columns = ["Flight", "Departure", "Arrival"]
+FlightData.set_index("Flight", inplace=True)
 
 
-# In[3]:
+# ## Visualize Flight Data
+
+# In[335]:
 
 
-FlightData, seed = generate_flight_list()
+# visualize flight data
+def draw_flights(FlightData):
+    bar_style = {'alpha':1.0, 'lw':10, 'solid_capstyle':'butt'}
+    text_style = {'fontsize': 7, 'color':'white', 'weight':'bold', 'ha':'center', 'va':'center'}
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111, xlabel="Departure/Arrival Time", title="FlightData")
+    ax.get_yaxis().set_visible(False)
+    for flight, row in FlightData.iterrows():
+        departure, arrival = row
+        ax.plot([departure, arrival], [flight]*2, 'gray', **bar_style)
+        ax.text((departure + arrival)/2, flight, flight, **text_style)
+    return ax
+
+draw_flights(FlightData)
+
+
+# ## Find All Feasible Flight Pairs
+
+# In[337]:
+
+
+# create an iterator to produce pairs of flight numbers
+flight_pairs = list(filter(
+    lambda pair: FlightData.loc[pair[0], "Arrival"] < FlightData.loc[pair[1], "Departure"],
+    [[i, j] for i in FlightData.index for j in FlightData.index if i != j]
+))
+
+
+# ## Visualize Feasible Flight Pairs as a Directed Graph
+
+# In[338]:
+
+
+ax = draw_flights(FlightData)
+for flight1, flight2 in flight_pairs:
+    arr = FlightData.loc[flight1, "Arrival"]
+    dep = FlightData.loc[flight2, "Departure"]
+    c = 'r' if dep - arr <= 1 else 'k'
+    ax.plot([arr, dep], [flight1, flight2], color=c, lw=1, alpha=0.4)
+
+
+# ## Directed Graph
+# 
+# Networkx includes useful tools for the modeling and analysis of directed graphs. For this application, we use Networkx to compute the input edges and output edges for each flight node. These computations are straightforward and could easily be done with a few lines of Python, but Networkx makes the overall model more expressive and easy to read.
+
+# In[330]:
+
+
+# create DiGraph
+
+DG = nx.DiGraph()
+
+# display all nodes
+for flight in FlightData.index:
+    DG.add_node(flight)
+
+# display all edges
+for flight1, flight2 in flight_pairs:
+    DG.add_edge(flight1, flight2)
+
+
+# ## Pyomo Model
+
+# In[339]:
+
+
+m = pyo.ConcreteModel("Fleet Assignment")
+  
+m.FLIGHTS = pyo.Set(initialize=FlightData.index)
+m.PAIRS = pyo.Set(initialize=flight_pairs)
+
+m.x = pyo.Var(m.PAIRS, domain=pyo.Binary)
+m.source = pyo.Var(m.FLIGHTS, domain=pyo.Binary)
+m.sink = pyo.Var(m.FLIGHTS, domain=pyo.Binary)
+
+@m.Expression(m.FLIGHTS)
+def sum_in_edges(m, flight):
+    return m.source[flight] + sum(m.x[in_flight, flight] for in_flight, _ in DG.in_edges(flight))
+
+@m.Expression(m.FLIGHTS)
+def sum_out_edges(m, flight):
+    return m.sink[flight] + sum(m.x[flight, out_flight] for _, out_flight in DG.out_edges(flight))
+
+@m.Constraint(m.FLIGHTS)
+def one_airplane_for_each_flight(m, flight):
+    return m.sum_in_edges[flight] == 1
+
+@m.Constraint(m.FLIGHTS)
+def balance(m, flight): 
+    return m.sum_in_edges[flight] == m.sum_out_edges[flight]
+
+@m.Objective(sense=pyo.minimize)
+def minimize_airplanes(m):
+    return pyo.summation(m.source)
+
+pyo.SolverFactory("cbc").solve(m)
+
+print(f"Minimum airplanes required = {m.minimize_airplanes()}")
+
+ax = draw_flights(FlightData)
+for flight1, flight2 in flight_pairs:
+    if m.x[flight1, flight2]() == 1:
+        arr = FlightData.loc[flight1, "Arrival"]
+        dep = FlightData.loc[flight2, "Departure"]
+        c = 'r' if dep - arr <= 1 else 'k'
+        ax.plot([arr, dep], [flight1, flight2], color=c, lw=4, alpha=0.4)
+
+
+# ## Allocate Aircraft
+
+# In[435]:
+
+
+aircraft = 0
+at_risk = 0
+for flight in FlightData.index:
+    if m.source[flight]() == 1:
+        aircraft += 1
+        print(f"\nAircraft {aircraft:2d}")
+        print(f"    Flight {flight:2d}: depart {FlightData.loc[flight, 'Departure']:2d}", end="")
+        print(f" --> arrive {FlightData.loc[flight, 'Arrival']:2d}")
+        f = flight
+        while m.sink[f]() != 1:
+            for _, g in DG.out_edges(f):
+                if m.x[f, g]() == 1:
+                    break
+            dt = FlightData.loc[g, "Departure"] - FlightData.loc[f, "Arrival"]
+            if dt <= 1:
+                print(f"  **", end="")
+                at_risk += 1
+            else:
+                print(f"    ", end="")
+            print(f"Flight {g:2d}: depart {FlightData.loc[g, 'Departure']:2d}", end="")
+            print(f" --> arrive {FlightData.loc[g, 'Arrival']:2d}")
+            f = g
+            
+print(f"\n**{at_risk} flights at risk of delay")
 
 
 # ## Reformulation the fleet assignment as a network problem
@@ -101,6 +227,48 @@ FlightData, seed = generate_flight_list()
 # - constraint (\ref{eq:71e}) ensures that if at least one arc $(f, 0)$ is used using a given airplane, then this airplane is used;
 # - \eqref{eq:71f} is a symmetry-breaking constraint, which makes sure that we only use airplanes that come first in the aircraft set.
 # 
+
+# In[316]:
+
+
+import networkx as nx
+
+DG = nx.DiGraph()
+
+# make sure all nodes are displayed, even if unconnected
+for flight in FlightData.index:
+    DG.add_node(flight)
+
+
+flight_pairs = filter(
+    lambda pair: FlightData.loc[pair[0], "Arrival"] < FlightData.loc[pair[1], "Departure"],
+    [[i, j] for i in FlightData.index for j in FlightData.index if i != j]
+)
+
+# ordered pairs
+for flight1, flight2 in flight_pairs:
+    DG.add_edge(flight1, flight2)
+    if FlightData.loc[flight1, "Arrival"] + 1 == FlightData.loc[flight2, "Departure"]:
+        DG[flight1][flight2]["color"] = "r"
+    else:
+        DG[flight1][flight2]["color"] = "k"
+        
+# add dummy START
+DG.add_node("START")
+for flight in FlightData.index:
+    DG.add_edge("START", flight)
+    DG["START"][flight]["color"] = "b"
+    
+# add dummy FINISH
+DG.add_node("FINISH")
+for flight in FlightData.index:
+    DG.add_edge(flight, "FINISH")
+    DG[flight]["FINISH"]["color"] = "b"
+    
+fig = plt.figure(figsize=(8, 8))
+nx.draw(DG, nx.circular_layout(DG), with_labels=True, font_size=8, arrowsize=10,
+        node_color="gold", edge_color=[DG.edges[u, v]["color"] for u, v in DG.edges])
+
 
 # In[4]:
 
