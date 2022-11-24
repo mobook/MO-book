@@ -24,7 +24,7 @@ helper.install_pyomo()
 helper.install_cbc()
 
 
-# In[2]:
+# In[4]:
 
 
 import os
@@ -43,7 +43,7 @@ import pyomo.environ as pyo
 # 
 # Cryptocurrency exchanges are digital marketplaces for buying and trading cryptocurrencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, to buy and sell currencies, and to use cryptocurrencies for financial transactions. The [open-source library `ccxt`](https://github.com/ccxt/ccxt) currently supports real-time APIs for the largest and most common exchanges on which cryptocurrencies are traded. Here we import the library and list current exchanges supported by `ccxt`.
 
-# In[3]:
+# In[5]:
 
 
 import ccxt
@@ -64,12 +64,13 @@ for i, exchange in enumerate(ccxt.exchanges):
 # 
 # 
 
-# In[4]:
+# In[ ]:
 
 
 # global variables used in subsequent cells
 
 exchange = ccxt.binanceus()
+#exchange = ccxt.coinbase()
 markets = exchange.load_markets()
 symbols = exchange.symbols
 
@@ -142,7 +143,7 @@ print(f"Number of edges = {len(dg_symbols.edges()):3d}")
 # 
 # The following cell uses the `ccxt` library to fetch the highest bid and lowest ask from the order book for all trading symbols in a directed graph.
 
-# In[5]:
+# In[20]:
 
 
 import pandas as pd
@@ -217,7 +218,7 @@ display(order_book[['base', 'quote', 'bid_price', 'bid_volume', 'ask_price', 'as
 # 
 # The following cell creates a directed graph using data from an exchange order book.
 
-# In[6]:
+# In[21]:
 
 
 def order_book_to_dg(order_book):
@@ -291,7 +292,7 @@ draw_dg(dg_order_book, 0.05)
 # 
 # A brute force search over all simple cycles has complexity $(n + e)(c + 1)$ which is impractical for larger scale applications. A more efficient search based on Bellman-Ford is embedded in the NetworkX function [`negative_edge_cycle`](https://networkx.org/documentation/networkx-1.10/reference/generated/networkx.algorithms.shortest_paths.weighted.negative_edge_cycle.html) that returns a logical True if a negative cycle exists in a directed graph. 
 
-# In[7]:
+# In[22]:
 
 
 dg_order_book = order_book_to_dg(order_book)
@@ -300,7 +301,7 @@ nx.negative_edge_cycle(dg_order_book, weight="weight", heuristic=True)
 
 # ## Find order books that demonstrate arbitrage opportunities
 
-# In[17]:
+# In[23]:
 
 
 from datetime import datetime
@@ -332,7 +333,7 @@ else:
 # 
 # Waiting for arbitrage opportunities to appear on a specific exchange in real-time occasionally requires some patience. For convenience, the following cell loads provide access to a few previously saved order books.
 
-# In[15]:
+# In[24]:
 
 
 # order_book = pd.read_csv("Binance_US_orderbook_2022-08-07_17:20:31.csv")   # large order book with a 5 bp arb opportunity
@@ -343,7 +344,7 @@ else:
 # 
 # The NetworkX library includes a function [`find_negative_cycle`](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.shortest_paths.weighted.find_negative_cycle.html) that locates a single negative edge cycle, if one exists.
 
-# In[16]:
+# In[25]:
 
 
 # compute the sum of weights given a list of nodes
@@ -371,7 +372,7 @@ draw_dg(dg_order_book, 0.05)
 
 # The following cell uses `negative_edge_cycle` to test for an arbitrage opportunity in the current order book. If an arbitrage is found, the order book is saved to a `.csv` file for later analysis. If no arbitrage is found within the specified time limit, the most recent `.csv` file is returned instead.
 
-# In[17]:
+# In[26]:
 
 
 # This cell iterates over all simple cycles in a directed graph which
@@ -403,7 +404,7 @@ ax.grid(True)
 ax.axvline(0, color='r')
 
 
-# In[18]:
+# In[27]:
 
 
 arbitrage = [cycle for cycle in sorted(cycles, key=cycles.get) if cycles[cycle] < 0]
@@ -413,7 +414,7 @@ for cycle in arbitrage:
     print(f"{10000*(np.exp(-cycles[cycle]) - 1):12.8f} {cycle}")
 
 
-# In[19]:
+# In[28]:
 
 
 for k, cycle in enumerate(arbitrage):
@@ -457,7 +458,7 @@ for k, cycle in enumerate(arbitrage):
 # \end{align*}
 # $$
 
-# In[14]:
+# In[29]:
 
 
 import pyomo.environ as pyo

@@ -3,7 +3,7 @@
 
 # # Fleet assignment problem
 
-# In[1]:
+# In[22]:
 
 
 # install Pyomo and solvers
@@ -26,7 +26,7 @@ helper.install_cbc()
 
 # ## Generate Flight Data
 
-# In[2]:
+# In[23]:
 
 
 import numpy as np
@@ -54,7 +54,7 @@ FlightData.head()
 
 # ## Visualize Flight Data
 
-# In[3]:
+# In[24]:
 
 
 # visualize flight data
@@ -87,7 +87,7 @@ draw_flights(FlightData)
 # 
 # The following cell finds the set of arcs that can be used. These arcs are displayed in a graph of the flight data. Arcs corresponding to the minimum time between arrival and departure are highlighted.
 
-# In[4]:
+# In[25]:
 
 
 min_time = 1
@@ -113,7 +113,7 @@ for flight1, flight2 in flight_pairs:
 
 # For each node $f\in\mathcal{F}$ we define a set of input nodes $\mathcal{I}_f = \{f_1: (f_1, f)\in\mathcal{A}\}$  and a set of output nodes $\mathcal{O}_f = \{f_1: (f, f_1)\in\mathcal{A} \}$. For this application, we use the Python ``set`` object to scan the feasible flight pairs and find the inputs and outputs nodes for each flight node. 
 
-# In[5]:
+# In[26]:
 
 
 in_nodes = {flight: set() for flight in FlightData.index}
@@ -140,7 +140,7 @@ for flight1, flight2 in flight_pairs:
 # & q_f + \sum_{f_1\in\mathcal{O}_f} x_{f, f_1} = 1 & \forall f\in\mathcal{F}
 # \end{align}$$
 
-# In[6]:
+# In[27]:
 
 
 m = pyo.ConcreteModel("Fleet Assignment")
@@ -171,7 +171,7 @@ print(f"Minimum airplanes required = {m.minimize_airplanes()}")
 
 # We visualize the solution by drawing arcs where $x_{f_1, f_2} = 1$ and where $p_f = 1$ and $q_f = 1$. These arcs draw feasible paths through the graph corresponding to the assignment of one aircraft to service one or more flights.
 
-# In[7]:
+# In[28]:
 
 
 ax = draw_flights(FlightData)
@@ -196,7 +196,7 @@ for flight in FlightData.index:
 # * **Flight Schedule**: A table index by flight numbers showing the assigned aircraft, departure, and arrival times.
 # * **Aircraft Schedule**: A table indexed by aircraft and flights showing departure and arrival times. 
 
-# In[8]:
+# In[29]:
 
 
 FlightSchedule = FlightData.copy()
@@ -217,7 +217,7 @@ FlightSchedule = FlightSchedule[["Aircraft", "Departure", "Arrival"]]
 display(FlightSchedule)
 
 
-# In[9]:
+# In[30]:
 
 
 AircraftSchedule = FlightSchedule.copy()
@@ -233,7 +233,7 @@ display(AircraftSchedule)
 # We will now to keep the maximum number of flights at the optimal level, but try to minimize their riskiness. To do so, we define a slightly different MILP that takes the minimum number of planes `nplanes` in input and has the total number of risky pairs as objective function.
 # 
 
-# In[10]:
+# In[31]:
 
 
 def schedule(FlightData, N_planes, min_time=1):
