@@ -3,7 +3,7 @@
 
 # # BIM production
 
-# In[8]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -35,20 +35,20 @@ helper.install_cbc()
 # Of course, linear problems could also (i) be maximization problems, (ii) involve equality constraints and constraints of the form $\geq$, and (iii) have unbounded or non-positive decision variables $x_i$'s. In fact, any LP problem with such features can be easily converted to the 'canonical' LP form by adding/removing variables and/or multiplying specific inequalities by $-1$.
 
 # ## The microchip production problem
-# The company BIM (Best International Machines) produces two types of microchips, logic chips (1gr silicon, 1gr plastic, 4gr copper) and memory chips (1gr germanium, 1gr plastic, 2gr copper). Each of the logic chips can be sold for a 12 € profit, and each of the memory chips for a 9 € profit. The current stock of raw materials is as follows: 1000gr silicon, 1500gr germanium, 1750gr plastic, 4800gr of copper. How many microchips of each type should be produced to maximize the profit while respecting the raw material stock availability? 
+# The company BIM (Best International Machines) produces two types of microchips, logic chips (1 g silicon, 1 g plastic, 4 g copper) and memory chips (1 g germanium, 1 g plastic, 2 g copper). Each of the logic chips can be sold for a 12 € profit, and each of the memory chips for a 9 € profit. The current stock of raw materials is as follows: 1000 g silicon, 1500 g germanium, 1750 g plastic, 4800 g of copper. How many microchips of each type should be produced to maximize the profit while respecting the raw material stock availability? 
 
 # Let $x_1$ denote the number of logic chips and $x_2$ that of memory chips. This decision can be reformulated as an optimization problem of the following form:
 # 
 # $$
-# \begin{array}{rrcrclr}
-# \max  \quad  & 12x_1 & + & 9x_2               \\
-# \text{s.t.}
-#     &   x_1 &   &      & \leq & 1000 &\text{(silicon)}\\
-#     &       &   &  x_2 & \leq & 1500 &\text{(germanium)}\\
-#     &   x_1 & + &  x_2 & \leq & 1750 &\text{(plastic)}\\
-#     &  4x_1 & + & 2x_2 & \leq & 4800 &\text{(copper)}\\
-#     &   x_1 & , &  x_2 & \geq & 0.    
-# \end{array}
+# \begin{align}
+# \max  \quad  & 12x_1 + 9x_2 \\
+# \text{s.t.} \quad
+#     &   x_1 \leq 1000 &\text{silicon}\\
+#     &   x_2 \leq 1500 &\text{germanium}\\
+#     &   x_1 + x_2  \leq 1750 &\text{plastic}\\
+#     &  4x_1 + 2x_2 \leq 4800 &\text{copper}\\
+#     &   x_1, x_2 \geq 0 
+# \end{align}
 # $$
 
 # The problem has $n=2$ decision variables and $m=4$ constraints. Using the standard notation introduced above, denote the vector of decision variables by $x = \begin{pmatrix} x_1 \\ x_2 \end{pmatrix}$ and define the problem coefficients as
@@ -71,34 +71,32 @@ helper.install_cbc()
 # 
 # This model can be implemented and solved in Pyomo as follows.
 
-# In[9]:
+# In[2]:
 
 
 import pyomo.environ as pyo
 
-m    = pyo.ConcreteModel('BIM')
+m = pyo.ConcreteModel('BIM')
 
 m.x1 = pyo.Var(domain=pyo.NonNegativeReals)
 m.x2 = pyo.Var(domain=pyo.NonNegativeReals)
 
-m.profit    = pyo.Objective( expr = 12*m.x1 + 9*m.x2, sense= pyo.maximize)
+m.profit = pyo.Objective(expr=12*m.x1 + 9*m.x2, sense=pyo.maximize)
 
-m.silicon   = pyo.Constraint(expr =    m.x1          <= 1000)
-m.germanium = pyo.Constraint(expr =             m.x2 <= 1500)
-m.plastic   = pyo.Constraint(expr =    m.x1 +   m.x2 <= 1750)
-m.copper    = pyo.Constraint(expr =  4*m.x1 + 2*m.x2 <= 4800)
+m.silicon = pyo.Constraint(expr=m.x1 <= 1000)
+m.germanium = pyo.Constraint(expr=m.x2 <= 1500)
+m.plastic = pyo.Constraint(expr=m.x1 + m.x2 <= 1750)
+m.copper = pyo.Constraint(expr=4*m.x1 + 2*m.x2 <= 4800)
 
 pyo.SolverFactory('cbc').solve(m)
 
-print('x = ({:.1f}, {:.1f}) optimal value = {:.2f}'.format(
-    pyo.value(m.x1),
-    pyo.value(m.x2),
-    pyo.value(m.profit)))
+print(f'x = ({m.x1.value:.1f}, {m.x2.value:.1f})')
+print(f'optimal value = {pyo.value(m.profit):.2f}')
 
 
 # ## Dual problem
 # 
-# One can construct bounds for the value of objective function by multiplyingthe constraints by non-negative numbers and adding them to each other so that the left-hand side looks like the objective function, while the right-hand side is the corresponding bound.
+# One can construct bounds for the value of objective function by multiplying the constraints by non-negative numbers and adding them to each other so that the left-hand side looks like the objective function, while the right-hand side is the corresponding bound.
 # 
 # Let $\lambda_1,\lambda_2,\lambda_3,\lambda_4$ be non-negative numbers. If we multiply each of these variables by one of the four constraints of the original problem and sum all of them side by side to obtain the inequality
 # 
@@ -127,7 +125,7 @@ print('x = ({:.1f}, {:.1f}) optimal value = {:.2f}'.format(
 # 
 # where the first inequality follows from the fact that $x_1, x_2 \geq 0$, and the most right-hand expression becomes an upper bound on the optimal value of the objective.
 # 
-# If we seek $\lambda_1,\lambda_2,\lambda_3,\lambda_4 \geq 0$ such that the upper bound on the RHS is as tight as possible, that means that we need to \emph{minimize} the expression $1000 \lambda_1 + 1500 \lambda_2 + 1750 \lambda_3 + 4800 \lambda_4$. This can be formulated as the following LP, which we name the \emph{dual problem}:
+# If we seek $\lambda_1,\lambda_2,\lambda_3,\lambda_4 \geq 0$ such that the upper bound on the RHS is as tight as possible, that means that we need to *minimize* the expression $1000 \lambda_1 + 1500 \lambda_2 + 1750 \lambda_3 + 4800 \lambda_4$. This can be formulated as the following LP, which we name the \emph{dual problem}:
 # 
 # $$
 # \begin{align*}
@@ -140,29 +138,30 @@ print('x = ({:.1f}, {:.1f}) optimal value = {:.2f}'.format(
 # 
 # It is easy to solve and find the optimal solution $(\lambda_1,\lambda_2,\lambda_3,\lambda_4)=(0,0,6,1.5)$, for which the objective functions takes the value $17700$. Such a value is (the tightest) upper bound for the original problem. Here, we present the Pyomo code for this example.
 
-# In[10]:
+# In[3]:
 
 
-m    = pyo.ConcreteModel('BIM dual')
+m = pyo.ConcreteModel('BIM dual')
 
-m.y1 = pyo.Var( within = pyo.NonNegativeReals )
-m.y2 = pyo.Var( within = pyo.NonNegativeReals )
-m.y3 = pyo.Var( within = pyo.NonNegativeReals )
-m.y4 = pyo.Var( within = pyo.NonNegativeReals )
+m.y1 = pyo.Var(domain=pyo.NonNegativeReals)
+m.y2 = pyo.Var(domain=pyo.NonNegativeReals)
+m.y3 = pyo.Var(domain=pyo.NonNegativeReals)
+m.y4 = pyo.Var(domain=pyo.NonNegativeReals)
 
-m.obj = pyo.Objective( sense= pyo.minimize
-                     , expr = 1000*m.y1 + 1500*m.y2 + 1750*m.y3 + 4800*m.y4 )
+m.obj = pyo.Objective(sense=pyo.minimize, expr=1000*m.y1 + 1500*m.y2 + 1750*m.y3 + 4800*m.y4)
 
-m.x1 = pyo.Constraint( expr =      m.y1             +      m.y3 +    4*m.y4 >= 12 )
-m.x2 = pyo.Constraint( expr =                  m.y2 +      m.y3 +    2*m.y4 >=  9 )
+m.x1 = pyo.Constraint(expr = m.y1 + m.y3 + 4*m.y4 >= 12)
+m.x2 = pyo.Constraint(expr = m.y2 + m.y3 + 2*m.y4 >=  9)
 
 pyo.SolverFactory('cbc').solve(m)
-print('y = ({:.1f}, {:.1f}, {:.1f}, {:.1f}) optimal value = {:.2f}'.format(
-    pyo.value(m.y1),
-    pyo.value(m.y2),
-    pyo.value(m.y3),
-    pyo.value(m.y4),
-    pyo.value(m.obj)))
+print(f'y = ({m.y1.value:.1f}, {m.y2.value:.1f}, {m.y3.value:.1f}, {m.y4.value:.1f})')
+print(f"optimal value = {pyo.value(m.obj):.2f}")
 
 
 # Note that since the original LP is feasible and bounded, strong duality holds and the optimal value of the primal problem coincides with the optimal value of the dual problem.
+
+# In[ ]:
+
+
+
+
