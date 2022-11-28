@@ -26,7 +26,7 @@ helper.install_cbc()
 
 # ## Generate Flight Data
 
-# In[11]:
+# In[2]:
 
 
 import numpy as np
@@ -54,7 +54,7 @@ FlightData.head()
 
 # ## Visualize Flight Data
 
-# In[139]:
+# In[3]:
 
 
 # visualize flight data
@@ -87,7 +87,7 @@ draw_flights(FlightData)
 # 
 # The following cell finds the set of arcs that can be used. These arcs are displayed in a graph of the flight data. Arcs corresponding to the minimum time between arrival and departure are highlighted in red.
 
-# In[140]:
+# In[4]:
 
 
 min_time = 1
@@ -103,17 +103,10 @@ def feasible_flight_pairs(FlightData, min_time=1):
     
 flight_pairs = feasible_flight_pairs(FlightData).keys()
 
-ax = draw_flights(FlightData)
-for flight1, flight2 in flight_pairs:
-    arr = FlightData.loc[flight1, "Arrival"]
-    dep = FlightData.loc[flight2, "Departure"]
-    c = 'r' if dep - arr <= min_time else 'g'
-    ax.plot([arr, dep], [flight1, flight2], color=c, lw=1, alpha=0.4)
 
+# The following cell presents a visualization of the graph of feasible paths in which an aircraft can be reassigned from one flight to subsequent flight. Each node on the graph corresponds to a flight. An edge from flight $f_1$ to flight $f_2$ is included only if there is at least `min_time` hours available to `turn around` the aircraft. Edges that allow exactly `min_time` hours between flights are colored red because these will be the most affected by unexpected flight delays.
 
-# The following cell presents another visualization of feasible paths in which an aircraft can be reassigned from one flight to another. Each node corresponds to a flight. An edge from flight $f_1$ to flight $f_2$ is included only if there is at least `min_time` hours available to `turn around` the aircraft. Edges are colored red to indicate edges that allow exactly `min_time` hours between flights since these will be the most affected by unexpected flight delays.
-
-# In[141]:
+# In[5]:
 
 
 import networkx as nx
@@ -136,7 +129,7 @@ nx.draw_networkx_edges(dg, pos=pos, width=.5, edge_color=[dg.edges[u, v]["color"
 
 # For each node $f\in\mathcal{F}$ in the DiGraph we define a set of input nodes $\mathcal{I}_f = \{f_1: (f_1, f)\in\mathcal{A}\}$  and a set of output nodes $\mathcal{O}_f = \{f_1: (f, f_1)\in\mathcal{A} \}$. For this application, we use the Python ``set`` object to scan the feasible flight pairs and find the inputs and outputs nodes for each flight node. 
 
-# In[142]:
+# In[6]:
 
 
 in_nodes = {flight: set() for flight in FlightData.index}
@@ -163,7 +156,7 @@ for flight1, flight2 in flight_pairs:
 # & q_f + \sum_{f_1\in\mathcal{O}_f} x_{f, f_1} = 1 & \forall f\in\mathcal{F}
 # \end{align}$$
 
-# In[143]:
+# In[7]:
 
 
 m = pyo.ConcreteModel("Fleet Assignment")
@@ -194,7 +187,7 @@ print(f"Minimum airplanes required = {m.minimize_airplanes()}")
 
 # We visualize the solution by redrawing the graph of possible path and highlighting the edges that have been selected for aircraft reassignment. 
 
-# In[145]:
+# In[8]:
 
 
 import networkx as nx
@@ -220,7 +213,7 @@ nx.draw_networkx_edges(dg_soln, pos=pos, width=3, edge_color=[dg_soln.edges[u, v
 
 # We visualize the solution by drawing arcs where $x_{f_1, f_2} = 1$ and where $p_f = 1$ and $q_f = 1$. These arcs draw feasible paths through the graph corresponding to the assignment of one aircraft to service one or more flights.
 
-# In[138]:
+# In[9]:
 
 
 ax = draw_flights(FlightData)
@@ -245,7 +238,7 @@ for flight in FlightData.index:
 # * **Flight Schedule**: A table index by flight numbers showing the assigned aircraft, departure, and arrival times.
 # * **Aircraft Schedule**: A table indexed by aircraft and flights showing departure and arrival times. 
 
-# In[29]:
+# In[10]:
 
 
 FlightSchedule = FlightData.copy()
@@ -266,7 +259,7 @@ FlightSchedule = FlightSchedule[["Aircraft", "Departure", "Arrival"]]
 display(FlightSchedule)
 
 
-# In[30]:
+# In[11]:
 
 
 AircraftSchedule = FlightSchedule.copy()
@@ -282,7 +275,7 @@ display(AircraftSchedule)
 # We will now to keep the maximum number of flights at the optimal level, but try to minimize their riskiness. To do so, we define a slightly different MILP that takes the minimum number of planes `nplanes` in input and has the total number of risky pairs as objective function.
 # 
 
-# In[31]:
+# In[12]:
 
 
 def schedule(FlightData, N_planes, min_time=1):
@@ -344,19 +337,19 @@ def schedule(FlightData, N_planes, min_time=1):
     return m
 
 
-# In[11]:
+# In[13]:
 
 
 m = schedule(FlightData, N_planes=14, min_time=1)
 
 
-# In[16]:
+# In[14]:
 
 
 m = schedule(FlightData, N_planes=15, min_time=1)
 
 
-# In[17]:
+# In[15]:
 
 
 m = schedule(FlightData, N_planes=15, min_time=2)
