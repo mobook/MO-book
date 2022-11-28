@@ -41,12 +41,12 @@ helper.install_cbc()
 # 
 # $$
 # \begin{align}
-# \max  \quad  & 12x_1 + 9x_2 \\
+# \max  \quad  & 12 x_1 + 9 x_2 \\
 # \text{s.t.} \quad
 #     &   x_1 \leq 1000 &\text{silicon}\\
 #     &   x_2 \leq 1500 &\text{germanium}\\
 #     &   x_1 + x_2  \leq 1750 &\text{plastic}\\
-#     &  4x_1 + 2x_2 \leq 4800 &\text{copper}\\
+#     &  4 x_1 + 2 x_2 \leq 4800 &\text{copper}\\
 #     &   x_1, x_2 \geq 0 
 # \end{align}
 # $$
@@ -110,8 +110,8 @@ print(f'optimal value = {pyo.value(m.profit):.2f}')
 # 
 # $$
 # \begin{align*}
-#         & \lambda_1+\lambda_3+4\lambda_4 \geq 12,\\
-#         & \lambda_2+\lambda_3+2 \lambda_4 \geq 9,
+# \lambda_1+\lambda_3+4\lambda_4 & \geq 12,\\
+# \lambda_2+\lambda_3+2 \lambda_4 & \geq 9,
 # \end{align*}
 # $$
 # 
@@ -119,13 +119,13 @@ print(f'optimal value = {pyo.value(m.profit):.2f}')
 # 
 # $$
 # \begin{align*}
-# 12x_1+9x_2 \leq (\lambda_1+\lambda_3+4\lambda_4) x_1 + (\lambda_2+\lambda_3+2 \lambda_4) x_2 \leq 1000 \lambda_1 + 1500 \lambda_2 + 1750 \lambda_3 + 4800 \lambda_4,
+# 12 x_1 + 9 x_2 \leq (\lambda_1+\lambda_3+4\lambda_4) x_1 + (\lambda_2+\lambda_3+2 \lambda_4) x_2 \leq 1000 \lambda_1 + 1500 \lambda_2 + 1750 \lambda_3 + 4800 \lambda_4,
 # \end{align*}
 # $$
 # 
 # where the first inequality follows from the fact that $x_1, x_2 \geq 0$, and the most right-hand expression becomes an upper bound on the optimal value of the objective.
 # 
-# If we seek $\lambda_1,\lambda_2,\lambda_3,\lambda_4 \geq 0$ such that the upper bound on the RHS is as tight as possible, that means that we need to *minimize* the expression $1000 \lambda_1 + 1500 \lambda_2 + 1750 \lambda_3 + 4800 \lambda_4$. This can be formulated as the following LP, which we name the \emph{dual problem}:
+# If we seek $\lambda_1,\lambda_2,\lambda_3,\lambda_4 \geq 0$ such that the upper bound on the RHS is as tight as possible, that means that we need to **minimize** the expression $1000 \lambda_1 + 1500 \lambda_2 + 1750 \lambda_3 + 4800 \lambda_4$. This can be formulated as the following LP, which we name the **dual problem**:
 # 
 # $$
 # \begin{align*}
@@ -148,10 +148,11 @@ m.y2 = pyo.Var(domain=pyo.NonNegativeReals)
 m.y3 = pyo.Var(domain=pyo.NonNegativeReals)
 m.y4 = pyo.Var(domain=pyo.NonNegativeReals)
 
-m.obj = pyo.Objective(sense=pyo.minimize, expr=1000*m.y1 + 1500*m.y2 + 1750*m.y3 + 4800*m.y4)
+m.obj = pyo.Objective(sense=pyo.minimize, 
+                      expr=1000*m.y1 + 1500*m.y2 + 1750*m.y3 + 4800*m.y4)
 
-m.x1 = pyo.Constraint(expr = m.y1 + m.y3 + 4*m.y4 >= 12)
-m.x2 = pyo.Constraint(expr = m.y2 + m.y3 + 2*m.y4 >=  9)
+m.x1 = pyo.Constraint(expr=m.y1 + m.y3 + 4*m.y4 >= 12)
+m.x2 = pyo.Constraint(expr=m.y2 + m.y3 + 2*m.y4 >= 9)
 
 pyo.SolverFactory('cbc').solve(m)
 print(f'y = ({m.y1.value:.1f}, {m.y2.value:.1f}, {m.y3.value:.1f}, {m.y4.value:.1f})')

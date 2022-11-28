@@ -3,7 +3,13 @@
 
 # # Fleet assignment problem
 
-# In[22]:
+# ## Problem description
+# 
+# Given a set of flights to be flown, an airline company needs to determine the specific route flown by each airplane in the most cost-effective way. Clearly, the airline company should try to use as fewer airplanes as possible, but the same airplane can operate two subsequent flights only if the time interval between the arrival of the first flight and the departure of the next flight is longer than or equal to one hour.
+# 
+# The task of the airline operations team is to determine the minimum number of airplanes needed to operate the given list of flights. This problem is known as the **fleet assignment problem** or **aircraft rotation problem**.
+
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -18,15 +24,9 @@ helper.install_pyomo()
 helper.install_cbc()
 
 
-# ## Problem description
-# 
-# Given a set of flights to be flown, an airline company needs to determine the specific route flown by each airplane in the most cost-effective way. Clearly, the airline company should try to use as fewer airplanes as possible, but the same airplane can operate two subsequent flights only if the time interval between the arrival of the first flight and the departure of the next flight is longer than or equal to one hour.
-# 
-# The task of the airline operations team is to determine the minimum number of airplanes needed to operate the given list of flights. This problem is known as the **fleet assignment problem** or **aircraft rotation problem**.
-
 # ## Generate Flight Data
 
-# In[23]:
+# In[11]:
 
 
 import numpy as np
@@ -35,7 +35,7 @@ import pyomo.environ as pyo
 import matplotlib.pyplot as plt
 from numpy.random import RandomState
 
-# python generator to create departure and arrival times from single airport
+# python generator creates departure and arrival times for a single airport
 def generate_flights(N_flights=30, min_duration=1, max_duration=4, max_departure=24, seed=0):
     rs = RandomState(seed)
     for flight in range(N_flights):
@@ -54,7 +54,7 @@ FlightData.head()
 
 # ## Visualize Flight Data
 
-# In[24]:
+# In[139]:
 
 
 # visualize flight data
@@ -67,7 +67,7 @@ def draw_flights(FlightData):
     for flight, row in FlightData.iterrows():
         departure, arrival = row
         ax.plot([departure, arrival], [flight]*2, 'gray', **bar_style)
-        ax.text((departure + arrival)/2, flight, flight, **text_style)
+        ax.text((departure + arrival)/2, flight, f"Flight {flight}", **text_style)
     for hr in range(25):
         ax.axvline(hr, alpha=0.1)
     ax.set_xlim(-1, 25)
@@ -79,15 +79,15 @@ draw_flights(FlightData)
 
 # ## Pyomo Model
 
-# The fleet assignment problem can be formulated and solved as an MILP. The idea of the MILP formulation is to construct a feasible path in a directed graph where the flights are nodes with indices $\mathcal{F} = \left\{ 1, \ldots, F \right\}$. The set of arcs $\mathcal{A} \subseteq \mathcal{F} \times \mathcal{F}$ that can be used by each aircraft is then:
+# The fleet assignment problem can be formulated and solved as an MILP. The idea of the MILP formulation is to construct feasible paths in a directed graph where the flights are nodes with indices $\mathcal{F} = \left\{ 1, \ldots, F \right\}$. The set of arcs $\mathcal{A} \subseteq \mathcal{F} \times \mathcal{F}$ that can be used by each aircraft is then:
 # 
 # $$
 # \mathcal{A} = \{ a = (f_1, f_2): f_1 \text{ arrives at least 1h before the departure of } f_2, \ f_1, f_2 \in \mathcal{F} \}
 # $$
 # 
-# The following cell finds the set of arcs that can be used. These arcs are displayed in a graph of the flight data. Arcs corresponding to the minimum time between arrival and departure are highlighted.
+# The following cell finds the set of arcs that can be used. These arcs are displayed in a graph of the flight data. Arcs corresponding to the minimum time between arrival and departure are highlighted in red.
 
-# In[25]:
+# In[140]:
 
 
 min_time = 1
@@ -111,9 +111,32 @@ for flight1, flight2 in flight_pairs:
     ax.plot([arr, dep], [flight1, flight2], color=c, lw=1, alpha=0.4)
 
 
-# For each node $f\in\mathcal{F}$ we define a set of input nodes $\mathcal{I}_f = \{f_1: (f_1, f)\in\mathcal{A}\}$  and a set of output nodes $\mathcal{O}_f = \{f_1: (f, f_1)\in\mathcal{A} \}$. For this application, we use the Python ``set`` object to scan the feasible flight pairs and find the inputs and outputs nodes for each flight node. 
+# The following cell presents another visualization of feasible paths in which an aircraft can be reassigned from one flight to another. Each node corresponds to a flight. An edge from flight $f_1$ to flight $f_2$ is included only if there is at least `min_time` hours available to `turn around` the aircraft. Edges are colored red to indicate edges that allow exactly `min_time` hours between flights since these will be the most affected by unexpected flight delays.
 
-# In[26]:
+# In[141]:
+
+
+import networkx as nx
+
+dg = nx.DiGraph()
+
+for flight in FlightData.index:
+    dg.add_node(flight)
+
+for pair, dur in feasible_flight_pairs(FlightData).items():
+    dg.add_edge(pair[0], pair[1], color = 'r' if dur <= min_time else 'g')
+    
+size = int(1.5 * np.sqrt(len(FlightData)))
+fig = plt.figure(figsize=(size, size))
+pos = nx.circular_layout(dg)
+nx.draw_networkx_nodes(dg, pos=pos, node_size=500, alpha=0.8)
+nx.draw_networkx_labels(dg, pos=pos, font_color = "w")
+nx.draw_networkx_edges(dg, pos=pos, width=.5, edge_color=[dg.edges[u, v]["color"] for u, v in dg.edges]);
+
+
+# For each node $f\in\mathcal{F}$ in the DiGraph we define a set of input nodes $\mathcal{I}_f = \{f_1: (f_1, f)\in\mathcal{A}\}$  and a set of output nodes $\mathcal{O}_f = \{f_1: (f, f_1)\in\mathcal{A} \}$. For this application, we use the Python ``set`` object to scan the feasible flight pairs and find the inputs and outputs nodes for each flight node. 
+
+# In[142]:
 
 
 in_nodes = {flight: set() for flight in FlightData.index}
@@ -140,7 +163,7 @@ for flight1, flight2 in flight_pairs:
 # & q_f + \sum_{f_1\in\mathcal{O}_f} x_{f, f_1} = 1 & \forall f\in\mathcal{F}
 # \end{align}$$
 
-# In[27]:
+# In[143]:
 
 
 m = pyo.ConcreteModel("Fleet Assignment")
@@ -169,9 +192,35 @@ pyo.SolverFactory("cbc").solve(m)
 print(f"Minimum airplanes required = {m.minimize_airplanes()}")
 
 
+# We visualize the solution by redrawing the graph of possible path and highlighting the edges that have been selected for aircraft reassignment. 
+
+# In[145]:
+
+
+import networkx as nx
+
+dg_soln = nx.DiGraph()
+
+for flight in FlightData.index:
+    dg_soln.add_node(flight)
+
+for pair, dur in feasible_flight_pairs(FlightData).items():
+    if m.x[pair[0], pair[1]].value == 1:
+        dg_soln.add_edge(pair[0], pair[1], color = 'r' if dur <= min_time else 'g')
+    
+size = int(1.5 * np.sqrt(len(FlightData)))
+fig = plt.figure(figsize=(size, size))
+
+nx.draw_networkx_nodes(dg_soln, pos=pos, node_size=500, alpha=0.8)
+nx.draw_networkx_labels(dg_soln, pos=pos, font_color = "w")
+nx.draw_networkx_edges(dg_soln, pos=pos, width=3, edge_color=[dg_soln.edges[u, v]["color"] for u, v in dg_soln.edges]);
+nx.draw_networkx_edges(dg, pos=pos, width=.5, edge_color=[dg.edges[u, v]["color"] for u, v in dg.edges]);
+nx.draw_networkx_edges(dg_soln, pos=pos, width=3, edge_color=[dg_soln.edges[u, v]["color"] for u, v in dg_soln.edges]);
+
+
 # We visualize the solution by drawing arcs where $x_{f_1, f_2} = 1$ and where $p_f = 1$ and $q_f = 1$. These arcs draw feasible paths through the graph corresponding to the assignment of one aircraft to service one or more flights.
 
-# In[28]:
+# In[138]:
 
 
 ax = draw_flights(FlightData)

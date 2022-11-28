@@ -826,7 +826,7 @@ cbc was previously installed
 <ul class="simple">
 <li><p>Product <span class="math notranslate nohighlight">\(X\)</span> requires 1 hour of labor A, 2 hours of labor B, and 100€ of raw material. Product <span class="math notranslate nohighlight">\(X\)</span> sells for 270€ per unit. The daily demand is limited to 40 units.</p></li>
 <li><p>Product <span class="math notranslate nohighlight">\(Y\)</span> requires 1 hour of labor A, 1 hour of labor B, and 90€ of raw material. Product <span class="math notranslate nohighlight">\(Y\)</span> sells for 210€ per unit with unlimited demand.</p></li>
-<li><p>There are 50 hours per day of labor A available at a cost of 50€/hour.</p></li>
+<li><p>There are 80 hours per day of labor A available at a cost of 50€/hour.</p></li>
 <li><p>There are 100 hours per day of labor B available at a cost of 40€/hour.</p></li>
 </ul>
 <p>Using the given data we see that the net profit for each unit of <span class="math notranslate nohighlight">\(X\)</span> and <span class="math notranslate nohighlight">\(Y\)</span> is 40€ and 30€, respectively. The optimal product strategy is the solution to a linear program</p>
@@ -891,12 +891,9 @@ Production Y = 60.0
 </div>
 </div>
 <p>Now suppose a new technology <span class="math notranslate nohighlight">\(\beta\)</span> is available that affects that lowers the cost of product <span class="math notranslate nohighlight">\(X\)</span>. With the new technology, only 1.5 hours of labor B is required per unit of <span class="math notranslate nohighlight">\(X\)</span>.</p>
-<p>The net profit for unit of product <span class="math notranslate nohighlight">\(X\)</span> without technology <span class="math notranslate nohighlight">\(\beta\)</span> is equal to <span class="math notranslate nohighlight">\(270 - 100 - 50 - 2 \cdot 40 = 40\)</span>€</p>
+<p>The net profit for unit of product <span class="math notranslate nohighlight">\(X\)</span> with technology <span class="math notranslate nohighlight">\(\alpha\)</span> is equal to <span class="math notranslate nohighlight">\(270 - 100 - 50 - 2 \cdot 40 = 40\)</span>€</p>
 <p>The net profit for unit of product <span class="math notranslate nohighlight">\(X\)</span> with technology <span class="math notranslate nohighlight">\(\beta\)</span> is equal to <span class="math notranslate nohighlight">\(270 - 100 - 50 - 1.5 \cdot 40 = 60\)</span>€</p>
-<p>In a machine scheduling problem, for example, the choice may be to start one job (“A”) either before or after a different job (“B”), where <span class="math notranslate nohighlight">\(\tau_A\)</span> and <span class="math notranslate nohighlight">\(\tau_B\)</span> denote the start time of the jobs. Since one or the other of the two constraints must hold, but not both, this situation corresponds to an exclusive-or disjunction of the two constraints represented as</p>
-<div class="math notranslate nohighlight">
-\[ \underbrace{\left[\tau_A \leq \tau_B\right]}_\alpha \veebar \underbrace{\left[\tau_A \geq \tau_B\right]}_\beta\]</div>
-<p>There are several commonly used techniques for embedding disjunctions into mixed-integer linear programs. The “big-M” technique introduces a binary decision variable for every exclusive-or disjunction between two constraints.</p>
+<p>The decision here is whether to use technology <span class="math notranslate nohighlight">\(\alpha\)</span> or <span class="math notranslate nohighlight">\(\beta\)</span>. There are several commonly used techniques for embedding disjunctions into mixed-integer linear programs. The “big-M” technique introduces a binary decision variable for every exclusive-or disjunction between two constraints.</p>
 </section>
 <section id="milp-implementation">
 <h2>MILP implementation<a class="headerlink" href="#milp-implementation" title="Permalink to this heading">#</a></h2>
@@ -997,68 +994,6 @@ Production Y = 40.0
 <p>This formulation, if allowed by the software at hand, has the benefit that the software can smartly divide the solution of this problem into sub-possibilities depending on the disjunction. Pyomo natively supports disjunctions, as illustrated in the following implementation:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-<span class="kn">import</span> <span class="nn">pyomo.gdp</span> <span class="k">as</span> <span class="nn">gdp</span>
-
-<span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Multi-Product Factory - Disjunctive&quot;</span><span class="p">)</span>
-
-<span class="c1"># decision variables</span>
-<span class="n">m</span><span class="o">.</span><span class="n">profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">10000</span><span class="p">))</span>
-<span class="n">m</span><span class="o">.</span><span class="n">production_x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">200</span><span class="p">))</span>
-<span class="n">m</span><span class="o">.</span><span class="n">production_y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">200</span><span class="p">))</span>
-
-<span class="c1"># profit objective</span>
-<span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">maximize_profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="k">return</span>  <span class="n">m</span><span class="o">.</span><span class="n">profit</span>
-
-<span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">demand</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">production_x</span> <span class="o">&lt;=</span> <span class="mi">40</span>
-
-<span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">laborA</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">production_x</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">production_y</span> <span class="o">&lt;=</span> <span class="mi">80</span>
-
-<span class="nd">@m</span><span class="o">.</span><span class="n">Disjunct</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">technology_A</span><span class="p">(</span><span class="n">disjunct</span><span class="p">):</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="n">disjunct</span><span class="o">.</span><span class="n">model</span><span class="p">()</span>
-    <span class="n">disjunct</span><span class="o">.</span><span class="n">laborB</span> <span class="o">=</span> \
-        <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">production_x</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">production_y</span> <span class="o">&lt;=</span> <span class="mi">100</span><span class="p">)</span>
-    <span class="n">disjunct</span><span class="o">.</span><span class="n">profit_expr</span> <span class="o">=</span> \
-        <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">profit</span> <span class="o">==</span> <span class="mi">40</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">production_x</span> <span class="o">+</span> <span class="mi">30</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">production_y</span><span class="p">)</span>
-
-<span class="nd">@m</span><span class="o">.</span><span class="n">Disjunct</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">technology_B</span><span class="p">(</span><span class="n">disjunct</span><span class="p">):</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="n">disjunct</span><span class="o">.</span><span class="n">model</span><span class="p">()</span>
-    <span class="n">disjunct</span><span class="o">.</span><span class="n">laborB</span> <span class="o">=</span> \
-        <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="mf">1.5</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">production_x</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">production_y</span> <span class="o">&lt;=</span> <span class="mi">100</span><span class="p">)</span>
-    <span class="n">disjunct</span><span class="o">.</span><span class="n">profit_expr</span> <span class="o">=</span> \
-        <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">profit</span> <span class="o">==</span> <span class="mi">60</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">production_x</span> <span class="o">+</span> <span class="mi">30</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">production_y</span><span class="p">)</span>
-
-<span class="nd">@m</span><span class="o">.</span><span class="n">Disjunction</span><span class="p">(</span><span class="n">xor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">technology</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">technology_A</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">technology_B</span><span class="p">]</span>
-
-<span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Profit = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> €&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Production X = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">production_x</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Production Y = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">production_y</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Profit = 3600.00 €
-Production X = 40.0
-Production Y = 40.0
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
           
 <span class="n">m</span><span class="o">.</span><span class="n">profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">10000</span><span class="p">))</span>
@@ -1085,7 +1020,6 @@ Production Y = 40.0
             <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span> <span class="o">==</span> <span class="mi">60</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="mi">30</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
              <span class="mf">1.5</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">&lt;=</span> <span class="mi">100</span><span class="p">]]</span>
             
-
 <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 

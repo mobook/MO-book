@@ -3,7 +3,7 @@
 
 # # Production model using disjunctions
 
-# In[4]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -49,7 +49,7 @@ helper.install_cbc()
 # 
 # * Product $Y$ requires 1 hour of labor A, 1 hour of labor B, and 90€ of raw material. Product $Y$ sells for 210€ per unit with unlimited demand. 
 # 
-# * There are 50 hours per day of labor A available at a cost of 50€/hour.
+# * There are 80 hours per day of labor A available at a cost of 50€/hour.
 # 
 # * There are 100 hours per day of labor B available at a cost of 40€/hour.
 # 
@@ -67,7 +67,7 @@ helper.install_cbc()
 # $$
 # 
 
-# In[5]:
+# In[2]:
 
 
 import pyomo.environ as pyo
@@ -110,15 +110,11 @@ print(f"Production Y = {m.production_y()}")
 
 # Now suppose a new technology $\beta$ is available that affects that lowers the cost of product $X$. With the new technology, only 1.5 hours of labor B is required per unit of $X$.
 # 
-# The net profit for unit of product $X$ without technology $\beta$ is equal to $270 - 100 - 50 - 2 \cdot 40 = 40$€
+# The net profit for unit of product $X$ with technology $\alpha$ is equal to $270 - 100 - 50 - 2 \cdot 40 = 40$€
 # 
 # The net profit for unit of product $X$ with technology $\beta$ is equal to $270 - 100 - 50 - 1.5 \cdot 40 = 60$€
 # 
-# In a machine scheduling problem, for example, the choice may be to start one job ("A") either before or after a different job ("B"), where $\tau_A$ and $\tau_B$ denote the start time of the jobs. Since one or the other of the two constraints must hold, but not both, this situation corresponds to an exclusive-or disjunction of the two constraints represented as
-# 
-# $$ \underbrace{\left[\tau_A \leq \tau_B\right]}_\alpha \veebar \underbrace{\left[\tau_A \geq \tau_B\right]}_\beta$$
-# 
-# There are several commonly used techniques for embedding disjunctions into mixed-integer linear programs. The "big-M" technique introduces a binary decision variable for every exclusive-or disjunction between two constraints. 
+# The decision here is whether to use technology $\alpha$ or $\beta$. There are several commonly used techniques for embedding disjunctions into mixed-integer linear programs. The "big-M" technique introduces a binary decision variable for every exclusive-or disjunction between two constraints. 
 
 # ## MILP implementation
 # 
@@ -139,7 +135,7 @@ print(f"Production Y = {m.production_y()}")
 # 
 # where the variable $z \in \{ 0, 1\}$ "activates" the constraints related to the old or new technology, respectively, and $M$ is a big enough number. The corresponding Pyomo implementation is given by:
 
-# In[6]:
+# In[3]:
 
 
 m = pyo.ConcreteModel("Multi-Product Factory - MILP")
@@ -212,57 +208,7 @@ print(f"Production Y = {m.production_y()}")
 # 
 # This formulation, if allowed by the software at hand, has the benefit that the software can smartly divide the solution of this problem into sub-possibilities depending on the disjunction. Pyomo natively supports disjunctions, as illustrated in the following implementation:
 
-# In[7]:
-
-
-import pyomo.environ as pyo
-import pyomo.gdp as gdp
-
-m = pyo.ConcreteModel("Multi-Product Factory - Disjunctive")
-
-# decision variables
-m.profit = pyo.Var(bounds=(-10000, 10000))
-m.production_x = pyo.Var(domain=pyo.NonNegativeReals, bounds=(0, 200))
-m.production_y = pyo.Var(domain=pyo.NonNegativeReals, bounds=(0, 200))
-
-# profit objective
-@m.Objective(sense=pyo.maximize)
-def maximize_profit(model):
-    return  m.profit
-
-@m.Constraint()
-def demand(model):
-    return m.production_x <= 40
-
-@m.Constraint()
-def laborA(model):
-    return m.production_x + m.production_y <= 80
-
-@m.Disjunct()
-def technology_A(disjunct):
-    m = disjunct.model()
-    disjunct.laborB =         pyo.Constraint(expr = 2*m.production_x + m.production_y <= 100)
-    disjunct.profit_expr =         pyo.Constraint(expr = m.profit == 40*m.production_x + 30*m.production_y)
-
-@m.Disjunct()
-def technology_B(disjunct):
-    m = disjunct.model()
-    disjunct.laborB =         pyo.Constraint(expr = 1.5*m.production_x + m.production_y <= 100)
-    disjunct.profit_expr =         pyo.Constraint(expr = m.profit == 60*m.production_x + 30*m.production_y)
-
-@m.Disjunction(xor=True)
-def technology(model):
-    return [m.technology_A, m.technology_B]
-
-pyo.TransformationFactory("gdp.bigm").apply_to(m)
-pyo.SolverFactory('cbc').solve(m)
-
-print(f"Profit = {m.profit():.2f} €")
-print(f"Production X = {m.production_x()}")
-print(f"Production Y = {m.production_y()}")
-
-
-# In[8]:
+# In[4]:
 
 
 m = pyo.ConcreteModel()
@@ -291,11 +237,16 @@ def technologies(model):
             [m.profit == 60*m.x + 30*m.y,
              1.5*m.x + m.y <= 100]]
             
-
 pyo.TransformationFactory("gdp.bigm").apply_to(m)
 pyo.SolverFactory('cbc').solve(m)
 
 print(f"Profit = {m.profit():.2f} €")
 print(f"x = {m.x()}")
 print(f"y = {m.y()}")
+
+
+# In[ ]:
+
+
+
 
