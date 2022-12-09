@@ -3,7 +3,7 @@
 
 # # Optimal Design of Multilayered Building Insulation
 
-# Thermal insulation is installed in buildings to reduce the annual energy costs. But the installation costs money, so the decision of how much insulation to install is a a trade off between the annualized capital costs of insulation and the annual operating costs for heating and air conditioning. This notebook shows the formulation and solution of an optimization problem using conic programming.
+# Thermal insulation is installed in buildings to reduce annual energy costs. However, the installation costs money, so the decision of how much insulation to install is a trade-off between the annualized capital costs of insulation and the annual operating costs for heating and air conditioning. This notebook shows the formulation and solution of an optimization problem using conic programming.
 
 # In[1]:
 
@@ -31,11 +31,11 @@ helper.install_gurobi()
 # 
 # $$\frac{1}{U} = R_0 + \sum_{n=1}^N R_n$$
 # 
-# where $R_0$ is thermal resistance of the structural elements. The thermal resistances of each insulating layer is given by $R_n = \frac{x_n}{k_n}$ for a material with thickness $x_n$ and a thermal conductivity $k_n$.
+# where $R_0$ is the thermal resistance of the structural elements. The thermal resistance of the $n$-th insulating layer is equal to $R_n = \frac{x_n}{k_n}$ for a material with thickness $x_n$ and a thermal conductivity $k_n$.
 # 
 # $$\frac{1}{U} = R_0 + \sum_{n=1}^N \frac{x_n}{k_n}$$
 # 
-# We assume the annual energy costs are proportional to thermal conductivity $U$. The cost of installing a unit area of unit area of insulation is given by an affine expression
+# We assume the annual energy costs are proportional to thermal conductivity $U$. The cost of installing a unit area of insulation is given by an affine expression
 # 
 # $$a_n + b_n x_m$$
 # 
@@ -43,7 +43,7 @@ helper.install_gurobi()
 # 
 # $$C = \alpha U + \beta\sum_{n=1}^N (a_n y_n + b_n x_n)$$
 # 
-# where $\beta$ is a discount factor for the equivalent annualized cost of insulation, and binary variable $y_n$ is a binary variable indicates whether or not layer $n$ is included in the installation. The feasible values for $x_n$ are subject to constraints
+# where $\beta$ is a discount factor for the equivalent annualized cost of insulation, and binary variable $y_n$ is a binary variable that indicates whether or not layer $n$ is included in the installation. The feasible values for $x_n$ are subject to constraints
 # 
 # $$\begin{align}
 # x_n & \leq Ty_n \\
@@ -65,7 +65,7 @@ helper.install_gurobi()
 # 
 # $$x^{opt} = - k R_0 + \sqrt{\frac{\alpha k}{\beta b}} $$
 # 
-# A plot illustrates the trade off between operating and capital costs.
+# A plot illustrates the trade-off between operating and capital costs.
 # 
 
 # In[2]:
@@ -129,19 +129,17 @@ ax.grid(True)
 # 
 # where $r_1$, $r_2$, and $z_0, z_1, \ldots, z_{N-1}$ are variables. For a single layer Pyomo model we identify $R \sim r_1$, $U\sim r_2$, and $z_0^2 \sim 2$ which leads to the model
 # 
-# $$\begin{align}
-# \min\ \alpha U + \beta(a + bx)
-# \end{align}$$
-# 
-# subject to
-# 
-# $$\begin{align}
-# R & = R_0 + \frac{x}{k} \\
-# z^2 & \leq 2 R U & \text{conic constraint}\\
-# z & = \sqrt{2} \\
-# x, R, U & \geq 0 \\
-# x & \leq T
-# \end{align}$$
+# $$
+# \begin{align}
+# \min \quad & \alpha U + \beta(a + bx)\\
+# \text{s.t.} \quad 
+# & R = R_0 + \frac{x}{k} \\
+# & z^2 \leq 2 R U & \text{(conic constraint)}\\
+# & z = \sqrt{2} \\
+# & x \leq T\\
+# & x, R, U \geq 0.
+# \end{align}
+# $$
 # 
 # This model can be translated directly into into a Pyomo conic program using the Pyomo Kernel Library.
 
@@ -169,31 +167,28 @@ m.q = pmo.conic.rotated_quadratic.as_domain(m.R, m.U, [np.sqrt(2)])
 # solve with 'mosek_direct' or 'gurobi_direct'
 pmo.SolverFactory('mosek_direct').solve(m)
 
-print(f"cost = {m.cost():0.5f} per sq. meter")
-print(f"xopt = {m.x():0.5f} meters")
+print(f"The optimal cost is equal to {m.cost():0.5f} per sq. meter")
+print(f"The optimal thickness is xopt = {m.x():0.5f} meters")
 
 
 # ## Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Program (MIQCP)
 
-# The economic objective is to minimize the combined annual energy operating expenses and capital cost of insulation. Let $\alpha$ be a coefficient for the proportional relationship of the overall heat transfer coefficient $U$ to the annual energy costs.  
-# 
-# $$\min \alpha U + \beta \sum_{n=1}^N (a_ny_n + b_nx_n) $$
-# 
-# subject to constraints
+# The economic objective is to minimize the combined annual energy operating expenses and capital cost of insulation. Let $\alpha$ be a coefficient for the proportional relationship of the overall heat transfer coefficient $U$ to the annual energy costs. The full multi-layer optimization problem then reads as follows:
 # 
 # $$
 # \begin{align}
-# R & = R_0 + \sum_{n=1}^N\frac{x_n}{k_n} \\
-# \sum_{n=1}^N x_n & \leq T \\
-# x_n & \geq 0 \\
-# y_n & \in \text{Binary} \\
-# x_n & \leq Ty_n \\
-# z^2 & \leq 2 R U \\
-# z & = \sqrt{2} \\
-# R, U & > 0
+# \min \quad & \alpha U + \beta \sum_{n=1}^N (a_ny_n + b_nx_n)\\
+# \text{s.t.} \quad 
+# & R = R_0 + \sum_{n=1}^N\frac{x_n}{k_n} \\
+# & \sum_{n=1}^N x_n \leq T \\
+# & z^2  \leq 2 R U \\
+# & z  = \sqrt{2} \\
+# & R, U  > 0\\
+# & x_n \leq T y_n & n=1,\dots,N \\
+# & x_n  \geq 0 & n=1,\dots,N \\
+# & y_n  \in \{0,1\} & n=1,\dots,N,
 # \end{align}
 # $$
-# 
 # where binary variables $y_n$ indicate whether layer $n$ is included in the insulation package, and $x_n$ is the thickness of layer $n$ if included.
 
 # In[5]:
@@ -238,7 +233,7 @@ def insulate(df, alpha, beta, R0, T):
     
     for n in m.N:
         df.loc[n, "x opt"] = m.x[n]() 
-    print(f"cost = {m.cost():0.5f} per sq. meter")
+    print(f"The optimal cost is equal to {m.cost():0.5f} per sq. meter")
     display(df.round(5))
     
     return m
@@ -285,7 +280,7 @@ df = pd.DataFrame({
 m = insulate(df, alpha, beta, R0, T)
 
 
-# In[13]:
+# In[8]:
 
 
 import numpy as np
@@ -317,6 +312,7 @@ ax.text(x[0], x[1], f"    ({x[0]:0.4f}, {x[1]:0.4f})")
 ax.set_xlabel("x_0")
 ax.set_ylabel("x_1")
 ax.set_title("Contours of Constant Cost")
+plt.show()
 
 
 # ## Bibliographic Notes

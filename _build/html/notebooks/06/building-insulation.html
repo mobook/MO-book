@@ -1,10 +1,10 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
     <title>Optimal Design of Multilayered Building Insulation &#8212; Companion Notebooks for Data-Driven Mathematical Optimization in Python</title>
     
@@ -34,7 +34,6 @@
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
@@ -60,7 +59,7 @@ const thebe_selector_output = ".output, .cell_output"
     <link rel="next" title="7. Accounting for Uncertainty: Optimization Meets Reality" href="../07/07.00.html" />
     <link rel="prev" title="Economic Order Quantity" href="economic-order-quantity.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
+    <meta name="docsearch:language" content="None">
     
 
     <!-- Google Analytics -->
@@ -426,6 +425,11 @@ const thebe_selector_output = ".output, .cell_output"
   </label>
   <ul>
    <li class="toctree-l2">
+    <a class="reference internal" href="../10/ccg.html">
+     Robust Production Planning
+    </a>
+   </li>
+   <li class="toctree-l2">
     <a class="reference internal" href="../10/airline-seating.html">
      Airline seat allocation problem
     </a>
@@ -782,8 +786,8 @@ title="Print to PDF"
               <div>
                 
   <section class="tex2jax_ignore mathjax_ignore" id="optimal-design-of-multilayered-building-insulation">
-<h1>Optimal Design of Multilayered Building Insulation<a class="headerlink" href="#optimal-design-of-multilayered-building-insulation" title="Permalink to this heading">#</a></h1>
-<p>Thermal insulation is installed in buildings to reduce the annual energy costs. But the installation costs money, so the decision of how much insulation to install is a a trade off between the annualized capital costs of insulation and the annual operating costs for heating and air conditioning. This notebook shows the formulation and solution of an optimization problem using conic programming.</p>
+<h1>Optimal Design of Multilayered Building Insulation<a class="headerlink" href="#optimal-design-of-multilayered-building-insulation" title="Permalink to this headline">#</a></h1>
+<p>Thermal insulation is installed in buildings to reduce annual energy costs. However, the installation costs money, so the decision of how much insulation to install is a trade-off between the annualized capital costs of insulation and the annual operating costs for heating and air conditioning. This notebook shows the formulation and solution of an optimization problem using conic programming.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
@@ -809,23 +813,23 @@ gurobi was previously installed
 </div>
 </div>
 <section id="a-model-for-multi-layered-insulation">
-<h2>A Model for Multi-Layered Insulation<a class="headerlink" href="#a-model-for-multi-layered-insulation" title="Permalink to this heading">#</a></h2>
+<h2>A Model for Multi-Layered Insulation<a class="headerlink" href="#a-model-for-multi-layered-insulation" title="Permalink to this headline">#</a></h2>
 <p>Consider a wall or surface separating conditioned interior space in a building at temperature <span class="math notranslate nohighlight">\(T_i\)</span> from the external environment at temperature <span class="math notranslate nohighlight">\(T_o\)</span>. Heat conduction through the wall is given by</p>
 <div class="math notranslate nohighlight">
 \[\dot{Q} = UA (T_i - T_o)\]</div>
 <p>where <span class="math notranslate nohighlight">\(U\)</span> is the overall heat transfer coefficient. For a wall constructed from <span class="math notranslate nohighlight">\(N\)</span> layers of different insulating materials, the inverse of the overall heat transfer coefficient is given by a sum of serial thermal “resistances”</p>
 <div class="math notranslate nohighlight">
 \[\frac{1}{U} = R_0 + \sum_{n=1}^N R_n\]</div>
-<p>where <span class="math notranslate nohighlight">\(R_0\)</span> is thermal resistance of the structural elements. The thermal resistances of each insulating layer is given by <span class="math notranslate nohighlight">\(R_n = \frac{x_n}{k_n}\)</span> for a material with thickness <span class="math notranslate nohighlight">\(x_n\)</span> and a thermal conductivity <span class="math notranslate nohighlight">\(k_n\)</span>.</p>
+<p>where <span class="math notranslate nohighlight">\(R_0\)</span> is the thermal resistance of the structural elements. The thermal resistance of the <span class="math notranslate nohighlight">\(n\)</span>-th insulating layer is equal to <span class="math notranslate nohighlight">\(R_n = \frac{x_n}{k_n}\)</span> for a material with thickness <span class="math notranslate nohighlight">\(x_n\)</span> and a thermal conductivity <span class="math notranslate nohighlight">\(k_n\)</span>.</p>
 <div class="math notranslate nohighlight">
 \[\frac{1}{U} = R_0 + \sum_{n=1}^N \frac{x_n}{k_n}\]</div>
-<p>We assume the annual energy costs are proportional to thermal conductivity <span class="math notranslate nohighlight">\(U\)</span>. The cost of installing a unit area of unit area of insulation is given by an affine expression</p>
+<p>We assume the annual energy costs are proportional to thermal conductivity <span class="math notranslate nohighlight">\(U\)</span>. The cost of installing a unit area of insulation is given by an affine expression</p>
 <div class="math notranslate nohighlight">
 \[a_n + b_n x_m\]</div>
 <p>The combined annualized costs are then</p>
 <div class="math notranslate nohighlight">
 \[C = \alpha U + \beta\sum_{n=1}^N (a_n y_n + b_n x_n)\]</div>
-<p>where <span class="math notranslate nohighlight">\(\beta\)</span> is a discount factor for the equivalent annualized cost of insulation, and binary variable <span class="math notranslate nohighlight">\(y_n\)</span> is a binary variable indicates whether or not layer <span class="math notranslate nohighlight">\(n\)</span> is included in the installation. The feasible values for <span class="math notranslate nohighlight">\(x_n\)</span> are subject to constraints</p>
+<p>where <span class="math notranslate nohighlight">\(\beta\)</span> is a discount factor for the equivalent annualized cost of insulation, and binary variable <span class="math notranslate nohighlight">\(y_n\)</span> is a binary variable that indicates whether or not layer <span class="math notranslate nohighlight">\(n\)</span> is included in the installation. The feasible values for <span class="math notranslate nohighlight">\(x_n\)</span> are subject to constraints</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\begin{align}
 x_n &amp; \leq Ty_n \\
@@ -834,7 +838,7 @@ x_n &amp; \leq Ty_n \\
 <p>where <span class="math notranslate nohighlight">\(T\)</span> is an upper bound on insulation thickness.</p>
 </section>
 <section id="analytic-solution-for-n-1">
-<h2>Analytic Solution for <span class="math notranslate nohighlight">\(N=1\)</span><a class="headerlink" href="#analytic-solution-for-n-1" title="Permalink to this heading">#</a></h2>
+<h2>Analytic Solution for <span class="math notranslate nohighlight">\(N=1\)</span><a class="headerlink" href="#analytic-solution-for-n-1" title="Permalink to this headline">#</a></h2>
 <p>The case <span class="math notranslate nohighlight">\(N=1\)</span> has a simple analytical solution</p>
 <div class="math notranslate nohighlight">
 \[\begin{align}
@@ -843,7 +847,7 @@ C^{min} = \min &amp; \left(\frac{\alpha k}{k R_0 + x} + \beta(a + bx)\right)
 <p>Solving for the optimum thickness <span class="math notranslate nohighlight">\(x^{opt}\)</span></p>
 <div class="math notranslate nohighlight">
 \[x^{opt} = - k R_0 + \sqrt{\frac{\alpha k}{\beta b}} \]</div>
-<p>A plot illustrates the trade off between operating and capital costs.</p>
+<p>A plot illustrates the trade-off between operating and capital costs.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># application parameters</span>
@@ -908,24 +912,23 @@ xopt = 0.28641 meters
 </div>
 </section>
 <section id="pyomo-model-for-n-1">
-<h2>Pyomo Model for <span class="math notranslate nohighlight">\(N=1\)</span><a class="headerlink" href="#pyomo-model-for-n-1" title="Permalink to this heading">#</a></h2>
+<h2>Pyomo Model for <span class="math notranslate nohighlight">\(N=1\)</span><a class="headerlink" href="#pyomo-model-for-n-1" title="Permalink to this headline">#</a></h2>
 <p>In the <a class="reference external" href="https://pyomo.readthedocs.io/en/stable/library_reference/kernel/index.html">Pyomo Kernel Library</a>, a <a class="reference external" href="https://pyomo.readthedocs.io/en/stable/library_reference/kernel/conic.html#pyomo.core.kernel.conic.rotated_quadratic">conic rotated constraint</a> is of the form</p>
 <div class="math notranslate nohighlight">
 \[\sum_{n=0}^{N-1} z_n^2 \leq 2 r_1 r_2\]</div>
 <p>where <span class="math notranslate nohighlight">\(r_1\)</span>, <span class="math notranslate nohighlight">\(r_2\)</span>, and <span class="math notranslate nohighlight">\(z_0, z_1, \ldots, z_{N-1}\)</span> are variables. For a single layer Pyomo model we identify <span class="math notranslate nohighlight">\(R \sim r_1\)</span>, <span class="math notranslate nohighlight">\(U\sim r_2\)</span>, and <span class="math notranslate nohighlight">\(z_0^2 \sim 2\)</span> which leads to the model</p>
 <div class="math notranslate nohighlight">
-\[\begin{align}
-\min\ \alpha U + \beta(a + bx)
-\end{align}\]</div>
-<p>subject to</p>
-<div class="math notranslate nohighlight">
-\[\begin{split}\begin{align}
-R &amp; = R_0 + \frac{x}{k} \\
-z^2 &amp; \leq 2 R U &amp; \text{conic constraint}\\
-z &amp; = \sqrt{2} \\
-x, R, U &amp; \geq 0 \\
-x &amp; \leq T
-\end{align}\end{split}\]</div>
+\[\begin{split}
+\begin{align}
+\min \quad &amp; \alpha U + \beta(a + bx)\\
+\text{s.t.} \quad 
+&amp; R = R_0 + \frac{x}{k} \\
+&amp; z^2 \leq 2 R U &amp; \text{(conic constraint)}\\
+&amp; z = \sqrt{2} \\
+&amp; x \leq T\\
+&amp; x, R, U \geq 0.
+\end{align}
+\end{split}\]</div>
 <p>This model can be translated directly into into a Pyomo conic program using the Pyomo Kernel Library.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -950,36 +953,35 @@ x &amp; \leq T
 <span class="c1"># solve with &#39;mosek_direct&#39; or &#39;gurobi_direct&#39;</span>
 <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;mosek_direct&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cost = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;xopt = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> meters&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal thickness is xopt = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> meters&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>cost = 4.99615 per sq. meter
-xopt = 0.28640 meters
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal cost is equal to 4.99615 per sq. meter
+The optimal thickness is xopt = 0.28640 meters
 </pre></div>
 </div>
 </div>
 </div>
 </section>
 <section id="multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-program-miqcp">
-<h2>Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Program (MIQCP)<a class="headerlink" href="#multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-program-miqcp" title="Permalink to this heading">#</a></h2>
-<p>The economic objective is to minimize the combined annual energy operating expenses and capital cost of insulation. Let <span class="math notranslate nohighlight">\(\alpha\)</span> be a coefficient for the proportional relationship of the overall heat transfer coefficient <span class="math notranslate nohighlight">\(U\)</span> to the annual energy costs.</p>
-<div class="math notranslate nohighlight">
-\[\min \alpha U + \beta \sum_{n=1}^N (a_ny_n + b_nx_n) \]</div>
-<p>subject to constraints</p>
+<h2>Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Program (MIQCP)<a class="headerlink" href="#multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-program-miqcp" title="Permalink to this headline">#</a></h2>
+<p>The economic objective is to minimize the combined annual energy operating expenses and capital cost of insulation. Let <span class="math notranslate nohighlight">\(\alpha\)</span> be a coefficient for the proportional relationship of the overall heat transfer coefficient <span class="math notranslate nohighlight">\(U\)</span> to the annual energy costs. The full multi-layer optimization problem then reads as follows:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
-R &amp; = R_0 + \sum_{n=1}^N\frac{x_n}{k_n} \\
-\sum_{n=1}^N x_n &amp; \leq T \\
-x_n &amp; \geq 0 \\
-y_n &amp; \in \text{Binary} \\
-x_n &amp; \leq Ty_n \\
-z^2 &amp; \leq 2 R U \\
-z &amp; = \sqrt{2} \\
-R, U &amp; &gt; 0
+\min \quad &amp; \alpha U + \beta \sum_{n=1}^N (a_ny_n + b_nx_n)\\
+\text{s.t.} \quad 
+&amp; R = R_0 + \sum_{n=1}^N\frac{x_n}{k_n} \\
+&amp; \sum_{n=1}^N x_n \leq T \\
+&amp; z^2  \leq 2 R U \\
+&amp; z  = \sqrt{2} \\
+&amp; R, U  &gt; 0\\
+&amp; x_n \leq T y_n &amp; n=1,\dots,N \\
+&amp; x_n  \geq 0 &amp; n=1,\dots,N \\
+&amp; y_n  \in \{0,1\} &amp; n=1,\dots,N,
 \end{align}
 \end{split}\]</div>
 <p>where binary variables <span class="math notranslate nohighlight">\(y_n\)</span> indicate whether layer <span class="math notranslate nohighlight">\(n\)</span> is included in the insulation package, and <span class="math notranslate nohighlight">\(x_n\)</span> is the thickness of layer <span class="math notranslate nohighlight">\(n\)</span> if included.</p>
@@ -1024,7 +1026,7 @@ R, U &amp; &gt; 0
     
     <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
         <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;x opt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]()</span> 
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cost = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
     <span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
     
     <span class="k">return</span> <span class="n">m</span>
@@ -1033,7 +1035,7 @@ R, U &amp; &gt; 0
 </div>
 </div>
 <section id="case-1-single-layer-solution">
-<h3>Case 1. Single Layer Solution<a class="headerlink" href="#case-1-single-layer-solution" title="Permalink to this heading">#</a></h3>
+<h3>Case 1. Single Layer Solution<a class="headerlink" href="#case-1-single-layer-solution" title="Permalink to this headline">#</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -1055,7 +1057,7 @@ R, U &amp; &gt; 0
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>cost = 4.15492 per sq. meter
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal cost is equal to 4.15492 per sq. meter
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1106,14 +1108,14 @@ R, U &amp; &gt; 0
     </tr>
   </tbody>
 </table>
-</div></div><div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;pyomo.core.kernel.block.block at 0x7fb430359e50&gt;
+</div></div><div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;pyomo.core.kernel.block.block at 0x1293a6200&gt;
 </pre></div>
 </div>
 </div>
 </div>
 </section>
 <section id="case-2-multiple-layer-solution">
-<h3>Case 2. Multiple Layer Solution<a class="headerlink" href="#case-2-multiple-layer-solution" title="Permalink to this heading">#</a></h3>
+<h3>Case 2. Multiple Layer Solution<a class="headerlink" href="#case-2-multiple-layer-solution" title="Permalink to this headline">#</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># application parameters</span>
@@ -1132,7 +1134,7 @@ R, U &amp; &gt; 0
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>cost = 3.22992 per sq. meter
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal cost is equal to 3.22992 per sq. meter
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1165,14 +1167,14 @@ R, U &amp; &gt; 0
       <td>0.015</td>
       <td>0.0</td>
       <td>110.0</td>
-      <td>0.06278</td>
+      <td>0.06276</td>
     </tr>
     <tr>
       <th>Wool</th>
       <td>0.010</td>
       <td>0.0</td>
       <td>200.0</td>
-      <td>0.08722</td>
+      <td>0.08724</td>
     </tr>
   </tbody>
 </table>
@@ -1209,20 +1211,18 @@ R, U &amp; &gt; 0
 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;x_0&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;x_1&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Contours of Constant Cost&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Text(0.5, 1.0, &#39;Contours of Constant Cost&#39;)
-</pre></div>
-</div>
-<img alt="../../_images/building-insulation_16_1.png" src="../../_images/building-insulation_16_1.png" />
+<img alt="../../_images/building-insulation_16_0.png" src="../../_images/building-insulation_16_0.png" />
 </div>
 </div>
 </section>
 </section>
 <section id="bibliographic-notes">
-<h2>Bibliographic Notes<a class="headerlink" href="#bibliographic-notes" title="Permalink to this heading">#</a></h2>
+<h2>Bibliographic Notes<a class="headerlink" href="#bibliographic-notes" title="Permalink to this headline">#</a></h2>
 <p>To the best of my knowledge, this problem is not well-known example in the mathematical optimization literature. There are a number of application papers with differing levels of detail.</p>
 <blockquote>
 <div><p>Hasan, A. (1999). Optimizing insulation thickness for buildings using life cycle cost. Applied energy, 63(2), 115-124. <a class="reference external" href="https://www.sciencedirect.com/science/article/pii/S0306261999000239">https://www.sciencedirect.com/science/article/pii/S0306261999000239</a></p>
