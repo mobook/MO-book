@@ -40,15 +40,18 @@
 # \end{align}
 # $$
 # 
-# The problem is now
+# The problem is now in the general form
 # 
 # $$
 # \begin{align*}
 # \max\quad & \sum_i p_i q_i \\
 # \text{s.t.}\quad & \exp(q_i) \leq R_i & \forall i\in I\\
-# & R_i = 1 + \sum_{j} b_{ij} w_j & \forall i\in I
+# & R_i = 1 + \sum_{j} b_{ij} w_j & \forall i\in I \\
+# & \sum_j w_j \leq 1 \\
 # \end{align*}
 # $$
+# 
+# where the probabilities of each outcome, $p_i$ are known, and the gross returns $R_i$ are functions of the decision variables $w_j$.
 # 
 # A primal exponential cone is a convex set $K_{exp} = \{(x,y,r)\}$ such that i
 # 
@@ -60,7 +63,8 @@
 # \begin{align*}
 # \max\quad & \sum_i p_i q_i \\
 # \text{s.t.}\quad & (q_i, 1, R_i) \in K_{exp} & \forall i\in I\\
-# & R_i = 1 + \sum_j b_{ij} w_j & \forall i\in I
+# & R_i = 1 + \sum_j b_{ij} w_j & \forall i\in I \\
+# & \sum_j w_j \leq 1 \\
 # \end{align*}
 # $$
 # 
