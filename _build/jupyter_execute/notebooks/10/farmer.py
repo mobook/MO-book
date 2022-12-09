@@ -348,6 +348,13 @@ pyo.SolverFactory('cbc').solve(m)
 farm_report(m)
 
 
+# ## Bibliographic Notes
+# 
+# The Farmer's Problem is well known in the stochastic programming community. Examples of treatments include the following web resources:
+# 
+# > http://user.engineering.uiowa.edu/~dbricker/stacks_pdf1/slpwr_farmer.pdf
+# > https://www.math.uh.edu/~rohop/Spring_15/Chapter1.pdf
+
 # In[ ]:
 
 

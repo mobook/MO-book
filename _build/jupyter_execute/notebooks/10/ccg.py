@@ -5,9 +5,20 @@
 # 
 # The purpose of this notebook is to demonstrate a range of techniques for robust optimization using a common example.
 # 
+# * Robust Optimization
 # * Constraint and Column Generation (Section 10.1)
+# * Decision Rules
 # * Stochastic Optimization
 # * Progressive Hedging in Pyomo Overview: https://www.osti.gov/servlets/purl/1524963
+# * PyROS solver
+
+# ## Bibliographic Notes
+# 
+# > Li, C., & Grossmann, I. E. (2021). A review of stochastic programming methods for optimization of process systems under uncertainty. Frontiers in Chemical Engineering, 2, 622241. https://www.frontiersin.org/articles/10.3389/fceng.2020.622241/full
+# 
+# > Wiebe, J., & Misener, R. (2022). ROmodel: modeling robust optimization problems in Pyomo. Optimization and Engineering, 23(4), 1873-1894. https://link.springer.com/article/10.1007/s11081-021-09703-2
+# 
+# > Isenberg, N., Siirola, J., & Gounaris, C. (2020, November). Pyros: A pyomo robust optimization solver for robust process design. In 2020 Virtual AIChE Annual Meeting. AIChE. https://aiche.confex.com/aiche/2020/meetingapp.cgi/Paper/602399
 
 # In[2]:
 
@@ -26,23 +37,109 @@ helper.install_cbc()
 
 # ## Multi-product factory (adapted from Chapter 3)
 # 
-# A small startup company has announced the initial production of two models, $U$ and $V$ of a new product. Here is what they know about the production of $U$ and $V$:
+# A small startup company has announced the initial production of two models, $U$ and $V$, of a new product. Here is what they know about the production of $U$ and $V$:
 # 
-# * Product $U$ is the higher priced model that requires 10 units of raw material. The labor requirement is estimated to be 1 hour of labor A and 2 hours of labor B. Product $U$ will sell for 270€ per unit.
+# * Model $U$ is the higher priced version requiring 10 units of raw material. The labor requirement is estimated to be 1 hour of labor A and 2 hours of labor B. The $U$ model will sell for 270€ per unit.
 # 
-# * Product $V$ requires 9 units of the same raw materials and estimated to require 1 hour of labor A and 1 hour of labor B. Product $V$ sells for 210€ per unit with unlimited demand.
+# * Model $V$ requires 9 units of the same raw materials and is estimated to require 1 hour of labor A and 1 hour of labor B. Model $V$ sells for 210€ per unit with unlimited demand.
 # 
-# * The initial marketing campaign offers guaranteed delivery of model $U$ in return for a down payment. The number of units to be sold with a delivery guarantee is unknown, but will be limited to 20 units. Demand is limited to 40 units.
+# * A pre-production  marketing campaign offers guaranteed delivery of model $U$ in return for a down payment. The number of units to be sold with a delivery guarantee is unknown, but will be limited to 20 units. Because of the higher price, the overall demand is limited so no more than 40 units will be produced.
 # 
-# * Raw material costs a 10€ per unit. The raw materials have a long lead time and must be ordered now. Unused raw materials have no waste value. 
+# * The raw materials cost 10€ per unit. The raw materials have a long lead time and must be ordered now. Unused raw materials have no waste value. 
 # 
-# * Given current staffing, there are 80 hours per day of labor A available at a cost of 50€/hour, and 100 hours per day of labor B available at a cost of 40€/hour.
+# * Given current staffing, there are 80 hours of labor A available at a cost of 50€/hour, and 100 hours of labor B available at a cost of 40€/hour.
 # 
 # * The company will not have not accurate knowledge of the labor required to produce each product until production starts. The estimated amount of labor A and labor B needed for each unit produced could be off by 20% and 40%, respectively. The uncertainty for labor A is independent of the uncertainty associated with labor B.
 # 
-# The operator must decide how much raw material to order without complete information about labor needed to manufacture the products, or knowledge about the outcome of the marketing campaign. If the operator orders too much then raw material will be left over and wasted. If the operator orders too little then some of the labor resources will go unused and wasted. In either case, the profit realized will be less than than the potential.
+# The company COO must decide how much raw material to order now without complete information about labor needed to manufacture the models, or knowledge about the outcome of the pre-production marketing campaign. If the COO orders too much now then raw material will be left over and wasted. If the COO orders too little now then the manufacturing opportunity will be lost. In either case, the profit realized will be less than than the potential.
 # 
-# How much raw material should the company order now?
+# Help the COO make the decision on how much raw material to order now.
+
+# ## Model for nominal conditions
+# 
+# To establish a baseline for this problem, we start with a simple model for operation under nominal conditions.
+# 
+# $$
+# \begin{align*}
+# \max_{w, x, y \geq 0} \quad & - 10 w + 140 u + 120 v \\
+# \text{s.t.} \quad &
+# u \geq 0 && \text{(pre-production orders)}\\
+# & u  \leq 40 && \text{(demand)}\\
+# & u + v \leq 80 && \text{(labor A)}\\
+# & 2 u +  v \leq 100 && \text{(labor B)}\\
+# & -w + 10 u + 9 v  \leq 0 && \text{(raw materials)} \\
+# \end{align*}
+# $$
+# 
+# We can see that $w = 10 u + 9 v$ at an optimum, so that 
+# 
+# $$J = (40 - 50 z_A - 80 z_B)u + (30 - 50 z_A - 40 z_B)v$$
+# 
+# 
+
+# In[3]:
+
+
+import pyomo.environ as pyo
+
+m = pyo.ConcreteModel()
+
+m.w = pyo.Var(domain=pyo.NonNegativeReals)
+m.u = pyo.Var(domain=pyo.NonNegativeReals, bounds=(0, 40))
+m.v = pyo.Var(domain=pyo.NonNegativeReals)
+
+@m.Constraint()
+def labor_A(m):
+    return m.u + m.v <= 80
+
+@m.Constraint()
+def labor_B(m):
+    return 2*m.u + m.v <= 100
+
+@m.Constraint()
+def raw_materials(m):
+    return -m.w + 10*m.u + 9*m.v <= 0
+
+@m.Objective(sense=pyo.maximize)
+def profit(m):
+    return - 10*m.w + 140*m.u + 120*m.v
+
+solver = pyo.SolverFactory('cbc')
+solver.solve(m)
+
+m.profit.display()
+m.w.display()
+m.u.display()
+m.v.display()
+
+
+# In[7]:
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+fig = plt.figure(figsize=(12, 12))
+ax = plt.subplot(211, xlabel="qty u", ylabel="qty v", 
+                 aspect=1, xlim=(0, 80), ylim=(0, 80))
+
+u = np.linspace(0, 80)
+
+ax.plot(u, (80 - u), lw=2, label="labor A")
+ax.plot(u, (100 - 2*u), lw=2, label="labor B")
+ax.plot([40]*2, ax.get_ylim(), lw=2, label="demand")
+
+ax.fill_between(u, (80 - u), 100, alpha=0.2)
+ax.fill_between(u, (100 - 2*u), 100, alpha=0.2)
+ax.fill_between([40, ax.get_xlim()[1]], [0]*2, [100]*2, alpha=0.2)
+
+ax.legend(loc="upper right")
+
+for profit in [600*k for k in range(20)]:
+    ax.plot(u, (profit - 40*u)/30, 'r:', alpha=1, lw=0.5)
+
+ax.plot(m.u.value, m.v.value, 'r.', ms=20)
+
 
 # ## What is the worst-case?
 # 
@@ -76,133 +173,21 @@ helper.install_cbc()
 # 
 # The impact of uncertainty associated with initial orders, $z_U$, depends on $z_A$, $z_B$, and the sensitivity of the optimal profit to the incremental production of $U$ and $V$ under constraints makes is difficult to determine, *apriori*, the worst-case operating conditions.
 
-# ## Model for nominal conditions
-# 
-# To establish a baseline for this problem, we start with a simple model for operation under nominal conditions.
-# 
-# $$
-# \begin{align*}
-# \max_{w, x, y \geq 0} \quad & - 10 w + 140 u + 120 v \\
-# \text{s.t.} \quad & u  \leq 40 && \text{(demand)}\\
-# & u + v \leq 80 && \text{(labor A)}\\
-# & 2 u +  v \leq 100 && \text{(labor B)}\\
-# & -w + 10 u + 9 v  \leq 0 && \text{(raw materials)} \\
-# \end{align*}
-# $$
-# 
-# We can see that $w = 10 u + 9 v$ at an optimum, so that 
-# 
-# $$J = (40 - 50 z_A - 80 z_B)u + (30 - 50 z_A - 40 z_B)v$$
-# 
-# 
-
-# In[3]:
+# In[2]:
 
 
-import pyomo.environ as pyo
+import ipywidgets as widgets
 
-m = pyo.ConcreteModel()
-
-m.w = pyo.Var(domain=pyo.NonNegativeReals)
-m.u = pyo.Var(domain=pyo.NonNegativeReals)
-m.v = pyo.Var(domain=pyo.NonNegativeReals)
-
-@m.Constraint()
-def demand(m):
-    return m.u <= 40
-
-@m.Constraint()
-def labor_A(m):
-    return m.u + m.v <= 80
-
-@m.Constraint()
-def labor_B(m):
-    return 2*m.u + m.v <= 100
-
-@m.Constraint()
-def raw_materials(m):
-    return -m.w + 10*m.u + 9*m.v <= 0
-
-@m.Objective(sense=pyo.maximize)
-def profit(m):
-    return - 10*m.w + 140*m.u + 120*m.v
-
-solver = pyo.SolverFactory('cbc')
-solver.solve(m)
-
-m.profit.display()
-m.w.display()
-m.u.display()
-m.v.display()
-
-
-# In[22]:
-
-
-import matplotlib.pyplot as plt
-import numpy as np
-import pyomo.environ as pyo
-
-z_A = 0
-z_B = 0
-z_D = -.5
-
-m = pyo.ConcreteModel()
-
-m.w = pyo.Var(domain=pyo.NonNegativeReals)
-m.u = pyo.Var(domain=pyo.NonNegativeReals)
-m.v = pyo.Var(domain=pyo.NonNegativeReals)
-
-@m.Constraint()
-def demand(m):
-    return m.u <= 40*(1 + z_D)
-
-@m.Constraint()
-def labor_A(m):
-    return m.u*(1 + z_A) + m.v*(1 + z_A) <= 80
-
-@m.Constraint()
-def labor_B(m):
-    return 2*m.u*(1 + z_B) + m.v*(1 + z_B) <= 100
-
-@m.Constraint()
-def raw_materials(m):
-    return -m.w + 10*m.u + 9*m.v <= 0
-
-@m.Objective(sense=pyo.maximize)
-def profit(m):
-    return - 10*m.w + (140 - 50*z_A - 80*z_B)*m.u + (120 - 50*z_D - 40*z_B)*m.v
-
-solver = pyo.SolverFactory('cbc')
-solver.solve(m)
-
-fig = plt.figure(figsize=(12, 12))
-ax = plt.subplot(211, xlabel="qty U", ylabel="qty V", 
-                 aspect=1, xlim=(0, 80), ylim=(0, 80))
-
-u = np.linspace(0, 80)
-
-ax.plot(u, (80 - u*(1 + z_B))/(1 + z_B), lw=2, label="labor A")
-ax.plot(u, (100 - 2*u*(1 + z_B))/(1 + z_B), lw=2, label="labor B")
-ax.plot([40*(1 + z_D)]*2, ax.get_ylim(), lw=2, label="demand")
-
-ax.fill_between(u, (80 - u*(1 + z_B))/(1 + z_B), 100, alpha=0.2)
-ax.fill_between(u, (100 - 2*u*(1 + z_B))/(1 + z_B), 100, alpha=0.2)
-ax.fill_between([40*(1 + z_D), ax.get_xlim()[1]], [0]*2, [100]*2, alpha=0.2)
-
-ax.legend(loc="upper right")
-
-for profit in [600*k for k in range(20)]:
-    ax.plot(u, (profit - 40*u)/30, 'r:', alpha=1, lw=0.5)
-
-ax.plot(m.u.value, m.v.value, 'r.', ms=20)
+widgets.FloatSlider(value=0.0, min=0.0, max=0.15, step=0.001, description="z_A", readout_format="0.3f")
 
 
 # Next we formulate the robust optimization problem where the objective is to maximize the worst case profit subject to constraints and uncertainty. 
 # 
 # $$\begin{align}
 # \max \quad & -10 w + \tau \\
-# \text{s.t.}\quad & (140 - 50z_A - 80z_B) u + (120 - 50z_A - 40z_B) v \geq  \tau && \text{(worst-case profit)} \\
+# \text{s.t.}\quad 
+# & (140 - 50z_A - 80z_B) u + (120 - 50z_A - 40z_B) v \geq  \tau && \text{(worst-case profit)} \\
+# & u \geq z_U && \text{(pre-production orders)} \\
 # & u \leq 40(1 + z_D) && \text{(demand)}\\
 # & (1 + z_A) u + (1 + z_B) v \leq 80 && \text{(labor A)} \\
 # & 2 (1 + z_A) u + (1 + z_B) v \leq 100 && \text{(labor B)} \\

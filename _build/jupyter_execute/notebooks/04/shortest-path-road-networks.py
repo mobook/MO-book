@@ -145,7 +145,7 @@ ox.config(log_console=True, use_cache=True)
 # In[9]:
 
 
-get_ipython().run_cell_magic('time', '', "G_walk = ox.graph_from_place('Amsterdam, NL', network_type='walk')\n")
+get_ipython().run_cell_magic('time', '', "G_walk = ox.graph_from_place('Amsterdam, NL', network_type='walk')")
 
 
 # In[10]:
@@ -178,13 +178,13 @@ display(route_map)
 # In[14]:
 
 
-get_ipython().run_cell_magic('time', '', "nodes = pd.DataFrame.from_dict(dict(G_walk.nodes(data=True)), orient='index')\n")
+get_ipython().run_cell_magic('time', '', "nodes = pd.DataFrame.from_dict(dict(G_walk.nodes(data=True)), orient='index')")
 
 
 # In[15]:
 
 
-get_ipython().run_cell_magic('time', '', 'edges = nx.to_pandas_edgelist(G_walk)\n')
+get_ipython().run_cell_magic('time', '', 'edges = nx.to_pandas_edgelist(G_walk)')
 
 
 # In[16]:
@@ -224,7 +224,7 @@ display(route_map)
 # In[21]:
 
 
-get_ipython().run_cell_magic('time', '', "import pandana\nnetwork = pandana.Network(nodes['x'], nodes['y'], edges['source'], edges['target'], edges[['length']],twoway=True)\n")
+get_ipython().run_cell_magic('time', '', "import pandana\nnetwork = pandana.Network(nodes['x'], nodes['y'], edges['source'], edges['target'], edges[['length']],twoway=True)")
 
 
 # In[22]:
