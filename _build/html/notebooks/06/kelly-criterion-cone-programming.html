@@ -774,6 +774,30 @@ title="Print to PDF"
 <p>The idea actually pre-dates Kelly. In 1738, the famous mathematician Daniel Bernoulli offered a resolution to the St. Petersburg paradox (proposed by his cousin, Nicholas Bernoulli in 1711) by suggesting one should choose bets of investments with the highest geometric mean of outcomes.</p>
 <p>As described by William Poundstone in the popular book “Fortune’s Formula”, following Kelly’s paper, this idea this was quickly picked up by both gamblers and investors, with many colorful adventures by early adopters in both Las Vegas and Wall Street.</p>
 <p>Following the analysis of Cajas (2021), this notebook presents a version of the the problem analysis demonstrating the applcation of exponential cone programming.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">types</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
+<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
+<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+
+<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
+<span class="n">helper</span><span class="o">.</span><span class="n">install_mosek</span><span class="p">()</span>
+<span class="n">helper</span><span class="o">.</span><span class="n">install_gurobi</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
+mosek was previously installed
+gurobi was previously installed
+</pre></div>
+</div>
+</div>
+</div>
 <section id="problem">
 <h2>Problem<a class="headerlink" href="#problem" title="Permalink to this heading">#</a></h2>
 <p>The classical presentation of the Kelly Criterion is to consider a betting proposition offering odds of <span class="math notranslate nohighlight">\(b\)</span> for an outcome with propability <span class="math notranslate nohighlight">\(p\)</span>. In that case a bet pays off <span class="math notranslate nohighlight">\(b+1\)</span> unit of money for every unit of money wagered. If we let <span class="math notranslate nohighlight">\(x\)</span> represent the fraction of wealth that is wagered, then the gross returns are given by</p>
@@ -825,6 +849,70 @@ q_i &amp; \leq \ln(R_i) \\
 </section>
 <section id="example-1-proposition-betting">
 <h2>Example 1: Proposition Betting<a class="headerlink" href="#example-1-proposition-betting" title="Permalink to this heading">#</a></h2>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align}
+\max_w&amp;\quad p q_1 + (1-p) q_2 \\
+\text{s.t}\quad&amp;\\
+&amp; (q_1, 1, 1 + bw) \in K_{exp} \\
+&amp; (q_2, 1, 1 - w) \in K_{exp} \\
+&amp; w \geq 0
+\end{align}
+\end{split}\]</div>
+<p><strong>Programming Note:</strong> The Pyomo Kernel Library includes exponential cone constraints, but reorders the arguments. As presented above, <span class="math notranslate nohighlight">\(K_{exp} = \{(x,y,r)\}\)</span> refers to the convex cone described by</p>
+<div class="math notranslate nohighlight">
+\[y \exp(\frac{x}{y}) \leq r\]</div>
+<p>where <span class="math notranslate nohighlight">\(y, r \geq 0\)</span>. The Pyomo Kernel Library defines the same cone as</p>
+<div class="math notranslate nohighlight">
+\[x_1 \exp(\frac{x_2}{x_1}) \leq r\]</div>
+<p>where <span class="math notranslate nohighlight">\(x_1, r \geq 0\)</span>. The concordance is then</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align}
+x &amp; \sim x_2 \\
+y &amp; \sim x_1 \\
+r &amp; \sim r
+\end{align}
+\end{split}\]</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">b</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">p</span> <span class="o">=</span> <span class="mf">0.51</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">block</span><span class="p">()</span>
+
+<span class="c1"># decision variables</span>
+<span class="n">m</span><span class="o">.</span><span class="n">q1</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">q2</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># objective</span>
+<span class="n">m</span><span class="o">.</span><span class="n">lnR</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">objective</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">q1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">)</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">q2</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pmo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+
+<span class="c1"># conic constraints</span>
+<span class="n">m</span><span class="o">.</span><span class="n">t1</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">primal_exponential</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">b</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">q1</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">t2</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">primal_exponential</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">q2</span><span class="p">)</span>
+
+<span class="c1"># solve with &#39;mosek_direct&#39; or &#39;gurobi_direct&#39;</span>
+<span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;mosek_direct&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">lnR</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>0.0002000132693095024
+</pre></div>
+</div>
+</div>
+</div>
 </section>
 <section id="example-2-luenberger-s-betting-wheel">
 <h2>Example 2: Luenberger’s Betting Wheel<a class="headerlink" href="#example-2-luenberger-s-betting-wheel" title="Permalink to this heading">#</a></h2>
@@ -832,12 +920,44 @@ q_i &amp; \leq \ln(R_i) \\
 <li><p><a class="reference external" href="https://www.nsm.buffalo.edu/~hassard/458/spreadsheets/betting_wheel.html">https://www.nsm.buffalo.edu/~hassard/458/spreadsheets/betting_wheel.html</a></p></li>
 <li><p><a class="reference external" href="https://www.math.nyu.edu/~kohn/undergrad.finance/2003/hw2.pdf">https://www.math.nyu.edu/~kohn/undergrad.finance/2003/hw2.pdf</a></p></li>
 </ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">block</span><span class="p">()</span>
+
+<span class="c1"># decision variables</span>
+<span class="n">m</span><span class="o">.</span><span class="n">q1</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">q2</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">q3</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">()</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># objective</span>
+<span class="n">m</span><span class="o">.</span><span class="n">lnR</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">objective</span><span class="p">(</span><span class="n">p</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">q1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">)</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">q2</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pmo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+
+<span class="c1"># conic constraints</span>
+<span class="n">m</span><span class="o">.</span><span class="n">t1</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">primal_exponential</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">b</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">q1</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">t2</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">primal_exponential</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">q2</span><span class="p">)</span>
+
+<span class="c1"># solve with &#39;mosek_direct&#39; or &#39;gurobi_direct&#39;</span>
+<span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;mosek_direct&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">lnR</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
 </section>
 <section id="example-3-volatility-pumping-with-index-funds">
 <h2>Example 3: Volatility Pumping with Index Funds<a class="headerlink" href="#example-3-volatility-pumping-with-index-funds" title="Permalink to this heading">#</a></h2>
+<p>Following Luenberger Chapter 6, Thorp, Cajas.</p>
 </section>
 <section id="example-4-portfolio-design-with-drawdown-constraints">
 <h2>Example 4: Portfolio Design with Drawdown Constraints<a class="headerlink" href="#example-4-portfolio-design-with-drawdown-constraints" title="Permalink to this heading">#</a></h2>
+<p>Following Busseti, Boyd (2016)</p>
 </section>
 <section id="relationship-with-relative-entropy-optimization">
 <h2>Relationship with Relative Entropy Optimization<a class="headerlink" href="#relationship-with-relative-entropy-optimization" title="Permalink to this heading">#</a></h2>
@@ -847,6 +967,14 @@ q_i &amp; \leq \ln(R_i) \\
 </section>
 <section id="bibliographic-notes">
 <h2>Bibliographic Notes<a class="headerlink" href="#bibliographic-notes" title="Permalink to this heading">#</a></h2>
+<p>The Kelly Criterion has been included in many tutorial introductions to finance and probability, and the subject of popular accounts.</p>
+<blockquote>
+<div><p>Poundstone, W. (2010). Fortune’s formula: The untold story of the scientific betting system that beat the casinos and Wall Street. Hill and Wang.</p>
+</div></blockquote>
+<blockquote>
+<div><p><a class="reference external" href="https://en.wikipedia.org/wiki/Kelly_criterion">https://en.wikipedia.org/wiki/Kelly_criterion</a></p>
+</div></blockquote>
+<p>The utility of conic programming to solve problems involving log growth is more recent. Here are some representative papers.</p>
 <blockquote>
 <div><p>Cajas, D. (2021). Kelly Portfolio Optimization: A Disciplined Convex Programming Framework. Available at SSRN 3833617. <a class="reference external" href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3833617">https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3833617</a></p>
 </div></blockquote>
@@ -855,9 +983,6 @@ q_i &amp; \leq \ln(R_i) \\
 </div></blockquote>
 <blockquote>
 <div><p>Fu, A., Narasimhan, B., &amp; Boyd, S. (2017). CVXR: An R package for disciplined convex optimization. arXiv preprint arXiv:1711.07582. <a class="reference external" href="https://arxiv.org/abs/1711.07582">https://arxiv.org/abs/1711.07582</a></p>
-</div></blockquote>
-<blockquote>
-<div><p>Poundstone, W. (2010). Fortune’s formula: The untold story of the scientific betting system that beat the casinos and Wall Street. Hill and Wang.</p>
 </div></blockquote>
 </section>
 </section>
