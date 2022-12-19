@@ -11,7 +11,7 @@
 # 
 # Among the reasons why Kelly was neglected by investors were high profile critiques by the most famous economist of the 20th Century, Paul Samuelson. Samuelson objected on several grounds, among them is a lack of risk aversion that results in large bets and risky short term behavior, and that Kelly's result is applicable to only one of many utility functions that describe investor preferences. The controversy didn't end there, however, as other academic economists, including Harry Markowitz, and practitioners found ways to adapt the Kelly criterion to investment funds.
 # 
-# This notebook presents solutions to Kelly's problem and related applications the using exponential cones. A significant feature of this notebook is the the inclusion of a risk constraints recently proposed by Boyd and coworkers. These notes are based on recent papers such as Cajas (2021), Busseti, Ryu and Boyd (2016), Fu, Narasimhan, and Boyd (2017) and applied to examples presented by Luenberger (1999, 2013), and others. Additional bibliographic notes are at the end of the notebook.
+# This notebook presents solutions to Kelly's problem and related applications the using exponential cones. A significant feature of this notebook is the the inclusion of a risk constraints recently proposed by Boyd and coworkers. These notes are based on recent papers such as Cajas (2021), Busseti, Ryu and Boyd (2016), Fu, Narasimhan, and Boyd (2017) and applied to examples presented by Luenberger (1999, 2013), and others. Additional bibliographic notes are provided at the end of the notebook.
 
 # In[1]:
 
@@ -822,6 +822,10 @@ ax[1].set_ylim(0, )
 fig.tight_layout()
 
 
+# ## Extensions
+# 
+# 1. The examples cited in this notebook assume knowledge of the probability mass distribution. Recent work by Sun and Boyd (2018) and Hsieh (2022) suggest models for finding investment strategies for cases where the distributions are not perfectly known. They call the "distributional robust Kelly gambling." A useful extension to this notebook would be to demonstrate a robust solution to one or more of the examples.
+
 # ## Bibliographic Notes
 # 
 # The Kelly Criterion has been included in many tutorial introductions to finance and probability, and the subject of popular accounts.
@@ -852,6 +856,11 @@ fig.tight_layout()
 # 
 # > Fu, A., Narasimhan, B., & Boyd, S. (2017). CVXR: An R package for disciplined convex optimization. arXiv preprint arXiv:1711.07582. https://arxiv.org/abs/1711.07582
 # 
+# > Sun, Q., & Boyd, S. (2018). Distributional robust Kelly gambling. arXiv preprint arXiv: 1812.10371. https://web.stanford.edu/~boyd/papers/pdf/robust_kelly.pdf
+# 
+# The recent work by CH Hsieh extends these concepts in important ways for real-world implementation.
+# 
+# > Hsieh, C. H. (2022). On Solving Robust Log-Optimal Portfolio: A Supporting Hyperplane Approximation Approach. arXiv preprint arXiv:2202.03858. https://arxiv.org/pdf/2202.03858
 # 
 
 # In[ ]:
