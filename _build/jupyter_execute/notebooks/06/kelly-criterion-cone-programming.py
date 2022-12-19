@@ -82,7 +82,7 @@ helper.install_mosek()
 # \end{align}
 # $$
 # 
-# The gross returns are then
+# The gross returns are 
 # 
 # \begin{align}
 # R_k = \begin{cases}
@@ -103,7 +103,7 @@ helper.install_mosek()
 # 
 # $$w^{opt} = p - \frac{1-p}{b}$$
 # 
-# We can use this analytical solution to validate the solution to this problem using conic programming. An exponential cone is a convex set $K_{exp} = \{(r, x, y)\}$ such that
+# We can use this analytical solution to validate a solution to this problem using conic programming. An exponential cone is a convex set $K_{exp} = \{(r, x, y)\}$ such that
 # 
 # $$r \geq x \exp{\frac{y}{x}}$$ 
 # 
@@ -174,11 +174,11 @@ print(f"Analytical solution = {w_analytical: 0.4f}")
 # 
 # $$\mathbb{E}[R^{-\lambda}] \leq 1$$
 # 
-# where $\lambda$ is a risk-aversion parameter. For the case considered here, there are two outcomes with known probabilities so this becomes
+# where $\lambda \geq 0$ is a risk-aversion parameter. For the case considered here, there are two outcomes with known probabilities so this becomes
 # 
 # $$p_1 R_1^{-\lambda} + p_2 R_2^{-\lambda} \leq 1$$
 # 
-# Choosing $\lambda > 0$ requires outcomes with low return to occur with low probability, the the effect increasing for larger values of $\lambda$.  When $\lambda=0$ the constraint is always satisfied and no risk-aversion is in effect.  There is always a feasible solution found by setting the bet size $w=0$ which gives $R_1 = 1$ and $R_2 = 0$.
+# When $\lambda=0$ the constraint is always satisfied and no risk-aversion is in effect. Choosing $\lambda > 0$ requires outcomes with low return to occur with low probability, the the effect increasing for larger values of $\lambda$.    There is always a feasible solution found by setting the bet size $w=0$ which gives $R_1 = 1$ and $R_2 = 0$.
 # 
 # This constraint can be reformulated using exponential cones. Rewriting each term as an exponential results gives
 # 
@@ -198,7 +198,7 @@ print(f"Analytical solution = {w_analytical: 0.4f}")
 # \end{align}
 # $$
 # 
-# Putting this all together, given probability $p$, odds $b$, and risk-aversion parameter $\lambda \geq 0$, the risk-constrained Kelly problem is given by conic program
+# Putting this all together, given probability $p$, odds $b$, and risk-aversion parameter $\lambda \geq 0$, the risk-constrained Kelly bet is a solution to the conic program
 # 
 # $$
 # \begin{align}
@@ -224,7 +224,6 @@ import numpy as np
 b = 2
 p = 0.51
 lambd = 2
-
 
 # conic programming solution to Kelly's problem 
 def kelly_rck(p, b, lambd):
@@ -255,12 +254,12 @@ def kelly_rck(p, b, lambd):
 
     return m.w()
 
-w_rck = kelly_rck(p, b, lambd)
-print(f"Risk Constrainend Solution = {w_rck: 0.4f}")
-
 # solution to Kelly's problem
 w_analytical = p - (1 - p)/b
-print(f"Analytical solution = {w_analytical: 0.4f}")
+print(f"Analytical Solution = {w_analytical: 0.4f}")
+
+w_rck = kelly_rck(p, b, lambd)
+print(f"Risk Constrainend Solution = {w_rck: 0.4f}")
 
 
 # ### Simulation
@@ -295,11 +294,7 @@ def kelly_sim(p, b, w, K=None, ax=None):
     ax.set_xlabel('k')
     ax.grid(True)
     ax.set_ylim(0.01, 1e6)
-
-
-# In[5]:
-
-
+    
 fig, ax = plt.subplots(1, 2, figsize=(12, 4))
 kelly_sim(p, b, kelly(p, b), 100, ax[0])
 
@@ -364,7 +359,7 @@ kelly_sim(p, b, kelly_rck(p, b, lambd), 100, ax[1])
 # 
 # The solution of this program is shown below.
 
-# In[6]:
+# In[5]:
 
 
 # describe the betting wheel
@@ -375,7 +370,7 @@ sectors = {
 }
 
 
-# In[7]:
+# In[6]:
 
 
 import pyomo.kernel as pmo
@@ -407,10 +402,9 @@ def wheel(sectors):
         
 m = wheel(sectors)
 
+print(f"Expected Gross Return = {np.exp(m.ElogR()): 0.5f}\n")
 for s in sectors.keys():
     print(f"Sector {s}:  p = {sectors[s]['p']:0.4f}   b = {sectors[s]['b']:0.2f}   w = {m.w[s]():0.5f}")
-    
-print(np.exp(m.ElogR()))
 
 
 # ### Risk Constraints
@@ -452,7 +446,7 @@ print(np.exp(m.ElogR()))
 # $$
 # 
 
-# In[8]:
+# In[7]:
 
 
 import pyomo.kernel as pmo
@@ -491,15 +485,17 @@ def wheel_rsk(sectors, lambd=0):
         
 m = wheel_rsk(sectors, 0)
 
+print(f"Expected Gross Return = {np.exp(m.ElogR()): 0.5f}\n")
 for s in sectors.keys():
     print(f"Sector {s}:  p = {sectors[s]['p']:0.4f}   b = {sectors[s]['b']:0.2f}   w = {m.w[s]():0.5f}")
     
-print(np.exp(m.ElogR()))
 
 
-# ### Influence of Risk Aversion
+# ### Effect of Risk Aversion
+# 
+# The following cell demonstrates the effect of increasing the risk aversion parameter $\lambda$.
 
-# In[9]:
+# In[8]:
 
 
 import matplotlib.pyplot as plt
@@ -576,7 +572,7 @@ fig.tight_layout()
 # 
 # The risk constraint is satisfied for any $w_n$ if the risk aversion parameter $\lambda=0$. For any value $\lambda > 0$ the risk constraint has a feasible solution $w_n=0$ for all $n \in N$. Recasting as a sum of exponentials,
 # 
-# $$\frac{1}{T} \sum_{t\in T} e^{- \lambda\log(R_1)} \leq R_f^{-\lambda}$$
+# $$\frac{1}{T} \sum_{t\in T} e^{- \lambda\log(R_t)} \leq R_f^{-\lambda}$$
 # 
 # Using the $q_t \leq \log(R_t)$ as used in the examples above, and $u_t \geq e^{- \lambda q_t}$, we get the risk constrained model optimal log growth. 
 # 
@@ -600,13 +596,13 @@ fig.tight_layout()
 # 
 # We begin by reading recennt historical prices for a selected set of trading symbols using [yfinance](https://github.com/ranaroussi/yfinance).
 
-# In[10]:
+# In[9]:
 
 
 get_ipython().system('pip install yfinance --upgrade -q')
 
 
-# In[11]:
+# In[10]:
 
 
 import matplotlib.pyplot as plt
@@ -642,7 +638,7 @@ R = S/S.shift(1)
 R.dropna(inplace=True)
 
 
-# In[12]:
+# In[11]:
 
 
 # plot
@@ -656,7 +652,7 @@ fig.tight_layout()
 # 
 # The Pyomo implementation for the risk-constrained Kelly portfolio accepts three parameters, the risk-free gross returns $R_f$, the maximum equity multiplier, and the risk-aversion parameter.
 
-# In[13]:
+# In[12]:
 
 
 def kelly_portfolio(R, Rf=1, EM=1, lambd=0):
@@ -728,7 +724,7 @@ kelly_report(m)
 
 # ### Effects of the Risk-Aversion Parameter
 
-# In[14]:
+# In[13]:
 
 
 lambd = 10**np.linspace(0, 3)
@@ -736,7 +732,7 @@ lambd = 10**np.linspace(0, 3)
 results = [kelly_portfolio(R, Rf=1, EM=1, lambd=_) for _ in lambd]
 
 
-# In[15]:
+# In[14]:
 
 
 import matplotlib.pyplot as plt
@@ -761,7 +757,7 @@ fig.tight_layout()
 
 # ### Effects of the Equity Multiplier Parameter
 
-# In[16]:
+# In[15]:
 
 
 EM = np.linspace(0.0, 2.0)
@@ -769,7 +765,7 @@ EM = np.linspace(0.0, 2.0)
 results = [kelly_portfolio(R, Rf=1, EM=_, lambd=10) for _ in EM]
 
 
-# In[17]:
+# In[16]:
 
 
 import matplotlib.pyplot as plt
@@ -794,7 +790,7 @@ fig.tight_layout()
 
 # ### Effect of Risk-free Interest Rate
 
-# In[18]:
+# In[17]:
 
 
 Rf = np.exp(np.log(1 + np.linspace(0, 0.20))/252)
@@ -802,7 +798,7 @@ Rf = np.exp(np.log(1 + np.linspace(0, 0.20))/252)
 results = [kelly_portfolio(R, Rf=_, EM=1, lambd=10) for _ in Rf]
 
 
-# In[19]:
+# In[18]:
 
 
 import matplotlib.pyplot as plt
