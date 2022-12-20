@@ -5,9 +5,9 @@
 # 
 # The Kelly Criterion determines the size of a bet in a repeated game with binary outcomes. The analysis was proposed in 1956 by John Kelly at Bell Laboratories. Kelly identified an analogy between gambling on binary outcomes and Claude Shannon's work on encoding information for transmission on noisy channels. Kelly used the analogy to show
 # 
-# > The maximum exponential rate of growth of he gambler's capital is equal to the rate of transmission of information over the channel.
+# > The maximum exponential rate of growth of the gambler's capital is equal to the rate of transmission of information over the channel.
 # 
-# This idea actually predates Kelly. In 1738, for instance, Daniel Bernoulli offered a resolution to the St. Petersburg paradox previously proposed by his cousin, Nicholas Bernoulli. The resolution was to allocate bets among investments to produce the the highest geometric mean of returns. As popularized by William Poundstone in his book "Fortune's Formula", Kelly's analysis was quickly picked up by gamblers with colorful adventures in Las Vega by early adopters, but the result laid in obscurity among investors until much later.
+# This idea actually predates Kelly. In 1738, Daniel Bernoulli offered a resolution to the [St. Petersburg paradox](https://plato.stanford.edu/entries/paradox-stpetersburg/) proposed by his cousin, Nicholas Bernoulli. The resolution was to allocate bets among alternative outcomes to produce the the highest geometric mean of returns. Kelly's analysis has beenn popularized by William Poundstone in his book "Fortune's Formula", and picked up by gamblers with colorful adventures in Las Vega by early adopters though the result laid in obscurity among investors until much later.
 # 
 # This notebook presents solutions to Kelly's problem using exponential cones. A significant feature of this notebook is the the inclusion of a risk constraints recently proposed by Boyd and coworkers. These notes are based on recent papers by Busseti, Ryu and Boyd (2016), Fu, Narasimhan, and Boyd (2017). Additional bibliographic notes are provided at the end of the notebook.
 
@@ -32,7 +32,7 @@ helper.install_mosek()
 # 
 # $$W_n = W_{n-1} R_n $$
 # 
-# After $N$ stages
+# After $N$ stages this gives
 # 
 # $$
 # \begin{align}
@@ -61,35 +61,37 @@ helper.install_mosek()
 # \end{align}
 # $$
 # 
-# the optimal log growth return will almost surely result in higher wealth than any other policy.
+# such that the optimal log growth return will almost surely result in higher wealth than any other policy.
 
-# ## Kelly's Criterion
+# ## Modeling a Game with Two Outcomes
 # 
-# ### Modeling
+# The classical presentation of the Kelly Criterion is to consider repeated wagers on a gambling game with just two outcomes. For each stage, a wager of one unit returns $1+b$ with probability $p$ if successful, otherwise the wager returns nothing. The number $b$ refers to the "odds" of game. The problem is to determine what fraction of the gambler's wealth should be wagered on each instance of the game.
 # 
-# The classical presentation of the Kelly Criterion is to consider repeated wagers on a gambling proposition. For each stage, a wager of one unit returns $1+b$ with probability $p$ if successful, otherwise returns nothing. The problem is to determine what fraction of the gambler's wealth should be wagered at each stage.
+# ![](kelly-criterion.png)
 # 
-# Let $w$ be the fraction of wealth that is wagered at each stage. The two possible outcomes at stage $k$ are
+# Let $w$ be the fraction of wealth that is wagered on each instance. The two possible outcomes at stage $k$ are
 # 
 # $$
 # \begin{align}
 # W_k = \begin{cases} 
 # (1 + bw) W_{k-1} && \text{probability } p\\
-# (1 - w) W_{k=1} && \text{probability }1-p
+# (1 - w) W_{k-1} && \text{probability }1-p
 # \end{cases}
 # \end{align}
 # $$
 # 
 # The gross returns are 
 # 
+# $$
 # \begin{align}
 # R_k = \begin{cases}
 # 1 + b w & \text{probability }p \\
 # 1 - w & \text{probability }1-p \\
 # \end{cases}
 # \end{align}
+# $$
 # 
-# Given these outcomes, the objective is to the maximize the expected log return
+# The objective is to the maximize the expected log return
 # 
 # $$
 # \begin{align}
@@ -97,11 +99,13 @@ helper.install_mosek()
 # \end{align}
 # $$
 # 
-# The analytical solution to this problem is
+# The well-known analytical solution to this problem is
 # 
 # $$w^{opt} = p - \frac{1-p}{b}$$
 # 
-# We can use this analytical solution to validate a solution to this problem using conic programming. An exponential cone is a convex set $K_{exp} = \{(r, x, y)\}$ such that
+# We can use this analytical solution to validate a solution to this problem using conic programming. 
+# 
+# An [exponential cone](https://docs.mosek.com/modeling-cookbook/expo.html) is a convex set $K_{exp} = \{(r, x, y)\}$ such that
 # 
 # $$r \geq x \exp{\frac{y}{x}}$$ 
 # 
@@ -166,17 +170,17 @@ w_analytical = p - (1 - p)/b
 print(f"Analytical solution = {w_analytical: 0.4f}")
 
 
-# ### Risk-Constraints and Kelly Criterion
+# ## Risk-Constraints and Kelly Criterion
 # 
 # Following Busseti, Ryu, and Boyd (2016), for the risk-constrained case we add a constraint
 # 
 # $$\mathbb{E}[R^{-\lambda}] \leq 1$$
 # 
-# where $\lambda \geq 0$ is a risk-aversion parameter. For the case considered here, there are two outcomes with known probabilities so this becomes
+# where $\lambda \geq 0$ is a risk-aversion parameter. For the case considered here there are two outcomes with known probabilities, so this becomes
 # 
 # $$p_1 R_1^{-\lambda} + p_2 R_2^{-\lambda} \leq 1$$
 # 
-# When $\lambda=0$ the constraint is always satisfied and no risk-aversion is in effect. Choosing $\lambda > 0$ requires outcomes with low return to occur with low probability, the the effect increasing for larger values of $\lambda$.    There is always a feasible solution found by setting the bet size $w=0$ which gives $R_1 = 1$ and $R_2 = 0$.
+# When $\lambda=0$ the constraint is always satisfied and no risk-aversion is in effect. Choosing $\lambda > 0$ requires outcomes with low return to occur with low probability, the the effect increasing for larger values of $\lambda$. A feasible solution can always be found by setting the bet size $w=0$ to give $R_1 = 1$ and $R_2 = 0$.
 # 
 # This constraint can be reformulated using exponential cones. Rewriting each term as an exponential results gives
 # 
@@ -224,7 +228,7 @@ p = 0.51
 lambd = 2
 
 # conic programming solution to Kelly's problem 
-def kelly_rck(p, b, lambd):
+def kelly_rc(p, b, lambd):
 
     m = pmo.block()
 
@@ -256,48 +260,49 @@ def kelly_rck(p, b, lambd):
 w_analytical = p - (1 - p)/b
 print(f"Analytical Solution = {w_analytical: 0.4f}")
 
-w_rck = kelly_rck(p, b, lambd)
+w_rck = kelly_rc(p, b, lambd)
 print(f"Risk Constrainend Solution = {w_rck: 0.4f}")
 
 
-# ### Simulation
+# ## Simulation
 # 
 # The following cells simulate the performance of the Kelly Criterion both with and without risk constraints. Compare the cases by comparing the log mean growth, which is reduced by presence of risk constraints, and the portfolio draw down for the most pathological cases, which is improved by the presence of risk constraints.
 
-# In[4]:
+# In[7]:
 
 
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy.random import uniform
 
-def kelly_sim(p, b, w, K=None, ax=None):
-    m = p*np.log((1 + b*w)) + (1 - p)*np.log((1 - w))    
+def kelly_sim(p, b, lambd=0, K=None, ax=None):
+    w = kelly_rc(p, b, lambd)
+    m = p*np.log((1 + b*w)) + (1 - p)*np.log((1 - w))   
+    
     if K is None:
-        K = int(np.log(2)/m)
+        K = int(np.log(10)/m)
     if ax is None:
-        fig, ax = plt.subplots(1, 1)
+        _, ax = plt.subplots(1, 1)
+        
     # monte carlo simulation and plotting
     for n in range(0, 100):
         W = [1]
-        for k in range(0,K):
-            if uniform() <= p:
-                W.append(W[-1]*(1 + w*b))
-            else:
-                W.append(W[-1]*(1 - w))
-        ax.semilogy(W, alpha=0.2)
+        R = [[1 - w, 1 + w*b][z] for z in np.random.binomial(1, p, size=K)]
+        R.insert(0, 1)
+        ax.semilogy(np.cumprod(R), alpha=0.3)
 
-    ax.semilogy(np.linspace(0,K), np.exp(m*np.linspace(0,K)), 'r', lw=3)  
-    ax.set_title(f'Kelly Criterion w = {w:0.3f}')
+    ax.semilogy(np.linspace(0,K), np.exp(m*np.linspace(0, K)), 'r', lw=3)  
+    ax.set_title(f'Kelly Criterion: E[logR] = {np.exp(m):0.5f}')
+    s = f" p = {p:0.3f} \n b = {b:0.3f} \n $\lambda$ = {lambd:0.3f} \n w = {w:0.3f}"
+    ax.text(0.1, 0.95, s, transform=ax.transAxes, va="top")   
     ax.set_xlabel('k')
+    ax.set_ylabel('Wealth')
     ax.grid(True)
     ax.set_ylim(0.01, 1e6)
     
 fig, ax = plt.subplots(1, 2, figsize=(12, 4))
-kelly_sim(p, b, kelly(p, b), 100, ax[0])
 
-lambd=2
-kelly_sim(p, b, kelly_rck(p, b, lambd), 100, ax[1])
+kelly_sim(p, b, lambd=0, K=80, ax=ax[0])
+kelly_sim(p, b, lambd=3, K=80, ax=ax[1])
 
 
 # ## Bibliographic Notes
@@ -317,8 +322,6 @@ kelly_sim(p, b, kelly_rck(p, b, lambd), 100, ax[1])
 # > Busseti, E., Ryu, E. K., & Boyd, S. (2016). Risk-constrained Kelly gambling. The Journal of Investing, 25(3), 118-134. https://arxiv.org/pdf/1603.06183.pdf
 # 
 # > Fu, A., Narasimhan, B., & Boyd, S. (2017). CVXR: An R package for disciplined convex optimization. arXiv preprint arXiv:1711.07582. https://arxiv.org/abs/1711.07582
-# 
-# > Sun, Q., & Boyd, S. (2018). Distributional robust Kelly gambling. arXiv preprint arXiv: 1812.10371. https://web.stanford.edu/~boyd/papers/pdf/robust_kelly.pdf
 # 
 
 # In[ ]:

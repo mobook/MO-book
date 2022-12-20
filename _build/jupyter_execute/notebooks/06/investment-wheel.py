@@ -1,17 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Kelly Criterion and Optimal Growth Portfolios
-# 
-# The Kelly Criterion determines the size of a bet in a repeated game with binary outcomes. The analysis was proposed in 1956 by John Kelly at Bell Laboratories. Kelly identified an analogy between gambling on binary outcomes and Claude Shannon's work on encoding information for transmission on noisy channels. Kelly used the analogy to show
-# 
-# > The maximum exponential rate of growth of he gambler's capital is equal to the rate of transmission of information over the channel.
-# 
-# This idea actually predates Kelly. In 1738, for instance, Daniel Bernoulli offered a resolution to the St. Petersburg paradox previously proposed by his cousin, Nicholas Bernoulli. The resolution was to allocate bets among investments to produce the the highest geometric mean of returns. As popularized by William Poundstone in his book "Fortune's Formula", Kelly's analysis was quickly picked up by gamblers with colorful adventures in Las Vega by early adopters, but the result laid in obscurity among investors until much later.
-# 
-# Among the reasons why Kelly was neglected by investors were high profile critiques by the most famous economist of the 20th Century, Paul Samuelson. Samuelson objected on several grounds, among them is a lack of risk aversion that results in large bets and risky short term behavior, and that Kelly's result is applicable to only one of many utility functions that describe investor preferences. The controversy didn't end there, however, as other academic economists, including Harry Markowitz, and practitioners found ways to adapt the Kelly criterion to investment funds.
-# 
-# This notebook presents solutions to Kelly's problem and related applications the using exponential cones. A significant feature of this notebook is the the inclusion of a risk constraints recently proposed by Boyd and coworkers. These notes are based on recent papers such as Cajas (2021), Busseti, Ryu and Boyd (2016), Fu, Narasimhan, and Boyd (2017) and applied to examples presented by Luenberger (1999, 2013), and others. Additional bibliographic notes are provided at the end of the notebook.
+# # Luenberger's Investment Wheel
 
 # In[1]:
 
