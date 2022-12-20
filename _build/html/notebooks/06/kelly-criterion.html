@@ -692,8 +692,8 @@ title="Print to PDF"
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#modeling-a-game-with-two-outcomes">
-   Modeling a Game with Two Outcomes
+  <a class="reference internal nav-link" href="#modeling-a-game-with-binary-outcomes">
+   Modeling a Game with Binary Outcomes
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
@@ -736,8 +736,8 @@ title="Print to PDF"
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#modeling-a-game-with-two-outcomes">
-   Modeling a Game with Two Outcomes
+  <a class="reference internal nav-link" href="#modeling-a-game-with-binary-outcomes">
+   Modeling a Game with Binary Outcomes
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
@@ -827,9 +827,9 @@ W_N &amp; = W_0 \prod_{n=1}^N R_n
 \]</div>
 <p>such that the optimal log growth return will almost surely result in higher wealth than any other policy.</p>
 </section>
-<section id="modeling-a-game-with-two-outcomes">
-<h2>Modeling a Game with Two Outcomes<a class="headerlink" href="#modeling-a-game-with-two-outcomes" title="Permalink to this heading">#</a></h2>
-<p>The classical presentation of the Kelly Criterion is to consider repeated wagers on a gambling game with just two outcomes. For each stage, a wager of one unit returns <span class="math notranslate nohighlight">\(1+b\)</span> with probability <span class="math notranslate nohighlight">\(p\)</span> if successful, otherwise the wager returns nothing. The number <span class="math notranslate nohighlight">\(b\)</span> refers to the “odds” of game. The problem is to determine what fraction of the gambler’s wealth should be wagered on each instance of the game.</p>
+<section id="modeling-a-game-with-binary-outcomes">
+<h2>Modeling a Game with Binary Outcomes<a class="headerlink" href="#modeling-a-game-with-binary-outcomes" title="Permalink to this heading">#</a></h2>
+<p>The classical presentation of the Kelly Criterion is to consider repeated wagers on a gambling game with binary outcomes. For each stage, a wager of one unit returns <span class="math notranslate nohighlight">\(1+b\)</span> with probability <span class="math notranslate nohighlight">\(p\)</span> if successful, otherwise the wager returns nothing. The number <span class="math notranslate nohighlight">\(b\)</span> refers to the “odds” of game. The problem is to determine what fraction of the gambler’s wealth should be wagered on each instance of the game.</p>
 <p><img alt="" src="../../_images/kelly-criterion.png" /></p>
 <p>Let <span class="math notranslate nohighlight">\(w\)</span> be the fraction of wealth that is wagered on each instance. The two possible outcomes at stage <span class="math notranslate nohighlight">\(k\)</span> are</p>
 <div class="math notranslate nohighlight">
@@ -860,7 +860,7 @@ R_k = \begin{cases}
 \end{split}\]</div>
 <p>The well-known analytical solution to this problem is</p>
 <div class="math notranslate nohighlight">
-\[w^{opt} = p - \frac{1-p}{b}\]</div>
+\[\begin{split}w^{opt} = \begin{cases} p - \frac{1-p}{b} &amp; p(b-1) &gt; 1 \\ 0 &amp; p(b-1)\leq 1 \end{cases}\end{split}\]</div>
 <p>We can use this analytical solution to validate a solution to this problem using conic programming.</p>
 <p>An <a class="reference external" href="https://docs.mosek.com/modeling-cookbook/expo.html">exponential cone</a> is a convex set <span class="math notranslate nohighlight">\(K_{exp} = \{(r, x, y)\}\)</span> such that</p>
 <div class="math notranslate nohighlight">
@@ -916,14 +916,14 @@ R_k = \begin{cases}
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Conic programming solution = </span><span class="si">{</span><span class="n">w_conic</span><span class="si">:</span><span class="s2"> 0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="c1"># analytical solution to Kelly&#39;s problem</span>
-<span class="n">w_analytical</span> <span class="o">=</span> <span class="n">p</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span><span class="o">/</span><span class="n">b</span>
+<span class="n">w_analytical</span> <span class="o">=</span> <span class="n">p</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span><span class="o">/</span><span class="n">b</span> <span class="k">if</span> <span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="n">b</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analytical solution = </span><span class="si">{</span><span class="n">w_analytical</span><span class="si">:</span><span class="s2"> 0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Conic programming solution =  0.2650
-Analytical solution =  0.2650
+Analytical solution =  0.0000
 </pre></div>
 </div>
 </div>
@@ -975,7 +975,7 @@ u_1 + u_2 &amp; \leq 1 \\
 <span class="c1"># parameter values</span>
 <span class="n">b</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="n">p</span> <span class="o">=</span> <span class="mf">0.51</span>
-<span class="n">lambd</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">lambd</span> <span class="o">=</span> <span class="mi">3</span>
 
 <span class="c1"># conic programming solution to Kelly&#39;s problem </span>
 <span class="k">def</span> <span class="nf">kelly_rc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">lambd</span><span class="p">):</span>
@@ -1007,17 +1007,17 @@ u_1 + u_2 &amp; \leq 1 \\
     <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">()</span>
 
 <span class="c1"># solution to Kelly&#39;s problem</span>
-<span class="n">w_analytical</span> <span class="o">=</span> <span class="n">p</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span><span class="o">/</span><span class="n">b</span>
+<span class="n">w_analytical</span> <span class="o">=</span> <span class="n">p</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span><span class="o">/</span><span class="n">b</span> <span class="k">if</span> <span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="n">b</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analytical Solution = </span><span class="si">{</span><span class="n">w_analytical</span><span class="si">:</span><span class="s2"> 0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-<span class="n">w_rck</span> <span class="o">=</span> <span class="n">kelly_rc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">lambd</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Risk Constrainend Solution = </span><span class="si">{</span><span class="n">w_rck</span><span class="si">:</span><span class="s2"> 0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">w_rc</span> <span class="o">=</span> <span class="n">kelly_rc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">lambd</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Risk Constrainend Solution = </span><span class="si">{</span><span class="n">w_rc</span><span class="si">:</span><span class="s2"> 0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Analytical Solution =  0.2650
-Risk Constrainend Solution =  0.1753
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Analytical Solution =  0.0000
+Risk Constrainend Solution =  0.1307
 </pre></div>
 </div>
 </div>

@@ -63,9 +63,9 @@ helper.install_mosek()
 # 
 # such that the optimal log growth return will almost surely result in higher wealth than any other policy.
 
-# ## Modeling a Game with Two Outcomes
+# ## Modeling a Game with Binary Outcomes
 # 
-# The classical presentation of the Kelly Criterion is to consider repeated wagers on a gambling game with just two outcomes. For each stage, a wager of one unit returns $1+b$ with probability $p$ if successful, otherwise the wager returns nothing. The number $b$ refers to the "odds" of game. The problem is to determine what fraction of the gambler's wealth should be wagered on each instance of the game.
+# The classical presentation of the Kelly Criterion is to consider repeated wagers on a gambling game with binary outcomes. For each stage, a wager of one unit returns $1+b$ with probability $p$ if successful, otherwise the wager returns nothing. The number $b$ refers to the "odds" of game. The problem is to determine what fraction of the gambler's wealth should be wagered on each instance of the game.
 # 
 # ![](kelly-criterion.png)
 # 
@@ -101,7 +101,7 @@ helper.install_mosek()
 # 
 # The well-known analytical solution to this problem is
 # 
-# $$w^{opt} = p - \frac{1-p}{b}$$
+# $$w^{opt} = \begin{cases} p - \frac{1-p}{b} & p(b-1) > 1 \\ 0 & p(b-1)\leq 1 \end{cases}$$
 # 
 # We can use this analytical solution to validate a solution to this problem using conic programming. 
 # 
@@ -166,7 +166,7 @@ w_conic = kelly(p, b)
 print(f"Conic programming solution = {w_conic: 0.4f}")
 
 # analytical solution to Kelly's problem
-w_analytical = p - (1 - p)/b
+w_analytical = p - (1 - p)/b if p*(b-1) >= 1 else 0
 print(f"Analytical solution = {w_analytical: 0.4f}")
 
 
@@ -225,7 +225,7 @@ import numpy as np
 # parameter values
 b = 2
 p = 0.51
-lambd = 2
+lambd = 3
 
 # conic programming solution to Kelly's problem 
 def kelly_rc(p, b, lambd):
@@ -257,18 +257,18 @@ def kelly_rc(p, b, lambd):
     return m.w()
 
 # solution to Kelly's problem
-w_analytical = p - (1 - p)/b
+w_analytical = p - (1 - p)/b if p*(b-1) >= 1 else 0
 print(f"Analytical Solution = {w_analytical: 0.4f}")
 
-w_rck = kelly_rc(p, b, lambd)
-print(f"Risk Constrainend Solution = {w_rck: 0.4f}")
+w_rc = kelly_rc(p, b, lambd)
+print(f"Risk Constrainend Solution = {w_rc: 0.4f}")
 
 
 # ## Simulation
 # 
 # The following cells simulate the performance of the Kelly Criterion both with and without risk constraints. Compare the cases by comparing the log mean growth, which is reduced by presence of risk constraints, and the portfolio draw down for the most pathological cases, which is improved by the presence of risk constraints.
 
-# In[7]:
+# In[4]:
 
 
 import numpy as np
