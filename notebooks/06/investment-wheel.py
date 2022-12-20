@@ -34,4 +34,4 @@ for s in sectors.keys():
 ax.set_aspect(1)
 ax.axis("off")
 
-plt.savefig("investment-wheel.png")
+plt.savefig("investment-wheel.png", bbox_inches="tight", pad_inches=0)
