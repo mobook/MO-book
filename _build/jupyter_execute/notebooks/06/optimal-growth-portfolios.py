@@ -22,13 +22,87 @@ helper.install_pyomo()
 helper.install_mosek()
 
 
+# ## Financial Data Training Set
+
+# We begin by reading recennt historical prices for a selected set of trading symbols using [yfinance](https://github.com/ranaroussi/yfinance).
+
+# In[24]:
+
+
+# run this cell to install yfinance
+get_ipython().system('pip install yfinance --upgrade -q')
+
+
+# In[38]:
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+import pandas as pd
+import datetime
+import yfinance as yf
+
+symbols = {
+    '^GSPC': "S&P 500 Index",
+    'AXP': "American Express",
+    'AMGN': "Amgen",
+    'AAPL': "Apple",
+    'BA': "Boeing",
+    'CAT': "Caterpillar",
+    'CVX': "Chevron",
+    'JPM': "JPMorgan Chase",
+    'MCD': "McDonald's",
+    'MMM': "3 M",
+    'MSFT': "Microsoft",
+    'PG': "Proctor & Gamble",
+    'XOM': "ExxonMobil",
+}
+
+# years of testing and training data
+n_test = 1
+n_train = 2
+
+# get today's date
+today = datetime.datetime.today().date()
+
+# training data dates
+start = end - datetime.timedelta(int((n_test + n_train)*365))
+end = today - datetime.timedelta(int(n_test*365))
+
+# get training data
+data = [yf.download(symbol, start=start, end=end)["Adj Close"] for symbol in symbols]
+S = pd.concat(data, axis=1)
+S.columns = [symbol for symbol in symbols]
+
+# compute gross returns
+R = S/S.shift(1)
+R.dropna(inplace=True)
+
+
+# In[37]:
+
+
+# plot
+fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+
+S.divide(S.iloc[0]/100).plot(ax=ax[0], grid=True, title="Normalized Prices")
+ax[0].legend(loc="center left", bbox_to_anchor=(1.0, 0.5), prop={'size':8})
+
+R.plot(ax=ax[1], grid=True, title="Gross Returns", alpha=0.5).legend([])
+
+fig.tight_layout()
+
+
 # ## Portfolio Design for Optimal Growth
 
 # ### Model
 # 
-# Given the models developed for the examples above, we now consider a set $N$ of financial assets trading in efficient markets. The historical record consists of a matrix $R \in \mathbb{R}^{T\times N}$ of gross returns where $T$ is the set of observations. The weights $w_n \geq 0$ for $n\in N$ denote the fraction of the portfolio invested in each asset $n$. Any portion of the portfolio not invested in traded assets is assumed to have a gross risk-free return $R_f = 1 + r_f$ where $r_f$ is the return on a risk-free asset.
+# Here we are examining a set $N$ of financial assets trading in efficient markets. The historical record consists of a matrix $R \in \mathbb{R}^{T\times N}$ of gross returns where $T$ is the number of observations. 
 # 
-# Assuming the gross returns are independent and identically distributed random variates representative of future returns, the investment model becomes
+# The weights $w_n \geq 0$ for $n\in N$ denote the fraction of the portfolio invested in asset $n$. Any portion of the portfolio not invested in traded assets is assumed to have a gross risk-free return $R_f = 1 + r_f$, where $r_f$ is the return on a risk-free asset.
+# 
+# Assuming the gross returns are independent and identically distributed random variables, and the historical data set is representative of future returns, the investment model becomes
 # 
 # $$
 # \begin{align}
@@ -38,13 +112,13 @@ helper.install_mosek()
 # \end{align}
 # $$
 # 
-# Note this formulation allows the sum of weights $\sum_{n\in N} w_n$ to be greater than one. In that case the investor would be investing more than the value of the portfolio in traded assets. In other words the investor would be creating a leveraged portfolio by borrowing money at a rate $R_f$. 
+# Note this formulation allows the sum of weights $\sum_{n\in N} w_n$ to be greater than one. In that case the investor would be investing more than the value of the portfolio in traded assets. In other words the investor would be creating a leveraged portfolio by borrowing money at a rate $R_f$. To incorporate a constraint on the degree of leveraging, we introduce a constraint
 # 
 # $$\sum_{n\in N} w_n \leq E_M$$
 # 
 # where $E_M$ is the "equity multiplier." A value $E_M \leq 1$ restricts the total investment to be less than or equal to the equity available to the investor. A value $E_M > 1$ allows the investor to leverage the available equity by borrowing money at a gross rate $R_f = 1 + r_f$. 
 # 
-# Using techniques demonstrated in the examples above, this model can be reformulated with exponential cones.
+# Using techniques demonstrated in other examples, this model can be reformulated with exponential cones.
 # 
 # $$
 # \begin{align}
@@ -86,68 +160,14 @@ helper.install_mosek()
 # 
 # The following cells demonstrate an implementation of the model using the Pyomo kernel library and Mosek solver.
 
-# ### Data set
-# 
-# We begin by reading recennt historical prices for a selected set of trading symbols using [yfinance](https://github.com/ranaroussi/yfinance).
-
-# In[ ]:
-
-
-get_ipython().system('pip install yfinance --upgrade -q')
-
-
-# In[ ]:
-
-
-import matplotlib.pyplot as plt
-import numpy as np
-
-import pandas as pd
-import datetime
-import yfinance as yf
-
-symbols = {
-    '^GSPC': "S&P 500 Index",
-    'AAPL': "Apple",
-    'MCD': "McDonald's",
-    'MMM': "3 M",
-    'MSFT': "Microsoft",
-    'XOM': "ExxonMobil",
-}
-
-# end date is today
-end = datetime.datetime.today().date()
-
-# start date is n_years earlier
-n_years = 2
-start = end - datetime.timedelta(int(n_years*365))
-
-# get stock price data
-data = [yf.download(symbol, start=start, end=end)["Adj Close"] for symbol in symbols]
-S = pd.concat(data, axis=1)
-S.columns = [symbol for symbol in symbols]
-
-# get gross returns
-R = S/S.shift(1)
-R.dropna(inplace=True)
-
-
-# In[ ]:
-
-
-# plot
-fig, ax = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
-S.divide(S.iloc[0]/100).plot(ax=ax[0], grid=True, title="Normalized Prices")
-R.plot(ax=ax[1], grid=True, title="Gross Returns", alpha=0.5)
-fig.tight_layout()
-
-
 # ### Pyomo Implementation
 # 
 # The Pyomo implementation for the risk-constrained Kelly portfolio accepts three parameters, the risk-free gross returns $R_f$, the maximum equity multiplier, and the risk-aversion parameter.
 
-# In[ ]:
+# In[40]:
 
+
+import pyomo.kernel as pmo
 
 def kelly_portfolio(R, Rf=1, EM=1, lambd=0):
 
