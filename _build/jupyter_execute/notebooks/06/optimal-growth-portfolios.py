@@ -22,9 +22,11 @@ helper.install_pyomo()
 helper.install_mosek()
 
 
-# ## Financial Data Training Set
+# ## Financial Data
 
-# We begin by reading recennt historical prices for a selected set of trading symbols using [yfinance](https://github.com/ranaroussi/yfinance).
+# We begin by reading historical prices for a selected set of trading symbols using [yfinance](https://github.com/ranaroussi/yfinance). 
+# 
+# While it would be interesting to include an international selection of financial indices and assets, differences in trading and bank holidays would involve more elaborate coding. For that reason, the following cell has been restricted to indices and assets trading in U.S. markets.
 
 # In[24]:
 
@@ -33,7 +35,7 @@ helper.install_mosek()
 get_ipython().system('pip install yfinance --upgrade -q')
 
 
-# In[38]:
+# In[94]:
 
 
 import matplotlib.pyplot as plt
@@ -43,8 +45,14 @@ import pandas as pd
 import datetime
 import yfinance as yf
 
+# symbols as used by Yahoo Finance
 symbols = {
-    '^GSPC': "S&P 500 Index",
+    # selected indices
+    '^GSPC': "S&P 500",
+    '^IXIC': "Nasdaq",
+    '^DJI': "Dow Jones Industrial",
+    '^RUT': "Russell 2000",
+    # selected stocks
     'AXP': "American Express",
     'AMGN': "Amgen",
     'AAPL': "Apple",
@@ -71,16 +79,14 @@ start = end - datetime.timedelta(int((n_test + n_train)*365))
 end = today - datetime.timedelta(int(n_test*365))
 
 # get training data
-data = [yf.download(symbol, start=start, end=end)["Adj Close"] for symbol in symbols]
-S = pd.concat(data, axis=1)
-S.columns = [symbol for symbol in symbols]
+S = yf.download(list(symbols.keys()), start=start, end=end)["Adj Close"]
 
 # compute gross returns
 R = S/S.shift(1)
 R.dropna(inplace=True)
 
 
-# In[37]:
+# In[97]:
 
 
 # plot
@@ -164,7 +170,7 @@ fig.tight_layout()
 # 
 # The Pyomo implementation for the risk-constrained Kelly portfolio accepts three parameters, the risk-free gross returns $R_f$, the maximum equity multiplier, and the risk-aversion parameter.
 
-# In[40]:
+# In[121]:
 
 
 import pyomo.kernel as pmo
@@ -206,39 +212,57 @@ def kelly_portfolio(R, Rf=1, EM=1, lambd=0):
     return m
 
 def kelly_report(m):
-    s = ""
     #print report
-    s += f"\nRisk Free Return = {100*(np.exp(252*np.log(m.Rf)) - 1):0.2f} %"
-    s += f"\nEquity Multiplier Limit = {m.EM:0.5f}"
-    s += f"\nRisk Aversion = {m.lambd:0.5f}"
-    s += "\n\nPortfolio"
-    s += "\n"
+    s = f"""
+Risk Free Return = {100*(np.exp(252*np.log(m.Rf)) - 1):0.2f}
+Equity Multiplier Limit = {m.EM:0.5f}
+Risk Aversion = {m.lambd:0.5f}
+
+Portfolio
+"""
     s += "\n".join([f"{n:8s} {symbols[n]:30s}  {100*m.w[n]():8.2f} %" for n in m.N])
-    s += f"\n{'':8s} {'Risk Free':30s}  {100*(1 - sum(m.w[n]() for n in R.columns)):8.2f} %"
-    s += f"\n\nAnnualized return = {100*(np.exp(252*m.ElogR()) - 1):0.2f} %"
+    s += f"""
+{'':8s} {'Risk Free':30s}  {100*(1 - sum(m.w[n]() for n in R.columns)):8.2f} %
+
+Annualized return = {100*(np.exp(252*m.ElogR()) - 1):0.2f} %
+"""
     print(s)
     
     df = pd.DataFrame(pd.Series([m.R[t]() for t in m.T]), columns=["Kelly Portfolio"])
     df.index = m.T
     
-    fix, ax = plt.subplots(1, 1, figsize=(8, 3))
-    S.divide(S.iloc[0]/100).plot(ax=ax, grid=True, title="Normalized Prices", alpha=0.6, lw=0.5)
+    fix, ax = plt.subplots(1, 1, figsize=(8, 8))
+    S.divide(S.iloc[0]/100).plot(ax=ax, logy=True, grid=True, title="Normalized Prices", alpha=0.6, lw=1.4)
     df.cumprod().multiply(100).plot(ax=ax, lw=3, grid=True)
     ax.legend([symbols[n] for n in m.N] + ["Kelly Portfolio"], bbox_to_anchor=(1.05, 1.05))
+    
+    d = S.index[-1]
+    print(d)
+    
+    for n in m.N:
+        y = 100*S[n].iloc[-1]/S[n].iloc[0]
+        print(n, 100*S[n].iloc[-1]/S[n].iloc[0])
+        ax.text(d, y, n)
 
    
 # parameter values
-Rf = Rf=np.exp(np.log(1.05)/252)
-EM = 2
+Rf = Rf=np.exp(np.log(1.0)/252)
+EM = 1
 lambd = 10
 
 m = kelly_portfolio(R, Rf, EM, lambd)
 kelly_report(m)
 
 
+# In[78]:
+
+
+S.head()
+
+
 # ### Effects of the Risk-Aversion Parameter
 
-# In[ ]:
+# In[47]:
 
 
 lambd = 10**np.linspace(0, 3)
@@ -246,7 +270,7 @@ lambd = 10**np.linspace(0, 3)
 results = [kelly_portfolio(R, Rf=1, EM=1, lambd=_) for _ in lambd]
 
 
-# In[ ]:
+# In[48]:
 
 
 import matplotlib.pyplot as plt
@@ -271,7 +295,7 @@ fig.tight_layout()
 
 # ### Effects of the Equity Multiplier Parameter
 
-# In[ ]:
+# In[49]:
 
 
 EM = np.linspace(0.0, 2.0)
@@ -279,7 +303,7 @@ EM = np.linspace(0.0, 2.0)
 results = [kelly_portfolio(R, Rf=1, EM=_, lambd=10) for _ in EM]
 
 
-# In[ ]:
+# In[50]:
 
 
 import matplotlib.pyplot as plt
@@ -304,7 +328,7 @@ fig.tight_layout()
 
 # ### Effect of Risk-free Interest Rate
 
-# In[ ]:
+# In[51]:
 
 
 Rf = np.exp(np.log(1 + np.linspace(0, 0.20))/252)
@@ -312,7 +336,7 @@ Rf = np.exp(np.log(1 + np.linspace(0, 0.20))/252)
 results = [kelly_portfolio(R, Rf=_, EM=1, lambd=10) for _ in Rf]
 
 
-# In[ ]:
+# In[52]:
 
 
 import matplotlib.pyplot as plt
@@ -349,6 +373,8 @@ fig.tight_layout()
 # > MacLean, L. C., Thorp, E. O., & Ziemba, W. T. (2010). Good and bad properties of the Kelly criterion. Risk, 20(2), 1.  https://www.stat.berkeley.edu/~aldous/157/Papers/Good_Bad_Kelly.pdf
 # 
 # > MacLean, L. C., Thorp, E. O., & Ziemba, W. T. (2011). The Kelly capital growth investment criterion: Theory and practice (Vol. 3). world scientific. https://www.worldscientific.com/worldscibooks/10.1142/7598#t=aboutBook
+# 
+# > Carta, A., & Conversano, C. (2020). Practical Implementation of the Kelly Criterion: Optimal Growth Rate, Number of Trades, and Rebalancing Frequency for Equity Portfolios. Frontiers in Applied Mathematics and Statistics, 6, 577050. https://www.frontiersin.org/articles/10.3389/fams.2020.577050/full
 # 
 # The utility of conic programming to solve problems involving log growth is more recent. Here are some representative papers.
 # 
