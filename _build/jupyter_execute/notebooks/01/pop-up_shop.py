@@ -214,7 +214,7 @@ print("Expected Profit:", m.EV())
 
 # Optimizing over all scenarios provides an expected profit of 8,920 &euro;, an increase of 581 &euro; over the naive strategy of simply ordering the expected number of items sold. The new optimal solution places a larger order, that is $x=400$. In poor weather conditions, there will be more returns and lower profit that is more than compensated by the increased profits in good weather conditions. 
 # 
-# The additional value that results from solve of this planning problem is called the **Value of the Stochastic Solution (VSS)**. The value of the stochastic solution is the additional profit compared to ordering to meet expected demand. In this case,
+# The additional value that results from solve of this planning problem is called the **Value of the Stochastic Solution (VSS)**. The value of the stochastic solution is the additional profit compared to ordering to meet the expected demand. In this case,
 # 
 # $$\text{VSS} = \text{EV} - \text{EVM} = 8,920 - 8,339 = 581.$$
 
