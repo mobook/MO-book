@@ -1,0 +1,1436 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>Pyomo Tutorial Example: Production Planning &#8212; Companion Notebooks for Data-Driven Mathematical Optimization in Python</title>
+    
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" href="../../_static/styles/sphinx-book-theme.css?digest=5115cc725059bd94278eecd172e13a965bf8f5a9" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/design-style.b7bb847fb20b106c3d81b95245e65545.min.css" />
+    
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/clipboard.min.js"></script>
+    <script src="../../_static/copybutton.js"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+    <script src="../../_static/design-tabs.js"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"
+const thebe_selector = ".thebe,.cell"
+const thebe_selector_input = "pre"
+const thebe_selector_output = ".output, .cell_output"
+</script>
+    <script async="async" src="../../_static/sphinx-thebe.js"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true});</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="2. Linear Optimization" href="../02/02.00.html" />
+    <link rel="prev" title="A motivating example: A glass of water" href="glass-water.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-DVQ7NZ8CYZ"></script>
+<script>
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){ dataLayer.push(arguments); }
+                    gtag('js', new Date());
+                    gtag('config', 'G-DVQ7NZ8CYZ');
+                </script>
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="60">
+<!-- Checkboxes to toggle the left sidebar -->
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle navigation sidebar">
+<label class="overlay overlay-navbar" for="__navigation">
+    <div class="visually-hidden">Toggle navigation sidebar</div>
+</label>
+<!-- Checkboxes to toggle the in-page toc -->
+<input type="checkbox" class="sidebar-toggle" name="__page-toc" id="__page-toc" aria-label="Toggle in-page Table of Contents">
+<label class="overlay overlay-pagetoc" for="__page-toc">
+    <div class="visually-hidden">Toggle in-page Table of Contents</div>
+</label>
+<!-- Headers at the top -->
+<div class="announcement header-item noprint"></div>
+<div class="header header-item noprint"></div>
+
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<!-- Sidebar -->
+<div class="bd-sidebar noprint" id="site-navigation">
+    <div class="bd-sidebar__content">
+        <div class="bd-sidebar__top"><div class="navbar-brand-box">
+    <a class="navbar-brand text-wrap" href="../../index.html">
+      
+        <!-- `logo` is deprecated in Sphinx 4.0, so remove this when we stop supporting 3 -->
+        
+      
+      
+      <img src="../../_static/logo-02.png" class="logo" alt="logo">
+      
+      
+      <h1 class="site-logo" id="site-title">Companion Notebooks for Data-Driven Mathematical Optimization in Python</h1>
+      
+    </a>
+</div><form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search this book..." aria-label="Search this book..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../../intro.html">
+                    Data-Driven Mathematical Optimization in Python
+                </a>
+            </li>
+        </ul>
+        <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="01.00.html">
+   1. Mathematical Optimization
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="current">
+   <li class="toctree-l2">
+    <a class="reference internal" href="glass-water.html">
+     A motivating example: A glass of water
+    </a>
+   </li>
+   <li class="toctree-l2 current active">
+    <a class="current reference internal" href="#">
+     Pyomo Tutorial Example: Production Planning
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../02/02.00.html">
+   2. Linear Optimization
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+  <label for="toctree-checkbox-2">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../02/bim.html">
+     BIM production
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../02/lad-regression.html">
+     LAD Regression
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../02/mad-portfolio-optimization.html">
+     MAD portfolio optimization
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../02/l1-regression-wine-quality.html">
+     Wine quality prediction with L1 regression
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../02/bim-fractional.html">
+     BIM production variants
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../02/multiproductionfaciliity_worstcase.html">
+     Extra material: Multi-product facility production
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../03/03.00.html">
+   3. Mixed Integer Linear Programming
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+  <label for="toctree-checkbox-3">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../03/bim-perturbed.html">
+     BIM production with perturbed data
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../03/shift-scheduling.html">
+     Workforce shift scheduling
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../03/simple-production-model-gdp.html">
+     Production model using disjunctions
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../03/machine-scheduling.html">
+     Machine Scheduling
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../03/recharging-electric-vehicle.html">
+     Recharging strategy for an electric vehicle
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../03/bim-production-revisited.html">
+     BIM production revisited
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../03/cryptarithms.html">
+     Extra material: Cryptarithms puzzle
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../03/strip-packing.html">
+     Extra material: Strip packing
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../03/job-shop-scheduling.html">
+     Extra material: Job shop scheduling
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../03/maintenance-planning.html">
+     Extra material: Maintenance planning
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../04/04.00.html">
+   4. Network Optimization
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+  <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../04/dinner-seat-allocation.html">
+     Dinner seating arrangement
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../04/gasoline-distribution.html">
+     Gasoline distribution
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../04/cryptocurrency-arbitrage.html">
+     Cryptocurrency arbitrage search
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../04/shortest-path-road-networks.html">
+     Extra material: Shortest path in real life
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../04/power-network.html">
+     Extra material: Energy dispatch problem
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../05/05.00.html">
+   5. Convex Optimization
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../05/milk-pooling.html">
+     Milk pooling and blending
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../05/ols-regression.html">
+     Ordinary Least Squares (OLS) Regression
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../05/markowitz_portfolio_with_chance_constraint.html">
+     Portfolio optimization with chance constraint
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../05/svm-linear.html">
+     Support Vector Machines for Binary Classification
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../05/refinery-production.html">
+     Extra material: Refinery production and shadow pricing
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../06/06.00.html">
+   6. Conic Optimization
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../06/economic-order-quantity.html">
+     Economic Order Quantity
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../06/building-insulation.html">
+     Optimal Design of Multilayered Building Insulation
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../06/kelly-criterion.html">
+     The Kelly Criterion
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../06/investment-wheel.html">
+     Luenberger’s Investment Wheel
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../06/optimal-growth-portfolios.html">
+     Optimal Growth Portfolios
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../07/07.00.html">
+   7. Accounting for Uncertainty: Optimization Meets Reality
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+  <label for="toctree-checkbox-7">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../07/fleet-assignment.html">
+     Fleet assignment problem
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../07/bim-robustness-analysis.html">
+     Robustness analysis of BIM production plan via simulations
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../08/08.00.html">
+   8. Robust Optimization - Single Stage Problems
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+  <label for="toctree-checkbox-8">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../08/bim-robust-optimization.html">
+     Robust BIM microchip production problem
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../09/09.00.html">
+   9. Stochastic Optimization - Single Stage Problems
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+  <label for="toctree-checkbox-9">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../09/pop-up_shop.html">
+     Pop-up shop
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../09/newsvendor.html">
+     Stock optimization for seafood distribution center
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../10/10.00.html">
+   10. Two-Stage Problems
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+  <label for="toctree-checkbox-10">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../10/ccg.html">
+     Robust Production Planning
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../10/airline-seating.html">
+     Airline seat allocation problem
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../10/farmer.html">
+     The Farmer’s Problem and Variants
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../../pyomo_style_guide.html">
+   Appendix: Pyomo style guide
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../../genindex.html">
+   Index
+  </a>
+ </li>
+</ul>
+
+    </div>
+</nav></div>
+        <div class="bd-sidebar__bottom">
+             <!-- To handle the deprecated key -->
+            
+            <div class="navbar_extra_footer">
+            Powered by <a href="https://jupyterbook.org">Jupyter Book</a>
+            </div>
+            
+        </div>
+    </div>
+    <div id="rtd-footer-container"></div>
+</div>
+
+
+          
+
+
+          
+<!-- A tiny helper pixel to detect if we've scrolled -->
+<div class="sbt-scroll-pixel-helper"></div>
+<!-- Main content -->
+<div class="col py-0 content-container">
+    
+    <div class="header-article row sticky-top noprint">
+        
+
+
+
+<div class="col py-1 d-flex header-article-main">
+    <div class="header-article__left">
+        
+        <label for="__navigation"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="right"
+title="Toggle navigation"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-bars"></i>
+  </span>
+
+</label>
+
+        
+    </div>
+    <div class="header-article__right">
+<div class="menu-dropdown menu-dropdown-launch-buttons">
+  <button class="headerbtn menu-dropdown__trigger"
+      aria-label="Launch interactive content">
+      <i class="fas fa-rocket"></i>
+  </button>
+  <div class="menu-dropdown__content">
+    <ul>
+      <li>
+        <a href="https://mybinder.org/v2/gh/mobook/MO-book/main?urlpath=tree/notebooks/01/production-planning.ipynb"
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Launch on Binder"
+>
+  
+
+<span class="headerbtn__icon-container">
+  
+    <img src="../../_static/images/logo_binder.svg">
+  </span>
+<span class="headerbtn__text-container">Binder</span>
+</a>
+
+      </li>
+      
+      <li>
+        <a href="https://colab.research.google.com/github/mobook/MO-book/blob/main/notebooks/01/production-planning.ipynb"
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Launch on Colab"
+>
+  
+
+<span class="headerbtn__icon-container">
+  
+    <img src="../../_static/images/logo_colab.png">
+  </span>
+<span class="headerbtn__text-container">Colab</span>
+</a>
+
+      </li>
+      
+    </ul>
+  </div>
+</div>
+
+<button onclick="toggleFullScreen()"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="bottom"
+title="Fullscreen mode"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+<div class="menu-dropdown menu-dropdown-repository-buttons">
+  <button class="headerbtn menu-dropdown__trigger"
+      aria-label="Source repositories">
+      <i class="fab fa-github"></i>
+  </button>
+  <div class="menu-dropdown__content">
+    <ul>
+      <li>
+        <a href="https://github.com/mobook/MO-book"
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Source repository"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="headerbtn__text-container">repository</span>
+</a>
+
+      </li>
+      
+      <li>
+        <a href="https://github.com/mobook/MO-book/issues/new?title=Issue%20on%20page%20%2Fnotebooks/01/production-planning.html&body=Your%20issue%20content%20here."
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Open an issue"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="headerbtn__text-container">open issue</span>
+</a>
+
+      </li>
+      
+    </ul>
+  </div>
+</div>
+
+<div class="menu-dropdown menu-dropdown-download-buttons">
+  <button class="headerbtn menu-dropdown__trigger"
+      aria-label="Download this page">
+      <i class="fas fa-download"></i>
+  </button>
+  <div class="menu-dropdown__content">
+    <ul>
+      <li>
+        <a href="../../_sources/notebooks/01/production-planning.ipynb"
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Download source file"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="headerbtn__text-container">.ipynb</span>
+</a>
+
+      </li>
+      
+      <li>
+        
+<button onclick="printPdf(this)"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="left"
+title="Print to PDF"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="headerbtn__text-container">.pdf</span>
+</button>
+
+      </li>
+      
+    </ul>
+  </div>
+</div>
+<label for="__page-toc"
+  class="headerbtn headerbtn-page-toc"
+  
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-list"></i>
+  </span>
+
+</label>
+
+    </div>
+</div>
+
+<!-- Table of contents -->
+<div class="col-md-3 bd-toc show noprint">
+    <div class="tocsection onthispage pt-5 pb-3">
+        <i class="fas fa-list"></i> Contents
+    </div>
+    <nav id="bd-toc-nav" aria-label="Page">
+        <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#a-production-planning-problem">
+   A Production Planning Problem
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#problem-statement">
+     Problem Statement
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#mathematical-model">
+     Mathematical Model
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#version-1-getting-started-with-pyomo">
+   Version 1. Getting started with Pyomo
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#organizing-data">
+   Organizing Data
+  </a>
+ </li>
+</ul>
+
+    </nav>
+</div>
+    </div>
+    <div class="article row">
+        <div class="col pl-md-3 pl-lg-5 content-container">
+            <!-- Table of contents that is only displayed when printing the page -->
+            <div id="jb-print-docs-body" class="onlyprint">
+                <h1>Pyomo Tutorial Example: Production Planning</h1>
+                <!-- Table of contents -->
+                <div id="print-main-content">
+                    <div id="jb-print-toc">
+                        
+                        <div>
+                            <h2> Contents </h2>
+                        </div>
+                        <nav aria-label="Page">
+                            <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#a-production-planning-problem">
+   A Production Planning Problem
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#problem-statement">
+     Problem Statement
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#mathematical-model">
+     Mathematical Model
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#version-1-getting-started-with-pyomo">
+   Version 1. Getting started with Pyomo
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#organizing-data">
+   Organizing Data
+  </a>
+ </li>
+</ul>
+
+                        </nav>
+                    </div>
+                </div>
+            </div>
+            <main id="main-content" role="main">
+                
+              <div>
+                
+  <section class="tex2jax_ignore mathjax_ignore" id="pyomo-tutorial-example-production-planning">
+<h1>Pyomo Tutorial Example: Production Planning<a class="headerlink" href="#pyomo-tutorial-example-production-planning" title="Permalink to this heading">#</a></h1>
+<p>Pyomo is an algebraic modeling language embedded within Python for creating mathematical optimization applications. Like other modeling languages, with Pyomo the user can create objects representing decision variables, and expressions involving the decision variables. The expressions can be used to create objective functions, or combined in logical relationships to create constraints. Pyomo provides methods to transform and solve models numerically with a choice of open-source and commercial solvers.</p>
+<p>The purpose of this notebook is introduce the basics of Pyomo by solving a small production planning problem. A more complete version of the problem is revisited in Chapter 10 to demonstrate stochastic and robust optimization. This notebook introduces components from the Pyomo library that are present in most applications:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Sets.html">Sets</a></p></li>
+<li><p><a class="reference external" href="https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Parameters.html">Parameters</a></p></li>
+<li><p><a class="reference external" href="https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Variables.html">Variables</a></p></li>
+<li><p><a class="reference external" href="https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Objectives.html">Objectives</a></p></li>
+<li><p><a class="reference external" href="https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Constraints.html">Constraints</a></p></li>
+<li><p><a class="reference external" href="https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Expressions.html">Expressions</a></p></li>
+</ul>
+<p>The notebook begins with a statement of the problem and the development of a mathematical model. The mathematical model is then translated into several different versions of a Pyomo model.</p>
+<p>Version 1 of the model is a direct translation of the mathematics into corresponding Pyomo components. This generates a satisfactory solution and would be enough for examples involving a small number of decision variables and constraints. This version of the model provides a tutorial introduction to the use of variables, expressions, objectives, and constraints.</p>
+<p>Version 2 of the model introduces the use of sets, parameters, indexed variables, and indexed constraints. These additional components of the Pyomo library are essential to building scalable and maintainable models for more complex applications.</p>
+<p>One feature of these notebooks is the use of Python decorators to designate Pyomo objectives, constraints, and other model components. This is a relatively new and, as of the date of this writing, a poorly documented feature of recent versions of Pyomo. Decorators are a less commonly used feature of Python that may be unfamiliar to new users, but are well worth the effort of learning for a remarkable gain in the readability and maintenance of Pyomo models.</p>
+<p>So let’s get started.</p>
+<section id="a-production-planning-problem">
+<h2>A Production Planning Problem<a class="headerlink" href="#a-production-planning-problem" title="Permalink to this heading">#</a></h2>
+<section id="problem-statement">
+<h3>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this heading">#</a></h3>
+<p>A small company has developed two versions of a new product. Each version of the product is made from the same raw material that costs 10€ per gram, and requires two different types of specialized labor to produce.</p>
+<p><span class="math notranslate nohighlight">\(U\)</span> is the higher priced version of the product. <span class="math notranslate nohighlight">\(U\)</span> sells for  270€ per unit and requires 10 grams of raw material, one hour of labor type <span class="math notranslate nohighlight">\(A\)</span>, two hours of labor type <span class="math notranslate nohighlight">\(B\)</span>. Because of the higher price, the market demand for <span class="math notranslate nohighlight">\(U\)</span> is limited to forty units per week. <span class="math notranslate nohighlight">\(V\)</span> is the lower priced version of the product that sells for 210€ per unit with unlimited demand and requires 9 grams of raw material, 1 hour of labor type <span class="math notranslate nohighlight">\(A\)</span> and 1 hour of labor type <span class="math notranslate nohighlight">\(B\)</span>. This data is summarized in the following table:</p>
+<table class="table">
+<thead>
+<tr class="row-odd"><th class="head text-align:center"><p>Version</p></th>
+<th class="head text-align:center"><p>Raw Material <br> required</p></th>
+<th class="head text-align:center"><p>Labor A <br> required</p></th>
+<th class="head text-align:center"><p>Labor B <br> required</p></th>
+<th class="head text-align:center"><p>Market <br> Demand</p></th>
+<th class="head text-align:center"><p>Price</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-align:center"><p>U</p></td>
+<td class="text-align:center"><p>10 g</p></td>
+<td class="text-align:center"><p>1 hr</p></td>
+<td class="text-align:center"><p>2 hr</p></td>
+<td class="text-align:center"><p><span class="math notranslate nohighlight">\(\leq\)</span> 40 units</p></td>
+<td class="text-align:center"><p>270€</p></td>
+</tr>
+<tr class="row-odd"><td class="text-align:center"><p>V</p></td>
+<td class="text-align:center"><p>9 g</p></td>
+<td class="text-align:center"><p>1 hr</p></td>
+<td class="text-align:center"><p>1 hr</p></td>
+<td class="text-align:center"><p>unlimited</p></td>
+<td class="text-align:center"><p>210€</p></td>
+</tr>
+</tbody>
+</table>
+<p>Weekly production at the company is limited by the availability of labor and the inventory of raw material. The raw material must be ordered in advance and has a short shelf life. Any raw material left over at the end of the week is discarded. The following table details the cost and availability of raw material and labor.</p>
+<table class="table">
+<thead>
+<tr class="row-odd"><th class="head text-align:center"><p>Resource</p></th>
+<th class="head text-align:center"><p>Amount <br> Available</p></th>
+<th class="head text-align:center"><p>Cost</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-align:center"><p>Raw Material</p></td>
+<td class="text-align:center"><p>?</p></td>
+<td class="text-align:center"><p>10€ / g</p></td>
+</tr>
+<tr class="row-odd"><td class="text-align:center"><p>Labor A</p></td>
+<td class="text-align:center"><p>80 hours</p></td>
+<td class="text-align:center"><p>50€ / hour</p></td>
+</tr>
+<tr class="row-even"><td class="text-align:center"><p>Labor B</p></td>
+<td class="text-align:center"><p>100 hours</p></td>
+<td class="text-align:center"><p>40€ / hour</p></td>
+</tr>
+</tbody>
+</table>
+<p>The company wishes to maximize gross profits. How much raw material should be ordered in advance for each week? How many units of <span class="math notranslate nohighlight">\(U\)</span> and <span class="math notranslate nohighlight">\(V\)</span> should the company produce each week?</p>
+</section>
+<section id="mathematical-model">
+<h3>Mathematical Model<a class="headerlink" href="#mathematical-model" title="Permalink to this heading">#</a></h3>
+<p>A starting point for the development of a mathematical model is to create a list of relevant decision variables. Some of decision variables may prove redundant later, tut for now we seek to identify quantities that may be useful in expressing the problem objectives and constraints. A candidate set of decision variable is listed in the following table with a symbol, description, and any lower and upper bounds that are known from the problem data.</p>
+<table class="table">
+<thead>
+<tr class="row-odd"><th class="head text-align:center"><p>Decision Variable</p></th>
+<th class="head text-align:left"><p>Description</p></th>
+<th class="head text-align:center"><p>lower bound</p></th>
+<th class="head text-align:center"><p>upper bound</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-align:center"><p><span class="math notranslate nohighlight">\(x_M\)</span></p></td>
+<td class="text-align:left"><p>amount of raw material used</p></td>
+<td class="text-align:center"><p>0</p></td>
+<td class="text-align:center"><p>-</p></td>
+</tr>
+<tr class="row-odd"><td class="text-align:center"><p><span class="math notranslate nohighlight">\(x_A\)</span></p></td>
+<td class="text-align:left"><p>amount of Labor A used</p></td>
+<td class="text-align:center"><p>0</p></td>
+<td class="text-align:center"><p>80</p></td>
+</tr>
+<tr class="row-even"><td class="text-align:center"><p><span class="math notranslate nohighlight">\(x_B\)</span></p></td>
+<td class="text-align:left"><p>amount of Labor B used</p></td>
+<td class="text-align:center"><p>0</p></td>
+<td class="text-align:center"><p>100</p></td>
+</tr>
+<tr class="row-odd"><td class="text-align:center"><p><span class="math notranslate nohighlight">\(y_U\)</span></p></td>
+<td class="text-align:left"><p>number of <span class="math notranslate nohighlight">\(U\)</span> units to produce</p></td>
+<td class="text-align:center"><p>0</p></td>
+<td class="text-align:center"><p>40</p></td>
+</tr>
+<tr class="row-even"><td class="text-align:center"><p><span class="math notranslate nohighlight">\(y_V\)</span></p></td>
+<td class="text-align:left"><p>number of <span class="math notranslate nohighlight">\(V\)</span> units to product</p></td>
+<td class="text-align:center"><p>0</p></td>
+<td class="text-align:center"><p>-</p></td>
+</tr>
+<tr class="row-odd"><td class="text-align:center"><p>revenue</p></td>
+<td class="text-align:left"><p>amount of revenue generated by sales</p></td>
+<td class="text-align:center"><p>-</p></td>
+<td class="text-align:center"><p>-</p></td>
+</tr>
+<tr class="row-even"><td class="text-align:center"><p>expense</p></td>
+<td class="text-align:left"><p>cost of raw materials and labor</p></td>
+<td class="text-align:center"><p>-</p></td>
+<td class="text-align:center"><p>-</p></td>
+</tr>
+<tr class="row-odd"><td class="text-align:center"><p>profit</p></td>
+<td class="text-align:left"><p>difference between revenue and expense</p></td>
+<td class="text-align:center"><p>-</p></td>
+<td class="text-align:center"><p>-</p></td>
+</tr>
+</tbody>
+</table>
+<p>The problem objective is to maximize profit</p>
+<div class="math notranslate nohighlight">
+\[\max\ \text{profit}\]</div>
+<p>where profit is defined as the difference between revenue and expense.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{aligned}
+\text{profit} &amp; = \text{revenue} - \text{expense} \\
+\end{aligned}
+\end{split}\]</div>
+<p>Revenue and profit are linear expressions that can be written in terms of the decision variables.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{aligned}
+\text{revenue} &amp; = 270 y_U + 210 y_V \\
+\text{expense} &amp; = 10 x_M + 50 x_A + 40 x_B  \\
+\end{aligned}
+\end{split}\]</div>
+<p>The quantity of products produced is limited by the available resources. For each resource there is a corresponding linear constraint that limits production.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{aligned}
+10 y_U + 9 y_V  &amp; \leq x_M &amp; &amp; \text{raw material}\\
+2 y_U + 1 y_V &amp; \leq x_A &amp; &amp;\text{labor A} \\
+1 y_U + 1 y_V &amp; \leq x_B &amp; &amp; \text{labor B}\\
+\end{aligned}
+\end{split}\]</div>
+<p>This completes the mathematical description of this example of a production planning problem. The next is create a Pyomo model t</p>
+</section>
+</section>
+<section id="version-1-getting-started-with-pyomo">
+<h2>Version 1. Getting started with Pyomo<a class="headerlink" href="#version-1-getting-started-with-pyomo" title="Permalink to this heading">#</a></h2>
+<p>This first version of a Pyomo model uses components from the Pyomo library to represent the decision variables, expressions, objectives, and constraints appearing in the mathematical model for this production planning problem. This is a direct translation of the mathematical model to Pyomo. Subsequent versions of this model will demonstrate the use of indexed parameters, variables and constraints that are essential for larger scale applications.</p>
+<p><strong>Step 0.Installing Pyomo and solvers.</strong></p>
+<p>Before going further, the first step is to install the Pyomo library and any solvers that may be used to compute numerical solutions. The following cell downloads a Python module that will check for (and if necessary install) Pyomo and a linear solver on Google Colab and most laptops.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">types</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
+<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
+<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+
+<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
+<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
+cbc was previously installed
+</pre></div>
+</div>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Step 1. Import Pyomo.</strong></p>
+<p>The first step in creating a Pyomo model is to import the needed components from the Pyomo library into the Python environment. Importing  <code class="docutils literal notranslate"><span class="pre">pyomo.environ</span></code> will provides the most commonly used components for Pyomo model building.</p>
+<p>This collection of notebooks uses a consistent convention of assigning a <code class="docutils literal notranslate"><span class="pre">pyo</span></code> prefix to objects imported from <code class="docutils literal notranslate"><span class="pre">pyomo.environ</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Step 2. Create a <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code> object.</strong></p>
+<p>A Pyomo model is stored in a Python workspace with a standard Python variable name. The model object can be created with either <code class="docutils literal notranslate"><span class="pre">pyo.ConcreteModel()</span></code> or <code class="docutils literal notranslate"><span class="pre">pyo.AbstractModel()</span></code>. <code class="docutils literal notranslate"><span class="pre">pyo.ConcreteModel</span></code> is used when the problem data is known at the time the model is created, which is the case here. <code class="docutils literal notranslate"><span class="pre">pyo,AbstractModel</span></code> is useful for situations where the model is created before the model data is known.</p>
+<p>The following cell creates a ConcreteModel object and stores it in a Python variable named <code class="docutils literal notranslate"><span class="pre">model</span></code>. The name can be any valid Python variable, but keep in mind the name will be a prefix for every variable and constraint. The <code class="docutils literal notranslate"><span class="pre">.display()</span></code> method is a convenient means of displaying the current contents of a Pyomo model.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Production Planning: Version 1&quot;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Model &#39;Production Planning: Version 1&#39;
+
+  Variables:
+    None
+
+  Objectives:
+    None
+
+  Constraints:
+    None
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Step 3. Create decision variables and add them to the model.</strong></p>
+<p>Decision variables are created with the Pyomo <code class="docutils literal notranslate"><span class="pre">Var()</span></code> class. Variables are assigned as attributes to the model object using the Python ‘dot’ convention.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Var()</span></code> accepts optional keyword arguments. The optional <code class="docutils literal notranslate"><span class="pre">bounds</span></code> keyword specifies a tuple containing lower and upper bounds. A good modeling practice is to specify any known and fixed bounds on the decision variables as they are created. If one of the bounds is unknown, use <code class="docutils literal notranslate"><span class="pre">None</span></code> as a placeholder.</p>
+<p>In addition, the <code class="docutils literal notranslate"><span class="pre">initialize</span></code> keyword is used below to specify initial values for the decision variables. This isn’t normally required, but is useful for this tutorial example where we want to display the model as it is being built.</p>
+<p>The optional <code class="docutils literal notranslate"><span class="pre">domain</span></code> keyword specifies the type of decision variable. By default, the domain is all real numbers including negative and positive values.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">x_M</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">initialize</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">x_A</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">80</span><span class="p">),</span> <span class="n">initialize</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">x_B</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">initialize</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span> <span class="n">initialize</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">initialize</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Model &#39;Production Planning: Version 1&#39;
+
+  Variables:
+    x_M : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :     0 :  None : False : False :  Reals
+    x_A : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :     0 :    80 : False : False :  Reals
+    x_B : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :     0 :   100 : False : False :  Reals
+    y_U : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :     0 :    40 : False : False :  Reals
+    y_V : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :     0 :  None : False : False :  Reals
+
+  Objectives:
+    None
+
+  Constraints:
+    None
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Step 4. Create expressions.</strong></p>
+<p>The difference between revenue and expense is equal to the gross profit. The following cell creates linear expressions for revenue and expense which are then assigned the expressions to attributes called <code class="docutils literal notranslate"><span class="pre">model.revenue</span></code> and <code class="docutils literal notranslate"><span class="pre">model.expense</span></code>. We can print the expressions to verify correctness.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">=</span> <span class="mi">270</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">210</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span>
+<span class="n">model</span><span class="o">.</span><span class="n">expense</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x_M</span> <span class="o">+</span> <span class="mi">50</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x_A</span> <span class="o">+</span> <span class="mi">40</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x_B</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">revenue</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">expense</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>270*y_U + 210*y_V
+10*x_M + 50*x_A + 40*x_B
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Step 5. Add an objective.</strong></p>
+<p>The problem objective is to maximize gross profit, where gross profit is the difference between revenue and expense.</p>
+<p>The Pyomo class <code class="docutils literal notranslate"><span class="pre">Objective</span></code> creates the objective for a Pyomo model. The required keyword argument <code class="docutils literal notranslate"><span class="pre">expr</span></code> specifies the expression to be optimized. The optional keyword argument <code class="docutils literal notranslate"><span class="pre">sense</span></code> specifies whether it is a minimization or maximization problem. For clarity, it is good practice is to always include the <code class="docutils literal notranslate"><span class="pre">sense</span></code> keyword argument.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>model.profit = pyo.Objective(expr = model.revenue - model.expense, sense = pyo.maximize)
+</pre></div>
+</div>
+<p>An alternative way to create an objective is available in more recent releases of Pyomo. This approach uses a Python decorators to ‘tag’ function that returns an Pyomo expression as the objective function.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>@model.Objective(sense = pyo.maximize)
+def profit(model):
+    return model.revenue - model.expense
+</pre></div>
+</div>
+<p>Decorators are a feature of Python that change the behavior of a function without altering the function itself. The Pyomo library includes decorators to declare objectives, expression, constraints, and other objects. The use of decorators improves the readability and maintainability of more complex models. For now, one can think of decorators as a means of tagging a function with for the purpose of create model objects.</p>
+<p>The name of the function will be used to create a model attribute. When passed as the first argument to the function, the model object will allow access to other model attributes, such as expressions or decision variables. Arguments can be passed to the decorator to specify the purpose of the function. For example, the <code class="docutils literal notranslate"><span class="pre">sense</span></code> keyword is used to set a maximization objective.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">expense</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Model &#39;Production Planning: Version 1&#39;
+
+  Variables:
+    x_M : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :     0 :  None : False : False :  Reals
+    x_A : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :     0 :    80 : False : False :  Reals
+    x_B : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :     0 :   100 : False : False :  Reals
+    y_U : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :     0 :    40 : False : False :  Reals
+    y_V : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :     0 :  None : False : False :  Reals
+
+  Objectives:
+    profit : Size=1, Index=None, Active=True
+        Key  : Active : Value
+        None :   True :     0
+
+  Constraints:
+    None
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Step 5. Add constraints.</strong></p>
+<p>Constraints are logical relationships between expressions that define the range of feasible solutions in an optimization problem.. The logical relationships can be <code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, or <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code> is a Python library component that provides a convenient way to define and enforce constraints on scalar values.  When using<code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code>, a constraint consisting of a logical relationship between expressions is passed as a keyword argument <code class="docutils literal notranslate"><span class="pre">expr</span></code>. For the three equality constraints in this application, this appears as</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>model.raw_materials = pyo.Constraint(expr = 10 * model.y_U + 9 * model.y_V &lt;= model.x_M)
+model.labor_A = pyo.Constraint(expr = 2 * model.y_U + 1 * model.y_V &lt;= model.x_A)
+model.labor_B = pyo.Constraint(expr = 1 * model.y_U + 1 * model.y_V &lt;= model.x_B)
+</pre></div>
+</div>
+<p>Decorators, however, allow for a more readable and maintainable way to express complex an indexed constraints in a model. In this case, the constraints are</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>@model.Constraint()
+def raw_materials(model):
+    return 10 * model.y_U + 9 * model.y_V &lt;= model.x_M
+
+@model.Constraint()
+def labor_A(model):
+    return 2 * model.y_U + 1 * model.y_V &lt;= model.x_A
+
+@model.Constraint()
+def labor_B(model):
+    return 2 * model.y_U + 1 * model.y_V &lt;= model.x_A
+</pre></div>
+</div>
+<p>These are demonstrated in the following cell.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">raw_materials</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">9</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x_M</span>
+
+<span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">labor_A</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x_A</span>
+
+<span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">labor_B</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x_B</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING: Implicitly replacing the Component attribute raw_materials
+    (type=&lt;class &#39;pyomo.core.base.constraint.ScalarConstraint&#39;&gt;) on block
+    &#39;Production Planning: Version 1&#39; with a new Component (type=&lt;class
+    &#39;pyomo.core.base.constraint.AbstractScalarConstraint&#39;&gt;). This is usually
+    indicative of a modelling error. To avoid this warning, use
+    block.del_component() and block.add_component().
+WARNING: Implicitly replacing the Component attribute labor_A (type=&lt;class
+    &#39;pyomo.core.base.constraint.ScalarConstraint&#39;&gt;) on block &#39;Production
+    Planning: Version 1&#39; with a new Component (type=&lt;class
+    &#39;pyomo.core.base.constraint.AbstractScalarConstraint&#39;&gt;). This is usually
+    indicative of a modelling error. To avoid this warning, use
+    block.del_component() and block.add_component().
+WARNING: Implicitly replacing the Component attribute labor_B (type=&lt;class
+    &#39;pyomo.core.base.constraint.ScalarConstraint&#39;&gt;) on block &#39;Production
+    Planning: Version 1&#39; with a new Component (type=&lt;class
+    &#39;pyomo.core.base.constraint.AbstractScalarConstraint&#39;&gt;). This is usually
+    indicative of a modelling error. To avoid this warning, use
+    block.del_component() and block.add_component().
+Model &#39;Production Planning: Version 1&#39;
+
+  Variables:
+    x_M : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 : 720.0 :  None : False : False :  Reals
+    x_A : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :  80.0 :    80 : False : False :  Reals
+    x_B : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :  80.0 :   100 : False : False :  Reals
+    y_U : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :   0.0 :    40 : False : False :  Reals
+    y_V : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :  80.0 :  None : False : False :  Reals
+
+  Objectives:
+    profit : Size=1, Index=None, Active=True
+        Key  : Active : Value
+        None :   True : 2400.0
+
+  Constraints:
+    raw_materials : Size=1
+        Key  : Lower : Body : Upper
+        None :  None :  0.0 :   0.0
+    labor_A : Size=1
+        Key  : Lower : Body : Upper
+        None :  None :  0.0 :   0.0
+    labor_B : Size=1
+        Key  : Lower : Body : Upper
+        None :  None :  0.0 :   0.0
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Step 6. Solve the model.</strong></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
+<span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Model &#39;Production Planning: Version 1&#39;
+
+  Variables:
+    x_M : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 : 720.0 :  None : False : False :  Reals
+    x_A : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :  80.0 :    80 : False : False :  Reals
+    x_B : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :  80.0 :   100 : False : False :  Reals
+    y_U : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :   0.0 :    40 : False : False :  Reals
+    y_V : Size=1, Index=None
+        Key  : Lower : Value : Upper : Fixed : Stale : Domain
+        None :     0 :  80.0 :  None : False : False :  Reals
+
+  Objectives:
+    profit : Size=1, Index=None, Active=True
+        Key  : Active : Value
+        None :   True : 2400.0
+
+  Constraints:
+    raw_materials : Size=1
+        Key  : Lower : Body : Upper
+        None :  None :  0.0 :   0.0
+    labor_A : Size=1
+        Key  : Lower : Body : Upper
+        None :  None :  0.0 :   0.0
+    labor_B : Size=1
+        Key  : Lower : Body : Upper
+        None :  None :  0.0 :   0.0
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Display the solution.</strong></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;qty y1&quot;</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">&quot;qty y2&quot;</span><span class="p">,</span> 
+                 <span class="n">aspect</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">80</span><span class="p">),</span> <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">80</span><span class="p">))</span>
+
+<span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">80</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="p">(</span><span class="mi">80</span> <span class="o">-</span> <span class="n">u</span><span class="p">),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;labor A&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="p">(</span><span class="mi">100</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;labor B&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">40</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">(),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;demand&quot;</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="p">(</span><span class="mi">80</span> <span class="o">-</span> <span class="n">u</span><span class="p">),</span> <span class="mi">100</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="p">(</span><span class="mi">100</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">),</span> <span class="mi">100</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">([</span><span class="mi">40</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mi">100</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">20</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mi">100</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">profit</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">600</span><span class="o">*</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">)]:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="p">(</span><span class="n">profit</span> <span class="o">-</span> <span class="mi">40</span><span class="o">*</span><span class="n">u</span><span class="p">)</span><span class="o">/</span><span class="mi">30</span><span class="p">,</span> <span class="s1">&#39;r:&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y1</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">y2</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;r.&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Bad key &quot;text.kerning_factor&quot; on line 4 in
+C:\Programs\Anaconda3\lib\site-packages\matplotlib\mpl-data\stylelib\_classic_test_patch.mplstyle.
+You probably need to get an updated matplotlibrc file from
+http://github.com/matplotlib/matplotlib/blob/master/matplotlibrc.template
+or from the matplotlib source distribution
+</pre></div>
+</div>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[&lt;matplotlib.lines.Line2D at 0x200d888cda0&gt;]
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="organizing-data">
+<h2>Organizing Data<a class="headerlink" href="#organizing-data" title="Permalink to this heading">#</a></h2>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="n">products</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;U&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mi">270</span><span class="p">,</span> <span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="mi">40</span><span class="p">},</span>
+    <span class="s2">&quot;V&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mi">210</span><span class="p">,</span> <span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">resources</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;available&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s2">&quot;available&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+    <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span> <span class="s2">&quot;available&quot;</span><span class="p">:</span>  <span class="mi">80</span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">uses</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;U&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+    <span class="s2">&quot;V&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;M&quot;</span><span class="p">:</span>  <span class="mi">9</span><span class="p">,</span> <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Production Planning: Version 2&quot;</span><span class="p">)</span>
+
+
+<span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">products</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">resources</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">initialize</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">:</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">ub</span> <span class="o">=</span> <span class="n">resources</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="s2">&quot;available&quot;</span><span class="p">]</span>
+    
+<span class="n">model</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Model &#39;Production Planning: Version 2&#39;
+
+  Variables:
+    x : Size=3, Index=RESOURCES
+        Key     : Lower : Value : Upper : Fixed : Stale : Domain
+              M :     0 :     0 :  None : False : False :  Reals
+        labor A :     0 :     0 :  None : False : False :  Reals
+        labor B :     0 :     0 :  None : False : False :  Reals
+
+  Objectives:
+    None
+
+  Constraints:
+    None
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            kernelName: "python3",
+            path: "./notebooks/01"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+              </div>
+              
+            </main>
+            <footer class="footer-article noprint">
+                
+    <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+    <a class='left-prev' id="prev-link" href="glass-water.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">A motivating example: A glass of water</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="../02/02.00.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">2. Linear Optimization</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+            </footer>
+        </div>
+    </div>
+    <div class="footer-content row">
+        <footer class="col footer"><p>
+  
+    By The MO Book Group<br/>
+  
+      &copy; Copyright 2022.<br/>
+</p>
+        </footer>
+    </div>
+    
+</div>
+
+
+      </div>
+    </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+
+
+  </body>
+</html>

@@ -2,6 +2,9 @@
 # coding: utf-8
 
 # # Extra material: Job shop scheduling
+# 
+# ```{index} job shop
+# ```
 
 # ## Imports
 # 
@@ -229,6 +232,9 @@ print(schedule.sort_values(by=['Machine','Start']).set_index(['Machine', 'Job'])
 
 
 # ## Visualizing Results with Gantt Charts
+# 
+# ```{index} Gantt charts
+# ```
 
 # In[6]:
 

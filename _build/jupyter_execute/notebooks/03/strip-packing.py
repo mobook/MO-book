@@ -3,6 +3,9 @@
 
 # # Extra material: Strip packing
 # 
+# ```{index} disjunctive programming
+# ```
+# 
 # *Strip packing* (SP) refers to the problem of packing rectanges onto a two dimensional strip of fixed width. 
 # 
 # Many variants of this problem have been studied, the most basic is the pack a set of rectangles onto the shortest possible strip without rotation. Other variants allow rotation of the rectangles, require a packing that allows cutting the rectanges out of the strip with edge-to-edge cuts (guillotine packing), extends the strip to three dimensions, or extends the packing to non-rectangular shapes.
