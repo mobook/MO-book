@@ -147,4 +147,4 @@ print('x=({:.1f},{:.1f}) value={:.3f} revenue={:.2f} cost={:.2f}'.format(
 
 # The second model has optimal solution $(250,1500)$ with a revenue of $16500$ and a cost of $1641.667$.
 
-# The efficiency, measured as the ratio revenue over costs for the optimal solution, is different for the two models. For the first model the efficiency is equal to $\frac{17700}{1775}=9.972$, which is strictly smaller than that of the second model, that is $\frac{16500}{1641.667}=10.051$.
+# The efficiency, measured as the ratio of revenue over costs for the optimal solution, is different for the two models. For the first model the efficiency is equal to $\frac{17700}{1775}=9.972$, which is strictly smaller than that of the second model, that is $\frac{16500}{1641.667}=10.051$.
