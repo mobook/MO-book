@@ -103,7 +103,7 @@
 # 
 # Before going further, the first step is to install the Pyomo library and any solvers that may be used to compute numerical solutions. The following cell downloads a Python module that will check for (and if necessary install) Pyomo and a linear solver on Google Colab and most laptops.
 
-# In[24]:
+# In[44]:
 
 
 import requests
@@ -123,7 +123,7 @@ helper.install_cbc()
 # 
 # This collection of notebooks uses a consistent convention of assigning a `pyo` prefix to objects imported from `pyomo.environ`.
 
-# In[36]:
+# In[45]:
 
 
 import pyomo.environ as pyo
@@ -135,7 +135,7 @@ import pyomo.environ as pyo
 # 
 # The following cell creates a ConcreteModel object and stores it in a Python variable named `model`. The name can be any valid Python variable, but keep in mind the name will be a prefix for every variable and constraint. The `.display()` method is a convenient means of displaying the current contents of a Pyomo model.
 
-# In[40]:
+# In[46]:
 
 
 model = pyo.ConcreteModel("Production Planning: Version 1")
@@ -152,7 +152,7 @@ model.display()
 # 
 # The optional `domain` keyword specifies the type of decision variable. By default, the domain is all real numbers including negative and positive values. 
 
-# In[41]:
+# In[47]:
 
 
 model.x_M = pyo.Var(bounds=(0, None), initialize=0)
@@ -169,7 +169,7 @@ model.display()
 # 
 # The difference between revenue and expense is equal to the gross profit. The following cell creates linear expressions for revenue and expense which are then assigned the expressions to attributes called `model.revenue` and `model.expense`. We can print the expressions to verify correctness.
 
-# In[42]:
+# In[48]:
 
 
 model.revenue = 270 * model.y_U + 210 * model.y_V
@@ -181,24 +181,24 @@ print(model.expense)
 
 # **Step 5. Add an objective.**
 # 
-# The problem objective is to maximize gross profit, where gross profit is the difference between revenue and expense.
+# The objective is to maximize gross profit, where gross profit is defined as the difference between revenue and expense.
 # 
 # The Pyomo class `Objective` creates the objective for a Pyomo model. The required keyword argument `expr` specifies the expression to be optimized. The optional keyword argument `sense` specifies whether it is a minimization or maximization problem. For clarity, it is good practice is to always include the `sense` keyword argument.
 # 
 #     model.profit = pyo.Objective(expr = model.revenue - model.expense, sense = pyo.maximize)
 #     
-# An alternative way to create an objective is available in more recent releases of Pyomo. This approach uses a Python decorators to 'tag' function that returns an Pyomo expression as the objective function. 
+# An alternative way to declare an objective is available in more recent releases of Pyomo. This approach uses a Python decorator to 'tag' function that returns a Pyomo expression as the objective function. 
 # 
 #     @model.Objective(sense = pyo.maximize)
 #     def profit(model):
 #         return model.revenue - model.expense
 # 
-# Decorators are a feature of Python that change the behavior of a function without altering the function itself. The Pyomo library includes decorators to declare objectives, expression, constraints, and other objects. The use of decorators improves the readability and maintainability of more complex models. For now, one can think of decorators as a means of tagging a function with for the purpose of create model objects.
+# Decorators are a feature of Python that change the behavior of a function without altering the function itself. The Pyomo library provides decorators to declare objectives, expression, constraints, and other objects for optimization applications. Decorators improve the readability and maintainability of more complex models. Without going into the details of how decorators are implemented, one can think of them as a means for tagging functions for the purpose of creating model objects.
 # 
-# The name of the function will be used to create a model attribute. When passed as the first argument to the function, the model object will allow access to other model attributes, such as expressions or decision variables. Arguments can be passed to the decorator to specify the purpose of the function. For example, the `sense` keyword is used to set a maximization objective.
+# When using Pyomo decorators, the name of the function will create a model attribute. The function to be tagged with a Pyomo decorator must have the model object as the first argument. The decorator itself may have arguments. For example, the `sense` keyword is used to set the sense of an objective.
 # 
 
-# In[43]:
+# In[49]:
 
 
 @model.Objective(sense=pyo.maximize)
@@ -212,13 +212,13 @@ model.display()
 # 
 # Constraints are logical relationships between expressions that define the range of feasible solutions in an optimization problem.. The logical relationships can be `==`, `<=`, or `>=`. 
 # 
-# `pyo.Constraint()` is a Python library component that provides a convenient way to define and enforce constraints on scalar values.  When using`pyo.Constraint()`, a constraint consisting of a logical relationship between expressions is passed as a keyword argument `expr`. For the three equality constraints in this application, this appears as  
+# `pyo.Constraint()` is a Pyomo library component to creating scalar constraints. A constraint consists of a logical relationship between expressions is passed as a keyword argument `expr` to `pyo.Constraint()`. For this application, the constraints are expressed as  
 # 
 #     model.raw_materials = pyo.Constraint(expr = 10 * model.y_U + 9 * model.y_V <= model.x_M)
 #     model.labor_A = pyo.Constraint(expr = 2 * model.y_U + 1 * model.y_V <= model.x_A)
 #     model.labor_B = pyo.Constraint(expr = 1 * model.y_U + 1 * model.y_V <= model.x_B)
 #     
-# Decorators, however, allow for a more readable and maintainable way to express complex an indexed constraints in a model. In this case, the constraints are
+# Alternatively, the decorator syntax for constraints provides a readable and maintainable means to express more complex constraints. For the present example, the constraints would be writte
 # 
 #     @model.Constraint()
 #     def raw_materials(model):
@@ -233,9 +233,8 @@ model.display()
 #         return 2 * model.y_U + 1 * model.y_V <= model.x_A
 # 
 # These are demonstrated in the following cell.
-# 
 
-# In[35]:
+# In[52]:
 
 
 @model.Constraint()
@@ -254,8 +253,10 @@ model.display()
 
 
 # **Step 6. Solve the model.**
+# 
+# With the model now fully specified, the next step is to compute a solution. This is done by creating a solver object using `SolverFactory`, then applying the solver to the model, as shown in the following cell.
 
-# In[34]:
+# In[53]:
 
 
 solver = pyo.SolverFactory("cbc")
@@ -264,81 +265,67 @@ solver.solve(model)
 model.display()
 
 
-# **Display the solution.**
+# ## Version 2: Refactoring the Model
 # 
 
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-import matplotlib.pyplot as plt
-import numpy as np
-
-fig = plt.figure(figsize=(12, 12))
-ax = plt.subplot(211, xlabel="qty y1", ylabel="qty y2", 
-                 aspect=1, xlim=(0, 80), ylim=(0, 80))
-
-u = np.linspace(0, 80)
-
-ax.plot(u, (80 - u), lw=2, label="labor A")
-ax.plot(u, (100 - 2*u), lw=2, label="labor B")
-ax.plot([40]*2, ax.get_ylim(), lw=2, label="demand")
-
-ax.fill_between(u, (80 - u), 100, alpha=0.2)
-ax.fill_between(u, (100 - 2*u), 100, alpha=0.2)
-ax.fill_between([40, ax.get_xlim()[1]], [0]*2, [100]*2, alpha=0.2)
-ax.fill_between([ax.get_xlim()[0], 20], [0]*2, [100]*2, alpha=0.2)
-
-ax.legend(loc="upper right")
-
-for profit in [600*k for k in range(20)]:
-    ax.plot(u, (profit - 40*u)/30, 'r:', alpha=1, lw=0.5)
-
-ax.plot(m.y1.value, m.y2.value, 'r.', ms=20)
-
-
-# ## Organizing Data
-# 
-
-# In[186]:
+# In[59]:
 
 
 import pandas as pd
 
-products = {
+product_data = {
     "U": {"price": 270, "demand": 40},
     "V": {"price": 210, "demand": None},
 }
 
-resources = {
+display(pd.DataFrame(product_data))
+
+resource_data = {
     "M": {"price": 10, "available": None},
     "labor A": {"price": 50, "available": 100},
     "labor B": {"price": 40, "available":  80},
 }
 
-uses = {
+display(pd.DataFrame(resource_data))
+
+process_data = {
     "U": {"M": 10, "labor A": 2, "labor B": 1},
     "V": {"M":  9, "labor A": 1, "labor B": 1},
 }
 
+display(pd.DataFrame(process_data))
 
-# In[190]:
+
+# **Enhancement 1: Create sets of products and resources**
+
+# In[80]:
 
 
 model = pyo.ConcreteModel("Production Planning: Version 2")
 
+model.PRODUCTS = pyo.Set(initialize=product_data.keys())
+model.RESOURCES = pyo.Set(initialize=resource_data.keys())
 
-model.PRODUCTS = pyo.Set(initialize=products.keys())
-model.RESOURCES = pyo.Set(initialize=resources.keys())
+def x_bounds(model, r):
+    return(0, resource_data[r]["available"])
+model.x = pyo.Var(model.RESOURCES, bounds=x_bounds)
 
-model.x = pyo.Var(model.RESOURCES, bounds=(0, None), initialize=0)
-for r in model.RESOURCES:
-    model.x.ub = resources[r]["available"]
+def y_bounds(model, p):
+    return(0, product_data[p]["demand"])
+model.y = pyo.Var(model.PRODUCTS, bounds=y_bounds)
+
+@model.Objective(sense=pyo.maximize)
+def profit(model):
+    model.expense = sum(resource_data[r]["price"] * model.x[r] for r in model.RESOURCES)
+    model.revenue = sum(product_data[p]["price"] * model.y[p] for p in model.PRODUCTS)
+    return model.revenue - model.expense
+
+@model.Constraint(model.RESOURCES)
+def resource(model, r):
+    return sum(process_data[p][r] * model.y[p] for p in model.PRODUCTS) <= model.x[r]
+
+solver = pyo.SolverFactory('cbc')
+solver.solve(model)
     
 model.display()
 

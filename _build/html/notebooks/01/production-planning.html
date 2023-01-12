@@ -719,8 +719,8 @@ title="Print to PDF"
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#organizing-data">
-   Organizing Data
+  <a class="reference internal nav-link" href="#version-2-refactoring-the-model">
+   Version 2: Refactoring the Model
   </a>
  </li>
 </ul>
@@ -765,8 +765,8 @@ title="Print to PDF"
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#organizing-data">
-   Organizing Data
+  <a class="reference internal nav-link" href="#version-2-refactoring-the-model">
+   Version 2: Refactoring the Model
   </a>
  </li>
 </ul>
@@ -1069,19 +1069,19 @@ cbc was previously installed
 </div>
 </div>
 <p><strong>Step 5. Add an objective.</strong></p>
-<p>The problem objective is to maximize gross profit, where gross profit is the difference between revenue and expense.</p>
+<p>The objective is to maximize gross profit, where gross profit is defined as the difference between revenue and expense.</p>
 <p>The Pyomo class <code class="docutils literal notranslate"><span class="pre">Objective</span></code> creates the objective for a Pyomo model. The required keyword argument <code class="docutils literal notranslate"><span class="pre">expr</span></code> specifies the expression to be optimized. The optional keyword argument <code class="docutils literal notranslate"><span class="pre">sense</span></code> specifies whether it is a minimization or maximization problem. For clarity, it is good practice is to always include the <code class="docutils literal notranslate"><span class="pre">sense</span></code> keyword argument.</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>model.profit = pyo.Objective(expr = model.revenue - model.expense, sense = pyo.maximize)
 </pre></div>
 </div>
-<p>An alternative way to create an objective is available in more recent releases of Pyomo. This approach uses a Python decorators to ‘tag’ function that returns an Pyomo expression as the objective function.</p>
+<p>An alternative way to declare an objective is available in more recent releases of Pyomo. This approach uses a Python decorator to ‘tag’ function that returns a Pyomo expression as the objective function.</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>@model.Objective(sense = pyo.maximize)
 def profit(model):
     return model.revenue - model.expense
 </pre></div>
 </div>
-<p>Decorators are a feature of Python that change the behavior of a function without altering the function itself. The Pyomo library includes decorators to declare objectives, expression, constraints, and other objects. The use of decorators improves the readability and maintainability of more complex models. For now, one can think of decorators as a means of tagging a function with for the purpose of create model objects.</p>
-<p>The name of the function will be used to create a model attribute. When passed as the first argument to the function, the model object will allow access to other model attributes, such as expressions or decision variables. Arguments can be passed to the decorator to specify the purpose of the function. For example, the <code class="docutils literal notranslate"><span class="pre">sense</span></code> keyword is used to set a maximization objective.</p>
+<p>Decorators are a feature of Python that change the behavior of a function without altering the function itself. The Pyomo library provides decorators to declare objectives, expression, constraints, and other objects for optimization applications. Decorators improve the readability and maintainability of more complex models. Without going into the details of how decorators are implemented, one can think of them as a means for tagging functions for the purpose of creating model objects.</p>
+<p>When using Pyomo decorators, the name of the function will create a model attribute. The function to be tagged with a Pyomo decorator must have the model object as the first argument. The decorator itself may have arguments. For example, the <code class="docutils literal notranslate"><span class="pre">sense</span></code> keyword is used to set the sense of an objective.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
@@ -1125,13 +1125,13 @@ def profit(model):
 </div>
 <p><strong>Step 5. Add constraints.</strong></p>
 <p>Constraints are logical relationships between expressions that define the range of feasible solutions in an optimization problem.. The logical relationships can be <code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, or <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>.</p>
-<p><code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code> is a Python library component that provides a convenient way to define and enforce constraints on scalar values.  When using<code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code>, a constraint consisting of a logical relationship between expressions is passed as a keyword argument <code class="docutils literal notranslate"><span class="pre">expr</span></code>. For the three equality constraints in this application, this appears as</p>
+<p><code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code> is a Pyomo library component to creating scalar constraints. A constraint consists of a logical relationship between expressions is passed as a keyword argument <code class="docutils literal notranslate"><span class="pre">expr</span></code> to <code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code>. For this application, the constraints are expressed as</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>model.raw_materials = pyo.Constraint(expr = 10 * model.y_U + 9 * model.y_V &lt;= model.x_M)
 model.labor_A = pyo.Constraint(expr = 2 * model.y_U + 1 * model.y_V &lt;= model.x_A)
 model.labor_B = pyo.Constraint(expr = 1 * model.y_U + 1 * model.y_V &lt;= model.x_B)
 </pre></div>
 </div>
-<p>Decorators, however, allow for a more readable and maintainable way to express complex an indexed constraints in a model. In this case, the constraints are</p>
+<p>Alternatively, the decorator syntax for constraints provides a readable and maintainable means to express more complex constraints. For the present example, the constraints would be writte</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>@model.Constraint()
 def raw_materials(model):
     return 10 * model.y_U + 9 * model.y_V &lt;= model.x_M
@@ -1222,6 +1222,7 @@ Model &#39;Production Planning: Version 1&#39;
 </div>
 </div>
 <p><strong>Step 6. Solve the model.</strong></p>
+<p>With the model now fully specified, the next step is to compute a solution. This is done by creating a solver object using <code class="docutils literal notranslate"><span class="pre">SolverFactory</span></code>, then applying the solver to the model, as shown in the following cell.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
@@ -1270,86 +1271,181 @@ Model &#39;Production Planning: Version 1&#39;
 </div>
 </div>
 </div>
-<p><strong>Display the solution.</strong></p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-
-<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
-<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;qty y1&quot;</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">&quot;qty y2&quot;</span><span class="p">,</span> 
-                 <span class="n">aspect</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">80</span><span class="p">),</span> <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">80</span><span class="p">))</span>
-
-<span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">80</span><span class="p">)</span>
-
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="p">(</span><span class="mi">80</span> <span class="o">-</span> <span class="n">u</span><span class="p">),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;labor A&quot;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="p">(</span><span class="mi">100</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;labor B&quot;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">40</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">(),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;demand&quot;</span><span class="p">)</span>
-
-<span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="p">(</span><span class="mi">80</span> <span class="o">-</span> <span class="n">u</span><span class="p">),</span> <span class="mi">100</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="p">(</span><span class="mi">100</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">),</span> <span class="mi">100</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">([</span><span class="mi">40</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mi">100</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">20</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mi">100</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
-
-<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
-
-<span class="k">for</span> <span class="n">profit</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">600</span><span class="o">*</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">)]:</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="p">(</span><span class="n">profit</span> <span class="o">-</span> <span class="mi">40</span><span class="o">*</span><span class="n">u</span><span class="p">)</span><span class="o">/</span><span class="mi">30</span><span class="p">,</span> <span class="s1">&#39;r:&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y1</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">y2</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;r.&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Bad key &quot;text.kerning_factor&quot; on line 4 in
-C:\Programs\Anaconda3\lib\site-packages\matplotlib\mpl-data\stylelib\_classic_test_patch.mplstyle.
-You probably need to get an updated matplotlibrc file from
-http://github.com/matplotlib/matplotlib/blob/master/matplotlibrc.template
-or from the matplotlib source distribution
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[&lt;matplotlib.lines.Line2D at 0x200d888cda0&gt;]
-</pre></div>
-</div>
-</div>
-</div>
 </section>
-<section id="organizing-data">
-<h2>Organizing Data<a class="headerlink" href="#organizing-data" title="Permalink to this heading">#</a></h2>
+<section id="version-2-refactoring-the-model">
+<h2>Version 2: Refactoring the Model<a class="headerlink" href="#version-2-refactoring-the-model" title="Permalink to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
-<span class="n">products</span> <span class="o">=</span> <span class="p">{</span>
+<span class="n">product_data</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;U&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mi">270</span><span class="p">,</span> <span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="mi">40</span><span class="p">},</span>
     <span class="s2">&quot;V&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mi">210</span><span class="p">,</span> <span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
 <span class="p">}</span>
 
-<span class="n">resources</span> <span class="o">=</span> <span class="p">{</span>
+<span class="n">display</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">product_data</span><span class="p">))</span>
+
+<span class="n">resource_data</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;available&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
     <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s2">&quot;available&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
     <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span> <span class="s2">&quot;available&quot;</span><span class="p">:</span>  <span class="mi">80</span><span class="p">},</span>
 <span class="p">}</span>
 
-<span class="n">uses</span> <span class="o">=</span> <span class="p">{</span>
+<span class="n">display</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">resource_data</span><span class="p">))</span>
+
+<span class="n">process_data</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;U&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
     <span class="s2">&quot;V&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;M&quot;</span><span class="p">:</span>  <span class="mi">9</span><span class="p">,</span> <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
 <span class="p">}</span>
+
+<span class="n">display</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">process_data</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>U</th>
+      <th>V</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>price</th>
+      <td>270</td>
+      <td>210.0</td>
+    </tr>
+    <tr>
+      <th>demand</th>
+      <td>40</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+</div></div><div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>M</th>
+      <th>labor A</th>
+      <th>labor B</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>price</th>
+      <td>10.0</td>
+      <td>50</td>
+      <td>40</td>
+    </tr>
+    <tr>
+      <th>available</th>
+      <td>NaN</td>
+      <td>100</td>
+      <td>80</td>
+    </tr>
+  </tbody>
+</table>
+</div></div><div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>U</th>
+      <th>V</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>M</th>
+      <td>10</td>
+      <td>9</td>
+    </tr>
+    <tr>
+      <th>labor A</th>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>labor B</th>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
+<p><strong>Enhancement 1: Create sets of products and resources</strong></p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Production Planning: Version 2&quot;</span><span class="p">)</span>
 
+<span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">product_data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">resource_data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">products</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-<span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">resources</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="k">def</span> <span class="nf">x_bounds</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+    <span class="k">return</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">resource_data</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="s2">&quot;available&quot;</span><span class="p">])</span>
+<span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="n">x_bounds</span><span class="p">)</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">initialize</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">:</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">ub</span> <span class="o">=</span> <span class="n">resources</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="s2">&quot;available&quot;</span><span class="p">]</span>
+<span class="k">def</span> <span class="nf">y_bounds</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+    <span class="k">return</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">product_data</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s2">&quot;demand&quot;</span><span class="p">])</span>
+<span class="n">model</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="n">y_bounds</span><span class="p">)</span>
+
+<span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">expense</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">resource_data</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="s2">&quot;price&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">product_data</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s2">&quot;price&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">expense</span>
+
+<span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">resource</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">process_data</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="n">r</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
+
+<span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+<span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
     
 <span class="n">model</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
 </pre></div>
@@ -1361,15 +1457,25 @@ or from the matplotlib source distribution
   Variables:
     x : Size=3, Index=RESOURCES
         Key     : Lower : Value : Upper : Fixed : Stale : Domain
-              M :     0 :     0 :  None : False : False :  Reals
-        labor A :     0 :     0 :  None : False : False :  Reals
-        labor B :     0 :     0 :  None : False : False :  Reals
+              M :     0 : 740.0 :  None : False : False :  Reals
+        labor A :     0 : 100.0 :   100 : False : False :  Reals
+        labor B :     0 :  80.0 :    80 : False : False :  Reals
+    y : Size=2, Index=PRODUCTS
+        Key : Lower : Value : Upper : Fixed : Stale : Domain
+          U :     0 :  20.0 :    40 : False : False :  Reals
+          V :     0 :  60.0 :  None : False : False :  Reals
 
   Objectives:
-    None
+    profit : Size=1, Index=None, Active=True
+        Key  : Active : Value
+        None :   True : 2400.0
 
   Constraints:
-    None
+    resource : Size=3
+        Key     : Lower : Body : Upper
+              M :  None :  0.0 :   0.0
+        labor A :  None :  0.0 :   0.0
+        labor B :  None :  0.0 :   0.0
 </pre></div>
 </div>
 </div>
