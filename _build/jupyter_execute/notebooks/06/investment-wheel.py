@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: Pyomo; Block
+# ```
+# ```{index} single: Pyomo; kernel library
+# ```
+# ```{index} single: conic programming; exponential cones
+# ```
+# ```{index} single: solver; Mosek
+# ```
 # # Luenberger's Investment Wheel
 
 # In[1]:

@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Extra material: Job shop scheduling
-# 
-# ```{index} job shop
+# ```{index} Gantt charts
 # ```
+# ```{index} disjunctive programming
+# ```
+# ```{index} single: application; job shop
+# ```
+# ```{index} single: application; scheduling
+# ```
+# 
+# # Extra material: Job shop scheduling
 
 # ## Imports
 # 
@@ -233,8 +239,6 @@ print(schedule.sort_values(by=['Machine','Start']).set_index(['Machine', 'Job'])
 
 # ## Visualizing Results with Gantt Charts
 # 
-# ```{index} Gantt charts
-# ```
 
 # In[6]:
 

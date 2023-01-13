@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# :::{index} single: application; regression
+# :::
+# 
 # # LAD Regression
 # 
 # Linear regression is a supervised machine learning technique that produces a linear model predicting values of a dependent variable from known values of one or more independent variables. Linear regression has a long history dating back to at least the 19th century and is a mainstay of modern data analysis. 

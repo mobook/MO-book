@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: Pyomo; Block
+# ```
 # # Workforce shift scheduling
 
 # In[1]:

@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: Pyomo; Block
+# ```
+# 
 # # Robust Production Planning
 # 
 # The purpose of this notebook is to demonstrate a range of techniques for robust optimization using a common example.

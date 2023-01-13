@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: Pyomo; Block
+# ```
+# ```{index} single: Pyomo; kernel library
+# ```
+# ```{index} single: conic programming; exponential cones
+# ```
+# ```{index} single: solver; Mosek
+# ```
 # # Optimal Growth Portfolios
 # 
 # Among the reasons why Kelly was neglected by investors were high profile critiques by the most famous economist of the 20th Century, Paul Samuelson. Samuelson objected on several grounds, among them is a lack of risk aversion that results in large bets and risky short term behavior, and that Kelly's result is applicable to only one of many utility functions that describe investor preferences. The controversy didn't end there, however, as other academic economists, including Harry Markowitz, and practitioners found ways to adapt the Kelly criterion to investment funds.

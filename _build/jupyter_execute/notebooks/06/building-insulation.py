@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: Pyomo; Block
+# ```
+# ```{index} single: Pyomo; kernel library
+# ```
+# ```{index} single: conic programming; second order cones
+# ```
+# ```{index} single: solver; Mosek
+# ```
 # # Optimal Design of Multilayered Building Insulation
 
 # Thermal insulation is installed in buildings to reduce annual energy costs. However, the installation costs money, so the decision of how much insulation to install is a trade-off between the annualized capital costs of insulation and the annual operating costs for heating and air conditioning. This notebook shows the formulation and solution of an optimization problem using conic programming.
@@ -25,25 +33,23 @@ helper.install_gurobi()
 # 
 # Consider a wall or surface separating conditioned interior space in a building at temperature $T_i$ from the external environment at temperature $T_o$. Heat conduction through the wall is given by
 # 
-# $$\dot{Q} = UA (T_i - T_o)$$
+# $$\dot{Q} = UA (T_i - T_o),$$
 # 
-# where $U$ is the overall heat transfer coefficient. For a wall constructed from $N$ layers of different insulating materials, the inverse of the overall heat transfer coefficient is given by a sum of serial thermal "resistances"
+# where $U$ is the overall heat transfer coefficient and and $A$ is the heat transfer area. For a wall constructed from $N$ layers of different insulating materials, the inverse of the overall heat transfer coefficient $U$ is given by a sum of serial thermal "resistances"
 # 
-# $$\frac{1}{U} = R_0 + \sum_{n=1}^N R_n$$
+# $$\frac{1}{U} = R_0 + \sum_{n=1}^N R_n,$$
 # 
-# where $R_0$ is the thermal resistance of the structural elements. The thermal resistance of the $n$-th insulating layer is equal to $R_n = \frac{x_n}{k_n}$ for a material with thickness $x_n$ and a thermal conductivity $k_n$.
+# where $R_0$ is the thermal resistance of the structural elements. The thermal resistance of the $n$-th insulating layer is equal to $R_n = \frac{x_n}{k_n}$ for a material with thickness $x_n$ and a thermal conductivity $k_n$, so we can rewrite
 # 
-# $$\frac{1}{U} = R_0 + \sum_{n=1}^N \frac{x_n}{k_n}$$
+# $$\frac{1}{U} = R_0 + \sum_{n=1}^N \frac{x_n}{k_n}.$$
 # 
-# We assume the annual energy costs are proportional to thermal conductivity $U$. The cost of installing a unit area of insulation is given by an affine expression
+# The economic objective is to minimize the cost $C$, obtained as the combined annual energy operating expenses and capital cost of insulation. 
 # 
-# $$a_n + b_n x_m$$
+# We assume the annual energy costs are proportional to overall heat transfer coefficient $U$ and let $\alpha \geq 0$ be the coefficient for the proportional relationship of the overall heat transfer coefficient $U$ to the annual energy costs. Furthermore, we assume the cost of installing a unit area of insulation in the $n$-th layer is given by the affine expression $a_n + b_n x_n$. The combined annualized costs are then
 # 
-# The combined annualized costs are then
+# $$C = \alpha U + \beta\sum_{n=1}^N (a_n y_n + b_n x_n),$$
 # 
-# $$C = \alpha U + \beta\sum_{n=1}^N (a_n y_n + b_n x_n)$$
-# 
-# where $\beta$ is a discount factor for the equivalent annualized cost of insulation, and binary variable $y_n$ is a binary variable that indicates whether or not layer $n$ is included in the installation. The feasible values for $x_n$ are subject to constraints
+# where $\beta$ is a discount factor for the equivalent annualized cost of insulation, and $y_n$ is a binary variable that indicates whether or not layer $n$ is included in the installation. The feasible values for $x_n$ are subject to constraints
 # 
 # $$\begin{align}
 # x_n & \leq Ty_n \\
@@ -53,17 +59,17 @@ helper.install_gurobi()
 # where $T$ is an upper bound on insulation thickness.
 # 
 
-# ## Analytic Solution for $N=1$
+# ## Analytic solution for $N=1$
 # 
-# The case $N=1$ has a simple analytical solution
+# In the case of a single layer, i.e., $N=1$, we have a one-dimensional cost optimization problem of which we can obtain a close-form analytical solution directly. Indeed, the expression for the cost $C(x)$ as a function of the thickness $x$ reads
 # 
 # $$\begin{align}
-# C^{min} = \min & \left(\frac{\alpha k}{k R_0 + x} + \beta(a + bx)\right)
+# C(x) = \frac{\alpha k}{k R_0 + x} + \beta(a + bx).
 # \end{align}$$
 # 
-# Solving for the optimum thickness $x^{opt}$
+# For fixed parameters $k$, $R_0$, $\beta$, $b$, we can calculate the optimum thickness $x^*$ as
 # 
-# $$x^{opt} = - k R_0 + \sqrt{\frac{\alpha k}{\beta b}} $$
+# $$x^{*} = - k R_0 + \sqrt{\frac{\alpha k}{\beta b}}.$$
 # 
 # A plot illustrates the trade-off between operating and capital costs.
 # 
@@ -173,7 +179,9 @@ print(f"The optimal thickness is xopt = {m.x():0.5f} meters")
 
 # ## Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Program (MIQCP)
 
-# The economic objective is to minimize the combined annual energy operating expenses and capital cost of insulation. Let $\alpha$ be a coefficient for the proportional relationship of the overall heat transfer coefficient $U$ to the annual energy costs. The full multi-layer optimization problem then reads as follows:
+# For multiple layers, we cannot easily find an analytical optimal layer composition and we shall resort to conic optimization.
+# 
+# In the general case with $N$ layers, the full multi-layer optimization problem then reads as follows:
 # 
 # $$
 # \begin{align}

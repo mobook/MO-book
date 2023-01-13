@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Extra material: Strip packing
-# 
 # ```{index} disjunctive programming
 # ```
+# # Extra material: Strip packing
 # 
 # *Strip packing* (SP) refers to the problem of packing rectanges onto a two dimensional strip of fixed width. 
 # 

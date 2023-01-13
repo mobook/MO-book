@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: Pyomo; Block
+# ```
+# ```{index} single: Pyomo; kernel library
+# ```
 # # Support Vector Machines for Binary Classification
 # 
 # Creating binary classifiers from sample data is an example of supervised machine learning. This notebook shows how to create a class of binary classifiers  known as support vector machines (SVM) from sample data using linear, quadratic, and conic programming. The first implementation produces linear support vector machines that separates the "feature space" with a hyperplane. The  implementation uses a dual formulation that extends naturally to non-linear classification.

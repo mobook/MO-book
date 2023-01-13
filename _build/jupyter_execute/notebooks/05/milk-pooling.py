@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: Pyomo; Block
+# ```
+# ```{index} bilinear constraints
+# ```
+# ```{index} McCormick envelopes
+# ```
+# 
 # # Milk pooling and blending
 # 
 # This notebook presents an overview of bilinear pooling and blending problems in the context of a simple milk blending operation. The essential non-convex nature of the problem is demonstrated, and the two basic formulations (the P- and Q- parameterizations) are shown.
 
-# In[1]:
+# In[2]:
 
 
 # install Pyomo and solvers

@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# :::{index} single: application; regression
+# :::
+# 
 # # Wine quality prediction with L1 regression
 
 # In[6]:

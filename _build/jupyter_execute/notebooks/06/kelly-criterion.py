@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: Pyomo; Block 
+# ```
+# ```{index} single: Pyomo; kernel library
+# ```
+# ```{index} single: conic programming; exponential cones
+# ```
+# ```{index} single: solver; Mosek
+# ```
 # # The Kelly Criterion
 # 
 # The Kelly Criterion determines the size of a bet in a repeated game with binary outcomes. The analysis was proposed in 1956 by John Kelly at Bell Laboratories. Kelly identified an analogy between gambling on binary outcomes and Claude Shannon's work on encoding information for transmission on noisy channels. Kelly used the analogy to show

@@ -255,6 +255,8 @@ model.display()
 # **Step 6. Solve the model.**
 # 
 # With the model now fully specified, the next step is to compute a solution. This is done by creating a solver object using `SolverFactory`, then applying the solver to the model, as shown in the following cell.
+# 
+# EXPAND DISCUSSION REGARDING SOLVERS.
 
 # In[53]:
 
@@ -264,6 +266,8 @@ solver.solve(model)
 
 model.display()
 
+
+# **Step 7. Reporting the solution.**
 
 # ## Version 2: Refactoring the Model
 # 
