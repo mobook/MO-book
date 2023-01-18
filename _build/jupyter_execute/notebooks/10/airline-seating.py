@@ -15,6 +15,8 @@
 # ```
 # ```{index} sample average approximation
 # ```
+# ```{index} two-stage problem
+# ```
 # 
 # # Airline seat allocation problem
 # 

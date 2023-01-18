@@ -9,7 +9,9 @@
 # ```
 # ```{index} single: Pyomo; sets
 # ```
-# ```{index} stochastic programming
+# ```{index} stochastic optimization
+# ```
+# ```{index} two-stage problem
 # ```
 # 
 # # The Farmer's Problem and Variants

@@ -5,7 +5,7 @@
 # ```
 # ```{index} single: Pyomo; sets
 # ```
-# ```{index} single: Pyomo; paramters
+# ```{index} single: Pyomo; parameters
 # ```
 # ```{index} single: solver; cbc
 # ```

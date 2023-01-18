@@ -11,7 +11,7 @@
 # ```
 # ```{index} stochastic optimization
 # ```
-# ```{index} simulation
+# ```{index} simulations
 # ```
 # 
 # # Stock optimization for seafood distribution center

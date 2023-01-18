@@ -9,8 +9,11 @@
 # ```
 # ```{index} single: Pyomo; persistent solvers
 # ```
-# ```{index} robust optimizaation
+# ```{index} robust optimization
 # ```
+# ```{index} two-stage problem
+# ```
+# 
 # # Robust Production Planning
 # 
 # The purpose of this notebook is to demonstrate a range of techniques for robust optimization using a common example.

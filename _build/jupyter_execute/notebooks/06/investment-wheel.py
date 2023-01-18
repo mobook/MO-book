@@ -7,7 +7,7 @@
 # ```
 # ```{index} single: conic programming; exponential cones
 # ```
-# ```{index} single: solver; Mosek
+# ```{index} single: solver; mosek
 # ```
 # ```{index} single: application; portfolio
 # ```
