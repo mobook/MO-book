@@ -1,7 +1,25 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ```{index} single: Pyomo; Block
+# ```{index} single: Pyomo; block
+# ```
+# ```{index} single: Pyomo; kernel library
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} single: solver; ipopt
+# ```
+# ```{index} single: solver; cplex
+# ```
+# ```{index} single: solver; gurobi
+# ```
+# ```{index} single: solver; xpress
+# ```
+# ```{index} data-driven uncertainty sets
+# ```
+# ```{index} single: application; production planning
+# ```
+# ```{index} robust optimization
 # ```
 # 
 # # Robust BIM microchip production problem

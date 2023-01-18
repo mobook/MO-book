@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ```{index} single: Pyomo; Block
+# ```{index} single: Pyomo; block
 # ```
 # ```{index} single: Pyomo; kernel library
 # ```
@@ -9,7 +9,11 @@
 # ```
 # ```{index} single: solver; Mosek
 # ```
-# # Luenberger's Investment Wheel
+# ```{index} single: application; portfolio
+# ```
+# ```{index} single: application; investment
+# ```
+# # Extra material: Luenberger's Investment Wheel
 
 # In[1]:
 
@@ -211,7 +215,7 @@ wheel_sim(w, 40, 20);
 # 
 # $$\sum_{n\in N} p_n R_n^{-\lambda} \leq 1$$
 # 
-# The case $\lambda=0$ is always satisfied and imposes no further restrictions on an optimization problem. This is this case of no risk-aversion. If $\lambda > 0$ then outcomes with gross returns less than one are penalized. As $\lambda \rightarrow \infty$ no solutions are admissible with a gross return less than one. In that case a feasible solution $w_n = 0$ for all $\n\in N$ always exists, and there may other non-trivial solutions as well.
+# The case $\lambda=0$ is always satisfied and imposes no further restrictions on an optimization problem. This is this case of no risk-aversion. If $\lambda > 0$ then outcomes with gross returns less than one are penalized. As $\lambda \rightarrow \infty$ no solutions are admissible with a gross return less than one. In that case a feasible solution $w_n = 0$ for all $n\in N$ always exists, and there may other non-trivial solutions as well.
 # 
 # Replacing each term with an exponential
 # 

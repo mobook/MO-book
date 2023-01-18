@@ -1,18 +1,25 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ```{index} single: Pyomo; Block
+# ```{index} single: Pyomo; block
 # ```
 # ```{index} bilinear constraints
 # ```
 # ```{index} McCormick envelopes
 # ```
-# 
+# ```{index} single: Pyomo; block
+# ```
+# ```{index} single: Pyomo; block
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} single: solver; couenne
+# ```
 # # Milk pooling and blending
 # 
 # This notebook presents an overview of bilinear pooling and blending problems in the context of a simple milk blending operation. The essential non-convex nature of the problem is demonstrated, and the two basic formulations (the P- and Q- parameterizations) are shown.
 
-# In[2]:
+# In[24]:
 
 
 # install Pyomo and solvers
@@ -61,7 +68,7 @@ helper.install_couenne()
 # 
 # The situation is illustrated in the following diagram where arrows show the flow and blending of milk supplies.
 # 
-# ![](milk-pooling.dio.png)
+# ![](milk-pooling.png)
 # 
 # What should the distributor do?
 # 
@@ -72,7 +79,7 @@ helper.install_couenne()
 # * Option 3. Pool raw milk from the remote farms into a single tank for truck transport to the blending facility.
 # 
 
-# In[2]:
+# In[25]:
 
 
 import pandas as pd
@@ -137,7 +144,7 @@ display(remote_suppliers)
 # 
 # This is a standard linear blending problem.
 
-# In[3]:
+# In[26]:
 
 
 import pyomo.environ as pyo
@@ -171,7 +178,7 @@ def quality(m, c):
 pyo.SolverFactory('cbc').solve(m)
 
 # report results
-print(f"\nprofit = {m.profit():0.2f}\n")
+print(f"\nProfit = {m.profit():0.2f}\n")
 Z = pd.DataFrame([[l, c, round(m.z[l, c](), 1)] for l, c in m.L * m.C], columns = ["supplier", "customer", "blend"])
 Z = Z.pivot_table(index="customer", columns="supplier")
 Z["fat"]  = sum(Z.loc[:,('blend',l)] * suppliers.loc[l, "fat"] for l in m.L)/Z.sum(axis=1)
@@ -185,7 +192,7 @@ display(Z)
 # 
 # The model used above applies by extending the set of suppliers to include both local and remote farms. The required changes are noted in the cell below.
 
-# In[4]:
+# In[27]:
 
 
 import pyomo.environ as pyo
@@ -220,7 +227,7 @@ def quality(m, c):
 pyo.SolverFactory('cbc').solve(m)
 
 # report results
-print(f"\nprofit = {m.profit():0.2f}\n")
+print(f"\nProfit = {m.profit():0.2f}\n")
 Z = pd.DataFrame([[l, c, round(m.z[l, c](), 1)] for l, c in m.L * m.C], columns = ["supplier", "customer", "blend"])
 Z = Z.pivot_table(index="customer", columns="supplier")
 Z["fat"]  = sum(Z.loc[:,('blend',l)] * suppliers.loc[l, "fat"] for l in m.L)/Z.sum(axis=1)
@@ -285,7 +292,7 @@ display(Z)
 # 
 # The bilinear terms have a profound consequence on the nature of the optimization problem. To demonstrate, the following cell creates a linear program to maximize profit as a function of $p$, then explores how profit changes as a function of parameter $p$.
 
-# In[5]:
+# In[28]:
 
 
 import pyomo.environ as pyo
@@ -310,7 +317,9 @@ def milk_pooling(p=0, q="fat"):
 
     @m.Objective(sense=pyo.maximize)
     def profit(m):
-        return + sum(m.z[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C)                + sum(m.y[c]*customers.loc[c, "price"] for c in m.C)                - sum(m.x[r]*suppliers.loc[r, "cost"] for r in m.R)
+        return + sum(m.z[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C) \
+               + sum(m.y[c]*customers.loc[c, "price"] for c in m.C) \
+               - sum(m.x[r]*suppliers.loc[r, "cost"] for r in m.R)
 
     @m.Constraint(m.C)
     def customer_demand(m, c):
@@ -326,7 +335,8 @@ def milk_pooling(p=0, q="fat"):
     
     @m.Constraint(m.C)
     def customer_quality(m, c):
-        return m.p * m.y[c] + sum(suppliers.loc[l, q] * m.z[l, c] for l in m.L)                  >= customers.loc[c, q] * (sum(m.z[l, c] for l in m.L) + m.y[c])
+        return m.p * m.y[c] + sum(suppliers.loc[l, q] * m.z[l, c] for l in m.L) \
+                 >= customers.loc[c, q] * (sum(m.z[l, c] for l in m.L) + m.y[c])
 
     pyo.SolverFactory('cbc').solve(m)
     
@@ -334,14 +344,14 @@ def milk_pooling(p=0, q="fat"):
 
 p = 0.04
 m = milk_pooling(p)
-print(f"\nprofit = {m.profit():0.2f}")
+print(f"\nProfit = {m.profit():0.2f}")
 
 
 # The result shows the profit if the pool of milk transported from the remote farms has a milk fat content $p = 0.04$. The profit of 100,000, is better than 81,000 earned for business as usual with just local suppliers, but falls short of the 122,441 earned if the remote milk supply could be transported without pooling.
 # 
 # The following cell presents a full report of the solution.
 
-# In[6]:
+# In[29]:
 
 
 def report_solution(m):
@@ -371,8 +381,8 @@ def report_solution(m):
     C["Income"] = C["Amount"] * C["price"]
     
     print(m)
-    print(f"\npool composition = {m.p()}")
-    print(f"profit = {m.profit():0.2f}")
+    print(f"\nPool composition = {m.p()}")
+    print(f"Profit = {m.profit():0.2f}")
     print(f"\nSupplier Report\n")
     display(S.round(4))
     print(f"\nCustomer Report\n")
@@ -385,7 +395,7 @@ report_solution(m)
 
 # As this stage the calculations find the maximum profit for a given value of $p$. The challenge, of course, is that the optimal value of $p$ is unknown. The following cell computes profits over a range of $p$.
 
-# In[7]:
+# In[30]:
 
 
 p_plot = np.linspace(0.025, 0.055, 200)
@@ -397,6 +407,7 @@ ax.set_title("Milk Pooling")
 ax.set_xlabel("Pool composition p")
 ax.set_ylabel("Profit")
 ax.grid(True)
+plt.show()
 
 
 # The results show the maximum achievable profit with pooling is over than 102,000. What is needed is an optimization technique that can solve for the optimal pool composition and profit. This plot demonstrates how the non-convex bilinear constraints can result in multiple local maxima and a saddle points.
@@ -463,7 +474,7 @@ ax.grid(True)
 # 
 # The result of these operations is a linear model that will provide an upper bound on the profit. Hopefully the resulting solution and bound will be a close enough approximation to be useful.
 
-# In[8]:
+# In[31]:
 
 
 import pyomo.environ as pyo
@@ -492,7 +503,9 @@ def milk_pooling_convex(q="fat"):
 
     @m.Objective(sense=pyo.maximize)
     def profit(m):
-        return + sum(m.z[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C)                + sum(m.y[c]*customers.loc[c, "price"] for c in m.C)                - sum(m.x[r]*suppliers.loc[r, "cost"] for r in m.R)
+        return + sum(m.z[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C) \
+               + sum(m.y[c]*customers.loc[c, "price"] for c in m.C) \
+               - sum(m.x[r]*suppliers.loc[r, "cost"] for r in m.R)
     
     @m.Block(m.C)
     def mccormick(b, c):
@@ -516,7 +529,8 @@ def milk_pooling_convex(q="fat"):
     
     @m.Constraint(m.C)
     def customer_quality(m, c):
-        return m.w[c] + sum(suppliers.loc[l, q] * m.z[l, c] for l in m.L)                  >= customers.loc[c, q] * (sum(m.z[l, c] for l in m.L) + m.y[c])
+        return m.w[c] + sum(suppliers.loc[l, q] * m.z[l, c] for l in m.L) \
+                 >= customers.loc[c, q] * (sum(m.z[l, c] for l in m.L) + m.y[c])
 
     pyo.SolverFactory('cbc').solve(m)
     
@@ -528,7 +542,7 @@ report_solution(m_convex)
 
 # The convex approximation of the milk pooling model estimates an upper bound on profit of 111,412 for a pool composition $p = 0.040$. The plot below compares this solution to what was found by in an exhaustive search over values of $p$.
 
-# In[9]:
+# In[32]:
 
 
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -548,7 +562,7 @@ ax.annotate("convex approximation", xy=(m_convex.p(), m_convex.profit()),
 
 # The convex approximation is clearly misses the market in the estimate of profit and pool composition $p$. Without the benefit of the full scan of profit as a function of $p$, the only check on the profit estimate would be to compute the solution to model for the reported value of $p$. This is done below.
 
-# In[10]:
+# In[33]:
 
 
 m_est = milk_pooling(m_convex.p())
@@ -572,9 +586,10 @@ ax.axhline(m_est.profit(), color='g', linestyle='--')
 ax.annotate("local maxima", xy=(m_convex.p(), m_est.profit()),
             xytext=(0.045, 105000), ha="left", fontsize=14,
             arrowprops=dict(shrink=0.1, width=1, headwidth=5))
+plt.show()
 
 
-# In[11]:
+# In[34]:
 
 
 report_solution(m_est)
@@ -586,7 +601,7 @@ report_solution(m_est)
 # 
 # The final version of this milk pooling model returns to the bilinear formulation with pool composition $p$ as a decision variable. The following Pyomo implementation needs to specify a solver capable of solving the resulting problem. This has been tested with nonlinear solvers [`ipopt`](https://github.com/coin-or/Ipopt) and [`couenne`](https://github.com/coin-or/Couenne). [Pre-compiled binaries for these solvers can be downloaded from AMPL](https://ampl.com/products/solvers/open-source/). 
 
-# In[12]:
+# In[35]:
 
 
 import pyomo.environ as pyo
@@ -611,7 +626,9 @@ def milk_pooling_bilinear(q="fat"):
 
     @m.Objective(sense=pyo.maximize)
     def profit(m):
-        return + sum(m.z[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C)                + sum(m.y[c]*customers.loc[c, "price"] for c in m.C)                - sum(m.x[r]*suppliers.loc[r, "cost"] for r in m.R)
+        return + sum(m.z[l, c]*(customers.loc[c, "price"] - suppliers.loc[l, "cost"]) for l, c in m.L * m.C) \
+               + sum(m.y[c]*customers.loc[c, "price"] for c in m.C) \
+               - sum(m.x[r]*suppliers.loc[r, "cost"] for r in m.R)
 
     @m.Constraint(m.C)
     def customer_demand(m, c):
@@ -627,14 +644,15 @@ def milk_pooling_bilinear(q="fat"):
     
     @m.Constraint(m.C)
     def customer_quality(m, c):
-        return m.p * m.y[c] + sum(suppliers.loc[l, q] * m.z[l, c] for l in m.L)                  >= customers.loc[c, q] * (sum(m.z[l, c] for l in m.L) + m.y[c])
+        return m.p * m.y[c] + sum(suppliers.loc[l, q] * m.z[l, c] for l in m.L) \
+                 >= customers.loc[c, q] * (sum(m.z[l, c] for l in m.L) + m.y[c])
 
     pyo.SolverFactory('couenne').solve(m)
     
     return m
 
 
-# In[13]:
+# In[36]:
 
 
 m_global = milk_pooling_bilinear()

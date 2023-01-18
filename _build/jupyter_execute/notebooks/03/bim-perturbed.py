@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: solver; cbc
+# ```
+# ```{index} single: application; production planning
+# ```
+# 
 # # BIM production with perturbed data
 
-# In[7]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -35,7 +40,7 @@ helper.install_cbc()
 # 
 # If we solve it, we obtain a different optimal solution than the original one, namely $(x_1,x_2) \approx (626.238,1123.762)$ and an optimal value of roughly $17628.713$. Note, in particular, that this new optimal solution is not integer, but on the other hand in the LP above there is no constraint requiring $x_1$ and $x_2$ to be such.
 
-# In[8]:
+# In[2]:
 
 
 import pyomo.environ as pyo
@@ -54,7 +59,7 @@ m.copper    = pyo.Constraint(expr =  4.04*m.x1 + 2.02*m.x2 <= 4800)
 
 pyo.SolverFactory('cbc').solve(m)
 
-print('x = ({:.3f},{:.3f}) optimal value = {:.3f}'.format(
+print('x = ({:.3f}, {:.3f}), optimal value = {:.3f}'.format(
     pyo.value(m.x1),
     pyo.value(m.x2),
     pyo.value(m.profit)))
@@ -77,7 +82,7 @@ print('x = ({:.3f},{:.3f}) optimal value = {:.3f}'.format(
 # 
 # The optimal solution is $(x_1,x_2) = (626,1124)$ with a profit of $17628$. Note that for this specific problem both the naive rounding strategies outlined above would have not yielded the true optimal solution. The Python code for obtaining the optimal solution using MILP solvers is given below.
 
-# In[9]:
+# In[4]:
 
 
 m    = pyo.ConcreteModel('BIM perturbed MILP')
@@ -94,7 +99,7 @@ m.copper    = pyo.Constraint(expr =  4.04*m.x1 + 2.02*m.x2 <= 4800)
 
 pyo.SolverFactory('cbc').solve(m)
 
-print('x = ({:.1f},{:.1f}) optimal value = {:.1f}'.format(
+print('x = ({:.3f}, {:.3f}), optimal value = {:.3f}'.format(
     pyo.value(m.x1),
     pyo.value(m.x2),
     pyo.value(m.profit)))

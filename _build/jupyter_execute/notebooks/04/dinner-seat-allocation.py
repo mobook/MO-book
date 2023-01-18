@@ -1,9 +1,24 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: application; seating allocation
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} single: Pyomo; parameters
+# ```
+# ```{index} single: Pyomo; sets
+# ```
+# ```{index} network optimization
+# ```
+# ```{index} max flow problem
+# ```
+# ```{index} networkx
+# ```
+# 
 # # Dinner seating arrangement
 
-# In[1]:
+# In[2]:
 
 
 # install Pyomo and solvers
@@ -16,7 +31,6 @@ exec(requests.get(url).content, helper.__dict__)
 
 helper.install_pyomo()
 helper.install_cbc()
-helper.install_glpk()
 
 
 # ## Problem description
@@ -40,7 +54,7 @@ helper.install_glpk()
 
 # ## Implementation
 
-# In[2]:
+# In[3]:
 
 
 import pyomo.environ as pyo
@@ -117,7 +131,7 @@ def Report( model, results, type=int ):
 
 # Let us now consider and solve a specific instance of this problem with family sizes $m = (6,8,2,9,13,1)$, table capacities $c = (8,8,10,4,9)$, and threshold $k=3$. 
 
-# In[3]:
+# In[4]:
 
 
 seatplan = TableSeat( [6,8,2,9,13,1], [8,8,10,4,9], 3 )
@@ -133,7 +147,7 @@ Report( seatplan, results )
 # 
 # In order to find out, we change the objective function and try to minimize $k$, obtaining the following problem:
 
-# In[4]:
+# In[5]:
 
 
 def TableSeatMinimizeMaxGroupAtTable( members, capacity, nature=pyo.NonNegativeReals ):
@@ -166,7 +180,7 @@ def TableSeatMinimizeMaxGroupAtTable( members, capacity, nature=pyo.NonNegativeR
 
 # We now solve the same instance as before.
 
-# In[5]:
+# In[6]:
 
 
 seatplan = TableSeatMinimizeMaxGroupAtTable( [6,8,2,9,13,1], [8,8,10,4,9], nature=pyo.NonNegativeReals )
@@ -178,7 +192,7 @@ Report( seatplan, results, type=float )
 
 # Unfortunately, this solution is no longer integer. Mathematically, this is due to the fact that the "structure" that previously ensured integrality of solutions at no extra cost, has been lost as a result of making $k$ a decision variable. To find the solution to this problem we need to impose that the variables are integers.
 
-# In[6]:
+# In[7]:
 
 
 def TableSeatMinimizeNumberOfTables( members, capacity, k, nature=pyo.NonNegativeReals ):
@@ -207,7 +221,7 @@ def TableSeatMinimizeNumberOfTables( members, capacity, k, nature=pyo.NonNegativ
 
 # Using a MILP solver such as `cbc`, we recover the original optimal value $k = 3$.
 
-# In[7]:
+# In[8]:
 
 
 seatplan = TableSeatMinimizeNumberOfTables( [6,8,2,9,13,1], [8,8,10,4,9], 3, pyo.NonNegativeIntegers )
@@ -233,7 +247,7 @@ Report( seatplan, results, type=int )
 # 
 # ![](dina_model.png)
 
-# In[12]:
+# In[9]:
 
 
 def ModelAsNetwork( members, capacity, k ):
@@ -256,20 +270,20 @@ def ModelAsNetwork( members, capacity, k ):
     return G
 
 
-# In[13]:
+# In[10]:
 
 
 G = ModelAsNetwork( [6,8,2,9,13,1], [8,8,10,4,9], 3 )
 labels = { (e[0],e[1]) : e[2] for e in G.edges(data='capacity') }
 
 
-# In[14]:
+# In[11]:
 
 
 get_ipython().run_line_magic('time', "flow_value, flow_dict = nx.maximum_flow(G, 'door', 'seat')")
 
 
-# In[15]:
+# In[12]:
 
 
 members, capacity = [6,8,2,9,13,1], [8,8,10,4,9]

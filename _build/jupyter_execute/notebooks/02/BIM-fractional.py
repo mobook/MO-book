@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: solver; cbc
+# ```
+# 
 # # BIM production variants
 
 # In[1]:

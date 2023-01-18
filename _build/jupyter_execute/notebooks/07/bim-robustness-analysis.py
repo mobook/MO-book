@@ -1,6 +1,23 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: application; production planning
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} single: solver; gurobi
+# ```
+# ```{index} pandas dataframe
+# ```
+# ```{index} single: Pyomo; parameters
+# ```
+# ```{index} single: Pyomo; sets
+# ```
+# ```{index} single: Pyomo; expressions
+# ```
+# ```{index} simulations
+# ```
+# 
 # # Robustness analysis of BIM production plan via simulations
 # 
 # This example is a continuation of the BIM chip production problem illustrated [here](../02/bim.ipynb). Recall hat BIM produces logic and memory chips using copper, silicon, germanium, and plastic and that each chip requires the following quantities of raw materials:
@@ -250,7 +267,8 @@ def minimize_missed_demand_in_period(inventory, missed_demand, purchases, existi
     
     # update inventory
     for i in m.M:
-        inventory.loc[i, period] = inventory.loc[i, prev[period]] + purchases.loc[i, period]                 - sum([pyo.value(m.x[p]) * use.loc[i, p] for p in m.P])
+        inventory.loc[i, period] = inventory.loc[i, prev[period]] + purchases.loc[i, period] \
+                - sum([pyo.value(m.x[p]) * use.loc[i, p] for p in m.P])
     
     # update missed demand
     for p in m.P:

@@ -1,6 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: application; transportation
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} pandas dataframe
+# ```
+# ```{index} network optimization
+# ```
+# ```{index} single: Pyomo; display
+# ```
+# 
 # # Gasoline distribution
 # 
 # This notebook presents a transportation model to optimally allocate the delivery of a commodity from multiple sources to multiple destinations. The model invites a discussion of the pitfalls in optimizing a global objective for customers who may have an uneven share of the resulting benefits, then through model refinement arrives at a group cost-sharing plan to delivery costs.

@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} dual problem
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} single: application; production planning
+# ```
+# 
 # # BIM production
 
 # In[1]:

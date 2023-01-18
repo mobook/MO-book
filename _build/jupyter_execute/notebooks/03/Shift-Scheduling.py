@@ -1,7 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ```{index} single: Pyomo; Block
+# ```{index} single: Pyomo; block
+# ```
+# ```{index} single: Pyomo; sets
+# ```
+# ```{index} single: Pyomo; parameters
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} single: application; scheduling
+# ```
+# ```{index} Gantt charts
 # ```
 # # Workforce shift scheduling
 

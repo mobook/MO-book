@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: application; regression
+# ```
+# ```{index} scatterplot
+# ```
+# 
 # # Ordinary Least Squares (OLS) Regression
 # 
 # In Chapter 2 we introduced linear regression with least absolute deviations (LAD), see [this notebook](../02/lad-regression.ipynb). Here we consider the same problem setting, but slightly change the underlying optimization problem, in particular its objective function, obtaining the classical ordinary least squares (OLS) regression.

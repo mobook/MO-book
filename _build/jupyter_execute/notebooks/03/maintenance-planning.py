@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} disjunctive programming
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} single: application; maintenance planning
+# ```
+# 
 # # Extra material: Maintenance planning
 
 # ## Problem statement

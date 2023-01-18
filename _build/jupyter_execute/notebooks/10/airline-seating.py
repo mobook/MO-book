@@ -1,6 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: application; airline seating allocation
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} pandas dataframe
+# ```
+# ```{index} single: Pyomo; sets
+# ```
+# ```{index} stochastic optimization
+# ```
+# ```{index} chance constraints
+# ```
+# ```{index} sample average approximation
+# ```
+# 
 # # Airline seat allocation problem
 # 
 # ## Attribution
@@ -345,7 +360,8 @@ def airline_CC(demand):
     # add chance constraints
     @m.Constraint()
     def business_class(m):
-        return m.seats["F"]  + m.seats["B"] - (mu["F"] + mu["B"]) >=                 1.645 * np.sqrt(sigma["F"]**2 + sigma["B"]**2)
+        return m.seats["F"]  + m.seats["B"] - (mu["F"] + mu["B"]) >= \
+                1.645 * np.sqrt(sigma["F"]**2 + sigma["B"]**2)
     
     return m
 
@@ -580,7 +596,8 @@ def airline(demand):
     
     @m.Constraint(m.SCENARIOS)
     def business_class_loyality(m, s):
-        return m.seats["F"] + m.seats["B"] + bigM * m.business_class[s] >=             demand["B"][s] + demand["F"][s]
+        return m.seats["F"] + m.seats["B"] + bigM * m.business_class[s] >= \
+            demand["B"][s] + demand["F"][s]
 
     @m.Constraint()
     def business_class_loyality_rate(m):
@@ -608,9 +625,3 @@ seat_report_saa(seats, demand_saa)
 # > The aircraft rotation problem:  https://link.springer.com/content/pdf/10.1023/A:1018945415148.pdf
 # 
 # > SAA guide: https://people.orie.cornell.edu/shane/pubs/SAAGuide.pdf
-
-# In[ ]:
-
-
-
-

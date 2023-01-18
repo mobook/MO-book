@@ -3,7 +3,14 @@
 
 # ```{index} disjunctive programming
 # ```
-# 
+# ```{index} single: application; electric vehicles
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} single: Pyomo; RangeSet
+# ```
+# ```{index} pandas dataframe
+# ```
 # # Recharging strategy for an electric vehicle
 # 
 # Whether it is to visit family, take a sightseeing tour or call on business associates, planning a road trip is a familiar and routine task. Here we consider a road trip on a pre-determined route for which need to plan rest and recharging stops. This example demonstrates use of Pyomo disjunctions to model the decisions on where to stop. 

@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ```{index} single: Pyomo; Block
+# ```{index} single: Pyomo; block
 # ```
-# 
+# ```{index} single: application; production planning
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} single: Pyomo; persistent solvers
+# ```
+# ```{index} robust optimizaation
+# ```
 # # Robust Production Planning
 # 
 # The purpose of this notebook is to demonstrate a range of techniques for robust optimization using a common example.
@@ -23,7 +30,7 @@
 # 
 # > Isenberg, N., Siirola, J., & Gounaris, C. (2020, November). Pyros: A pyomo robust optimization solver for robust process design. In 2020 Virtual AIChE Annual Meeting. AIChE. https://aiche.confex.com/aiche/2020/meetingapp.cgi/Paper/602399
 
-# In[2]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -80,7 +87,7 @@ helper.install_cbc()
 # 
 # 
 
-# In[3]:
+# In[2]:
 
 
 import pyomo.environ as pyo
@@ -116,7 +123,7 @@ m.u.display()
 m.v.display()
 
 
-# In[7]:
+# In[3]:
 
 
 import matplotlib.pyplot as plt
@@ -176,7 +183,7 @@ ax.plot(m.u.value, m.v.value, 'r.', ms=20)
 # 
 # The impact of uncertainty associated with initial orders, $z_U$, depends on $z_A$, $z_B$, and the sensitivity of the optimal profit to the incremental production of $U$ and $V$ under constraints makes is difficult to determine, *apriori*, the worst-case operating conditions.
 
-# In[2]:
+# In[4]:
 
 
 import ipywidgets as widgets
@@ -197,7 +204,7 @@ widgets.FloatSlider(value=0.0, min=0.0, max=0.15, step=0.001, description="z_A",
 # & -w + 10 u + 9 v \leq 0 && \text{(raw materials)} \\
 # \end{align}$$
 
-# In[13]:
+# In[5]:
 
 
 import matplotlib.pyplot as plt
@@ -290,7 +297,7 @@ ax.plot(m.u.value, m.v.value, 'r.', ms=20)
 # The following cell is a function that evaluates the system matrix coefficients for a particular $z\in Z$ and returns numerical values indexed in nested dictionaries.
 # 
 
-# In[170]:
+# In[6]:
 
 
 # function to return c, q, C, D, e evaluated for a scenario
@@ -330,7 +337,7 @@ print(f"e = {e}")
 
 # The next cell creates a Pyomo model to maximize the worst case profit for a set of scenarios.
 
-# In[182]:
+# In[7]:
 
 
 import pyomo.environ as pyo
@@ -399,7 +406,7 @@ for s in m.SCENARIOS:
 # $$
 # 
 
-# In[221]:
+# In[8]:
 
 
 k =1000
@@ -409,7 +416,7 @@ Z = [{"z_A": 0.15*np.random.uniform(-1, 1),
       "z_D": 0.5*np.random.uniform(-1, 1)} for j in range(k)]
 
 
-# In[222]:
+# In[9]:
 
 
 m = max_min_profit(model_params, Z)
@@ -417,7 +424,7 @@ m.min_profit.display()
 m.x.display()
 
 
-# In[223]:
+# In[12]:
 
 
 fig = plt.figure(figsize=(8, 4))
@@ -443,7 +450,7 @@ ax.hist([m.scenario[s].profit.expr() for s in m.SCENARIOS]);
 # $$
 # 
 
-# In[227]:
+# In[13]:
 
 
 import pyomo.environ as pyo
@@ -493,39 +500,34 @@ m = max_min_profit(model_params, [{"z_A": 0, "z_B":0, "z_D": 0}])
 m.min_profit.display()
 
 
-# In[225]:
+# In[15]:
 
 
 m = expected_profit(model_params, Z)
 m.expected_profit.display()
 m.x.display()
-m.pprint()
 
 
-# In[226]:
+# In[23]:
 
 
 fig = plt.figure(figsize=(8, 4))
 
 ax = plt.subplot(121, aspect=1, xlabel="Qty U", ylabel="Qty V", xlim=(0, 80), ylim=(0, 80))
 for s in m.SCENARIOS:
-    print(m.scenario[s].y["u"].value)
+    # print(m.scenario[s].y["u"].value)
     ax.plot(m.scenario[s].y["u"].value, m.scenario[s].y["v"].value, 'k.', alpha=0.1)
     
 ax = plt.subplot(122)
-#ax.hist([m.profit[s].expr() for s in m.scenario_index], bins=30);
+ax.hist([m.profit[s].expr() for s in m.SCENARIOS], bins=30);
 
 
-# In[79]:
+# In[26]:
 
 
 c, q, C, D, e = model_params()
 
-Y = [{j: m.scenario[s].y[j].value for j in q.keys()} for s in m.scenario_index]
-
-scenarios
-
-    
+Y = [{j: m.scenario[s].y[j].value for j in q.keys()} for s in m.SCENARIOS]
 
 
 # ## Deprecated

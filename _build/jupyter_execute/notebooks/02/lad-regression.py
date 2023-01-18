@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# :::{index} single: application; regression
-# :::
+# ```{index} single: application; regression
+# ```
 # 
 # # LAD Regression
 # 

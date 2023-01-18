@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: application; portfolio
+# ```
+# ```{index} single: application; investment
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} single: solver; cplex
+# ```
+# 
 # # Portfolio optimization with chance constraint
 
 # In[47]:

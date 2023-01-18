@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: application; profit maximization
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} pandas dataframe
+# ```
+# ```{index} stochastic optimization
+# ```
+# 
 # # Pop-up shop
 
 # In[1]:

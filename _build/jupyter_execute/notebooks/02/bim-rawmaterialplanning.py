@@ -1,6 +1,19 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: Pyomo; sets
+# ```
+# ```{index} single: Pyomo; decorators
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} single: application; production planning
+# ```
+# ```{index} single: application; demand forecasts
+# ```
+# ```{index} pandas dataframe
+# ```
+# 
 # # BIM production using demand forecasts
 
 # In[1]:

@@ -1,6 +1,25 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: application; fleet assignment
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} pandas dataframe
+# ```
+# ```{index} single: Pyomo; parameters
+# ```
+# ```{index} single: Pyomo; sets
+# ```
+# ```{index} single: Pyomo; expressions
+# ```
+# ```{index} simulations
+# ```
+# ```{index} networkx
+# ```
+# ```{index} Gantt charts
+# ```
+# 
 # # Fleet assignment problem
 
 # ## Problem description
@@ -74,7 +93,7 @@ def draw_flights(FlightData):
     ax.set_xticks([4*i for i in range(7)])
     return ax
 
-draw_flights(FlightData)
+ax = draw_flights(FlightData)
 
 
 # ## Pyomo Model
@@ -82,7 +101,7 @@ draw_flights(FlightData)
 # The fleet assignment problem can be formulated and solved as an MILP. The idea of the MILP formulation is to construct feasible paths in a directed graph where the flights are nodes with indices $\mathcal{F} = \left\{ 1, \ldots, F \right\}$. The set of arcs $\mathcal{A} \subseteq \mathcal{F} \times \mathcal{F}$ that can be used by each aircraft is then:
 # 
 # $$
-# \mathcal{A} = \{ a = (f_1, f_2): f_1 \text{ arrives at least 1h before the departure of } f_2, \ f_1, f_2 \in \mathcal{F} \}
+# \mathcal{A} = \{ a = (f_1, f_2) \in \mathcal{F} \times \mathcal{F} \ : \ f_1 \text{ arrives at least 1h before the departure of } f_2 \}.
 # $$
 # 
 # The following cell finds the set of arcs that can be used. These arcs are displayed in a graph of the flight data. Arcs corresponding to the minimum time between arrival and departure are highlighted in red.
@@ -127,49 +146,57 @@ nx.draw_networkx_labels(dg, pos=pos, font_color = "w")
 nx.draw_networkx_edges(dg, pos=pos, width=.5, edge_color=[dg.edges[u, v]["color"] for u, v in dg.edges]);
 
 
-# \textbf{Naive model formulation}
+# ### Naive model formulation
 
 # An idea of an MILP formulation of the problem is to construct a feasible path for each aircraft in a graph where the flights are nodes with indices $1, \ldots, F$, and there is one source node $0$ and a sink node $F + 1$. Denote the set of aircraft indices as $\mathcal{M} = \{ 1, \ldots, M\}$.
 # 
 # The set of arcs $\mathcal{A}'$ that can be used by aircraft $i$ is then:
-# \[
+# 
+# $$
 # \mathcal{A'} = \{ a = (f_1, f_2) \in \mathcal{A} \in \mathcal{F} \} \cup \{ a = (0, f), \ f \in \mathcal{F} \} \cup \{ a = (f, F+1), \ f \in \mathcal{F} \},
-# \]
+# $$
+# 
 # where $0$ and $F + 1$ play the role of dummy flights before the first/after the last flight of a given aircraft's assignment.
 # 
-# Our decision variables will be
-# \begin{itemize}
-# \item $x_{f_1, f_2, i} \in \{0, 1\}$, $a \in \mathcal{A}'$, $i \in \mathcal{M}$ indicating whether the connection $(f_1, f_2) = a$ is operated by aircraft $i$
-# \item $y_i \in \{0, 1\}$, for $i \in \mathcal{M}$ indicating whether aircraft $i$ is used or not
-# \end{itemize}
+# The decision variables are:
+# - $x_{f_1, f_2, i} \in \{0, 1\}$, $a \in \mathcal{A}'$, $i \in \mathcal{M}$ indicating whether the connection $(f_1, f_2) = a$ is operated by aircraft $i$
+# - $y_i \in \{0, 1\}$, for $i \in \mathcal{M}$ indicating whether aircraft $i$ is used or not
+# 
 # The corresponding MILP is then:
 # 
-# $$\begin{align}
-#     \min \quad & \sum\limits_{i \in \mathcal{M}} y_i \\
-#     \textup{s.t.} \quad 
-#     & \sum\limits_{f_1 \in \mathcal{F} \cup \{ 0, F+1\} ~:~ (f_1, f) \in \mathcal{A}'} x_{f_1, f, i} = \sum\limits_{h \in \mathcal{F} \cup \{ 0, F+1\} ~:~ (f, f_2) \in \mathcal{A}'} x_{f, f_2, i} & \forall \, f \in \mathcal{F}, \ \forall \, i \in \mathcal{M} \label{eq:71b}\\
-#     & \sum\limits_{i \in \mathcal{M}} \sum\limits_{f' \in \mathcal{F} \cup \{ 0, F+1\} ~:~ (f', f) \in \mathcal{A}'} x_{f', f, i} = 1 & \forall \, f \in \mathcal{F} \label{eq:71c}\\
-#     & \sum\limits_{(0, f) \in \mathcal{A}'} x_{0, f, i} \leq 1 & \forall \, i \in \mathcal{M} \label{eq:71d}\\
-#     & x_{(f, 0, i} \leq y_i & \forall \, f \in \mathcal{F}, \ \forall \, i \in \mathcal{M} \label{eq:71e} \\
+# $$
+# \begin{align}
+#     \min \quad & \sum\limits_{i \in \mathcal{M}} y_i \label{eq:71a}\tag{a}\\
+#     \text{s.t.} \quad 
+#     & \sum\limits_{f_1 \in \mathcal{F} \cup \{ 0, F+1\} ~:~ (f_1, f) \in \mathcal{A}'} x_{f_1, f, i} = \sum\limits_{h \in \mathcal{F} \cup \{ 0, F+1\} ~:~ (f, f_2) \in \mathcal{A}'} x_{f, f_2, i} & \forall \, f \in \mathcal{F}, \ \forall \, i \in \mathcal{M} \label{eq:71b}\tag{b}\\
+#     & \sum\limits_{i \in \mathcal{M}} \sum\limits_{f' \in \mathcal{F} \cup \{ 0, F+1\} ~:~ (f', f) \in \mathcal{A}'} x_{f', f, i} = 1 & \forall \, f \in \mathcal{F} \label{eq:71c}\tag{c}\\
+#     & \sum\limits_{(0, f) \in \mathcal{A}'} x_{0, f, i} \leq 1 & \forall \, i \in \mathcal{M} \label{eq:71d}\tag{d}\\
+#     & x_{(f, 0, i} \leq y_i & \forall \, f \in \mathcal{F}, \ \forall \, i \in \mathcal{M} \label{eq:71e}\tag{e}\\
 #     & x_{a, i} \in \{0,1\} & \forall \, a \in \mathcal{A}', i \in \mathcal{M}\\
 #     & y_i \in \{0,1\} & \forall \, i \in \mathcal{M} 
-# \end{align}$$
+# \end{align}
+# $$
+# 
 # where
-# \begin{itemize}
-#     \item constraint~\eqref{eq:71b} enforces that for a given real flight the number of used incoming arcs with airplane $i$ must be equal to the number of outgoing arcs with this airplane;
-#     \item constraint~\eqref{eq:71c} ensures that  each flight is operated by exactly one aircraft;
-#     \item constraint~\eqref{eq:71d} enforces that each airplane serves at most one sequence of flights;
-#     \item constraint~\eqref{eq:71e} ensures that if at least one arc $(f, 0)$ is used using a given airplane, then this airplane is used
-# \end{itemize}
-# This formulation is very explicit and each decision there clearly corresponds to a real-life decision. However, it has a drawback -- it is blind to the aircraft being all identical. Consider a situation where aircraft $1$ is assigned to operate flights $(1, 2, 3)$ and aircraft $2$ is assigned to operate flights $(4, 5)$. Then, one can simply swap the flight assignment of the two aircraft between them and arrive at another solution is essentially the same if the aircraft are all identical. In terms of mathematical optimization, this means that the problem has a lot of \emph{symmetry} which produces a huge solution space that the solving algorithm has to explore. 
+# - the objective function \eqref{eq:71a} aims to minimize the number of airplanes used;
+# - constraint \eqref{eq:71b} enforces that for a given real flight the number of used incoming arcs with airplane $i$ must be equal to the number of outgoing arcs with this airplane;
+# - constraint \eqref{eq:71c} ensures that each flight is operated by exactly one aircraft;
+# - constraint \eqref{eq:71d} enforces that each airplane serves at most one sequence of flights;
+# - constraint \eqref{eq:71e} ensures that if at least one arc $(f, 0)$ is used using a given airplane, then this airplane is used
+# 
+# This formulation is very explicit and each decision there clearly corresponds to a real-life decision. However, it has a drawback -- it is blind to the aircraft being all identical. Consider a situation where aircraft $1$ is assigned to operate flights $(1, 2, 3)$ and aircraft $2$ is assigned to operate flights $(4, 5)$. Then, one can simply swap the flight assignment of the two aircraft between them and arrive at another solution is essentially the same if the aircraft are all identical. In terms of mathematical optimization, this means that the problem has a lot of *symmetry* which produces a huge solution space that the solving algorithm has to explore. 
 # 
 # A normal practice is to eliminate symmetry from the problem, for example, by adding so-called symmetry-breaking constraints that do not change the problem but allow only one out of many equivalent solutions. Here, one such constraint would be
-# $$\begin{align*}
-# y_i \leq y_{i - 1} & \forall \, i \in \mathcal{M}: \ i > 0,
+# 
+# $$
+# \begin{align*}
+# y_i \leq y_{i - 1} & \qquad \forall \, i \in \mathcal{M}: \ i > 0,
 # \end{align*}
-# which would ensure, at least, that we only utilize the aircraft in the order they appear on the list, i.e., aircraft 2 cannot be used if aircraft 1 was not used. However, an even better way of removing symmetry from the problem is to remove the aircraft from the model altogether.
+# $$
+# 
+# which would ensure, at least, that we only utilize the aircraft in the order they appear on the list, i.e., aircraft $2$ cannot be used if aircraft $1$ was not used. However, an even better way of removing symmetry from the problem is to remove the aircraft from the model altogether.
 
-# \textbf{Symmetry-free and totally-unimodular model formulation}
+# ### Symmetry-free and totally-unimodular model formulation
 
 # In the following model we shall only construct flight combinations to be operated by a single aircraft and assign the actual aircraft in a post-processing step. First, for each node $f\in\mathcal{F}$ in the DiGraph we define a set of input nodes $\mathcal{I}_f = \{f_1: (f_1, f)\in\mathcal{A}\}$  and a set of output nodes $\mathcal{O}_f = \{f_1: (f, f_1)\in\mathcal{A} \}$. For this application, we use the Python ``set`` object to scan the feasible flight pairs and find the inputs and outputs nodes for each flight node. 
 
@@ -201,7 +228,7 @@ for flight1, flight2 in flight_pairs:
 # & x_{f_1, f_2}, p_f, q_f \in \{ 0, 1\} & \forall f, f_1, f_2 \in \mathcal{F}
 # \end{align}$$
 # 
-# So-formulated model will give solutions where decisions $x_{f_1, f_2}$ will yield paths corresponding to sequences of flights that can be operated with a single aircraft. To such paths, we can assign aircraft in an arbitrary fashion after the optimization is finished.
+# This model will give solutions where decisions $x_{f_1, f_2}$ will yield paths corresponding to sequences of flights that can be operated with a single aircraft. To such paths, we can assign aircraft in an arbitrary fashion after the optimization is finished.
 # 
 # As it turns out, for this model formulation it is also easy to verify using the tools of Chapter 4 that the corresponding matrix formulation of the model is totally unimodular. That means, it is possible to eliminate the integrality restriction on the decision variables (keeping the $[0, 1]$ interval bounds) to arrive at an LP-formulated model that yields integral solutions without explicitly requiring it.
 # 
@@ -404,10 +431,4 @@ m = schedule(FlightData, N_planes=15, min_time=1)
 
 
 m = schedule(FlightData, N_planes=15, min_time=2)
-
-
-# In[ ]:
-
-
-
 
