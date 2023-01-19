@@ -73,7 +73,7 @@ FlightData.head()
 
 # ## Visualize Flight Data
 
-# In[3]:
+# In[18]:
 
 
 # visualize flight data
@@ -81,7 +81,7 @@ def draw_flights(FlightData):
     bar_style = {'alpha':1.0, 'lw':10, 'solid_capstyle':'butt'}
     text_style = {'fontsize': 7, 'color':'white', 'weight':'bold', 'ha':'center', 'va':'center'}
     fig = plt.figure(figsize=(12, 7))
-    ax = fig.add_subplot(111, xlabel="Departure/Arrival Time", title="FlightData")
+    ax = fig.add_subplot(111, xlabel="Departure/Arrival Time", title="Flight schedule")
     ax.get_yaxis().set_visible(False)
     for flight, row in FlightData.iterrows():
         departure, arrival = row
@@ -101,12 +101,12 @@ ax = draw_flights(FlightData)
 # The fleet assignment problem can be formulated and solved as an MILP. The idea of the MILP formulation is to construct feasible paths in a directed graph where the flights are nodes with indices $\mathcal{F} = \left\{ 1, \ldots, F \right\}$. The set of arcs $\mathcal{A} \subseteq \mathcal{F} \times \mathcal{F}$ that can be used by each aircraft is then:
 # 
 # $$
-# \mathcal{A} = \{ a = (f_1, f_2) \in \mathcal{F} \times \mathcal{F} \ : \ f_1 \text{ arrives at least 1h before the departure of } f_2 \}.
+# \mathcal{A} = \{ (f_1, f_2) \ : \ f_1 \text{ arrives at least 1h before the departure of } f_2 \}.
 # $$
 # 
 # The following cell finds the set of arcs that can be used. These arcs are displayed in a graph of the flight data. Arcs corresponding to the minimum time between arrival and departure are highlighted in red.
 
-# In[4]:
+# In[19]:
 
 
 min_time = 1
@@ -125,7 +125,7 @@ flight_pairs = feasible_flight_pairs(FlightData).keys()
 
 # The following cell presents a visualization of the graph of feasible paths in which an aircraft can be reassigned from one flight to subsequent flight. Each node on the graph corresponds to a flight. An edge from flight $f_1$ to flight $f_2$ is included only if there is at least `min_time` hours available to `turn around` the aircraft. Edges that allow exactly `min_time` hours between flights are colored red because these will be the most affected by unexpected flight delays.
 
-# In[5]:
+# In[20]:
 
 
 import networkx as nx
@@ -148,17 +148,16 @@ nx.draw_networkx_edges(dg, pos=pos, width=.5, edge_color=[dg.edges[u, v]["color"
 
 # ### Naive model formulation
 
-# An idea of an MILP formulation of the problem is to construct a feasible path for each aircraft in a graph where the flights are nodes with indices $1, \ldots, F$, and there is one source node $0$ and a sink node $F + 1$. Denote the set of aircraft indices as $\mathcal{M} = \{ 1, \ldots, M\}$.
-# 
-# The set of arcs $\mathcal{A}'$ that can be used by aircraft $i$ is then:
+# An idea of an MILP formulation of the problem is to construct a feasible path for each aircraft in a graph where the flights are nodes with indices $1, \ldots, F$, and there is one source node $0$ and a sink node $F + 1$. The set of arcs $\mathcal{A}'$ that can be used by each aircraft is then:
 # 
 # $$
-# \mathcal{A'} = \{ a = (f_1, f_2) \in \mathcal{A} \in \mathcal{F} \} \cup \{ a = (0, f), \ f \in \mathcal{F} \} \cup \{ a = (f, F+1), \ f \in \mathcal{F} \},
+# \mathcal{A'} = 
+# \bigcup_{f_1,f_2 \in \mathcal{F}} \{ (f_1, f_2) ~:~ f_1 \text{ arrives at least 1h before departure of } f_2 \} \cup \bigcup_{f \in \mathcal{F}}  \{ (0, f), \ (f, F+1)\}
 # $$
 # 
 # where $0$ and $F + 1$ play the role of dummy flights before the first/after the last flight of a given aircraft's assignment.
 # 
-# The decision variables are:
+# Denote the set of aircraft indices as $\mathcal{M} = \{ 1, \ldots, M\}$. The decision variables then are:
 # - $x_{f_1, f_2, i} \in \{0, 1\}$, $a \in \mathcal{A}'$, $i \in \mathcal{M}$ indicating whether the connection $(f_1, f_2) = a$ is operated by aircraft $i$
 # - $y_i \in \{0, 1\}$, for $i \in \mathcal{M}$ indicating whether aircraft $i$ is used or not
 # 
@@ -186,7 +185,7 @@ nx.draw_networkx_edges(dg, pos=pos, width=.5, edge_color=[dg.edges[u, v]["color"
 # 
 # This formulation is very explicit and each decision there clearly corresponds to a real-life decision. However, it has a drawback -- it is blind to the aircraft being all identical. Consider a situation where aircraft $1$ is assigned to operate flights $(1, 2, 3)$ and aircraft $2$ is assigned to operate flights $(4, 5)$. Then, one can simply swap the flight assignment of the two aircraft between them and arrive at another solution is essentially the same if the aircraft are all identical. In terms of mathematical optimization, this means that the problem has a lot of *symmetry* which produces a huge solution space that the solving algorithm has to explore. 
 # 
-# A normal practice is to eliminate symmetry from the problem, for example, by adding so-called symmetry-breaking constraints that do not change the problem but allow only one out of many equivalent solutions. Here, one such constraint would be
+# A normal practice is to eliminate symmetry from the problem, for example, by adding so-called *symmetry-breaking constraints* that do not change the problem but allow only one out of many equivalent solutions. Here, one such constraint would be
 # 
 # $$
 # \begin{align*}
@@ -194,13 +193,13 @@ nx.draw_networkx_edges(dg, pos=pos, width=.5, edge_color=[dg.edges[u, v]["color"
 # \end{align*}
 # $$
 # 
-# which would ensure, at least, that we only utilize the aircraft in the order they appear on the list, i.e., aircraft $2$ cannot be used if aircraft $1$ was not used. However, an even better way of removing symmetry from the problem is to remove the aircraft from the model altogether.
+# which would ensure, at least, that we utilize airplanes in the order they appear on the list, i.e., aircraft $2$ cannot be used if aircraft $1$ was not used. However, an even better way of removing symmetry from the problem is to remove the airplanes from the model altogether.
 
 # ### Symmetry-free and totally-unimodular model formulation
 
-# In the following model we shall only construct flight combinations to be operated by a single aircraft and assign the actual aircraft in a post-processing step. First, for each node $f\in\mathcal{F}$ in the DiGraph we define a set of input nodes $\mathcal{I}_f = \{f_1: (f_1, f)\in\mathcal{A}\}$  and a set of output nodes $\mathcal{O}_f = \{f_1: (f, f_1)\in\mathcal{A} \}$. For this application, we use the Python ``set`` object to scan the feasible flight pairs and find the inputs and outputs nodes for each flight node. 
+# In the next model we only create flight combinations to be operated by a single aircraft and assign the actual aircraft in a post-processing step. First, for each node $f\in\mathcal{F}$ in the DiGraph we define a set of input nodes $\mathcal{I}_f = \{f_1: (f_1, f)\in\mathcal{A}\}$  and a set of output nodes $\mathcal{O}_f = \{f_1: (f, f_1)\in\mathcal{A} \}$. For this application, we use the Python ``set`` object to scan the feasible flight pairs and find the inputs and outputs nodes for each flight node. 
 
-# In[6]:
+# In[21]:
 
 
 in_nodes = {flight: set() for flight in FlightData.index}
@@ -230,11 +229,11 @@ for flight1, flight2 in flight_pairs:
 # 
 # This model will give solutions where decisions $x_{f_1, f_2}$ will yield paths corresponding to sequences of flights that can be operated with a single aircraft. To such paths, we can assign aircraft in an arbitrary fashion after the optimization is finished.
 # 
-# As it turns out, for this model formulation it is also easy to verify using the tools of Chapter 4 that the corresponding matrix formulation of the model is totally unimodular. That means, it is possible to eliminate the integrality restriction on the decision variables (keeping the $[0, 1]$ interval bounds) to arrive at an LP-formulated model that yields integral solutions without explicitly requiring it.
+# As it turns out, for this model formulation it is also easy to verify using the tools of Chapter 4 that the corresponding matrix formulation of the model is **totally unimodular**. That means, it is possible to eliminate the integrality restriction on the decision variables (keeping the $[0, 1]$ interval bounds) to arrive at an LP-formulated model that yields integral solutions without explicitly requiring it.
 # 
 # For that reason, we are going to use this model formulation in our further analysis.
 
-# In[7]:
+# In[41]:
 
 
 m = pyo.ConcreteModel("Fleet Assignment")
@@ -265,7 +264,7 @@ print(f"Minimum airplanes required = {m.minimize_airplanes()}")
 
 # We visualize the solution by redrawing the graph of possible path and highlighting the edges that have been selected for aircraft reassignment. 
 
-# In[8]:
+# In[42]:
 
 
 import networkx as nx
@@ -289,9 +288,9 @@ nx.draw_networkx_edges(dg, pos=pos, width=.5, edge_color=[dg.edges[u, v]["color"
 nx.draw_networkx_edges(dg_soln, pos=pos, width=3, edge_color=[dg_soln.edges[u, v]["color"] for u, v in dg_soln.edges]);
 
 
-# We visualize the solution by drawing arcs where $x_{f_1, f_2} = 1$ and where $p_f = 1$ and $q_f = 1$. These arcs draw feasible paths through the graph corresponding to the assignment of one aircraft to service one or more flights.
+# We visualize the solution by drawing arcs where $x_{f_1, f_2} = 1$ and where $p_f = 1$ and $q_f = 1$. These arcs draw feasible paths through the graph corresponding to the assignment of one aircraft to service one or more flights. The arcs are green if the time between the two flights is strictly larger the minimum layover time (1h) and red if it is equal.
 
-# In[9]:
+# In[35]:
 
 
 ax = draw_flights(FlightData)
@@ -316,7 +315,7 @@ for flight in FlightData.index:
 # * **Flight Schedule**: A table index by flight numbers showing the assigned aircraft, departure, and arrival times.
 # * **Aircraft Schedule**: A table indexed by aircraft and flights showing departure and arrival times. 
 
-# In[10]:
+# In[25]:
 
 
 FlightSchedule = FlightData.copy()
@@ -337,7 +336,7 @@ FlightSchedule = FlightSchedule[["Aircraft", "Departure", "Arrival"]]
 display(FlightSchedule)
 
 
-# In[11]:
+# In[26]:
 
 
 AircraftSchedule = FlightSchedule.copy()
@@ -353,7 +352,7 @@ display(AircraftSchedule)
 # We will now to keep the maximum number of flights at the optimal level, but try to minimize their riskiness. To do so, we define a slightly different MILP that takes the minimum number of planes `nplanes` in input and has the total number of risky pairs as objective function.
 # 
 
-# In[12]:
+# In[36]:
 
 
 def schedule(FlightData, N_planes, min_time=1):
@@ -411,23 +410,23 @@ def schedule(FlightData, N_planes, min_time=1):
         if m.q[flight]() == 1:
             arr = FlightData.loc[flight, "Arrival"]
             ax.plot([arr, 25], [flight]*2, 'g', lw=4, alpha=0.4)
-            
+    
     return m
 
 
-# In[13]:
+# In[37]:
 
 
 m = schedule(FlightData, N_planes=14, min_time=1)
 
 
-# In[14]:
+# In[38]:
 
 
 m = schedule(FlightData, N_planes=15, min_time=1)
 
 
-# In[15]:
+# In[39]:
 
 
 m = schedule(FlightData, N_planes=15, min_time=2)
