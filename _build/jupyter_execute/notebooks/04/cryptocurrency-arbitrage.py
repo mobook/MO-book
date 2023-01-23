@@ -1,6 +1,19 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: application; cryptocurrency arbitrage
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} web scraping
+# ```
+# ```{index} pandas dataframe
+# ```
+# ```{index} networkx
+# ```
+# ```{index} network optimization
+# ```
+# 
 # # Cryptocurrency arbitrage search
 # 
 # Crpytocurrency exchanges are web services that enable the purchase, sale, and exchange of cryptocurrencies. These exchanges provide liquidity for owners and establish the relative value of these currencies. As of this writing (mid-2022), [it is estimated](https://www.statista.com/statistics/730876/cryptocurrency-maket-value/) cryptocurrencies have a collective market capitalization of more than 2 trillion USD. Cryptocurrency markets are constantly changing with new currencies, exchanges, the occasional collapse of a currency, and highly volatile prices.
@@ -518,7 +531,9 @@ def crypto_model(dg_order_book, T = 10, w0 = 1.0):
 
     @m.Constraint(m.NODES, m.T1)
     def balances(m, node, t):
-        return m.w[node, t] == m.w[node, t - 1]             + sum(m.a[src, node] * m.x[src, node, t] for src, dst in m.EDGES if dst == node)             - sum(m.x[node, dst, t] for src, dst in m.EDGES if src == node) 
+        return m.w[node, t] == m.w[node, t - 1] \
+            + sum(m.a[src, node] * m.x[src, node, t] for src, dst in m.EDGES if dst == node) \
+            - sum(m.x[node, dst, t] for src, dst in m.EDGES if src == node) 
 
 
     solver = pyo.SolverFactory("cbc")

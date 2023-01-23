@@ -9,7 +9,8 @@
 # ```
 # ```{index} single: application; scheduling
 # ```
-# 
+# ```{index} single: solver; cbc
+# ```
 # # Extra material: Job shop scheduling
 
 # ## Imports

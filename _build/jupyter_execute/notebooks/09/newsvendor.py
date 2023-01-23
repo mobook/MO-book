@@ -1,11 +1,26 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: application; inventory management
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} pandas dataframe
+# ```
+# ```{index} sample average approximation
+# ```
+# ```{index} stochastic optimization
+# ```
+# ```{index} simulations
+# ```
+# 
 # # Stock optimization for seafood distribution center
 # 
 # Each day a seafood distribution center buys $x$ tons of tuna at unit cost $c$ per ton. The next day a demand $z$ is observed from the retailers to whom the fish is sold at a unit price $p > c$. Any leftover tuna needs to be stored in a cold warehouse at a unit holding cost $h$. The seafood distribution center cannot sell more fish than it has in stock, thus at most $\min\{z, x \}$ tons will be sold which will leave $h(x-z)^+$ tons leftover, where $h()^+$ is the positive residual. Accounting for these costs, the net profit is
 # 
-# $$\text{net profit} = p \min\{z, x \} - cx - h (x-z)^+.$$
+# $$
+# \text{net profit} = p \min\{z, x \} - cx - h (x-z)^+.
+# $$
 # 
 # Given a reasonable estimate of the probability distribution $\mathbb P$ of the tuna demand $z$, to maximize the long-term net profit then we can formulate the following optimization problem:
 # 
@@ -18,7 +33,7 @@
 
 # ## Installations and Imports
 
-# In[36]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -35,7 +50,7 @@ helper.install_cbc()
 helper.install_ipopt()
 
 
-# In[37]:
+# In[2]:
 
 
 import pyomo.environ as pyo
@@ -50,19 +65,19 @@ import scipy.stats as stats
 # 
 # Suppose the unit prices for a ton of tuna are $c = 10$, $p = 25$, $h = 3$, and that the demand for tuna in tons can be modeled as a continuous random variable $z$ with cumulative distribution function $F(\cdot)$. We consider the following three distributions:
 # 
-# 1. a uniform distribution on the interval $[25, 175]$. See [Uniform distribution CDF and its inverse](https://en.wikipedia.org/wiki/Continuous_uniform_distribution#Cumulative_distribution_function);
+# 1. A [uniform distribution](https://en.wikipedia.org/wiki/Continuous_uniform_distribution#Cumulative_distribution_function) on the interval $[25, 175]$;
 # 
-# 2. a Pareto distribution on the interval $[50,+\infty)$ with $x_m=50$ and exponent $\alpha=2$. *Hint: the inverse CDF for a Pareto distribution is given by* $F^{-1}(\varepsilon) = \frac{x_m}{(1-\varepsilon)^{1/\alpha}}$;
+# 2. A [Pareto distribution](https://en.wikipedia.org/wiki/Pareto_distribution#Cumulative_distribution_function) on the interval $[50,+\infty)$ with $x_m=50$ and exponent $\alpha=2$. Recall that the inverse CDF for a Pareto distribution is given by* $F^{-1}(\varepsilon) = \frac{x_m}{(1-\varepsilon)^{1/\alpha}}$;
 # 
-# 3. a Weibull distribution on the interval $[0,+\infty)$ with shape parameter $k=2$ and scale parameter $\lambda=113$. See [Weibull distribution CDF and its inverse](https://en.wikipedia.org/wiki/Weibull_distribution#Cumulative_distribution_function).
+# 3. A [Weibull distribution](https://en.wikipedia.org/wiki/Weibull_distribution#Cumulative_distribution_function)](https://en.wikipedia.org/wiki/Weibull_distribution#Cumulative_distribution_function) on the interval $[0,+\infty)$ with shape parameter $k=2$ and scale parameter $\lambda=113$.
 # 
-# Note that all the three distributions above have the same expected value, that is $\mathbb E z = 100$ tons. Let us plot the three distributions and find the optimal solution of the seafood inventory problem using the explicit formula that features the inverse CDFs/quantile functions $F$ for the three distributions using the closed-form formula
+# Note that all the three distributions above have the same expected value, that is $\mathbb E z = 100$ tons. Let us plot the three distributions and find the optimal solution of the seafood inventory problem using the explicit formula that features the inverse CDFs/quantile functions $F^{-1}$ for the three distributions using the closed-form formula
 # 
 # $$
 # x^* = F^{-1} \left( \frac{p-c}{p+h}\right).
 # $$
 
-# In[38]:
+# In[11]:
 
 
 # Setting parameters
@@ -84,8 +99,8 @@ def plot_distribution(name, distribution, q):
     
     # find optimal solution using a distribution's quantile function (i.e., ppf in scipy.stats)
     x_opt = distribution.ppf(q)
-    print(f"\nMean of {name} distribution = {distribution.mean()}")    
-    print(f"Optimal solution for {name} distribution = {x_opt:0.2f}\n")
+    print(f"\nMean of {name} distribution = {distribution.mean():0.2f}")    
+    print(f"Optimal solution for {name} distribution = {x_opt:0.2f} tons\n")
     
     # show pdf, cdf, and graphical solution
     c = ax[0].plot(x, distribution.pdf(x), lw=3, label=name)[0].get_color()
@@ -106,7 +121,7 @@ fig.tight_layout()
 # 
 # Find the optimal solution of the deterministic LP model obtained by assuming the demand is fixed $\xi=\bar{\xi}$ and equal to the average demand $\bar{\xi} = \mathbb E \xi = 100$.
 
-# In[14]:
+# In[12]:
 
 
 # problem data
@@ -152,7 +167,7 @@ result = pyo.SolverFactory('cbc').solve(m)
 assert result.solver.status == "ok"
 assert result.solver.termination_condition == "optimal"
 
-print(f"Optimal solution for determistic demand equal to {m.mean_demand} = {m.x():.1f} tons")
+print(f"Optimal solution for determistic demand equal to the average demand = {m.x():.1f} tons")
 print(f"Optimal deterministic profit = {m.total_profit():.0f}€")
 
 
@@ -162,7 +177,7 @@ print(f"Optimal deterministic profit = {m.total_profit():.0f}€")
 # 
 # For a fixed decision variable $x=100$, approximate the expected net profit of the seafood distribution center for each of the three distributions above using the Sample Average Approximation method with $N=2500$ points. More specifically, generate $N=2500$ samples from the considered distribution and solve the extensive form of the stochastic LP resulting from those $N=2500$ scenarios.
 
-# In[35]:
+# In[13]:
 
 
 # SAA of the two-stage stochastic LP to calculate the expected profit when buying the average
@@ -207,7 +222,7 @@ def NaiveSeafoodStockSAA(N, sample, distributiontype):
 
     result = pyo.SolverFactory('cbc').solve(model)
 
-    print(f'Approximate expected optimal profit when using the average x=100 with {distributiontype} demand: {model.total_expected_profit():.2f}€')
+    print(f'Approximate expected optimal profit when assuming the average demand with {distributiontype}-distributed demand: {model.total_expected_profit():.2f}€')
     
     return model.total_expected_profit()
 
@@ -232,7 +247,7 @@ naiveprofit_weibull = NaiveSeafoodStockSAA(N, samples, 'Weibull')
 # 
 # Solve approximately the stock optimization problem for each of the three distributions above using the Sample Average Approximation method with $N=5000$ points. More specifically, generate $N=5000$ samples from the considered distribution and solve the extensive form of the stochastic LP resulting from those $N=5000$ scenarios. For each of the three distribution, compare the optimal expected profit with that obtained before and calculate the value of the stochastic solution (VSS).
 
-# In[107]:
+# In[6]:
 
 
 # Two-stage stochastic LP for uniform distribution
@@ -309,7 +324,7 @@ print(f"Value of the stochastic solution: {smartprofit_weibull:.2f}-{naiveprofit
 # 
 # We now solve the randomized sampled problem for a different number of samples, with the sample size $N$ increasing from $25$ to $3000$. As we can see, the approximate solutions converge to the theoretical ones as the sample size increases.
 
-# In[109]:
+# In[7]:
 
 
 shape = 2

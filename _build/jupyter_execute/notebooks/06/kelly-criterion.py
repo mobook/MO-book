@@ -1,23 +1,28 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ```{index} single: Pyomo; Block 
+# ```{index} single: Pyomo; block 
 # ```
 # ```{index} single: Pyomo; kernel library
 # ```
 # ```{index} single: conic programming; exponential cones
 # ```
-# ```{index} single: solver; Mosek
+# ```{index} single: solver; mosek
 # ```
+# ```{index} single: application; portfolio
+# ```
+# ```{index} single: application; investment
+# ```
+# 
 # # The Kelly Criterion
 # 
 # The Kelly Criterion determines the size of a bet in a repeated game with binary outcomes. The analysis was proposed in 1956 by John Kelly at Bell Laboratories. Kelly identified an analogy between gambling on binary outcomes and Claude Shannon's work on encoding information for transmission on noisy channels. Kelly used the analogy to show
 # 
 # > The maximum exponential rate of growth of the gambler's capital is equal to the rate of transmission of information over the channel.
 # 
-# This idea actually predates Kelly. In 1738, Daniel Bernoulli offered a resolution to the [St. Petersburg paradox](https://plato.stanford.edu/entries/paradox-stpetersburg/) proposed by his cousin, Nicholas Bernoulli. The resolution was to allocate bets among alternative outcomes to produce the the highest geometric mean of returns. Kelly's analysis has beenn popularized by William Poundstone in his book "Fortune's Formula", and picked up by gamblers with colorful adventures in Las Vega by early adopters though the result laid in obscurity among investors until much later.
+# This idea actually predates Kelly. In 1738, Daniel Bernoulli offered a resolution to the [St. Petersburg paradox](https://plato.stanford.edu/entries/paradox-stpetersburg/) proposed by his cousin, Nicholas Bernoulli. The resolution was to allocate bets among alternative outcomes to produce the highest geometric mean of returns. Kelly's analysis has been popularized by William Poundstone in his book "Fortune's Formula", and picked up by gamblers with colorful adventures in Las Vegas by early adopters though the result laid in obscurity among investors until much later.
 # 
-# This notebook presents solutions to Kelly's problem using exponential cones. A significant feature of this notebook is the the inclusion of a risk constraints recently proposed by Boyd and coworkers. These notes are based on recent papers by Busseti, Ryu and Boyd (2016), Fu, Narasimhan, and Boyd (2017). Additional bibliographic notes are provided at the end of the notebook.
+# This notebook presents solutions to Kelly's problem using exponential cones. A significant feature of this notebook is the inclusion of risk constraints recently proposed by Boyd and coworkers. These notes are based on recent papers by Busseti, Ryu, and Boyd (2016), Fu, Narasimhan, and Boyd (2017). Additional bibliographic notes are provided at the end of the notebook.
 
 # In[1]:
 
@@ -36,32 +41,29 @@ helper.install_mosek()
 
 # ## Optimal Log Growth
 # 
-# The problem addressed by Kelly is to maximize the rate of growth of an investor's wealth. At each stage, the gross return $R_n$ on the investor's wealth $W_n$ is given by
+# The problem addressed by Kelly is to maximize the rate of growth of an investor's wealth. At every stage $n=1,\dots,N$, the gross return $R_n$ on the investor's wealth $W_n$ is given by
 # 
-# $$W_n = W_{n-1} R_n $$
+# $$W_n = W_{n-1} R_n.$$
 # 
-# After $N$ stages this gives
+# After $N$ stages, this gives
 # 
 # $$
-# \begin{align}
-# W_N & = W_0 R_1 R_2 \cdots R_{N-1} R_N  \\
-# W_N & = W_0 \prod_{n=1}^N R_n
-# \end{align}
+# W_N = W_0 R_1 R_2 \cdots R_{N-1} R_N = W_0 \prod_{n=1}^N R_n.
 # $$
 # 
-# Kelly's idea was to maximize the mean log return. Intuitively, this objective can be justified as either maximizing the geometric mean return
+# Kelly's idea was to maximize the **mean log return**. Intuitively, this objective can be justified as we are simultaneously maximizing the geometric mean return
 # 
 # $$\left(\prod_{n=1}^N R_n\right)^{\frac{1}{N}} = \exp\left(\frac{1}{N}\sum_{n=1}^N \log R_n\right)$$
 # 
-# or by maximizing the expected logarithmic utility of wealth in 
+# and the expected logarithmic utility of wealth
 # 
 # $$
 # \begin{align}
-# \log W_N & = \log W_0 \left(\sum_{n=1}^N \log R_n\right) 
+# \log W_N & = \log W_0 \left(\sum_{n=1}^N \log R_n\right).
 # \end{align}
 # $$
 # 
-# Logarithmic utility provides an element of risk aversion. If the returns are independent and identically distributed random variable, then in the long run, 
+# The logarithmic utility provides an element of risk aversion. If the returns $R_i$'s are independent and identically distributed random variables, then in the long run, 
 # 
 # $$
 # \begin{align}
@@ -75,26 +77,19 @@ helper.install_mosek()
 # 
 # The classical presentation of the Kelly Criterion is to consider repeated wagers on a gambling game with binary outcomes. For each stage, a wager of one unit returns $1+b$ with probability $p$ if successful, otherwise the wager returns nothing. The number $b$ refers to the "odds" of game. The problem is to determine what fraction of the gambler's wealth should be wagered on each instance of the game.
 # 
-# ![](kelly-criterion.png)
+# <div style="text-align:center;">
+# <img src="kelly-criterion.png" width="500"/>
+# </div>
 # 
-# Let $w$ be the fraction of wealth that is wagered on each instance. The two possible outcomes at stage $k$ are
+# <!-- ![](kelly-criterion.png) -->
 # 
-# $$
-# \begin{align}
-# W_k = \begin{cases} 
-# (1 + bw) W_{k-1} && \text{probability } p\\
-# (1 - w) W_{k-1} && \text{probability }1-p
-# \end{cases}
-# \end{align}
-# $$
-# 
-# The gross returns are 
+# Let $w$ be the fraction of wealth that is wagered on each instance. Depend on the two possible outcome, the gross return at any stage is
 # 
 # $$
 # \begin{align}
-# R_k = \begin{cases}
-# 1 + b w & \text{probability }p \\
-# 1 - w & \text{probability }1-p \\
+# R = \begin{cases}
+# 1 + b w & \text{ with probability }p \\
+# 1 - w & \text{ with probability }1-p.
 # \end{cases}
 # \end{align}
 # $$
@@ -103,49 +98,59 @@ helper.install_mosek()
 # 
 # $$
 # \begin{align}
-# \max_{w\geq 0} p \log (1 + bw) + (1-p) \log (1 - w) \\
+# \max_{w\geq 0} \, p \log (1 + bw) + (1-p) \log (1 - w).\\
 # \end{align}
 # $$
 # 
-# The well-known analytical solution to this problem is
+# The well-known analytical solution $w^*$ to this problem can be calculated to be
 # 
-# $$w^{opt} = \begin{cases} p - \frac{1-p}{b} & p(b-1) > 1 \\ 0 & p(b-1)\leq 1 \end{cases}$$
+# $$
+# w^* = 
+# \begin{cases} 
+# p - \frac{1-p}{b} & p(b+1) > 1, \\ 
+# 0 & p(b+1)\leq 1.
+# \end{cases}
+# $$
 # 
-# We can use this analytical solution to validate a solution to this problem using conic programming. 
+# We can use this analytical solution to validate the solution of this problem that we will now obtain using conic programming.
+
+# ### Conic program 
 # 
-# An [exponential cone](https://docs.mosek.com/modeling-cookbook/expo.html) is a convex set $K_{exp} = \{(r, x, y)\}$ such that
+# Recall that an [exponential cone](https://docs.mosek.com/modeling-cookbook/expo.html) is a convex set $\mathbf{K}_{\mathrm{exp}} $ of $\mathbb{R}^3$ whose points $(r, x, y)$ satisfy the inequality 
 # 
-# $$r \geq x \exp{\frac{y}{x}}$$ 
+# $$r \geq x \exp{\frac{y}{x}} \quad \text{ if } \quad x \geq 0,$$ 
 # 
-# where $r, x \geq 0$. Taking the exponential of the terms in the objective function, 
+# or the inequalities $r \geq 0$ and $y \leq 0$ if $x=0$. 
 # 
-# $$q_1 \leq \log (1 + bw) \iff \exp{q_1} \leq 1 + b w \iff (1 + bw, 1, q_1) \in K_{exp}$$
+# Introducing two auxiliary variables $q_1$ and $q_2$ and taking the exponential of the terms in the objective function, we obtain
+# 
+# $$q_1 \leq \log (1 + bw) \iff \exp{q_1} \leq 1 + b w \iff (1 + bw, 1, q_1) \in \mathbf{K}_{\mathrm{exp}},$$
 # 
 # and
 # 
-# $$q_2 \leq \log (1 - w) \iff \exp{q_2} \leq 1 - w \iff (1 - w, 1, q_2) \in K_{exp}$$ 
+# $$q_2 \leq \log (1 - w) \iff \exp{q_2} \leq 1 - w \iff (1 - w, 1, q_2) \in \mathbf{K}_{\mathrm{exp}}.$$ 
 # 
 # With these constraints, Kelly's problem becomes
 # 
 # $$
 # \begin{align}
 # \max\quad & p q_1 + (1-p)q_2 \\
-# \text{s.t.}\quad & w \geq 0 \\
-# & (1 + bw, 1, q_1) \in K_{exp} \\
-# & (1 - w, 1, q_2) \in K_{exp}
+# \text{s.t.}\quad & (1 + bw, 1, q_1) \in \mathbf{K}_{\mathrm{exp}} \\
+# & (1 - w, 1, q_2) \in \mathbf{K}_{\mathrm{exp}}\\
+# & w \geq 0 \\
+# & q_1, q_2 \in \mathbb{R}.
 # \end{align}
 # $$
 # 
-# The following cell demonstrates the solution using the conic programming functions of the Pyomo kernel library and the Mosek solver.
-# 
+# The following code shows how to obtain the optimal solution using the conic programming functions of the Pyomo kernel library and the Mosek solver.
 
-# In[2]:
+# In[40]:
 
 
 import pyomo.kernel as pmo
 
 # parameter values
-b = 2
+b = 1.25
 p = 0.51
 
 # conic programming solution to Kelly's problem 
@@ -171,67 +176,69 @@ def kelly(p, b):
     return m.w()
 
 w_conic = kelly(p, b)
-print(f"Conic programming solution = {w_conic: 0.4f}")
+print(f"Conic programming solution for w: {w_conic: 0.4f}")
 
 # analytical solution to Kelly's problem
-w_analytical = p - (1 - p)/b if p*(b-1) >= 1 else 0
-print(f"Analytical solution = {w_analytical: 0.4f}")
+w_analytical = p - (1 - p)/b if p*(b + 1) > 1 else 0
+print(f"Analytical solution for w: {w_analytical: 0.4f}")
 
 
-# ## Risk-Constraints and Kelly Criterion
+# ## Risk-constrainted version of the Kelly's problem
 # 
-# Following Busseti, Ryu, and Boyd (2016), for the risk-constrained case we add a constraint
+# Following Busseti, Ryu, and Boyd (2016), we consider the risk-constrained version of the Kelly's problem, in which we add the constraint
 # 
-# $$\mathbb{E}[R^{-\lambda}] \leq 1$$
+# $$\mathbb{E}[R^{-\lambda}] \leq 1,$$
 # 
-# where $\lambda \geq 0$ is a risk-aversion parameter. For the case considered here there are two outcomes with known probabilities, so this becomes
+# where $\lambda \geq 0$ is a risk-aversion parameter. For the case with two outcomes $R_1$ and $R_2$ with known probabilities $p_1$ and $p_2$ considered here, this constraint rewrites as
 # 
-# $$p_1 R_1^{-\lambda} + p_2 R_2^{-\lambda} \leq 1$$
+# $$p_1 R_1^{-\lambda} + p_2 R_2^{-\lambda} \leq 1.$$
 # 
-# When $\lambda=0$ the constraint is always satisfied and no risk-aversion is in effect. Choosing $\lambda > 0$ requires outcomes with low return to occur with low probability, the the effect increasing for larger values of $\lambda$. A feasible solution can always be found by setting the bet size $w=0$ to give $R_1 = 1$ and $R_2 = 0$.
+# When $\lambda=0$ the constraint is always satisfied and no risk-aversion is in effect. Choosing $\lambda > 0$ requires outcomes with low return to occur with low probability and this effect increases for larger values of $\lambda$. A feasible solution can always be found by setting the bet size $w=0$ to give $R_1 = 1$ and $R_2 = 0$.
 # 
 # This constraint can be reformulated using exponential cones. Rewriting each term as an exponential results gives
 # 
-# $$e^{\log(p_1) - \lambda\log(R_1)}  + e^{\log(p_2) - \lambda\log(R_2)} \leq 1$$
+# $$e^{\log(p_1) - \lambda\log(R_1)}  + e^{\log(p_2) - \lambda\log(R_2)} \leq 1.$$
 # 
-# We previously introduced variables $q_i \leq \log(R_i)$, so a new version of the risk constraint is
+# We previously introduced two auxiliary real variables $q_1,q_2 \in \mathbb{R}$ such that $q_i \leq \log(R_i)$, using which we can reformulate the risk constraint as
 # 
-# $$e^{\log(p_1) - \lambda q_1}  + e^{\log(p_2) - \lambda q_2} \leq 1$$
+# $$e^{\log(p_1) - \lambda q_1}  + e^{\log(p_2) - \lambda q_2} \leq 1.$$
 # 
-# Introducing $u_i \geq e^{\log(p_i) - \lambda q_i}$, the risk constraint is given by
+# Introducing two more nonnegative auxiliary variables $u_1,u_2 \geq 0$ such that $u_i \geq e^{\log(p_i) - \lambda q_i}$, the risk constraint is given by
 # 
 # $$
 # \begin{align}
 # u_1 + u_2 & \leq 1 \\
-# (u_1, 1, \log(p_1) - \lambda q_1) & \in K_{exp} \\
-# (u_2, 1, \log(p_2) - \lambda q_2) & \in K_{exp}
+# (u_1, 1, \log(p_1) - \lambda q_1) & \in \mathbf{K}_{\mathrm{exp}} \\
+# (u_2, 1, \log(p_2) - \lambda q_2) & \in \mathbf{K}_{\mathrm{exp}}.
 # \end{align}
 # $$
 # 
-# Putting this all together, given probability $p$, odds $b$, and risk-aversion parameter $\lambda \geq 0$, the risk-constrained Kelly bet is a solution to the conic program
+# For fixed probabilities $p_1=p$ and $p_2=1-p$, odds $b$, and risk-aversion parameter $\lambda \geq 0$, the risk-constrained Kelly bet is a solution to the conic program rewrites as
 # 
 # $$
 # \begin{align}
 # \max\quad & p q_1 + (1-p)q_2 \\
-# \text{s.t.}\quad & w \geq 0 \\
-# & (1 + bw, 1, q_1) \in K_{exp} \\
-# & (1 - w, 1, q_2) \in K_{exp} \\
+# \text{s.t.}\quad 
+# & (1 + bw, 1, q_1) \in \mathbf{K}_{\mathrm{exp}} \\
+# & (1 - w, 1, q_2) \in \mathbf{K}_{\mathrm{exp}} \\
 # & u_1 + u_2 \leq 1 \\
-# & (u_1, 1, \log(p_1) - \lambda q_1) \in K_{exp} \\
-# & (u_2, 1, \log(p_2) - \lambda q_2) \in K_{exp} 
+# & (u_1, 1, \log(p) - \lambda q_1) \in \mathbf{K}_{\mathrm{exp}} \\
+# & (u_2, 1, \log(1-p) - \lambda q_2) \in \mathbf{K}_{\mathrm{exp}}\\
+# & u_1, u_2, w \geq 0 \\
+# & q_1, q_2 \in \mathbb{R}.
 # \end{align}
 # $$
 # 
 # The following cell solves this problem with a Pyomo model using the Mosek solver.
 
-# In[3]:
+# In[46]:
 
 
 import pyomo.kernel as pmo
 import numpy as np
 
 # parameter values
-b = 2
+b = 1.25
 p = 0.51
 lambd = 3
 
@@ -264,12 +271,12 @@ def kelly_rc(p, b, lambd):
 
     return m.w()
 
-# solution to Kelly's problem
-w_analytical = p - (1 - p)/b if p*(b-1) >= 1 else 0
-print(f"Analytical Solution = {w_analytical: 0.4f}")
-
 w_rc = kelly_rc(p, b, lambd)
-print(f"Risk Constrainend Solution = {w_rc: 0.4f}")
+print(f"Risk-constrainend solution for w: {w_rc: 0.4f}")
+
+# solution to Kelly's problem
+w_analytical = p - (1 - p)/b if p*(b+1) >= 1 else 0
+print(f"Analytical solution for w: {w_analytical: 0.4f}")
 
 
 # ## Simulation

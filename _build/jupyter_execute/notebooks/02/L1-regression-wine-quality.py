@@ -1,12 +1,18 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# :::{index} single: application; regression
-# :::
+# ```{index} single: application; regression
+# ```
+# ```{index} pandas dataframe
+# ```
+# ```{index} pandas dataframe
+# ```
+# ```{index} single: solver; cbc
+# ```
 # 
 # # Wine quality prediction with L1 regression
 
-# In[6]:
+# In[1]:
 
 
 # install Pyomo and solvers
@@ -31,7 +37,7 @@ helper.install_cbc()
 # 
 # Let us first download the data
 
-# In[7]:
+# In[2]:
 
 
 import pandas as pd
@@ -49,7 +55,7 @@ display(wines)
 # $$\text{MAD}\,(y) = \frac{1}{n} \sum_{i=1}^n | y_i - \bar{y}|$$
 # 
 
-# In[8]:
+# In[3]:
 
 
 def MAD(df):
@@ -74,7 +80,7 @@ plt.show()
 # 
 # The data consists of 1,599 measurements of eleven physical and chemical characteristics plus an integer measure of sensory quality recorded on a scale from 3 to 8. Histograms provides insight into the values and variability of the data set.
 
-# In[9]:
+# In[4]:
 
 
 fig, axes = plt.subplots(3, 4, figsize=(12, 8), sharey=True)
@@ -92,13 +98,13 @@ plt.tight_layout()
 # 
 # The art of regression is to identify the features that have explanatory value for a response of interest. This is where a person with deep knowledge of an application area, in this case an experienced onenologist will have a head start compared to the naive data scientist. In the absence of the experience, we proceed by examining the correlation among the variables in the data set.
 
-# In[10]:
+# In[6]:
 
 
-wines.corr()["quality"].plot(kind="bar", grid=True)
+_ = wines.corr()["quality"].plot(kind="bar", grid=True)
 
 
-# In[11]:
+# In[8]:
 
 
 wines[["volatile acidity", "density", "alcohol", "quality"]].corr()
@@ -118,14 +124,14 @@ wines[["volatile acidity", "density", "alcohol", "quality"]].corr()
 # 
 # This computation has been presented in a prior notebook.
 
-# In[12]:
+# In[15]:
 
 
 import pyomo.environ as pyo
 
 def lad_fit_1(df, y_col, x_col):
 
-    m = pyo.ConcreteModel("L1 Regression Model")
+    m = pyo.ConcreteModel("LAD Regression Model")
 
     m.I = pyo.RangeSet(len(df))
 
@@ -162,12 +168,12 @@ def lad_fit_1(df, y_col, x_col):
 
 m = lad_fit_1(wines, "quality", "alcohol")
 
-print(m.mean_absolute_deviation())
+print(f'The mean absolute deviation for a single-feature regression is {m.mean_absolute_deviation():0.5f}')
 
 
 # This calculation is performed for all variables to determine which variables are the best candidates to explain deviations in wine quality.
 
-# In[13]:
+# In[17]:
 
 
 mad = (wines["alcohol"] - wines["alcohol"].mean()).abs().mean()
@@ -176,16 +182,18 @@ vars = {i: lad_fit_1(wines, "quality", i).mean_absolute_deviation() for i in win
 fig, ax = plt.subplots()
 pd.Series(vars).plot(kind="bar", ax=ax, grid=True)
 ax.axhline(mad, color='r', lw=3)
-ax.set_title('mean absolute deviation following regression')
+ax.set_title('MADs for single-feature regressions')
+plt.show()
 
 
-# In[14]:
+# In[16]:
 
 
 wines["prediction"] = [m.prediction[i]() for i in m.I]
 wines["quality"].hist(label="data")
 
 wines.plot(x="quality", y="prediction", kind="scatter")
+plt.show()
 
 
 # ## Multivariate $L_1$-regression
@@ -202,7 +210,7 @@ wines.plot(x="quality", y="prediction", kind="scatter")
 # 
 # where $x_{i, j}$ are values of 'explanatory' variables, i.e., the 11 physical and chemical characteristics of the wines. By taking care of the absolute value appearing in the objective function, this can be implemented in Pyomo as an LP as follows:
 
-# In[20]:
+# In[19]:
 
 
 import pyomo.environ as pyo
@@ -245,10 +253,9 @@ def l1_fit(df, y_col, x_cols):
     
     return m
 
-m = l1_fit(wines, "quality", 
-                    ["alcohol", "volatile acidity", "citric acid", "sulphates", \
-                     "total sulfur dioxide", "density", "fixed acidity"])
-print("MAD =",m.mean_absolute_deviation(),"\n")
+m = l1_fit(wines, "quality", ["alcohol", "volatile acidity", "citric acid", "sulphates", \
+                              "total sulfur dioxide", "density", "fixed acidity"])
+print(f"MAD = {m.mean_absolute_deviation():0.5f}\n")
 
 for j in m.J:
     print(f"{j}  {m.a[j]()}")

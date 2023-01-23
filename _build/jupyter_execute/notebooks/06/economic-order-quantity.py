@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ```{index} single: Pyomo; Block
+# ```{index} single: Pyomo; block
 # ```
 # ```{index} single: conic programming; second order cones
 # ```
 # ```{index} single: Pyomo; kernel library
 # ```
-# ```{index} single: solver; Mosek
+# ```{index} single: solver; mosek
 # ```
+# ```{index} single: application; inventory management
+# ```
+# 
 # # Economic Order Quantity
 # 
 # This notebooks demonstrates the reformulation of hyperbolic constraints as SOCP with implementation with `pyomo.kernel.conic.quadratic` and also the direct modeling of the hyperbolic constraint with `pyomo.kernel.conic.rotated_quadratic`. The example is familiar to any MBA/business student, and has a significant range of applications including warehouse operations.

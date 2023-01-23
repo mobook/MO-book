@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ```{index} single: Pyomo; Block
+# ```{index} single: Pyomo; block
 # ```
 # ```{index} single: Pyomo; kernel library
 # ```
 # ```{index} single: conic programming; second order cones
 # ```
-# ```{index} single: solver; Mosek
+# ```{index} single: solver; mosek
+# ```
+# ```{index} single: application; building insulation
 # ```
 # # Optimal Design of Multilayered Building Insulation
 
@@ -71,7 +73,7 @@ helper.install_gurobi()
 # 
 # $$x^{*} = - k R_0 + \sqrt{\frac{\alpha k}{\beta b}}.$$
 # 
-# A plot illustrates the trade-off between operating and capital costs.
+# A plot illustrates the trade-off between energy operating costs and capital insulation costs and the corresponding optimal solution $x^*$.
 # 
 
 # In[2]:
@@ -101,13 +103,13 @@ g = lambda x: beta*(a + b*x)
 # solution
 xopt =  -k*R0 + np.sqrt(alpha*k/beta/b)
 
-print(f"cost = {f(xopt) + g(xopt):0.5f} per sq. meter")
-print(f"xopt = {xopt:0.5f} meters")
+print(f"The optimal cost is equal to {f(xopt) + g(xopt):0.5f} per sq. meter")
+print(f"The optimal thickness is {xopt:0.5f} meters\n")
 
 # plotting
 x = np.linspace(0, 1, 201)
 
-fig, ax = plt.subplots(1, 1, figsize=(6, 3))
+fig, ax = plt.subplots(1, 1, figsize=(6.5, 4))
 
 ax.plot(x, f(x), label="energy")
 ax.plot(x, g(x), label="insulation")
@@ -179,25 +181,68 @@ print(f"The optimal thickness is xopt = {m.x():0.5f} meters")
 
 # ## Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Program (MIQCP)
 
-# For multiple layers, we cannot easily find an analytical optimal layer composition and we shall resort to conic optimization.
+# For multiple layers, we cannot easily find an analytical optimal layer composition and we shall resort to conic optimization. Let $y_n$ be the binary variable that indicates whether layer $n$ is included in the insulation package or not, and $x_n$ be the continuous variable describing the thickness of layer $n$, which is zero if layer $n$ is not included. 
 # 
-# In the general case with $N$ layers, the full multi-layer optimization problem then reads as follows:
+# In the general case with $N$ layers, the objective function is given by 
+# 
+# $$
+# \frac{\alpha}{R} +  \beta \sum_{n=1}^N (a_n y_n + b_n x_n),
+# $$
+# 
+# where the first term is nonlinear in the variables $x_1,\dots,x_N$ since since the denominator of the first term is equal tosince at the denominator of the first term is equal to
+# 
+# $$
+# R = R_0 + \sum_{n=1}^N \frac{x_n}{k_n}.
+# $$
+# 
+# To overcome this issue, we can include $U$ as a decision variable and include a constraint
+# 
+# $$
+# \frac{1}{R} \leq U.
+# $$
+# 
+# Since we minimize the objective and $U$ has no other constraint, the problem will guarantee that $U$ is equal to $1/R$. The extra constraint $RU \leq 1$ can be reformulated using an extra decision variable $z$ as:
+# 
+# $$
+# 1 \leq RU \quad \Longleftrightarrow \quad \left\{ \begin{array}{l} z^2 \leq 2RU \\
+# z = 2 
+# \end{array}
+# \right.
+# \quad \Longleftrightarrow
+# \quad \left\{ \begin{array}{l} \left\|  \begin{array}{c}
+# \sqrt{2} z \\
+# R - U
+# \end{array}\right\|_2 \leq R + U \\
+# z = 2
+# \end{array}
+# \right.
+# $$
+# 
+# from which we see that the entire problem can be reformulated as a conic optimization problem. 
+# 
+# The middle formulation above can, in fact, be implemented in Pyomo as a [conic rotated constraint](https://pyomo.readthedocs.io/en/stable/library_reference/kernel/conic.html#pyomo.core.kernel.conic.rotated_quadratic) of the form:
+# 
+# $$
+#     \sum_{n=0}^{n-1} z_n^2 \leq 2 r_1 r_2.
+# $$
+# In our case, we pick $n=1$, $z_0 = z$, $r_1=R$, and $r_2=U$.
+# 
+# Adopting this formulation, the full multi-layer optimization problem then reads:
 # 
 # $$
 # \begin{align}
 # \min \quad & \alpha U + \beta \sum_{n=1}^N (a_ny_n + b_nx_n)\\
 # \text{s.t.} \quad 
 # & R = R_0 + \sum_{n=1}^N\frac{x_n}{k_n} \\
+# & x_n \leq T y_n & n=1,\dots,N \\
 # & \sum_{n=1}^N x_n \leq T \\
 # & z^2  \leq 2 R U \\
 # & z  = \sqrt{2} \\
 # & R, U  > 0\\
-# & x_n \leq T y_n & n=1,\dots,N \\
 # & x_n  \geq 0 & n=1,\dots,N \\
-# & y_n  \in \{0,1\} & n=1,\dots,N,
+# & y_n  \in \{0,1\} & n=1,\dots,N
 # \end{align}
 # $$
-# where binary variables $y_n$ indicate whether layer $n$ is included in the insulation package, and $x_n$ is the thickness of layer $n$ if included.
 
 # In[5]:
 
@@ -266,7 +311,7 @@ df = pd.DataFrame({
     "Rigid Foam (low R)": {"k": 0.3, "a": 8.0, "b": 120.0}
 }).T
 
-insulate(df, alpha, beta, R0, T)
+m = insulate(df, alpha, beta, R0, T)
 
 
 # ### Case 2. Multiple Layer Solution
@@ -287,6 +332,8 @@ df = pd.DataFrame({
 
 m = insulate(df, alpha, beta, R0, T)
 
+
+# The plot below gives a graphical representation of the 2-layer problem we just solved. The green line represents the thickness constraint $x_0+x_1 \leq T$, the curves are the isolines of the objective function, and the optimal solution $x^*=(x_0^*,x_1^*)$ is highlighted in red.
 
 # In[8]:
 
@@ -309,7 +356,7 @@ fig, ax = plt.subplots(1, 1)
 ax.contour(x0, x1, f(X0, X1), 50)
 ax.set_xlim(min(x0), max(x0))
 ax.set_ylim(min(x1), max(x1))
-ax.plot([0, T], [T, 0], 'r', lw=3)
+ax.plot([0, T], [T, 0], 'g', lw=2.5)
 
 ax.set_aspect(1)
 
@@ -317,8 +364,8 @@ x = list(m.x[n]() for n in m.N)
 ax.plot(x[0], x[1], 'r.', ms=20)
 ax.text(x[0], x[1], f"    ({x[0]:0.4f}, {x[1]:0.4f})")
 
-ax.set_xlabel("x_0")
-ax.set_ylabel("x_1")
+ax.set_xlabel(r"$x_0$")
+ax.set_ylabel(r"$x_1$")
 ax.set_title("Contours of Constant Cost")
 plt.show()
 
@@ -344,9 +391,3 @@ plt.show()
 # > Açıkkalp, E., & Kandemir, S. Y. (2019). A method for determining optimum insulation thickness: Combined economic and environmental method. Thermal Science and Engineering Progress, 11, 249-253. https://www.sciencedirect.com/science/article/pii/S2451904918305377
 # 
 # > Ylmén, P., Mjörnell, K., Berlin, J., & Arfvidsson, J. (2021). Approach to manage parameter and choice uncertainty in life cycle optimisation of building design: Case study of optimal insulation thickness. Building and Environment, 191, 107544. https://www.sciencedirect.com/science/article/pii/S0360132320309112
-
-# In[ ]:
-
-
-
-

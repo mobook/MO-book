@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# :::{index} disjunctive programming
-# :::
-# 
-# :::{index} single: application; scheduling; machine
-# :::
+# ```{index} disjunctive programming
+# ```
+# ```{index} single: application; scheduling
+# ```
+# ```{index} single: solver; cbc
+# ```
 # 
 # # Machine Scheduling
 

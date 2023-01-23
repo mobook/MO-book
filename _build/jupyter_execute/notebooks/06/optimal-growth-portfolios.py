@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ```{index} single: Pyomo; Block
+# ```{index} single: Pyomo; block
 # ```
 # ```{index} single: Pyomo; kernel library
 # ```
 # ```{index} single: conic programming; exponential cones
 # ```
-# ```{index} single: solver; Mosek
+# ```{index} single: solver; mosek
 # ```
-# # Optimal Growth Portfolios
+# ```{index} single: application; portfolio
+# ```
+# 
+# # Extra material: Optimal Growth Portfolios
 # 
 # Among the reasons why Kelly was neglected by investors were high profile critiques by the most famous economist of the 20th Century, Paul Samuelson. Samuelson objected on several grounds, among them is a lack of risk aversion that results in large bets and risky short term behavior, and that Kelly's result is applicable to only one of many utility functions that describe investor preferences. The controversy didn't end there, however, as other academic economists, including Harry Markowitz, and practitioners found ways to adapt the Kelly criterion to investment funds.
 # 
@@ -137,7 +140,7 @@ fig.tight_layout()
 # $$
 # \begin{align}
 # \max_{w_n}\quad & \frac{1}{T} \sum_{t\in T} q_t \\
-# \text{s.t.}\quad \\
+# \text{s.t.}\quad 
 # & (R_f + \sum_{n\in N}w_n (R_{t,n} - R_f), 1, q_t) \in K_{exp} & \forall t \in T \\
 # & \sum_{n\in N} w_n \leq E_M \\
 # & w_n \geq 0  & \forall n\in N \\
@@ -163,7 +166,7 @@ fig.tight_layout()
 # $$
 # \begin{align}
 # \max_{w_n, q_t, u_t}\quad & \frac{1}{T} \sum_{t\in T} q_t \\
-# \text{s.t.}\quad \\
+# \text{s.t.}\quad 
 # & \frac{1}{T} \sum_{t\in T} u_t \leq R_f^{-\lambda} \\
 # & (u_t, 1, \lambda q_t) \in K_{exp} & \forall t\in T \\
 # & (R_f + \sum_{n\in N}w_n (R_{t,n} - R_f), 1, q_t) \in K_{exp} & \forall t \in T \\
@@ -398,9 +401,3 @@ fig.tight_layout()
 # 
 # > Hsieh, C. H. (2022). On Solving Robust Log-Optimal Portfolio: A Supporting Hyperplane Approximation Approach. arXiv preprint arXiv:2202.03858. https://arxiv.org/pdf/2202.03858
 # 
-
-# In[ ]:
-
-
-
-

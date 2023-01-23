@@ -1,6 +1,19 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: application; resource allocation
+# ```
+# ```{index} single: solver; cbc
+# ```
+# ```{index} pandas dataframe
+# ```
+# ```{index} single: Pyomo; sets
+# ```
+# ```{index} stochastic optimization
+# ```
+# ```{index} two-stage problem
+# ```
+# 
 # # The Farmer's Problem and Variants
 # 
 # The [Farmer's Problem](https://www.math.uh.edu/~rohop/Spring_15/Chapter1.pdf) is a teaching example presented in the well-known textbook by John Birge and Francois Louveaux.
@@ -293,7 +306,7 @@ for wc in np.linspace(48820, 59950, 50):
     
     df.loc[wc, "return"] = m.objective()
     df.loc[wc, "wc"] = wc
-  
+
 df.plot(x="wc", y="return", xlabel="worst case", ylabel="mean return", grid=True)
 
 
@@ -352,11 +365,5 @@ farm_report(m)
 # 
 # The Farmer's Problem is well known in the stochastic programming community. Examples of treatments include the following web resources:
 # 
-# > http://user.engineering.uiowa.edu/~dbricker/stacks_pdf1/slpwr_farmer.pdf
-# > https://www.math.uh.edu/~rohop/Spring_15/Chapter1.pdf
-
-# In[ ]:
-
-
-
-
+# - http://user.engineering.uiowa.edu/~dbricker/stacks_pdf1/slpwr_farmer.pdf
+# - https://www.math.uh.edu/~rohop/Spring_15/Chapter1.pdf

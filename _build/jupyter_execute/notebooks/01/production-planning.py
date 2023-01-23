@@ -1,18 +1,29 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: Pyomo; variables 
+# ```
+# ```{index} single: Pyomo; expressions 
+# ```
+# ```{index} single: Pyomo; sets 
+# ```
+# ```{index} single: Pyomo; decorators
+# ```
+# ```{index} single: solver; cbc
+# ```
+# 
 # # Pyomo Tutorial Example: Production Planning
 # 
 # Pyomo is an algebraic modeling language embedded within Python for creating mathematical optimization applications. Like other modeling languages, with Pyomo the user can create objects representing decision variables, and expressions involving the decision variables. The expressions can be used to create objective functions, or combined in logical relationships to create constraints. Pyomo provides methods to transform and solve models numerically with a choice of open-source and commercial solvers. 
 # 
 # The purpose of this notebook is introduce the basics of Pyomo by solving a small production planning problem. A more complete version of the problem is revisited in Chapter 10 to demonstrate stochastic and robust optimization. This notebook introduces components from the Pyomo library that are present in most applications:
 # 
-# * [Sets](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Sets.html)
-# * [Parameters](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Parameters.html)
 # * [Variables](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Variables.html)
 # * [Objectives](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Objectives.html)
 # * [Constraints](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Constraints.html)
 # * [Expressions](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Expressions.html)
+# * [Parameters](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Parameters.html)
+# * [Sets](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Sets.html)
 # 
 # The notebook begins with a statement of the problem and the development of a mathematical model. The mathematical model is then translated into several different versions of a Pyomo model. 
 # 
@@ -25,48 +36,47 @@
 # So let's get started.
 
 # ## A Production Planning Problem
-# 
+
 # ### Problem Statement
 # 
 # A small company has developed two versions of a new product. Each version of the product is made from the same raw material that costs 10€ per gram, and requires two different types of specialized labor to produce. 
 # 
 # $U$ is the higher priced version of the product. $U$ sells for  270€ per unit and requires 10 grams of raw material, one hour of labor type $A$, two hours of labor type $B$. Because of the higher price, the market demand for $U$ is limited to forty units per week. $V$ is the lower priced version of the product that sells for 210€ per unit with unlimited demand and requires 9 grams of raw material, 1 hour of labor type $A$ and 1 hour of labor type $B$. This data is summarized in the following table:
 # 
-# | Version | Raw Material <br> required | Labor A <br> required | Labor B <br> required | Market <br> Demand | Price |
+# | Version | Raw material <br> required | Labor A <br> required | Labor B <br> required | Market <br> demand | Price |
 # | :-: | :-: | :-: | :-: | :-: | :-: | 
 # | U | 10 g | 1 hr | 2 hr | $\leq$ 40 units | 270€ |
 # | V |  9 g | 1 hr | 1 hr | unlimited | 210€ |
 # 
 # Weekly production at the company is limited by the availability of labor and the inventory of raw material. The raw material must be ordered in advance and has a short shelf life. Any raw material left over at the end of the week is discarded. The following table details the cost and availability of raw material and labor.
 # 
-# | Resource | Amount <br> Available | Cost | 
+# | Resource | Amount <br> available | Cost | 
 # | :-: | :-: | :-: |
 # | Raw Material | ? | 10€ / g |
 # | Labor A | 80 hours | 50€ / hour |
 # | Labor B | 100 hours | 40€ / hour | 
 # 
 # The company wishes to maximize gross profits. How much raw material should be ordered in advance for each week? How many units of $U$ and $V$ should the company produce each week? 
-# 
+
 # ### Mathematical Model
 # 
-# A starting point for the development of a mathematical model is to create a list of relevant decision variables. Some of decision variables may prove redundant later, tut for now we seek to identify quantities that may be useful in expressing the problem objectives and constraints. A candidate set of decision variable is listed in the following table with a symbol, description, and any lower and upper bounds that are known from the problem data.
+# The above is an example of an optimization problem. Formulating such a problem in a mathematical fashion always involves three crucial elements: **decision variables, constraints, and an objective function**, which we will now introduce.
 # 
-# | Decision Variable | Description | lower bound | upper bound |
+# The starting point for the development of a mathematical model is to create a list of relevant decision variables. Some of the decision variables may prove redundant later, tut for now we seek to identify quantities that may be useful in expressing the problem objectives and constraints. A candidate set of decision variable is listed in the following table with a symbol, description, and any lower and upper bounds that are known from the problem data.
+# 
+# | Decision variable | Description | Lower bound | Upper bound |
 # | :-: | :--- | :-: | :-: |
 # | $x_M$ | amount of raw material used | 0 | - |
 # | $x_A$ | amount of Labor A used | 0 | 80 |
 # | $x_B$ | amount of Labor B used | 0 | 100 |
 # | $y_U$ | number of $U$ units to produce | 0 | 40 |
 # | $y_V$ | number of $V$ units to product | 0 | - |
-# | revenue | amount of revenue generated by sales | - | - |
-# | expense | cost of raw materials and labor | - | - |
-# | profit | difference between revenue and expense | - | - |
 # 
-# The problem objective is to maximize profit
+# Using the decision variables above, we are able to formulate the **objective function** to be maximized -- the profit,
 # 
 # $$\max\ \text{profit}$$
 # 
-# where profit is defined as the difference between revenue and expense. 
+# which is equal to the difference between revenue and the costs:which equals the difference between revenue and the costs:
 # 
 # $$
 # \begin{aligned}
@@ -83,27 +93,51 @@
 # \end{aligned}
 # $$
 # 
-# The quantity of products produced is limited by the available resources. For each resource there is a corresponding linear constraint that limits production.
+# The decision variables $y_U, y_V, x_M ,x_A ,x_B$ cannot take any value, but they need to specify specific conditions. maximize the profit formula we cannot, however, just pick any values. Instead, they have to satisfy certain **constraints**, expressed as equalities or inequalities involving the decision variables. For each resource there is a corresponding linear constraint that limits production, namely:
 # 
 # $$
 # \begin{aligned}
-# 10 y_U + 9 y_V  & \leq x_M & & \text{raw material}\\
-# 2 y_U + 1 y_V & \leq x_A & &\text{labor A} \\
-# 1 y_U + 1 y_V & \leq x_B & & \text{labor B}\\
+# 10 y_U + 9 y_V  & \leq x_M & & \text{(raw material)}\\
+# 2 y_U + 1 y_V & \leq x_A & &\text{(labor A)} \\
+# 1 y_U + 1 y_V & \leq x_B & & \text{(labor B)}\\
 # \end{aligned}
 # $$
 # 
-# This completes the mathematical description of this example of a production planning problem. The next is create a Pyomo model t
+# We are now ready to formulate the full mathematical optimization problem in the following canonical way: first we state the objective function to be maximized (or minimized), then we list all the constraints, and lastly we report all the decision variables and their bounds:
+# 
+# $$
+# \begin{align}
+# \max \quad & 270 y_U + 210 y_V - 10 x_M - 50 x_A - 40 x_B \\
+# \text{such that = s.t.} \quad & 10 y_U + 9 y_V  \leq x_M \nonumber \\
+#  & 2 y_U + 1 y_V \leq x_A \nonumber \\
+#  & 1 y_U + 1 y_V \leq x_B \nonumber \\
+#  & 0 \leq x_M \nonumber \\
+#  & 0 \leq x_A \leq 80 \nonumber \\
+#  & 0 \leq x_B \leq 100 \nonumber \\
+#  & 0 \leq y_U \leq 40 \nonumber \\
+#  & 0 \leq y_V.\nonumber 
+# \end{align}
+# $$
+# 
+# This completes the mathematical description of this example of a production planning problem. 
+# 
+# In many textbooks it is customary to write the decision variables also under the $\min$ symbol so as to clearly distinguish between the variables and any other parameters (which might also be expressed as symbols or letters) in the problem formulation. Throughout this book, however, we stick to the convention that the decision variables are only those for which explicitly state their domains as part of the problem formulation.
+# 
+# An **optimal solution** of the problem is any vector of decision variables that meets the constraints and achieves the maximum/minimum objective.
+# 
+# However, even for a simple problem like this one, it is not immediately clear what the optimal solution is. This is exactly where mathematical optimization algorithms come into play -- they are generic procedures that can find the optimal solutions of problems as long as these problems can be formulated in a standardized fashion as above. For a practitioner, mathematical optimization very often boils down to formulating the problem as a model above, and then passing it over to one of the open-source or commercial software packages that can solve such a model, regardless of what was the original *story* behind the model. In order to do so, we need an interface of communication between the models and the algorithms. In this book, we opt for a Python-based interface which is the ```Pyomo``` modelling package.
+# 
+# The next step is thus creating the corresponding Pyomo model.
 
 # ## Version 1. Getting started with Pyomo
 # 
 # This first version of a Pyomo model uses components from the Pyomo library to represent the decision variables, expressions, objectives, and constraints appearing in the mathematical model for this production planning problem. This is a direct translation of the mathematical model to Pyomo. Subsequent versions of this model will demonstrate the use of indexed parameters, variables and constraints that are essential for larger scale applications.
 
-# **Step 0.Installing Pyomo and solvers.**
+# **Step 0. Installing Pyomo and solvers.**
 # 
 # Before going further, the first step is to install the Pyomo library and any solvers that may be used to compute numerical solutions. The following cell downloads a Python module that will check for (and if necessary install) Pyomo and a linear solver on Google Colab and most laptops.
 
-# In[44]:
+# In[1]:
 
 
 import requests
@@ -123,7 +157,7 @@ helper.install_cbc()
 # 
 # This collection of notebooks uses a consistent convention of assigning a `pyo` prefix to objects imported from `pyomo.environ`.
 
-# In[45]:
+# In[2]:
 
 
 import pyomo.environ as pyo
@@ -135,24 +169,24 @@ import pyomo.environ as pyo
 # 
 # The following cell creates a ConcreteModel object and stores it in a Python variable named `model`. The name can be any valid Python variable, but keep in mind the name will be a prefix for every variable and constraint. The `.display()` method is a convenient means of displaying the current contents of a Pyomo model.
 
-# In[46]:
+# In[3]:
 
 
 model = pyo.ConcreteModel("Production Planning: Version 1")
 model.display()
 
 
-# **Step 3. Create decision variables and add them to the model.**
+# **Step 3. Create and add decision variables.**
 # 
 # Decision variables are created with the Pyomo `Var()` class. Variables are assigned as attributes to the model object using the Python 'dot' convention. 
 # 
 # `Var()` accepts optional keyword arguments. The optional `bounds` keyword specifies a tuple containing lower and upper bounds. A good modeling practice is to specify any known and fixed bounds on the decision variables as they are created. If one of the bounds is unknown, use `None` as a placeholder.
 # 
-# In addition, the `initialize` keyword is used below to specify initial values for the decision variables. This isn't normally required, but is useful for this tutorial example where we want to display the model as it is being built.
+# In addition, the `initialize` keyword is used below to specify initial values for the decision variables. This is not normally required, but is useful for this tutorial example where we want to display the model as it is being built.
 # 
-# The optional `domain` keyword specifies the type of decision variable. By default, the domain is all real numbers including negative and positive values. 
+# The optional `domain` keyword specifies the type of decision variable. By default, the domain is all real numbers, hence including both negative and positive values. 
 
-# In[47]:
+# In[4]:
 
 
 model.x_M = pyo.Var(bounds=(0, None), initialize=0)
@@ -169,7 +203,7 @@ model.display()
 # 
 # The difference between revenue and expense is equal to the gross profit. The following cell creates linear expressions for revenue and expense which are then assigned the expressions to attributes called `model.revenue` and `model.expense`. We can print the expressions to verify correctness.
 
-# In[48]:
+# In[5]:
 
 
 model.revenue = 270 * model.y_U + 210 * model.y_V
@@ -198,7 +232,7 @@ print(model.expense)
 # When using Pyomo decorators, the name of the function will create a model attribute. The function to be tagged with a Pyomo decorator must have the model object as the first argument. The decorator itself may have arguments. For example, the `sense` keyword is used to set the sense of an objective.
 # 
 
-# In[49]:
+# In[6]:
 
 
 @model.Objective(sense=pyo.maximize)
@@ -208,9 +242,9 @@ def profit(model):
 model.display()
 
 
-# **Step 5. Add constraints.**
+# **Step 6. Add the constraints.**
 # 
-# Constraints are logical relationships between expressions that define the range of feasible solutions in an optimization problem.. The logical relationships can be `==`, `<=`, or `>=`. 
+# Constraints are logical relationships between expressions that define the range of feasible solutions in an optimization problem. The logical relationships can be `==`, `<=`, or `>=`. 
 # 
 # `pyo.Constraint()` is a Pyomo library component to creating scalar constraints. A constraint consists of a logical relationship between expressions is passed as a keyword argument `expr` to `pyo.Constraint()`. For this application, the constraints are expressed as  
 # 
@@ -218,7 +252,7 @@ model.display()
 #     model.labor_A = pyo.Constraint(expr = 2 * model.y_U + 1 * model.y_V <= model.x_A)
 #     model.labor_B = pyo.Constraint(expr = 1 * model.y_U + 1 * model.y_V <= model.x_B)
 #     
-# Alternatively, the decorator syntax for constraints provides a readable and maintainable means to express more complex constraints. For the present example, the constraints would be writte
+# Alternatively, the decorator syntax for constraints provides a readable and maintainable means to express more complex constraints. For the present example, the constraints would be written
 # 
 #     @model.Constraint()
 #     def raw_materials(model):
@@ -234,7 +268,7 @@ model.display()
 # 
 # These are demonstrated in the following cell.
 
-# In[52]:
+# In[7]:
 
 
 @model.Constraint()
@@ -252,13 +286,13 @@ def labor_B(model):
 model.display()
 
 
-# **Step 6. Solve the model.**
+# **Step 7. Solve the model.**
 # 
 # With the model now fully specified, the next step is to compute a solution. This is done by creating a solver object using `SolverFactory`, then applying the solver to the model, as shown in the following cell.
 # 
 # EXPAND DISCUSSION REGARDING SOLVERS.
 
-# In[53]:
+# In[8]:
 
 
 solver = pyo.SolverFactory("cbc")
@@ -267,12 +301,16 @@ solver.solve(model)
 model.display()
 
 
-# **Step 7. Reporting the solution.**
+# **Step 8. Reporting the solution.**
+# 
+# WRITE THIS STEP.
+# 
+# For an overview of other ways to report and visualize the solutions, see also the appendix of [this notebook](../04/gasoline-distribution.ipynb).
 
 # ## Version 2: Refactoring the Model
 # 
 
-# In[59]:
+# In[9]:
 
 
 import pandas as pd
@@ -302,7 +340,7 @@ display(pd.DataFrame(process_data))
 
 # **Enhancement 1: Create sets of products and resources**
 
-# In[80]:
+# In[10]:
 
 
 model = pyo.ConcreteModel("Production Planning: Version 2")
@@ -334,14 +372,4 @@ solver.solve(model)
 model.display()
 
 
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
+# To learn how to write consistent, readable, and maintainable Pyomo code for modeling and optimizationconsistent, see the [Pyomo style guide](../../pyomo_style_guide.md)

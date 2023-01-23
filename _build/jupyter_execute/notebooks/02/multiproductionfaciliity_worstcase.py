@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ```{index} single: Pyomo; sets
+# ```
+# ```{index} single: Pyomo; parameters
+# ```
+# ```{index} single: application; production planning
+# ```
+# ```{index} pandas dataframe
+# ```
+# 
 # # Extra material: Multi-product facility production
 
 # In[1]:
@@ -25,8 +34,8 @@ helper.install_cbc()
 # $$
 # \begin{align*}
 # \max\ \text{profit}  = \sum_{j\in J} c_j x_j &\\
-# \text{s.t.} \qquad \sum_{j\in J} a_{ij}x_j & \leq b_i & \forall i \in I\\
-# x_j & \geq 0 & \forall j\in J,
+# \text{s.t.} \qquad \sum_{j\in J} a_{ij}x_j & \leq b_i & \forall \, i \in I\\
+# x_j & \geq 0 & \forall \, j\in J,
 # \end{align*}
 # $$
 # 
@@ -34,11 +43,11 @@ helper.install_cbc()
 # 
 # But what if coefficients of the model are uncertain? What should be the objective then? Does uncertainty change the production plan? Does the uncertainty change the marginal value assigned to resources? These are complex and thorny questions that will be largely reserved for later chapters of this book. However, it is possible to consider a specific situation within the current context.
 # 
-# Consider a situation where is of $S$ plausible models for the net profit. These might be a result of marketing studies or from considering plant operation under multiple scenarios. The set of profit models could be written
+# Consider a situation where there are multiple plausible models for the net profit. These might be a result of marketing studies or from considering plant operation under multiple scenarios, which we collect in a set $S$. The set of profit models could be written
 # 
 # $$
 # \begin{align*}
-# \text{profit}_s & = \sum_{j} c_j^s x_j & \forall s\in S
+# \text{profit}_s & = \sum_{j} c_j^s x_j & \forall \, s\in S
 # \end{align*}
 # $$
 # 
@@ -50,9 +59,9 @@ helper.install_cbc()
 # \begin{align*}
 # \max_{x_j} z & \\
 # \\
-# \text{s.t.} \qquad \sum_{j\in J} c_j^s x_j & \geq z& \forall ss\in S\\
-# \sum_{j\in J} a_{ij}x_j & \leq b_i & \forall i \in I\\
-# x_j & \geq 0 & \forall j\in J
+# \text{s.t.} \qquad \sum_{j\in J} c_j^s x_j & \geq z& \forall \, s\in S\\
+# \sum_{j\in J} a_{ij}x_j & \leq b_i & \forall \, i \in I\\
+# x_j & \geq 0 & \forall \, j\in J
 # \end{align*}
 # $$
 # 
@@ -93,7 +102,7 @@ display(BIM_resources)
 # 
 # An implementation of the maximum worst-case profit model.
 
-# In[3]:
+# In[9]:
 
 
 import pyomo.environ as pyo
@@ -136,8 +145,8 @@ pyo.SolverFactory('cbc').solve(BIM)
 worst_case_plan = pd.Series({j: BIM.x[j]() for j in BIM.J}, name="worst case")
 worst_case_profit = BIM.profit()
 
-print("\nworst case profit = ", worst_case_profit)
-print(f"\nworst case production plan:\n")
+print("\nWorst case profit =", worst_case_profit)
+print(f"\nWorst case production plan:")
 display(worst_case_plan)
 
 
@@ -182,7 +191,7 @@ def max_profit(scenario, resources):
 # 
 # The next cell computes the optimal plan for the mean scenario.
 
-# In[5]:
+# In[11]:
 
 
 # create mean scenario
@@ -192,16 +201,16 @@ pyo.SolverFactory('cbc').solve(mean_case)
 mean_case_profit = mean_case.profit()
 mean_case_plan = pd.Series({j: mean_case.x[j]() for j in mean_case.J}, name="mean case")
 
-print("\nmean case profit", mean_case_profit)
-print("\nmean case production plan\n")
+print(f"\nMean case profit = {mean_case_profit:0.1f}")
+print("\nMean case production plan:")
 print(mean_case_plan)
 
 
 # The expected profit under the mean scenario if 17,833 which is 333 greater than for the worst case. Also note the production plan is different.
 # 
-# Would plan should be preferred ... one that produces a guaranteed profit of 17,500 under all scenarios, or one that produces expected profit of 17,833?
+# Which plan should be preferred? The one that produces a guaranteed profit of 17,500 under all scenarios, or one that produces expected profit of 17,833?
 
-# In[6]:
+# In[14]:
 
 
 mean_case_outcomes = BIM_scenarios.dot(mean_case_plan)
@@ -214,7 +223,7 @@ ax = pd.concat([worst_case_outcomes, mean_case_outcomes], axis=1).plot(kind="bar
 ax.axhline(worst_case_profit)
 ax.axhline(worst_case_outcomes.mean(), linestyle='--', label="worst case plan, mean")
 ax.axhline(mean_case_outcomes.mean(), linestyle='--', color='orange', label="mean case plan, mean")
-ax.legend()
+_ = ax.legend()
 
 
 # In[7]:

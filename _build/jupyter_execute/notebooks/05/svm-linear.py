@@ -1,9 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ```{index} single: Pyomo; Block
+# ```{index} single: Pyomo; block
 # ```
 # ```{index} single: Pyomo; kernel library
+# ```
+# ```{index} single: application; support vector machines
+# ```
+# ```{index} single: application; binary classification
+# ```
+# ```{index} single: application; counterfeit banknotes
 # ```
 # # Support Vector Machines for Binary Classification
 # 
