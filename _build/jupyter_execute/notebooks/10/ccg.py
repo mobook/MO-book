@@ -62,20 +62,25 @@ helper.install_pyomo()
 # * $z_D$: Uncertainty in number initial orders for product $U$.
 # where
 # 
+# $$
 # \begin{align*}
 # |z_A| & \leq 0.15 && \pm\text{15% uncertainty in Labor }A \\
 # |z_B| & \leq 0.25 && \pm\text{25% uncertainty in Labor }B \\
 # |z_D| & \leq 0.25 &&  \text{25% uncertainty in initial orders for }U \\
 # \end{align*}
+# $$
 # 
 # and where at most two of them attain their maximum deviation which can be formulated as the following budget constraint:
 # 
+# $$
 # \begin{align*}
 # \frac{|z_A|}{0.15} + \frac{|z_A|}{0.25} + \frac{|z_D|}{0.25} \leq 2
 # \end{align*}
+# $$
 # 
 # Let us see how these parameters $z_A$ and $z_B$ affect the problem.  After subtracting the unknown labor cost from the selling price, the unit profit for each device is given by:
 # 
+# $$
 # \begin{align*}
 # P_U & = 270 - 50(1+z_A) - 80(1+z_B) - 100) \\
 # & = 40 - 50 z_A - 80 z_B \\
@@ -85,6 +90,7 @@ helper.install_pyomo()
 # & = 30 - 50 z_A - 40 z_B \\
 # \implies P_V  & \in [12.5, 47.5]
 # \end{align*}
+# $$
 # 
 # It is therefore not clear in advance which of the products would be more profitable. Taking into account the additional uncertainty about the preorder demand for product $U$, it is not possible to determine in advance what is the worst-case outcome of the uncertainty $z_A$, $z_B$, $z_D$ for this problem.
 # 
@@ -94,19 +100,24 @@ helper.install_pyomo()
 
 # Next we formulate the robust optimization problem where the objective is to maximize the worst case profit subject to constraints and uncertainty. We formulate the problem as
 # 
+# $$
 # \begin{align*}
 # \max \quad & - 10x + \inf\limits_{z \in Z} Q(x, z) \\
 # \text{s.t.} \quad & x \geq 0, 
 # \end{align*}
+# $$
 # 
 # where $x$ is the amount of raw material to order, and where the uncertainty $z = (z_A, z_B, z_D)$ is given by
 # 
+# $$
 # \begin{align*}
 # Z = \left\{ (z_A, z_B, z_D): \ |z_A| \leq 0.15, \ |z_B| \leq 0.25, \ |z_D| \leq 0.25, \ \frac{|z_A|}{0.15} + \frac{|z_A|}{0.25} + \frac{|z_D|}{0.25} \leq 2 \right\}
 # \end{align*}
+# $$
 # 
 # $Q(x, z)$ is the second-stage profit defined by
 # 
+# $$
 # \begin{align*}
 # Q(x, z) = \min \quad & y_3 \\
 # \text{s.t.}\quad & (140 - 50z_A - 80z_B) y_1 + (120 - 50z_A - 40z_B) y_2 \geq y_3 && \text{(worst-case profit)} \\
@@ -117,9 +128,11 @@ helper.install_pyomo()
 # & -x + 10 y_1 + 9 y_2 \leq 0 && \text{(raw materials)} \\
 # & y_1, y_2, y_3 \geq 0
 # \end{align*}
+# $$
 # 
 # The extra decision variable $y_3$ serves the purpose of keeping the objective of the second-stage problem free of uncertainty. Clearly, $x$ plays the role of the first-stage variable here, whereas $y_1, y_2, y_3$ are the second stage variables. Using our textbook notation, we can formulate the problem data as:
 # 
+# $$
 # \begin{align*}
 # x = \begin{pmatrix} x \end{pmatrix},
 # \
@@ -127,13 +140,16 @@ helper.install_pyomo()
 # \
 # z = \begin{pmatrix} z_A \\ z_B \\ z_D \end{pmatrix}
 # \end{align*}
+# $$
 # 
 # Then following are the definitions of the data matrices as functions of uncertainties, consistently with the notation used in Section 10.1.
 # \begin{align*}
 # c = \begin{pmatrix} -10 \end{pmatrix}, \
 # q = \begin{pmatrix} 0 \\ 0 \\ 1 \end{pmatrix} \\
 # \end{align*}
+# $$
 # 
+# $$
 # \begin{align*}
 # R(z)  = \begin{pmatrix} 0 \\ 0 \\ 0 \\ 0 \\ -1 \end{pmatrix}, 
 # \
@@ -141,6 +157,7 @@ helper.install_pyomo()
 # \
 # t(z) = \begin{pmatrix} 0 \\ -20(1+z_D) \\ 80 \\ 100 \\ 0 \end{pmatrix} \\
 # \end{align*}
+# $$
 
 # # Solving the robust problem through random scenarios
 
@@ -148,12 +165,14 @@ helper.install_pyomo()
 # 
 # Now, how can we actually solve a two-stage problem like this if it is indeed the worst-case profit that we are interested in? We notice that the matrix $D(z)$ depends on $z$ and therefore, we cannot easily formulate the second-stage decisions as linear functions of $z$ (linear decision rules). However, we can apply the column-and-constraint generation approach where we would gradually build a finite list of scenarios and solve a problem that will maximize the worst-case profit across such a set of scenarios:
 # 
+# $$
 # \begin{align*}
 # \max \ & c^\top x + \tau  \\ 
 # \text{s.t.} \  & q^\top y^j \geq \tau, && j = 1, \ldots, k  \\
 # & R (z^j) x + S(z^j) y^j \leq t(z^j)  &&  j = 1, \ldots, k \\
 # & x, y^1, \ldots, y^k, \tau \geq 0 
 # \end{align*}
+# $$
 # 
 # The following cell is a function that evaluates the system matrix coefficients for a particular $z\in Z$ and returns numerical values indexed in nested dictionaries.
 
@@ -358,11 +377,13 @@ def max_profit(model_params, Z, x):
 # 
 # As already said, for sake of stability analysis, we may be interested in how the optimal solution changes when we do make an assuption that every outcome of uncertainty is equally probably and that we optimize for the average cost, just as in problem (10.6) in the textbook:
 # 
+# $$
 # \begin{align}
 # \min\limits_{x, y^j} \ & c^\top x + \frac{1}{N} \sum\limits_{j = 1}^N q^\top y^j \\
 # \text{s.t.} \ & A x \leq b \\
 # & R ( z^j) x + S (z^j) y^j \leq t(z^j) &\  j = 1, \ldots, N.
 # \end{align}
+# $$
 # 
 # The following code is a slight modification of the earlier function that optimized for the worst-case solution.
 
