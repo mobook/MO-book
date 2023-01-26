@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ```{index} single: Pyomo; block
-# ```
 # ```{index} single: Pyomo; sets
 # ```
 # ```{index} single: Pyomo; parameters
@@ -59,7 +57,7 @@ helper.install_cbc()
 # 
 # * `SLOTS` is an ordered set of (day, shift) pairs describing all of the available shifts during the week. 
 # 
-# * `BLOCKS` is an order set of all overlapping 24 hour periods in the week. An element of the set contains the (day, shift) period in the corresponding period. This set will be used to limit worker assignments to no more than one for each 24 hour period.
+# * `BLOCKS` is an ordered set of all overlapping 24 hour periods in the week. An element of the set contains the (day, shift) period in the corresponding period. This set will be used to limit worker assignments to no more than one for each 24 hour period.
 # 
 # * `WEEKENDS` is a the set of all (day, shift) pairs on a weekend. This set will be used to implement worker preferences on weekend scheduling.
 # 
