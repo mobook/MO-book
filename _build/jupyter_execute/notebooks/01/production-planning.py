@@ -9,8 +9,6 @@
 # ```
 # ```{index} single: Pyomo; decorators
 # ```
-# ```{index} single: Pyomo; parameters
-# ```
 # ```{index} single: solver; cbc
 # ```
 # 
@@ -24,9 +22,12 @@
 # * [Objectives](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Objectives.html)
 # * [Constraints](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Constraints.html)
 # * [Expressions](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Expressions.html)
+# <<<<<<< local
+# * [SolverFactory]()
+# =======
 # * [Parameters](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Parameters.html)
 # * [Sets](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Sets.html)
-# * [SolverFactory](https://pyomo.readthedocs.io/en/latest/solving_pyomo_models.html)
+# >>>>>>> remote
 # 
 # The notebook begins with a statement of production planning problem and presentation of a mathematical model. The mathematical model is then translated into series of Pyomo models of increasing abstraction.
 # 
@@ -43,6 +44,8 @@
 # One feature of these notebooks is the use of Python decorators to designate Pyomo objectives, constraints, and other model components. This is a relatively new feature available in recent versions of Pyomo. Decorators are a less commonly used feature of Python that may be unfamiliar to new users, but are well worth the effort of learning for a remarkable gain in the readability and maintenance of Pyomo models.
 # 
 # So let's get started.
+
+# <span style="color:red">**<<<<<<< local**</span>
 
 # ## A Production Planning Problem
 # 
@@ -114,7 +117,9 @@
 # \end{aligned}
 # $$
 # 
-# This completes the mathematical description of this example of a production planning problem.
+# This completes the mathematical description of this example of a production planning problem. The next is create a Pyomo model t
+
+# <span style="color:red">**=======**</span>
 
 # ## A Production Planning Problem
 
@@ -210,15 +215,21 @@
 # 
 # The next step is thus creating the corresponding Pyomo model.
 
+# <span style="color:red">**>>>>>>> remote**</span>
+
 # ## Version 1: Scalar Variables and Constraints
 # 
 # This first version of a Pyomo model uses components from the Pyomo library to represent the decision variables, expressions, objectives, and constraints as they appear in the mathematical model for this production planning problem. This is a direct translation of the mathematical model to Pyomo using the basic elements of Pyomo.
 
-# ### Step 0. Installing Pyomo and solvers
+# <<<<<<< local
+# ### Step 0.Install Pyomo and solvers
+# =======
+# **Step 0. Installing Pyomo and solvers.**
+# >>>>>>> remote
 # 
 # Before going further, the first step is to install the Pyomo library and any solvers that may be used to compute numerical solutions. The following cell downloads a Python module that will check for (and if necessary install) Pyomo and a linear solver on Google Colab and most laptops.
 
-# In[1]:
+# In[ ]:
 
 
 import requests
@@ -238,7 +249,7 @@ helper.install_cbc()
 # 
 # This collection of notebooks uses a consistent convention of assigning a `pyo` prefix to objects imported from `pyomo.environ`.
 
-# In[2]:
+# In[ ]:
 
 
 import pyomo.environ as pyo
@@ -250,7 +261,7 @@ import pyomo.environ as pyo
 # 
 # The following cell creates a ConcreteModel object and stores it in a Python variable named `model`. The name can be any valid Python variable, but keep in mind the name will be a prefix for every variable and constraint. 
 
-# In[3]:
+# In[ ]:
 
 
 model = pyo.ConcreteModel("Production Planning: Version 1")
@@ -258,24 +269,33 @@ model = pyo.ConcreteModel("Production Planning: Version 1")
 
 # The `.display()` method is a convenient means of displaying the current contents of a Pyomo model.
 
-# In[4]:
+# In[23]:
 
 
 model.display()
 
 
+# <<<<<<< local
 # ### Step 3. Create decision variables
+# =======
+# **Step 3. Create and add decision variables.**
+# >>>>>>> remote
 # 
 # Decision variables are created with the Pyomo `Var()` class. Variables are assigned to attributes of the model object using the Python 'dot' notation. `Var()` accepts optional keyword arguments. 
 # 
 # * The optional `bounds` keyword specifies a tuple containing lower and upper bounds. A good modeling practice is to specify any known and fixed bounds on the decision variables as they are created. If one of the bounds is unknown, use `None` as a placeholder.
 # 
+# <<<<<<< local
+# * The `initialize` keyword specifies initial values for the decision variables. This isn't normally required, but is useful in this tutorial example where we want to display the model as it is being built.
 # 
+# * The optional `domain` keyword specifies the type of decision variable. By default, the domain is all real numbers including negative and positive values. 
+# =======
 # In addition, the `initialize` keyword is used below to specify initial values for the decision variables. This is not normally required, but is useful for this tutorial example where we want to display the model as it is being built.
 # 
-# The optional `domain` keyword specifies the type of decision variable. By default, the domain is all real numbers, hence including both negative and positive values.
+# The optional `domain` keyword specifies the type of decision variable. By default, the domain is all real numbers, hence including both negative and positive values. 
+# >>>>>>> remote
 
-# In[5]:
+# In[ ]:
 
 
 model.x_M = pyo.Var(bounds=(0, None), initialize=0)
@@ -292,7 +312,7 @@ model.display()
 # 
 # The difference between revenue and expense is equal to the gross profit. The following cell creates linear expressions for revenue and expense which are then assigned the expressions to attributes called `model.revenue` and `model.expense`. We can print the expressions to verify correctness.
 
-# In[6]:
+# In[ ]:
 
 
 model.revenue = 270 * model.y_U + 210 * model.y_V
@@ -321,7 +341,7 @@ print(model.expense)
 # When using Pyomo decorators, the name of the function will create a model attribute. The function to be tagged with a Pyomo decorator must have the model object as the first argument. The decorator itself may have arguments. For example, the `sense` keyword is used to set the sense of an objective.
 # 
 
-# In[7]:
+# In[ ]:
 
 
 @model.Objective(sense=pyo.maximize)
@@ -357,7 +377,7 @@ model.display()
 # 
 # These are demonstrated in the following cell.
 
-# In[8]:
+# In[ ]:
 
 
 @model.Constraint()
@@ -381,7 +401,7 @@ model.pprint()
 # 
 # EXPAND DISCUSSION REGARDING SOLVERS.
 
-# In[9]:
+# In[ ]:
 
 
 solver = pyo.SolverFactory("cbc")
@@ -399,7 +419,7 @@ model.pprint()
 # ## Version 2: Creating a Data-Driven Model
 # 
 
-# In[10]:
+# In[9]:
 
 
 import pandas as pd
@@ -429,7 +449,7 @@ display(pd.DataFrame(process_data))
 
 # **Enhancement 1: Create sets of products and resources**
 
-# In[11]:
+# In[10]:
 
 
 model = pyo.ConcreteModel("Production Planning: Version 2")

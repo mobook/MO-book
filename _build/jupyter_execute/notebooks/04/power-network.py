@@ -40,7 +40,7 @@ helper.install_cbc()
 # 
 # Each node $i \in V$ has a power injection $p_i$ and demand $d_i$. The set of nodes are separated into *generator* and *load* nodes. The set of generators $\mathcal{G} \subseteq V$ corresponds to the nodes $i \in V$ for which $p_i \geq 0$ and $d_i = 0$. Each generator $i \in \mathcal{G}$ has a minimum $p_i^{\min}$ and maximum $p_i^{\max}$ production capacity. The set of load nodes $\mathcal{D} \subseteq V$ corresponds to the nodes for which $p_i = 0$ and $d_i \geq 0$. The load nodes thus correspond to the places where electricity is being consumed, e.g., cities and industrial districts. We say that supply and demand is *matched* if $\sum_{i \in V} p_i - d_i = 0$. Since we cannot store electricity in large volumes, supply must meet demand at all times, hence adjusting to it every 15 minutes by solving the OPF.
 # 
-# Each edge $(i, j) \in E$ carries a *power flow* $f_{ij} \in R$ and has a capacity $f_{ij}^\max \geq 0$, i.e., the maximum power flow that it may carry. Note that our choice to model a *directed* graph is to make the modeling of the network easier. In particular, a directed edge $(i,j)$ may carry a 'negative' flow $f_{ij} < 0$, which implies that there is flow going from $j$ to $i$ where $f_{ji} = -f_{ij}$. The capacity does not depend on the direction of the flow, implying that the flow capacity constraints are given by $|f_{ij}| = |f_{ji}| \leq f_{ij}^\max$.
+# Each edge $(i, j) \in E$ carries a *power flow* $f_{ij} \in R$ and has a capacity $f_{ij}^{\max} \geq 0$, i.e., the maximum power flow that it may carry. Note that our choice to model a *directed* graph is to make the modeling of the network easier. In particular, a directed edge $(i,j)$ may carry a 'negative' flow $f_{ij} < 0$, which implies that there is flow going from $j$ to $i$ where $f_{ji} = -f_{ij}$. The capacity does not depend on the direction of the flow, implying that the flow capacity constraints are given by $|f_{ij}| = |f_{ji}| \leq f_{ij}^{\max}$.
 # 
 # One crucial difference of power flow problems compared to typical network flow problems is that the power flows cannot be controlled directly. Instead, as you might recall from high-school physics, the power flows are determined by the laws of electricity, which we will now present as the *power flow equations*. Ignore for a moment the flow capacity constraints. Let $\theta_{i} \in \mathbb{R}$ denote the *phase angle* of node $i$. For each edge $(i,j)$, let $b_{ij} > 0$ denote the *line susceptance*. Assuming that supply and demand is matched, i.e., $\sum_{i=1}^{n} p_i - d_i = 0$, the power flows $\mathbf{f} \in \mathbb{R}^{m}$ and phase angles $\mathbf{\theta} \in \mathbb{R}^{n}$ are obtained by solving the following linear system of equations:
 # 
@@ -66,7 +66,7 @@ helper.install_cbc()
 # $$\begin{align}
 # \begin{array}{llll}
 # \max        & \sum_{i \in V} c_i p_i \\
-# \mbox{s.t.} & \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = p_i - d_i & \forall \, i \in V,\\
+# \text{s.t.} & \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = p_i - d_i & \forall \, i \in V,\\
 # & f_{ij} =  b_{ij}(\theta_i - \theta_j), & \forall \, (i, j) \in E, \\
 #             & |f_{ij}| \leq  f_{ij}^{\max}    & \forall (i, j) \in E,\\
 #             & p_{i}^{\min } \leq p_{i} \leq p_{i}^{\max }         & \forall i \in V, \\
@@ -76,7 +76,7 @@ helper.install_cbc()
 # \end{array}
 # \end{align}$$
 # 
-# For simplicity, you may assume that all load nodes do not produce energy, i.e., $p_i = p_i^{\min} = p_i^\max = 0$ for all $i \in \mathcal{D}$. You may therefore model $p_i$ as decision variables for all nodes (both generator and load nodes). Similarly, you may assume that all generator nodes have no demand, i.e., $d_i = 0$ for all $i \in \mathcal{G}$.
+# For simplicity, you may assume that all load nodes do not produce energy, i.e., $p_i = p_i^{\min} = p_i^{\max} = 0$ for all $i \in \mathcal{D}$. You may therefore model $p_i$ as decision variables for all nodes (both generator and load nodes). Similarly, you may assume that all generator nodes have no demand, i.e., $d_i = 0$ for all $i \in \mathcal{G}$.
 # 
 # To summarize, the decision variables in the OPF problem are: 
 # - $p_i$ power injections
@@ -116,8 +116,8 @@ solver = pyo.SolverFactory('cbc')
 
 
 # Download the data
-nodes_df = pd.read_csv('https://gist.githubusercontent.com/leonlan/0fce00d4ea330fd11d49f35c71ba5d8c/raw/146d180aad2ef67d451cd8745ccca98a6d2db68a/final_nodes.csv', index_col=0)
-edges_df = pd.read_csv('https://gist.githubusercontent.com/leonlan/0fce00d4ea330fd11d49f35c71ba5d8c/raw/5ce01cafcdf659e7f073fda31df731a1550683ef/final_edges.csv', index_col=0)
+nodes_df = pd.read_csv('nodes.csv', index_col=0)
+edges_df = pd.read_csv('edges.csv', index_col=0)
 
 # Read all instances
 nodes = nodes_df.groupby("instance").apply(lambda data: data.set_index("node_id").T.to_dict())
@@ -251,7 +251,7 @@ network['nodes'][1]['d']
 # $$\begin{align}
 # \begin{array}{llll}
 # \min        & \sum_{i \in V} c_i p_i \\
-# \mbox{s.t.} & \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i & \forall \, i \in V,\\
+# \text{s.t.} & \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i & \forall \, i \in V,\\
 # & f^+_{ij} - f^-_{ij} =  b_{ij}(\theta_i - \theta_j), & \forall \, (i, j) \in E, \\
 #             & f^+_{ij} + f^-_{ij} \leq  f_{ij}^{\max}    & \forall (i, j) \in E,\\
 #             & p_{i}^{\min } \leq p_{i} \leq p_{i}^{\max }         & \forall i \in V, \\
@@ -334,7 +334,7 @@ def OPF1(network):
 # In[12]:
 
 
-print(f"The average objective value over all instances is: {np.mean([OPF1(instance) for instance in I])}")
+print(f"The average objective value over all instances is: {np.mean([OPF1(instance) for instance in I]):.2f}")
 
 
 # # Strict fossil fuel policy pt.1
@@ -345,7 +345,7 @@ print(f"The average objective value over all instances is: {np.mean([OPF1(instan
 # $$\begin{align}
 # \begin{array}{llll}
 # \min        & \sum_{i \in V} c_i p_i \\
-# \mbox{s.t.} & \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i & \forall \, i \in V,\\
+# \text{s.t.} & \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i & \forall \, i \in V,\\
 # & f^+_{ij} - f^-_{ij} =  b_{ij}(\theta_i - \theta_j), & \forall \, (i, j) \in E, \\
 # & f^{abs}_{ij} = f^+_{ij} + f^-_{ij}, & \forall \, (i, j) \in E, \\
 #             & f_{ij}^{abs} \leq  f_{ij}^{\max}    & \forall (i, j) \in E,\\
@@ -442,7 +442,7 @@ def OPF2(network):
 # In[14]:
 
 
-print(f"The average objective value over all instances is: {np.mean([OPF2(instance) for instance in I])}")
+print(f"The average objective value over all instances is: {np.mean([OPF2(instance) for instance in I]):.2f}")
 
 
 # # Strict fossil fuel policy pt.2
@@ -453,7 +453,7 @@ print(f"The average objective value over all instances is: {np.mean([OPF2(instan
 # $$\begin{align}
 # \begin{array}{llll}
 # \min        & \sum_{i \in V} c_i p_i \\
-# \mbox{s.t.} & \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i & \forall \, i \in V,\\
+# \text{s.t.} & \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i & \forall \, i \in V,\\
 # & f^+_{ij} - f^-_{ij} =  b_{ij}(\theta_i - \theta_j), & \forall \, (i, j) \in E, \\
 # & f^{abs}_{ij} = f^+_{ij} + f^-_{ij}, & \forall \, (i, j) \in E, \\
 #             & f_{ij}^{abs} \leq  f_{ij}^{\max}    & \forall (i, j) \in E,\\
@@ -561,13 +561,13 @@ def OPF3(network):
 # In[16]:
 
 
-print(f"The average objective value over all instances is: {np.mean([OPF3(instance) for instance in I])}")
+print(f"The average objective value over all instances is: {np.mean([OPF3(instance) for instance in I]):.2f}")
 
 
 # # Comparing the three models
-# For all three implemented models, plot the objective values for all instances. Explain the differences between the objective values in view of the different feasible regions.
+# For all three implemented models, we plot the objective values for all instances and explain the differences between the objective values in view of the different feasible regions.
 
-# In[ ]:
+# In[17]:
 
 
 objs = [[OPF1(instance) for instance in I],
@@ -575,7 +575,7 @@ objs = [[OPF1(instance) for instance in I],
         [OPF3(instance) for instance in I]]
 
 
-# In[ ]:
+# In[18]:
 
 
 plt.plot(objs[0], color='blue', label='OPF1')
@@ -588,12 +588,9 @@ plt.legend()
 plt.show()
 
 
-# The goal of the OPF problem is to minimize the total costs of dispatching energy. In what follows, we refer to the earlier described models as OPF1, OPF2 and OPF3, respectively.
+# The goal of the OPF problem is to minimize the total costs of dispatching energy. OPF1 is the original OPF formulation, whereas OPF2 and OPF3 are restricted versions of OPF1. This means that the feasible region of OPF1 is at least as large as OPF2 and OPF3, where we may assume that $x_i = 1$ for all the generators $i$.
 # 
-# OPF1 is the original OPF formulation, whereas OPF2 and OPF3 are restricted versions of OPF1. This means that the feasible region of OPF1 is at least as large as OPF2 and OPF3, where we may assume that $x_i = 1$ for all the generators $i$.
-# 
-# If we let $F_1, F_2, F_3$ denote the feasible region of OPF1, OPF2 and OPF3, then we observe that
-# which explains that the optimal objective value of OPF1 always remains below the optimal objectives values of OPF2 and OPF3.
+# If we let $F_1, F_2, F_3$ denote the feasible region of OPF1, OPF2 and OPF3, then we observe that which explains that the optimal objective value of OPF1 always remains below the optimal objectives values of OPF2 and OPF3.
 # 
 # The most important observation to make is that based on the problem descriptions, we would expect OPF2 to take on the objective values of OPF1 or OPF3, depending on which of the either-or-constraints are activated. 
 # - OPF3 uses expensive generators, and possibly not all the renewable energy
