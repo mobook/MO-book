@@ -531,7 +531,9 @@ def crypto_model(dg_order_book, T = 10, w0 = 1.0):
 
     @m.Constraint(m.NODES, m.T1)
     def balances(m, node, t):
-        return m.w[node, t] == m.w[node, t - 1]             + sum(m.a[src, node] * m.x[src, node, t] for src, dst in m.EDGES if dst == node)             - sum(m.x[node, dst, t] for src, dst in m.EDGES if src == node) 
+        return m.w[node, t] == m.w[node, t - 1] \
+            + sum(m.a[src, node] * m.x[src, node, t] for src, dst in m.EDGES if dst == node) \
+            - sum(m.x[node, dst, t] for src, dst in m.EDGES if src == node) 
 
 
     solver = pyo.SolverFactory("cbc")

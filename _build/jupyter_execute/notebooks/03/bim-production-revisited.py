@@ -212,7 +212,9 @@ def BIMproduction_v1(demand, existing, desired, stock_limit,
     
     @m.Expression()
     def inventory_cost(m ):
-        return pyo.quicksum(m.gamma['copper']*m.r[t] +                              pyo.quicksum(m.gamma[p]*m.s[p,t] for p in unitary_products )                             for t in periods )
+        return pyo.quicksum(m.gamma['copper']*m.r[t] + \
+                             pyo.quicksum(m.gamma[p]*m.s[p,t] for p in unitary_products ) \
+                            for t in periods )
     
     @m.Objective(sense=pyo.minimize )
     def total_cost(m ):
@@ -358,7 +360,9 @@ def BIMproduction_v2(demand, existing, desired,
         @b.Expression()
         def cost(b):
             discount = price_batch['C']+price_copper_sheet['C']-discounted_price
-            return pyo.quicksum(price_copper_sheet[s]*b.y[s] for s in supplying_copper )                 + pyo.quicksum(price_batch[s]*b.b[s] for s in supplying_batches )                 - discount * b.p    
+            return pyo.quicksum(price_copper_sheet[s]*b.y[s] for s in supplying_copper ) \
+                + pyo.quicksum(price_batch[s]*b.b[s] for s in supplying_batches ) \
+                - discount * b.p    
     
     @m.Block(m.T )
     def I(b ):
@@ -375,7 +379,8 @@ def BIMproduction_v2(demand, existing, desired,
 
         @b.Expression()
         def cost(b ):
-            return unitary_holding_costs['copper']*b.r +                 pyo.quicksum(unitary_holding_costs[p]*b.s[p] for p in unitary_products )
+            return unitary_holding_costs['copper']*b.r + \
+                pyo.quicksum(unitary_holding_costs[p]*b.s[p] for p in unitary_products )
             
     @m.Param(m.PT )
     def delta(m,t,p):
@@ -493,7 +498,9 @@ def BIMproduction_v3( demand, existing, desired,
         @b.Expression()
         def cost( b ):
             discount = price_batch['C']+price_copper_sheet['C']-discounted_price
-            return pyo.quicksum( price_copper_sheet[s]*b.y[s] for s in supplying_copper )                 + pyo.quicksum( price_batch[s]*b.b[s] for s in supplying_batches )                 - discount * b.p    
+            return pyo.quicksum( price_copper_sheet[s]*b.y[s] for s in supplying_copper ) \
+                + pyo.quicksum( price_batch[s]*b.b[s] for s in supplying_batches ) \
+                - discount * b.p    
     
     @m.Block( m.T )
     def I( b ):
@@ -510,7 +517,8 @@ def BIMproduction_v3( demand, existing, desired,
 
         @b.Expression()
         def cost( b ):
-            return unitary_holding_costs['copper']*b.r +                 pyo.quicksum( unitary_holding_costs[p]*b.s[p] for p in unitary_products )
+            return unitary_holding_costs['copper']*b.r + \
+                pyo.quicksum( unitary_holding_costs[p]*b.s[p] for p in unitary_products )
             
     @m.Param( m.PT )
     def delta(m,t,p):

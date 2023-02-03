@@ -13,11 +13,13 @@
 # ```
 # ```{index} two-stage problem
 # ```
+# ```{index} constraint and column generation
+# ```
 # 
-# # Robust Production Planning
+# # Two-stage Production Planning
 # 
-# The purpose of this notebook is to demonstrate a range of techniques for robust optimization using a common example.
-# * Robust Optimization (including Constraint and Column Generation of Section 10.1)
+# The purpose of this notebook is to demonstrate a range of techniques for two-stage optimization (robust and stochastic) using a range of techniques:
+# * Robust Optimization (including Constraint and Column Generation)
 # * Stochastic Optimization (including the SAA method)
 
 # In[1]:
@@ -36,7 +38,7 @@ helper.install_pyomo()
 
 # ## Problem Statement
 # 
-# Consider again the initial problem of this textbook where a small startup company has announced the initial production of two models, $U$ and $V$. For completeness we re-tell the situation here with the additional layer of uncertainty:
+# Consider again the production planning example from [Chapter 1](../01/01.00.md) where a small startup company has announced the initial production of two models, $U$ and $V$. For completeness we first recall the problem setting and then introduce the additional layer of uncertainty:
 # 
 # * Model $U$ is the higher priced version requiring 10 units of raw material. The labor requirement is estimated to be 1 hour of labor A and 2 hours of labor B. The $U$ model will sell for 270€ per unit.
 # 
@@ -52,21 +54,22 @@ helper.install_pyomo()
 # 
 # The company's chief operating officer (COO) must decide how much raw material to order now without complete information about labor needed to manufacture the models, or knowledge about the outcome of the pre-production marketing campaign. If the COO orders too much now then raw material will be left over and wasted. If the COO orders too little then a profit opportunity will be lost. In either case, the profit realized will be less than than the potential. In what way can the best decision be made?
 
-# ## What kind of a problem is this
+# ## Problem description
 # 
-# The first thing we notice about the problem is that it has a two-stage structure: the ordering of the raw material has to be done before the unknown demand is observed and the labor requirements are known. The decisions about the amount of two models to be produced can be, however, made with full information about the uncertainty.
+# The problem has a clear two-stage structure: the ordering of the raw material has to be done before the unknown demand is observed and the labor requirements are known. The decisions about the amount of two models to be produced can be, however, made with full information about the uncertainty.
 # 
 # As for the uncertainty itself, no information is given other than the set of values the respective parameters can take:
-# * $z_A$: Relative uncertainty in the amount of labor A required to produce each unit of product.
-# * $z_B$: Relative uncertainty is the amount of labor B required to produce each unit of product.
-# * $z_D$: Uncertainty in number initial orders for product $U$.
+# * $z_A$: Relative uncertainty in the amount of labor A required to produce each unit of product,
+# * $z_B$: Relative uncertainty is the amount of labor B required to produce each unit of product,
+# * $z_D$: Uncertainty in number initial orders for product $U$,
+# 
 # where
 # 
 # $$
 # \begin{align*}
-# |z_A| & \leq 0.15 && \pm\text{15% uncertainty in Labor }A \\
-# |z_B| & \leq 0.25 && \pm\text{25% uncertainty in Labor }B \\
-# |z_D| & \leq 0.25 &&  \text{25% uncertainty in initial orders for }U \\
+# |z_A| & \leq 0.15 && \pm \text{15\% uncertainty in Labor }A \\
+# |z_B| & \leq 0.25 && \pm \text{25\% uncertainty in Labor }B \\
+# |z_D| & \leq 0.25 &&  \text{25\% uncertainty in initial orders for }U \\
 # \end{align*}
 # $$
 # 
@@ -74,7 +77,7 @@ helper.install_pyomo()
 # 
 # $$
 # \begin{align*}
-# \frac{|z_A|}{0.15} + \frac{|z_A|}{0.25} + \frac{|z_D|}{0.25} \leq 2
+# \frac{|z_A|}{0.15} + \frac{|z_A|}{0.25} + \frac{|z_D|}{0.25} \leq 2.
 # \end{align*}
 # $$
 # 
@@ -94,11 +97,11 @@ helper.install_pyomo()
 # 
 # It is therefore not clear in advance which of the products would be more profitable. Taking into account the additional uncertainty about the preorder demand for product $U$, it is not possible to determine in advance what is the worst-case outcome of the uncertainty $z_A$, $z_B$, $z_D$ for this problem.
 # 
-# Since we don't have any information about the probabilities with which the different outcomes of the uncertain parameters could happen, a natural approach is to solve this problem with a worst-case formulation in mind. However, for sake of completeness, we also investigate how the optimal solution would look if each each realization of $(z_A, z_B, z_D)$ was equally probable.
+# Since have no information about the probabilities with which the different outcomes of the uncertain parameters could happen, a natural approach is to solve this problem with a worst-case formulation in mind. However, for sake of completeness, we also investigate how the optimal solution would look if each each realization of $(z_A, z_B, z_D)$ was equally probable.
 
-# ## Two stage formulation (cf. Section 10.1)
+# ## Two-stage problem formulation
 
-# Next we formulate the robust optimization problem where the objective is to maximize the worst case profit subject to constraints and uncertainty. We formulate the problem as
+# We formulate the robust optimization problem where the objective is to maximize the worst case profit subject to constraints and uncertainty as follows:
 # 
 # $$
 # \begin{align*}
@@ -111,7 +114,7 @@ helper.install_pyomo()
 # 
 # $$
 # \begin{align*}
-# Z = \left\{ (z_A, z_B, z_D): \ |z_A| \leq 0.15, \ |z_B| \leq 0.25, \ |z_D| \leq 0.25, \ \frac{|z_A|}{0.15} + \frac{|z_A|}{0.25} + \frac{|z_D|}{0.25} \leq 2 \right\}
+# Z = \left\{ (z_A, z_B, z_D): \ |z_A| \leq 0.15, \ |z_B| \leq 0.25, \ |z_D| \leq 0.25, \ \frac{|z_A|}{0.15} + \frac{|z_A|}{0.25} + \frac{|z_D|}{0.25} \leq 2 \right\}.
 # \end{align*}
 # $$
 # 
@@ -143,6 +146,8 @@ helper.install_pyomo()
 # $$
 # 
 # Then following are the definitions of the data matrices as functions of uncertainties, consistently with the notation used in Section 10.1.
+# 
+# $$
 # \begin{align*}
 # c = \begin{pmatrix} -10 \end{pmatrix}, \
 # q = \begin{pmatrix} 0 \\ 0 \\ 1 \end{pmatrix} \\
@@ -159,27 +164,26 @@ helper.install_pyomo()
 # \end{align*}
 # $$
 
-# # Solving the robust problem through random scenarios
+# ## Solving the robust problem using sampled scenarios
 
-# Before diving into the CCG algorithm as described in the chapter, we can do something very simple - to sample a large number of realizations of $z$ from the set $Z$ and to solve the two-stage problem using our function above. This is done by the following code snippet.
-# 
-# Now, how can we actually solve a two-stage problem like this if it is indeed the worst-case profit that we are interested in? We notice that the matrix $D(z)$ depends on $z$ and therefore, we cannot easily formulate the second-stage decisions as linear functions of $z$ (linear decision rules). However, we can apply the column-and-constraint generation approach where we would gradually build a finite list of scenarios and solve a problem that will maximize the worst-case profit across such a set of scenarios:
+# How can we actually solve such a two-stage problem if it is indeed the worst-case profit that we are interested in? Note that the matrix $D(z)$ depends on $z$ and, therefore, we cannot easily formulate the second-stage decisions as linear functions of $z$ (linear decision rules). However, we can apply the column-and-constraint generation approach where we would gradually build a finite list of scenarios and solve a problem that will maximize the worst-case profit across such a set of scenarios:
 # 
 # $$
 # \begin{align*}
-# \max \ & c^\top x + \tau  \\ 
-# \text{s.t.} \  & q^\top y^j \geq \tau, && j = 1, \ldots, k  \\
+# \max \quad & c^\top x + \tau  \\ 
+# \text{s.t.} \quad  & q^\top y^j \geq \tau, && j = 1, \ldots, k  \\
 # & R (z^j) x + S(z^j) y^j \leq t(z^j)  &&  j = 1, \ldots, k \\
 # & x, y^1, \ldots, y^k, \tau \geq 0 
 # \end{align*}
 # $$
 # 
-# The following cell is a function that evaluates the system matrix coefficients for a particular $z\in Z$ and returns numerical values indexed in nested dictionaries.
+# We first define an auxiliary function that evaluates the system matrix coefficients for a particular scenario $z\in Z$ and returns them as nested dictionaries.
 
 # In[2]:
 
 
 # function to return c, q, C, D, e evaluated for a scenario
+
 def model_params(z_A=0, z_B=0, z_D=0):
     
     c = {"x": -10}
@@ -217,35 +221,35 @@ print(f"S = {S}")
 print(f"t = {t}")
 
 
-# In the following cell we randomly sample 1000 scenarios from the uncertainty set. 
+# We then generate $N=1000$ scenarios sampling uniformly at random from the given uncertainty set. 
 
-# In[8]:
+# In[3]:
 
 
-# import numpy as np
+import numpy as np
 
-def z_sample():
+def z_sample(seed):
+    rng = np.random.default_rng(seed)
     while True:
         sample = {
-            "z_A": 0.15*np.random.uniform(-1, 1),
-            "z_B": 0.25*np.random.uniform(-1, 1),
-            "z_D": 0.25*np.random.uniform(-1, 1)
+            "z_A": 0.15 * rng.uniform(low = -1, high = 1),
+            "z_B": 0.25 * rng.uniform(low = -1, high = 1),
+            "z_D": 0.25 * rng.uniform(low = -1, high = 1)
         }
-        if( sample["z_A"] / 0.15 + sample["z_B"] / 0.25 + sample["z_D"] / 0.25) <= 2:
+        if abs(sample["z_A"]) / 0.15 + abs(sample["z_B"]) / 0.25 + abs(sample["z_D"]) / 0.25 <= 2:
             break
     return sample
 
-k = 1000
-Z = [z_sample() for _ in range(k)]
+N = 1000
+Z = [z_sample(j) for j in range(N)]
 
 
-# The next cell creates a Pyomo model to maximize the worst case profit for a set of scenarios, where the block structure is used to repeat the parts of the model which are structurally identical for each outcome of $z$.
+# We define Pyomo model to maximize the worst-case profit for a set of scenarios, where the block structure is used to repeat the parts of the model which are structurally identical for each outcome of $z$.
 
-# In[24]:
+# In[4]:
 
 
 import pyomo.environ as pyo
-import numpy as np
 
 def max_min_profit(model_params, Z):
     m = pyo.ConcreteModel()
@@ -257,9 +261,139 @@ def max_min_profit(model_params, Z):
     m.J = pyo.Set(initialize=q.keys())
     
     m.x = pyo.Var(m.I, domain=pyo.NonNegativeReals)
-    m.t = pyo.Var()
+    m.tau = pyo.Var()
     
     m.SCENARIOS = pyo.Set(initialize=range(len(Z)))
+    
+    @m.Block(m.SCENARIOS)
+    def scenario(b, s):
+
+        # get model parameters for the scenario
+        _, q, R, S, t = model_params(**Z[s])
+        
+        # second stage variables
+        b.y = pyo.Var(b.model().J, domain=pyo.NonNegativeReals)
+
+        @b.Constraint()
+        def stage_net_profit(b):
+            return b.y["y3"] >= b.model().tau
+
+        @b.Constraint(S.keys())
+        def model_constraints(b, k):
+            return sum(R[k][i]*b.model().x[i] for i in b.model().I) + sum(S[k][j]*b.y[j] for j in b.model().J) <= t[k]
+    
+    # worst case profit
+    @m.Objective(sense=pyo.maximize)
+    def worst_case_profit(m):
+        return sum(c[i] * m.x[i] for i in m.I) + m.tau
+    
+    solver = pyo.SolverFactory('cbc')
+    solver.solve(m)
+    return m
+
+print("\nSolution to the nominal problem")
+m = max_min_profit(model_params, [{"z_A": 0, "z_B":0, "z_D": 0}])
+print(f'Objective value: {m.worst_case_profit():.2f}')
+print(f'Optimal solution: x = {[pyo.value(m.x[i]) for i in m.I][0]:.2f}')
+
+print("\nSolution to the robust problem using sampling")
+m = max_min_profit(model_params, Z)
+print(f'Objective value: {m.worst_case_profit():.2f}')
+print(f'Optimal solution: x = {[pyo.value(m.x[i]) for i in m.I][0]:.2f}')
+
+
+# With the nominal data without any perturbation the optimal quantity of raw material to order is equal to $740.00$ with a profit of $2600.00$, while for the worst-case profit optimization calculated over $1000$ sampled scenarios, the optimal quantity of raw material to order is equal to $547.81$ and the worst-case profit is equal to $883.04$. 
+
+# ## The average-case optimization using SAA
+# 
+# Instead of looking at the worst-case profit, we could be interested in optimizing for the average-case profit, assuming that every scenario within the uncertainty set is equally likely. We can approximate the optimal solution in this case using the Sample Average Approximation (SAA) method with the same sample as before with $N=1000$ samples. The corresponding optimization model that we are implementing is:
+# 
+# $$
+# \begin{align}
+# \max \limits_{x, y^j} \quad & c^\top x + \frac{1}{N} \sum\limits_{j = 1}^N q^\top y^j \\
+# \text{s.t.} \quad & A x \leq b \\
+# & R ( z^j) x + S (z^j) y^j \leq t(z^j) &\  j = 1, \ldots, N.
+# \end{align}
+# $$
+# 
+# The Pyomo implementation is a slight modification of previous worst-case model.
+
+# In[5]:
+
+
+def max_avg_profit(model_params, Z):
+    m = pyo.ConcreteModel()
+
+    # first stage variables
+    c, *_ = model_params()
+    m.I = pyo.Set(initialize=c.keys())
+    m.x = pyo.Var(m.I, domain=pyo.NonNegativeReals)
+    
+    m.SCENARIOS = pyo.Set(initialize=range(len(Z)))
+    
+    @m.Block(m.SCENARIOS)
+    def scenario(b, s):
+
+        # get model parameters for the scenario
+        _, q, R, S, t = model_params(**Z[s])
+        
+        # second stage variables
+        b.y = pyo.Var(q.keys(), domain=pyo.NonNegativeReals)
+
+        @b.Constraint(S.keys())
+        def model_constraints(b, k):
+            return sum(R[k][i]*b.model().x[i] for i in m.I) + sum(S[k][j]*b.y[j] for j in q.keys()) <= t[k]
+    
+    # average profit
+    @m.Objective(sense=pyo.maximize)
+    def avg_profit(m):
+        return sum(c[i] * m.x[i] for i in m.I) + sum(m.scenario[s].y["y3"] for s in m.SCENARIOS) / len(m.SCENARIOS)
+    
+    solver = pyo.SolverFactory('cbc')
+    solver.solve(m)
+    return m
+
+m = max_avg_profit(model_params, Z)
+print(f'Objective value: {m.avg_profit():.2f}')
+print(f'Optimal solution: x = {[pyo.value(m.x[i]) for i in m.I][0]:.2f}')
+
+# Store the per-scenario profit realizations into a numpy array
+avg_case_ps = np.zeros(len(Z))
+
+for s in range(len(Z)):
+    _, q, R, S, t = model_params(**Z[s])
+    avg_case_ps[s] = sum(c[i] * m.x[i]() for i in m.I) + m.scenario[s].y["y3"]()
+
+
+# For this model, the optimal to-order quantity of the raw material changes to $ 637.08$, with the average profit that is promised being equal to $2305.93$.
+# 
+# Of course, this is only the comparison of the two approaches by looking at the first-stage decision. One can also be interested in the following two quantities:
+# 
+# * 'average-case performance' of the optimal ordering decision of the robust solution - to find this one, one would need to fix this first-stage decision and for each of the sampled scenarios one would need to optimize the second-stage decisions, taking the average of their costs in the end. 
+# 
+# * 'worst-case performance' of the optimal ordering decision of the robust solution - to find this, one would need to use a function like the one we used to solve the robust solution, but fixing the first-stage decision to be the one obtained from the stochastic solution.
+# 
+# To do this, we define below a new function similar to the ones above, but which now takes as one of its arguments the fixed first-stage ordering decision and a boolean variable to indicate if we want to optimize for the average or for the worst-case. A careful reader will notice that this function could substitute both of the previous ones combined if the 'first stage decision' argument was made optional.
+
+# In[6]:
+
+
+def max_profit_fixed_x(model_params, Z, fixed_x_value, worst_case = True):
+    m = pyo.ConcreteModel()
+
+    # first stage variables
+    c, q, *_ = model_params()
+    
+    m.I = pyo.Set(initialize=c.keys())
+    m.J = pyo.Set(initialize=q.keys())
+    
+    m.x = pyo.Var(m.I, domain=pyo.NonNegativeReals)
+    m.tau = pyo.Var()
+    
+    m.SCENARIOS = pyo.Set(initialize=range(len(Z)))
+
+    # Fixing the first stage decision
+    m.Fixed_x = pyo.Constraint(expr = m.x["x"] == fixed_x_value)
     
     @m.Block(m.SCENARIOS)
     def scenario(b, s):
@@ -272,192 +406,102 @@ def max_min_profit(model_params, Z):
 
         @b.Constraint()
         def stage_net_profit(b):
-            return b.y["y3"] >= b.model().t
+            return b.y["y3"] >= b.model().tau
 
         @b.Constraint(S.keys())
         def model_constraints(b, k):
             return  sum(R[k][i]*b.model().x[i] for i in b.model().I) + sum(S[k][j]*b.y[j] for j in b.model().J) <= t[k]
     
-    # worst case profit
-    @m.Objective(sense=pyo.maximize)
-    def min_profit(m):
-        return sum(c[i] * m.x[i] for i in c.keys()) + m.t
+    # deciding what do we optimize for based on the worst_case flag variable
+
+    # worst-case minded optimization
+    if worst_case:
+        @m.Objective(sense=pyo.maximize)
+        def profit(m):
+            return sum(c[i] * m.x[i] for i in m.I) + m.tau
+
+    # average-case minded optimization
+    else: 
+        @m.Objective(sense=pyo.maximize)
+        def profit(m):
+            return sum(c[i] * m.x[i] for i in m.I) + sum(m.scenario[s].y["y3"] for s in m.SCENARIOS) / len(m.SCENARIOS)
     
     solver = pyo.SolverFactory('cbc')
     solver.solve(m)
     return m
 
-print("\nSolution to the nominal problem\n")
-m = max_min_profit(model_params, [{"z_A": 0, "z_B":0, "z_D": 0}])
-m.min_profit.display()
-m.x.display()
+print("\nSolving for the average with optimal-worst-case first stage decision")
+m = max_profit_fixed_x(model_params, Z, 555.27, worst_case = False)
+print(f'Objective value: {m.profit():.2f}')
+print(f'Optimal solution: x = {[pyo.value(m.x[i]) for i in m.I][0]:.2f}')
 
-print("\nSolution to the robust problem\n")
-m = max_min_profit(model_params, Z)
-m.min_profit.display()
-m.x.display()
+# Extracting the per-scenario realizations of the worst-case optimal solution
+worst_case_ps = np.zeros(len(Z))
 
-
-# In[43]:
-
-
-import matplotlib.pyplot as plt
-
-fig, ax = plt.subplots(1, 1)
-
-for s in m.SCENARIOS:
-    ax.plot(m.scenario[s].y["y1"](), m.scenario[s].y["y2"](), 'r.')
+for s in range(len(Z)):
+    c, q, R, S, t = model_params(**Z[s])
+    worst_case_ps[s] = sum(c[i] * m.x[i]() for i in c.keys()) + m.scenario[s].y["y3"]()
 
 
-# In[39]:
+# In[7]:
 
 
-import matplotlib.pyplot as plt
-
-Y = np.array([[m.scenario[s].y[j]() for j in m.J] for s in m.SCENARIOS])
-
-fig, ax = plt.subplots(1, len(m.J), figsize=(12, 4))
-
-for j in range(len(m.J)):
-    ax[j].hist(Y[:, j])
+print("\nSolving for the worst-case with optimal-average first stage decision")
+m = max_profit_fixed_x(model_params, Z, 626.74, worst_case = True)
+print(f'Objective value: {m.profit():.2f}')
+print(f'Optimal solution: x = {[pyo.value(m.x[i]) for i in m.I][0]:.2f}')
 
 
-# The optimal quantity of the raw material to order is equal to $556.62$ and the worst-case profit it promises is equal to $911.28$. Apart from the worst-case profit, we can also be interested in the average-case profit. We can compute it by, for each realization of the uncertain parameter, to see what would the optimal decisions $y$ be in their case, and compute the corresponding profits. 
-
-# In[ ]:
-
-
-import pyomo.environ as pyo
-import numpy as np
-
-# function that optimizes only over the second stage variables
-
-def max_profit(model_params, Z, x):
-    m = pyo.ConcreteModel()
-
-    # first stage variables
-    c, *_ = model_params()
-    m.x = pyo.Var(c.keys(), domain=pyo.NonNegativeReals)
-    m.t = pyo.Var()
-    
-    m.SCENARIOS = pyo.Set(initialize=range(len(Z)))
-    
-    @m.Block(m.SCENARIOS)
-    def scenario(b, s):
-
-        # get model parameters for the scenario
-        c, q, R, S, t = model_params(**Z[s])
-        
-        # second stage variables
-        b.y = pyo.Var(q.keys(), domain=pyo.NonNegativeReals)
-
-        @b.Constraint()
-        def stage_net_profit(b):
-            return b.y["y3"] >= b.model().t
-        
-        @b.Expression()
-        def profit(b):
-            return -10 * sum(b.model().x[i] for i in c.keys()) - S["profit"]["y1"] * b.y["y1"] - S["profit"]["y2"] * b.y["y2"]
-
-        @b.Constraint(S.keys())
-        def model_constraints(b, k):
-            return  sum(R[k][i]*b.model().x[i] for i in c.keys()) + sum(S[k][j]*b.y[j] for j in q.keys()) <= t[k]
-    
-    # worst case profit
-    @m.Objective(sense=pyo.maximize)
-    def min_profit(m):
-        return sum(c[i] * m.x[i] for i in c.keys()) + m.t
-    
-    solver = pyo.SolverFactory('gurobi')
-    solver.solve(m)
-    return m
-
-
-# ## Comparing the worst-case optimization to expected-profit optimization
+# To summarize the above results: 
 # 
-# As already said, for sake of stability analysis, we may be interested in how the optimal solution changes when we do make an assuption that every outcome of uncertainty is equally probably and that we optimize for the average cost, just as in problem (10.6) in the textbook:
+# * the robust-minded first-stage solution has a worst-case performance of $883.04$ and expected performance of $2163.67$, 
+# * the average-minded first-stage solution has a worst-case performance of $93.77$ and average-case performance of $2305.93$. 
 # 
-# $$
-# \begin{align}
-# \min\limits_{x, y^j} \ & c^\top x + \frac{1}{N} \sum\limits_{j = 1}^N q^\top y^j \\
-# \text{s.t.} \ & A x \leq b \\
-# & R ( z^j) x + S (z^j) y^j \leq t(z^j) &\  j = 1, \ldots, N.
-# \end{align}
-# $$
-# 
-# The following code is a slight modification of the earlier function that optimized for the worst-case solution.
+# There is thus a **tradeoff**: some solutions are good on average and underperform when things go very bad, and vice versa. To understand this tradeoff even better, we display the histograms of per-scenario profit performance of the two solutions.
 
-# In[ ]:
+# In[8]:
 
 
-import pyomo.environ as pyo
-import numpy as np
+import pandas as pd
+data = pd.DataFrame({"Robust": worst_case_ps,
+                     "Stochastic": avg_case_ps})
 
-def max_expected_profit(model_params, Z):
-    m = pyo.ConcreteModel()
-
-    # first stage variables
-    c, *_ = model_params()
-    m.x = pyo.Var(c.keys(), domain=pyo.NonNegativeReals)
-    
-    m.SCENARIOS = pyo.Set(initialize=range(len(Z)))
-    
-    @m.Block(m.SCENARIOS)
-    def scenario(b, s):
-
-        # get model parameters for the scenario
-        c, q, R, S, t = model_params(**Z[s])
-        
-        # second stage variables
-        b.y = pyo.Var(q.keys(), domain=pyo.NonNegativeReals)
-
-        @b.Constraint(S.keys())
-        def model_constraints(b, k):
-            return  sum(R[k][i]*b.model().x[i] for i in c.keys()) + sum(S[k][j]*b.y[j] for j in q.keys()) <= t[k]
-    
-    # worst case profit
-    @m.Objective(sense=pyo.maximize)
-    def min_profit(m):
-        return sum(c[i] * m.x[i] for i in c.keys()) + sum(m.scenario[s].y["y3"]() for s in m.SCENARIOS) / len(m.SCENARIOS)
-    
-    solver = pyo.SolverFactory('gurobi')
-    solver.solve(m)
-    return m
-
-m = max_expected_profit(model_params, Z)
-m.x.display()
-m.min_profit.display()
+data.plot.hist(bins = 20,
+               alpha = 0.4,
+               xlabel = "Profit");
 
 
-# As we can see, the optimal to-order quantity of the raw material changes to...
-# 
-# Of course, this is only the comparison of the two approaches by looking at the first-stage decision. One can also be interested in the following two items:
-# * 'average-case performance' of the optimal ordering decision of the robust solution - to find this one, one would need to fix this first-stage decision and for each of the sampled scenarios one would need to optimize the second-stage decisions, taking the average of their costs in the end. It is expected that the robust solution yields a slightly worse average-case performance than the stochastic one.
-# * 'worst-case performance' of the optimal ordering decision of the robust solution - to find this, one would need to use a function like the one we used to solve the robust solution, but fixing the first-stage decision to be the one obtained from the stochastic solution. In this way, the optimal worst-case second stage cost is computed, and the overall worst-case cost is expected to be slightly worse than that of the robust solution.
-# 
-# We leave coding the relevant (minor) parts to perform the above analysis to the reader as an exercise.
-# 
-# Finally, we are ready to introduce the column-and-constraint generation approach of this chapter.
+# What we observe is a very typical pattern - the robust solution's 'range' of values is narrower, both in the best- and worst-situation sense, it gives thus stabler profit relations. This comes, however, at the expense of having a worse performance on an 'average' scenario. You can expect to observe this kind of phenomenon very often whenever you need to solve a problem under uncertainty and are unsure whether the worst-case or average-case performance should be optimized for. The degree of tradeoff can help you then make the right decision.
 
 # ## Column and constraint generation for the robust solution
 # 
-# The downside of the approach of sampling many scenarios and solving the max-min optimization problem just as before is that it requires really many scenarios to be reasonably sure that we cover most of the extreme outcomes of $z$. This is exactly an issue that the CCG algorithm is supposed to mitigate against - the idea is to gradually build a list of scenarios that are `bad' and hopefully, end up with solving a problem with far less than 1000 problem copies included.
+# We now come back to trying to solve for the worst-case solution. The downside of the approach of sampling many scenarios and solving the max-min optimization problem just as before is that it requires really many scenarios to be reasonably sure that we cover most of the extreme outcomes of $z$. This is exactly an issue that the CCG algorithm is supposed to mitigate against - the idea is to gradually build a list of scenarios that are `bad' and hopefully, end up with solving a problem with far less than 1000 problem copies included.
 # 
 # In the pessimization step of the CCG, having solved problem \ref{ch10:complete.example.ccg.master} we want to find a new realization $z$ where for each $i$, at least one of the rows in the constraint system
+# 
+# $$
 # \begin{align*}
 # C(z^i) \bar{x} + D(z^i) \bar{y}^i \leq e(z^i)
 # \end{align*}
+# $$
+# 
 # is violated. If we expand the terms in each of the rows and rewrite the constraints into a form that makes them easier to read as constraints on $z_A$, $z_B$, $z_D$, then we obtain that for each $i$, at least one of the four following has to hold:
+# 
+# $$
 # \begin{align*}
 # (50 \bar{y}^i_1 + 50 \bar{y}^i_2) z_A + (80 \bar{y}_1^i + 40 \bar{y}_2^i) z_B & > -\bar{y}^i_3 + 140 \bar{y}^i_1 + 120 \bar{y}^i_2 && \text{(profit)} \\
 # 20 z_D & > \bar{y}_1^i - 20 && \text{(demand)} \\
 # (y_1^i + y_2^i) z_A & > 80 - \bar{y}_1^i - \bar{y}_2^i && \text{(labor A)} \\
 # (2 y_1^i + y^i_2) z_B & > 100 - 2 \bar{y}_1^i - \bar{y}_2^i && \text{(labor B)} \\
 # \end{align*}
+# $$
+# 
 # Using a sufficiently large number $M$ and binary variables $u_{ik} \in \{0, 1\}$ for each of them, we can formulate the problem of searching for an infeasible scenario as
+# 
+# $$
 # \begin{align*}
-# \max \ & \theta \\
-# \text{s.t.} \ &  (50 \bar{y}^i_1 + 50 y_2) z_A + (80 \bar{y}^i_1 + 40 \bar{y}^i_2) z_B - \theta \geq -\bar{y}_3^i + 140 \bar{y}_1^i + 120 \bar{y}_2^i - M u_{i1} && \forall j \\
+# \max \quad & \theta \\
+# \text{s.t.} \quad &  (50 \bar{y}^i_1 + 50 y_2) z_A + (80 \bar{y}^i_1 + 40 \bar{y}^i_2) z_B - \theta \geq -\bar{y}_3^i + 140 \bar{y}_1^i + 120 \bar{y}_2^i - M u_{i1} && \forall j \\
 # & 20 z_D - \theta \geq \bar{y}_1^i - 20 - M u_{i2} && \forall j \\
 # & (\bar{y}_1^i + \bar{y}_2^i) z_A - \theta \geq 80 - \bar{y}_1^i - \bar{y}_2^i - M u_{i3} && \forall j \\
 # & (2 \bar{y}_1^i + \bar{y}^i_2) z_B 100 - 2 \bar{y}_1^i - \bar{y}_2^i  - M u_{i4} && \forall j \\
@@ -465,9 +509,11 @@ m.min_profit.display()
 # & \theta \geq 0 \\
 # & u_{jk} \in \{ 0, 1\} && \forall j, k
 # \end{align*}
-# The following code snippet defines the data matrices needed to solve the above problem based on a list of first- and second-stage optimal variables from \ref{ch10:complete.example.ccg.master}.
+# $$
+# 
+# We first define an auxiliary function that creates the data structures needed as input for the optimization problem.
 
-# In[12]:
+# In[9]:
 
 
 def subproblem_params(dec):
@@ -485,9 +531,14 @@ def subproblem_params(dec):
     return Left, Right
 
 
-# The next code uses the above function to formulate the pessimization problem, where for extra flexibility we have included tha maximum values of the parameters deviations and the uncertainty budget as the function's arguments. In the function (see the line marked as 'hack for faster CCG convergence') we in fact look for scenarios $z$ that will make only the 'feasibility' constraints of the second-stage problem violated, without accounting for the 'profit related' proxy constraint. We do so in hope to accelerate the CCG convergence - the profit constraint will be taken care of anyway as the variable $y_3$ can adapt freely for each newly generated $z^i$ and each newly generated solution to the master problem, and at the same time, we eliminate the risk of iteratively building a list of scenarios $z$ that violate only the profit constraints across all $i$, without actually hurting the feasibility of the production plans made.
+# We then implement formulate the pessimization problem, where for extra flexibility we include the following as arguments:
+# 
+# * tha maximum values of the parameters deviations,
+# * the uncertainty budget. 
+# 
+# Inspecting the implementation below (c.f. the comment 'hack for faster CCG convergence'), one can notice that in fact we look for scenarios $z$ that will make only the 'feasibility' constraints of the second-stage problem violated, without accounting for the 'profit related' proxy constraint. The reason for doing this is to (possibly) accelerate the CCG convergence - the profit constraint will be taken care of anyway as the variable $y_3$ can adapt freely for each newly generated $z^i$ and each newly generated solution to the master problem, and at the same time, we eliminate the risk of iteratively building a list of scenarios $z$ that violate only the profit constraints across all $i$, without actually hurting the feasibility of the production plans made.
 
-# In[15]:
+# In[10]:
 
 
 def pessimization_problem(subproblem_params, master_solution, z_A_max=0.15, z_B_max=0.25, z_D_max=0.5, Gamma=2):
@@ -497,12 +548,12 @@ def pessimization_problem(subproblem_params, master_solution, z_A_max=0.15, z_B_
     big_M = 1000
     
     L, R = subproblem_params(master_solution[0])
+
     # indices for the variables
     m.Z_INDICES = pyo.Set(initialize=["z_A", "z_B", "z_D"])
-    m.SCENARIOS = pyo.Set(initialize=range(len(master_solution)))
-    
+
     # indices for the scenarios
-    # indices for inequalities
+    m.SCENARIOS = pyo.Set(initialize=range(len(master_solution)))
     
     m.z = pyo.Var(m.Z_INDICES, domain=pyo.Reals)
     m.z_abs = pyo.Var(m.Z_INDICES, domain=pyo.NonNegativeReals)
@@ -524,7 +575,7 @@ def pessimization_problem(subproblem_params, master_solution, z_A_max=0.15, z_B_
     
     m.z_budget = pyo.Constraint(expr = m.z_abs["z_A"]/z_A_max + m.z_abs["z_B"]/z_B_max + m.z_abs["z_D"]/z_D_max <= Gamma)
     
-    #, bounds = {"z_A": (-0.15, 0.15),"z_B": (-0.25, 0.25), "z_D": (-0.5, 0.5)}
+    #bounds = {"z_A": (-0.15, 0.15),"z_B": (-0.25, 0.25), "z_D": (-0.5, 0.5)}
     
     # Constraint violation: blockwise
     @m.Block(m.SCENARIOS)
@@ -549,18 +600,17 @@ def pessimization_problem(subproblem_params, master_solution, z_A_max=0.15, z_B_
     def max_violation(m):
         return m.theta
     
-    solver = pyo.SolverFactory('gurobi')
+    solver = pyo.SolverFactory('cbc')
     solver.solve(m)
     
     return m.theta(), m.z["z_A"](), m.z["z_B"](), m.z["z_D"]()
 
 
-# With the two functions above defined, we are ready to put them together into an implementation of the CCG algorithm. In the below code, we hard-limit the maximum number of iterations to 50 scenarios and we decide to stop the algorithm when the optimal value of the pessimization subproblem is less than 0.1 (constraint violation of 0.1 seems to be `acceptably small' given the fact that the labor availability numbers are in the magnitude of 80 and 100, and the amount of raw material purchased is also expected to be in the hundreds, just like the optimal profit).
+# With the two functions above defined, we are ready to put them together into an implementation of the CCG algorithm. In the below code, we hard-limit the maximum number of iterations to 50 scenarios and we decide to stop the algorithm when the optimal value of the pessimization subproblem is less than 0.1 (constraint violation of 0.1 seems to be "acceptably small" given the fact that the labor availability numbers are in the magnitude of 80 and 100, and the amount of raw material purchased is also expected to be in the hundreds, just like the optimal profit).
 
-# In[13]:
+# In[12]:
 
 
-# This is the code for the CCG algorithm
 ccg_converged = False
 stopping_precision = 0.1
 max_iterations = 50
@@ -578,7 +628,9 @@ while((not ccg_converged) and (ccg_iterations < max_iterations)):
     c, q, *_ = model_params()
     
     master_solution = []
-        
+    
+    print(f'\nIteration #{ccg_iterations}')
+
     for s in range(len(Z)):
         single_solution = {}
         
@@ -590,13 +642,14 @@ while((not ccg_converged) and (ccg_iterations < max_iterations)):
             
         master_solution.append(single_solution)
     
-    print(master_solution[0]["x"])
+    print(f'Current solution: x = {master_solution[0]["x"]:.2f}')
     
     # Pessimization
     theta_opt, z_A, z_B, z_D = pessimization_problem(subproblem_params, master_solution, 0.15, 0.25, 0.25, 2)
     
-    # IF pessimization yields no violation, stop, otherwise add scenario
+    # If pessimization yields no violation, stop the procedure, otherwise add a scenario and repeat
     if (theta_opt < stopping_precision):
+        print("No violation found. Stopping the procedure.")
         ccg_converged = True
     else:
         print(f"Violation found: z_A = {z_A:4.2f},  z_B = {z_B:4.2f},  z_D = {z_D:4.2f}, constraint violation: {theta_opt:6.2f}")
@@ -605,25 +658,10 @@ while((not ccg_converged) and (ccg_iterations < max_iterations)):
     ccg_iterations += 1
 
 
-# As we can see, it takes only 5 iterations, instead of 1000 scenarios, to arrive at an `almost' robust solution which pretty much the same first-stage decisiona as in the first case.
-
-# ## Deprecated
-
-# In[226]:
-
-
-fig = plt.figure(figsize=(8, 4))
-
-ax = plt.subplot(121, aspect=1, xlabel="Qty U", ylabel="Qty V", xlim=(0, 80), ylim=(0, 80))
-for s in m.SCENARIOS:
-    print(m.scenario[s].y["u"].value)
-    ax.plot(m.scenario[s].y["u"].value, m.scenario[s].y["v"].value, 'k.', alpha=0.1)
-    
-ax = plt.subplot(122)
-
+# It takes only two iterations, instead of 1000 scenarios, to arrive at an "almost" robust solution which pretty much the same first-stage decisions as in the first case. 
+# 
+# It really pays off thus to generate scenarios only when they are needed and if they are needed. This principle of "delayed generation of scenarios" has its applications in many fields of large-scale optimization, not just in the context of robustness but even for deterministic problems, where it is known as **column generation** but which is not discussed throughout this book.
 
 # ## Bibliographic Notes
-# 
-# * https://link.springer.com/content/pdf/10.1007/s11750-021-00593-2.pdf
 # 
 # * Zeng, B., & Zhao, L. (2013). Solving two-stage robust optimization problems using a column-and-constraint generation method. Operations Research Letters, 41(5), 457-461. 

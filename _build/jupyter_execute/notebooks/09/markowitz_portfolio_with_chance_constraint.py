@@ -62,7 +62,7 @@ import numpy as np
 # \end{align*}
 # $$
 # 
-# We now implement as a Pyomo model and solve it for $n=3$, $\alpha = 0.5$, $\beta =0.3$, the given vector $\mu$ and semi-definite positive covariance matrix $\Sigma$.
+# We now implement as a Pyomo model and solve it for $n=3$, $\alpha = 0.6$, $\beta =0.3$, the given vector $\mu$ and semi-definite positive covariance matrix $\Sigma$.
 
 # In[28]:
 
