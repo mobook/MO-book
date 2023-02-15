@@ -1,6 +1,6 @@
 # Data-Driven Mathematical Optimization in Python
 
-Welcome to this repository of companion notebooks for *Data-Driven Mathematical Optimization in Python*, a project currently under development with completion expected by Spring 2023. These notebooks introduce the concepts and tools of mathematical optimization with examples from a range of disciplines. The goals of these notebooks are to:
+Welcome to this repository of companion notebooks for *Data-Driven Mathematical Optimization in Python*, a project currently under development with completion expected by Spring, 2023. These notebooks introduce the concepts and tools of mathematical optimization with examples from a range of disciplines. The goals of these notebooks are to:
 
 * provide a foundation for learning mathematical optimization hands-on,
 * demonstrate the tools and concepts of optimization with practical examples,
@@ -22,7 +22,7 @@ We seek your feedback! If you encounter an issue or have suggestions on how to m
 
 We are a group of researchers and educators who came together with a common purpose of developing materials for use in our classroom teaching. Hopefully, these materials will find use in other classrooms and, most importantly, by those seeking entry into the world of building optimization models for data-rich applications.
 
-* Krzysztof Postek, Boston Consulting Group (former TU Delft)
+* Krzysztof Postek, Boston Consulting Group (formerly TU Delft)
 * Alessandro Zocca, VU Amsterdam
 * Joaquim Gromicho, ORTEC and the University of Amsterdam
 * Jeffrey Kantor, University of Notre Dame
