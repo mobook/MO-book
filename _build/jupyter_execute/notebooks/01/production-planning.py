@@ -24,7 +24,7 @@
 # * [Objectives](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Objectives.html)
 # * [Constraints](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Constraints.html)
 # * [Expressions](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Expressions.html)
-# * [SolverFactory]()
+# * [SolverFactory](https://pyomo.readthedocs.io/en/stable/working_models.html)
 # 
 # The notebook begins with a statement of production planning problem and presentation of a mathematical model. The mathematical model is then translated into series of Pyomo models of increasing abstraction.
 # 
