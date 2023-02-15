@@ -267,7 +267,8 @@ def minimize_missed_demand_in_period(inventory, missed_demand, purchases, existi
     
     # update inventory
     for i in m.M:
-        inventory.loc[i, period] = inventory.loc[i, prev[period]] + purchases.loc[i, period]                 - sum([pyo.value(m.x[p]) * use.loc[i, p] for p in m.P])
+        inventory.loc[i, period] = inventory.loc[i, prev[period]] + purchases.loc[i, period] \
+                - sum([pyo.value(m.x[p]) * use.loc[i, p] for p in m.P])
     
     # update missed demand
     for p in m.P:

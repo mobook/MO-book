@@ -72,7 +72,9 @@ m.n = pyo.Var(m.LETTERS, domain=pyo.Integers, bounds=(0, 9))
 
 @m.Constraint()
 def message(m):
-    return               1000*m.n['S'] + 100*m.n['E'] + 10*m.n['N'] + m.n['D']                        + 1000*m.n['M'] + 100*m.n['O'] + 10*m.n['R'] + m.n['E']      == 10000*m.n['M'] + 1000*m.n['O'] + 100*m.n['N'] + 10*m.n['E'] + m.n['Y']
+    return               1000*m.n['S'] + 100*m.n['E'] + 10*m.n['N'] + m.n['D'] \
+                       + 1000*m.n['M'] + 100*m.n['O'] + 10*m.n['R'] + m.n['E'] \
+     == 10000*m.n['M'] + 1000*m.n['O'] + 100*m.n['N'] + 10*m.n['E'] + m.n['Y']
 
 # leading digit must be non-zero
 @m.Constraint()
