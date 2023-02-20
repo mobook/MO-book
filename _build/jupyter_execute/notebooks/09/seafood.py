@@ -16,7 +16,7 @@
 # 
 # # Stock optimization for seafood distribution center
 
-# In[2]:
+# In[90]:
 
 
 # install Pyomo and solvers
@@ -31,7 +31,7 @@ helper.install_pyomo()
 helper.install_cbc()
 
 
-# In[5]:
+# In[91]:
 
 
 import pyomo.environ as pyo
@@ -76,58 +76,13 @@ import scipy.stats as stats
 # 
 # In the example below, we report the numerical solution corresponding to the parameters $c = 10$, $p = 25$, and $h = 3$, which determine the quantile of interest, that is $q=\frac{p-c}{p+h} \approx 0.5357$. 
 
-# In[12]:
+# In[92]:
 
 
 # Setting parameters
 c = 10
 p = 25
 h = 3
-
-# quantile
-q = (p - c)/(p + h)
-print(f"The quantile of interest can be calculated as q=(p - c)/(p + h) and is equal to {q:.4f}")
-
-x = np.linspace(0, 250, 1000)
-
-fig, ax = plt.subplots(2, 1, figsize=(10, 8))
-ax[0].set_title("Probability density functions")
-ax[1].set_title("Cumulative distributon functions")
-ax[1].axhline(q, linestyle='--')
-
-def plot_distribution(name, distribution, q):
-    
-    # find optimal solution using a distribution's quantile function (i.e., ppf in scipy.stats)
-    x_opt = distribution.ppf(q)
-    print(f"\nMean of {name} distribution = {distribution.mean():0.2f}")    
-    print(f"Optimal solution for {name} distribution = {x_opt:0.2f} tons")
-    
-    # show pdf, cdf, and graphical solution
-    c = ax[0].plot(x, distribution.pdf(x), lw=3, label=name)[0].get_color()
-    ax[1].plot(x, distribution.cdf(x), color=c, lw=3, label=name)
-    ax[1].plot([x_opt]*2, [0, q], color=c)
-    ax[1].plot(x_opt, q, '.', color=c, ms=10)
-      
-plot_distribution("Uniform", stats.uniform(loc=25, scale=150), q)
-plot_distribution("Pareto", stats.pareto(scale=50, b=2), q)
-plot_distribution("Weibull", stats.weibull_min(scale=112.838, c=2), q)
-   
-ax[0].legend()
-ax[1].legend()
-fig.tight_layout()
-
-
-# In[58]:
-
-
-# Setting parameters
-c = 10
-p = 25
-h = 3
-
-# quantile
-q = (p - c)/(p + h)
-print(f"The quantile of interest can be calculated as q=(p - c)/(p + h) and is equal to {q:.4f}")
 
 distributions = {
 "Uniform": stats.uniform(loc=25, scale=150),
@@ -136,9 +91,7 @@ distributions = {
 }
 
 for name, distribution in distributions.items():
-    x_opt = distribution.ppf(q)
-    print(f"\nMean of {name} distribution = {distribution.mean():0.2f}")    
-    print(f"Optimal solution for {name} distribution = {x_opt:0.2f} tons")
+    print(f"Mean of {name} distribution = {distribution.mean():0.2f}")    
 
 # show PDFs
 x = np.linspace(0, 250, 1000)
@@ -149,6 +102,9 @@ for name, distribution in distributions.items():
 ax.legend()
 fig.tight_layout()
 plt.show()
+
+# quantile
+q = (p - c)/(p + h)
 
 # show CDFs and graphical solutions
 extraticks = [q]
@@ -165,12 +121,18 @@ plt.ylim(-0.05, 1.1)
 ax.legend()
 fig.tight_layout()
 
+print(f"The quantile of interest can be calculated as q=(p - c)/(p + h) and is equal to {q:.4f}.\n")
+
+for name, distribution in distributions.items():
+    x_opt = distribution.ppf(q)
+    print(f"The optimal solution for {name} distribution is: {x_opt:0.2f} tons")
+
 
 # ## Deterministic solution for average demand
 # 
 # We now find the optimal solution of the *deterministic LP model* obtained by assuming the demand is constant and equal to the average demand, i.e., $z = \bar{z} = \mathbb E z = 100$.
 
-# In[12]:
+# In[93]:
 
 
 # problem data
@@ -226,7 +188,7 @@ print(f"Optimal deterministic profit = {m.total_profit():.0f}€")
 # 
 # For a fixed decision variable $x=100$, approximate the expected net profit of the seafood distribution center for each of the three distributions above using the Sample Average Approximation method with $N=2500$ points. More specifically, generate $N=2500$ samples from the considered distribution and solve the extensive form of the stochastic LP resulting from those $N=2500$ scenarios.
 
-# In[13]:
+# In[97]:
 
 
 # SAA of the two-stage stochastic LP to calculate the expected profit when buying the average
@@ -279,7 +241,7 @@ np.random.seed(0)
 N = 7500
 
 samples = np.random.uniform(low=25.0, high=175.0, size=N)
-naiveprofit_uniform = NaiveSeafoodStockSAA(N, samples, 'uniform')
+naiveprofit_uniform = NaiveSeafoodStockSAA(N, samples, 'Uniform')
 
 shape = 2
 xm = 50
@@ -296,7 +258,7 @@ naiveprofit_weibull = NaiveSeafoodStockSAA(N, samples, 'Weibull')
 # 
 # We now approximate the optimal solution of stock optimization problem for each of the three distributions above using the Sample Average Approximation method. More specifically, generate $N=5000$ samples from each of the three distributions and thhen solve the extensive form of the stochastic LP resulting from those $N=5000$ scenarios. For each of the three distribution, we compare the optimal expected profit with that obtained before and calculate the value of the stochastic solution (VSS).
 
-# In[6]:
+# In[95]:
 
 
 # Two-stage stochastic LP using SAA
@@ -372,19 +334,19 @@ print(f"Value of the stochastic solution: {smartprofit_weibull:.2f}-{naiveprofit
 
 # ## Convergence of the SAA method
 # 
-# The SAA method becomes more precise as the sample size $N$ increases. To illustrate this, we solve the same optimization problem as before but using a different number of samples, with the sample size $N$ increasing from $25$ to $3000$. As we can see, the approximate solutions converge to the theoretical ones as the sample size increases.
+# The SAA method becomes more precise as the sample size $N$ increases. To illustrate this, we solve the same optimization problem as before but using a different number of samples, with the sample size $N$ increasing from $25$ to $2500$. As we can see, the approximate solutions converge to the theoretical ones as the sample size increases.
 
-# In[7]:
+# In[96]:
 
 
 shape = 2
 xm = 50
 scale = 113
-levels = 60
+levels = 75
 
 table = np.zeros((levels,7))
 
-for i, N in enumerate(np.linspace(25, 3000, levels, dtype=int)):
+for i, N in enumerate(np.linspace(25, 2500, levels, dtype=int)):
     
     np.random.seed(0)
     samples = np.random.uniform(low=25.0, high=175.0, size=N)
@@ -394,14 +356,15 @@ for i, N in enumerate(np.linspace(25, 3000, levels, dtype=int)):
     samples = scale*np.random.weibull(a=shape, size=N)
     profit_weibull, xw = SeafoodStockSAA(N, samples, 'Weibull', False)
     table[i] = [N, xu, xp, xw, profit_uniform, profit_pareto, profit_weibull]
-    
-plt.plot(table[:,0],table[:,1], "-b", label='SAA-approximated solution Uniform')
-plt.axhline(y=105.36, color='b', linestyle='--', label='optimal solution Uniform')
-plt.plot(table[:,0],table[:,2], "-g", label='SAA-approximated solution Pareto')
-plt.axhline(y=73.38, color='g', linestyle='--', label='optimal solution Pareto')
-plt.plot(table[:,0],table[:,3], "-r", label='SAA-approximated solution Weibull')
-plt.axhline(y=98.84, color='r', linestyle='--', label='optimal solution Weibull')
-plt.legend(loc="upper right")
+
+fig, ax = plt.subplots(1, 1, figsize=(10, 4))    
+ax.plot(table[:,0],table[:,1], "-b", label='SAA-approximated solution Uniform')
+ax.axhline(y=105.36, color='b', linestyle='--', label='optimal solution Uniform')
+ax.plot(table[:,0],table[:,2], "-g", label='SAA-approximated solution Pareto')
+ax.axhline(y=73.38, color='g', linestyle='--', label='optimal solution Pareto')
+ax.plot(table[:,0],table[:,3], "-r", label='SAA-approximated solution Weibull')
+ax.axhline(y=98.84, color='r', linestyle='--', label='optimal solution Weibull')
+ax.legend(loc="upper right")
 plt.ylim(65,135)
-plt.show()
+fig.tight_layout()
 
