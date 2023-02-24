@@ -253,8 +253,7 @@ def l1_fit(df, y_col, x_cols):
     
     return m
 
-m = l1_fit(wines, "quality", ["alcohol", "volatile acidity", "citric acid", "sulphates", \
-                              "total sulfur dioxide", "density", "fixed acidity"])
+m = l1_fit(wines, "quality", ["alcohol", "volatile acidity", "citric acid", "sulphates",                               "total sulfur dioxide", "density", "fixed acidity"])
 print(f"MAD = {m.mean_absolute_deviation():0.5f}\n")
 
 for j in m.J:

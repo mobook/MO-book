@@ -16,11 +16,17 @@
 # 
 # # Cryptocurrency arbitrage search
 # 
-# Crpytocurrency exchanges are web services that enable the purchase, sale, and exchange of cryptocurrencies. These exchanges provide liquidity for owners and establish the relative value of these currencies. As of this writing (mid-2022), [it is estimated](https://www.statista.com/statistics/730876/cryptocurrency-maket-value/) cryptocurrencies have a collective market capitalization of more than 2 trillion USD. Cryptocurrency markets are constantly changing with new currencies, exchanges, the occasional collapse of a currency, and highly volatile prices.
+# Crpytocurrency exchanges are web services for the purchase, sale, and exchange of cryptocurrencies. These exchanges provide liquidity for owners and establish the relative value of these currencies. As of this writing (early 2023), [it is estimated](https://www.statista.com/statistics/730876/cryptocurrency-maket-value/) cryptocurrencies have a collective market capitalization over one trillion USD. Cryptocurrency markets are constantly changing with the introduction of new currencies, new exchanges, the occasional collapse currencies, and highly volatile prices.
 # 
-# The purpose of this notebook is to explore the efficiency of cryptocurrency exchanges by testing for arbitrage opportunities. An arbitrage exists if a customer can realize a net profit through a sequence of risk-free trades. The efficient market hypothesis assumes arbitrage opportunities are quickly identified and exploited by investors. As a result of their trading, prices would reach a new equilibrium so that in an efficient market, any arbitrage opportunities would be small and fleeting. The question here is whether it is possible, with real-time data and rapid execution, for a trader to profit from these fleeting arbitrage opportunities.
+# This notebook explores the efficiency of cryptocurrency exchanges by testing for arbitrage opportunities. Arbitrage happens when a trader realizes a risk-free profit through a sequence of trades. The efficient market hypothesis suggests arbitrage opportunities are quickly identified and exploited by investors. As a result of their subsequent trading, prices reach a new equilibrium where the arbitrage opportunities quickly disappear. The question explored here is whether it is feasible for a trader to profit from these fleeting arbitrage opportunities with real-time data and fast execution.
 
 # ## Installations and Imports
+# 
+# In addition to Pyomo and other standard Python libraries, this notebook uses the [open-source library `ccxt`](https://github.com/ccxt/ccxt). `ccxt` supports the real-time APIs of the largest and most common exchanges on which cryptocurrencies are traded. The library can be installed with
+# 
+#     !pip install ccxt
+# 
+# Here we import the library and list current exchanges supported by `ccxt`.
 
 # In[1]:
 
@@ -37,7 +43,7 @@ helper.install_pyomo()
 helper.install_cbc()
 
 
-# In[4]:
+# In[2]:
 
 
 import os
@@ -56,7 +62,7 @@ import pyomo.environ as pyo
 # 
 # Cryptocurrency exchanges are digital marketplaces for buying and trading cryptocurrencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, to buy and sell currencies, and to use cryptocurrencies for financial transactions. The [open-source library `ccxt`](https://github.com/ccxt/ccxt) currently supports real-time APIs for the largest and most common exchanges on which cryptocurrencies are traded. Here we import the library and list current exchanges supported by `ccxt`.
 
-# In[5]:
+# In[3]:
 
 
 import ccxt
@@ -531,9 +537,7 @@ def crypto_model(dg_order_book, T = 10, w0 = 1.0):
 
     @m.Constraint(m.NODES, m.T1)
     def balances(m, node, t):
-        return m.w[node, t] == m.w[node, t - 1] \
-            + sum(m.a[src, node] * m.x[src, node, t] for src, dst in m.EDGES if dst == node) \
-            - sum(m.x[node, dst, t] for src, dst in m.EDGES if src == node) 
+        return m.w[node, t] == m.w[node, t - 1]             + sum(m.a[src, node] * m.x[src, node, t] for src, dst in m.EDGES if dst == node)             - sum(m.x[node, dst, t] for src, dst in m.EDGES if src == node) 
 
 
     solver = pyo.SolverFactory("cbc")

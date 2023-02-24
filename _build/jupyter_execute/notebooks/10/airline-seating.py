@@ -362,8 +362,7 @@ def airline_CC(demand):
     # add chance constraints
     @m.Constraint()
     def business_class(m):
-        return m.seats["F"]  + m.seats["B"] - (mu["F"] + mu["B"]) >= \
-                1.645 * np.sqrt(sigma["F"]**2 + sigma["B"]**2)
+        return m.seats["F"]  + m.seats["B"] - (mu["F"] + mu["B"]) >=                 1.645 * np.sqrt(sigma["F"]**2 + sigma["B"]**2)
     
     return m
 
@@ -598,8 +597,7 @@ def airline(demand):
     
     @m.Constraint(m.SCENARIOS)
     def business_class_loyality(m, s):
-        return m.seats["F"] + m.seats["B"] + bigM * m.business_class[s] >= \
-            demand["B"][s] + demand["F"][s]
+        return m.seats["F"] + m.seats["B"] + bigM * m.business_class[s] >=             demand["B"][s] + demand["F"][s]
 
     @m.Constraint()
     def business_class_loyality_rate(m):
