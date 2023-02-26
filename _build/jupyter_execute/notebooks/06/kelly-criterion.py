@@ -77,11 +77,7 @@ helper.install_mosek()
 # 
 # The classical presentation of the Kelly Criterion is to consider repeated wagers on a gambling game with binary outcomes. For each stage, a wager of one unit returns $1+b$ with probability $p$ if successful, otherwise the wager returns nothing. The number $b$ refers to the "odds" of game. The problem is to determine what fraction of the gambler's wealth should be wagered on each instance of the game.
 # 
-# <div style="text-align:center;">
-# <img src="kelly-criterion.png" width="500"/>
-# </div>
-# 
-# <!-- ![](kelly-criterion.png) -->
+# ![](kelly-criterion.png)
 # 
 # Let $w$ be the fraction of wealth that is wagered on each instance. Depend on the two possible outcome, the gross return at any stage is
 # 

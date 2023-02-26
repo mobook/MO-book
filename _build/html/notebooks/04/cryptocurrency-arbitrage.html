@@ -907,11 +907,7 @@ title="Print to PDF"
 <p>This notebook explores the efficiency of cryptocurrency exchanges by testing for arbitrage opportunities. Arbitrage happens when a trader realizes a risk-free profit through a sequence of trades. The efficient market hypothesis suggests arbitrage opportunities are quickly identified and exploited by investors. As a result of their subsequent trading, prices reach a new equilibrium where the arbitrage opportunities quickly disappear. The question explored here is whether it is feasible for a trader to profit from these fleeting arbitrage opportunities with real-time data and fast execution.</p>
 <section id="installations-and-imports">
 <h2>Installations and Imports<a class="headerlink" href="#installations-and-imports" title="Permalink to this headline">#</a></h2>
-<p>In addition to Pyomo and other standard Python libraries, this notebook uses the <a class="reference external" href="https://github.com/ccxt/ccxt">open-source library <code class="docutils literal notranslate"><span class="pre">ccxt</span></code></a>. <code class="docutils literal notranslate"><span class="pre">ccxt</span></code> supports the real-time APIs of the largest and most common exchanges on which cryptocurrencies are traded. The library can be installed with</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>!pip install ccxt
-</pre></div>
-</div>
-<p>Here we import the library and list current exchanges supported by <code class="docutils literal notranslate"><span class="pre">ccxt</span></code>.</p>
+<p>First we import Pyomo and necessary solvers.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
@@ -937,6 +933,11 @@ cbc was previously installed
 </div>
 </div>
 </div>
+<p>In addition to Pyomo and other standard Python libraries, this notebook uses the <a class="reference external" href="https://github.com/ccxt/ccxt">open-source library <code class="docutils literal notranslate"><span class="pre">ccxt</span></code></a>. <code class="docutils literal notranslate"><span class="pre">ccxt</span></code> supports the real-time APIs of the largest and most common exchanges on which cryptocurrencies are traded. The library can be installed with</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>!pip install ccxt
+</pre></div>
+</div>
+<p>Here we import all needed libraries and <code class="docutils literal notranslate"><span class="pre">ccxt</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
@@ -956,7 +957,7 @@ cbc was previously installed
 </section>
 <section id="cryptocurrency-exchanges">
 <h2>Cryptocurrency exchanges<a class="headerlink" href="#cryptocurrency-exchanges" title="Permalink to this headline">#</a></h2>
-<p>Cryptocurrency exchanges are digital marketplaces for buying and trading cryptocurrencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, to buy and sell currencies, and to use cryptocurrencies for financial transactions. The <a class="reference external" href="https://github.com/ccxt/ccxt">open-source library <code class="docutils literal notranslate"><span class="pre">ccxt</span></code></a> currently supports real-time APIs for the largest and most common exchanges on which cryptocurrencies are traded. Here we import the library and list current exchanges supported by <code class="docutils literal notranslate"><span class="pre">ccxt</span></code>.</p>
+<p>Cryptocurrency exchanges are digital marketplaces for buying and trading cryptocurrencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, to buy and sell currencies, and to use cryptocurrencies for financial transactions.  Here we import the library and list current exchanges supported by <code class="docutils literal notranslate"><span class="pre">ccxt</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ccxt</span>
@@ -967,15 +968,34 @@ cbc was previously installed
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
-<span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">folders</span><span class="o">/</span><span class="n">cm</span><span class="o">/</span><span class="n">z3t28j296f98jdp1vqyplkz00000gn</span><span class="o">/</span><span class="n">T</span><span class="o">/</span><span class="n">ipykernel_73051</span><span class="o">/</span><span class="mf">535697854.</span><span class="n">py</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
-<span class="ne">----&gt; </span><span class="mi">1</span> <span class="kn">import</span> <span class="nn">ccxt</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> 
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">exchange</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ccxt</span><span class="o">.</span><span class="n">exchanges</span><span class="p">):</span>
-<span class="g g-Whitespace">      </span><span class="mi">4</span>     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2">) </span><span class="si">{</span><span class="n">exchange</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">4</span> <span class="k">else</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-
-<span class="ne">ModuleNotFoundError</span>: No module named &#39;ccxt&#39;
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  1) ace                   2) alpaca                3) ascendex              4) bequant             
+  5) bigone                6) binance               7) binancecoinm          8) binanceus           
+  9) binanceusdm          10) bit2c                11) bitbank              12) bitbay              
+ 13) bitbns               14) bitcoincom           15) bitfinex             16) bitfinex2           
+ 17) bitflyer             18) bitforex             19) bitget               20) bithumb             
+ 21) bitmart              22) bitmex               23) bitopro              24) bitpanda            
+ 25) bitrue               26) bitso                27) bitstamp             28) bitstamp1           
+ 29) bittrex              30) bitvavo              31) bkex                 32) bl3p                
+ 33) blockchaincom        34) btcalpha             35) btcbox               36) btcex               
+ 37) btcmarkets           38) btctradeua           39) btcturk              40) buda                
+ 41) bybit                42) cex                  43) coinbase             44) coinbaseprime       
+ 45) coinbasepro          46) coincheck            47) coinex               48) coinfalcon          
+ 49) coinmate             50) coinone              51) coinspot             52) cryptocom           
+ 53) currencycom          54) delta                55) deribit              56) digifinex           
+ 57) exmo                 58) flowbtc              59) fmfwio               60) gate                
+ 61) gateio               62) gemini               63) hitbtc               64) hitbtc3             
+ 65) hollaex              66) huobi                67) huobijp              68) huobipro            
+ 69) idex                 70) independentreserve   71) indodax              72) itbit               
+ 73) kraken               74) krakenfutures        75) kucoin               76) kucoinfutures       
+ 77) kuna                 78) latoken              79) lbank                80) lbank2              
+ 81) luno                 82) lykke                83) mercado              84) mexc                
+ 85) mexc3                86) ndax                 87) novadax              88) oceanex             
+ 89) okcoin               90) okex                 91) okex5                92) okx                 
+ 93) paymium              94) phemex               95) poloniex             96) poloniexfutures     
+ 97) probit               98) ripio                99) stex                100) tidex               
+101) timex               102) tokocrypto          103) upbit               104) wavesexchange       
+105) wazirx              106) whitebit            107) woo                 108) yobit               
+109) zaif                110) zb                  111) zonda               
 </pre></div>
 </div>
 </div>
@@ -1029,18 +1049,18 @@ cbc was previously installed
     <span class="n">size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">2.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">))</span>
     <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">size</span><span class="p">))</span>
     <span class="n">pos</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">circular_layout</span><span class="p">(</span><span class="n">dg</span><span class="p">)</span>
-    <span class="n">nx</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span>
-        <span class="n">dg</span><span class="p">,</span>
-        <span class="n">pos</span><span class="p">,</span>
-        <span class="n">with_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">node_color</span><span class="o">=</span><span class="p">[</span><span class="n">dg</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">dg</span><span class="o">.</span><span class="n">nodes</span><span class="p">()],</span>
-        <span class="n">edge_color</span><span class="o">=</span><span class="p">[</span><span class="n">dg</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">][</span><span class="s2">&quot;color&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">dg</span><span class="o">.</span><span class="n">edges</span><span class="p">],</span>
-        <span class="n">width</span><span class="o">=</span><span class="p">[</span><span class="n">dg</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">][</span><span class="s2">&quot;width&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">dg</span><span class="o">.</span><span class="n">edges</span><span class="p">],</span>
-        <span class="n">node_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-        <span class="n">font_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
-        <span class="n">arrowsize</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
-        <span class="n">connectionstyle</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;arc3, rad=</span><span class="si">{</span><span class="n">rad</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+<span class="c1">#    nx.draw(</span>
+<span class="c1">#        dg,</span>
+<span class="c1">#        pos,</span>
+<span class="c1">#        with_labels=True,</span>
+<span class="c1">#        node_color=[dg.nodes[node][&quot;color&quot;] for node in dg.nodes()],</span>
+<span class="c1">#        edge_color=[dg.edges[u, v][&quot;color&quot;] for u, v in dg.edges],</span>
+<span class="c1">#        width=[dg.edges[u, v][&quot;width&quot;] for u, v in dg.edges],</span>
+<span class="c1">#        node_size=1000,</span>
+<span class="c1">#        font_size=8,</span>
+<span class="c1">#        arrowsize=15,</span>
+<span class="c1">#        connectionstyle=f&quot;arc3, rad={rad}&quot;,</span>
+<span class="c1">#    )</span>
     <span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx_edge_labels</span><span class="p">(</span>
         <span class="n">dg</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">edge_labels</span><span class="o">=</span><span class="p">{(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">):</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">dst</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">dg</span><span class="o">.</span><span class="n">edges</span><span class="p">()}</span>
     <span class="p">)</span>
@@ -1053,6 +1073,13 @@ cbc was previously installed
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of edges = </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dg_symbols</span><span class="o">.</span><span class="n">edges</span><span class="p">())</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of nodes =  34
+Number of edges = 136
+</pre></div>
+</div>
+<img alt="../../_images/cryptocurrency-arbitrage_8_1.png" src="../../_images/cryptocurrency-arbitrage_8_1.png" />
 </div>
 </div>
 </section>
@@ -1661,7 +1688,7 @@ c_{q\rightarrow b} &amp; = \text{ask volume} \times \text{ask price}
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/cryptocurrency-arbitrage_13_0.png" src="../../_images/cryptocurrency-arbitrage_13_0.png" />
+<img alt="../../_images/cryptocurrency-arbitrage_14_0.png" src="../../_images/cryptocurrency-arbitrage_14_0.png" />
 </div>
 </div>
 </section>
@@ -1782,7 +1809,7 @@ order book saved to: Binance_US_orderbook_20221124_02_40_51.csv
 4.455430711609587 basis points
 </pre></div>
 </div>
-<img alt="../../_images/cryptocurrency-arbitrage_22_1.png" src="../../_images/cryptocurrency-arbitrage_22_1.png" />
+<img alt="../../_images/cryptocurrency-arbitrage_23_1.png" src="../../_images/cryptocurrency-arbitrage_23_1.png" />
 </div>
 </div>
 </section>
@@ -1830,7 +1857,7 @@ order book saved to: Binance_US_orderbook_20221124_02_40_51.csv
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;matplotlib.lines.Line2D at 0x7ff4c333bee0&gt;
 </pre></div>
 </div>
-<img alt="../../_images/cryptocurrency-arbitrage_25_2.png" src="../../_images/cryptocurrency-arbitrage_25_2.png" />
+<img alt="../../_images/cryptocurrency-arbitrage_26_2.png" src="../../_images/cryptocurrency-arbitrage_26_2.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -1898,12 +1925,12 @@ order book saved to: Binance_US_orderbook_20221124_02_40_51.csv
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/cryptocurrency-arbitrage_27_0.png" src="../../_images/cryptocurrency-arbitrage_27_0.png" />
-<img alt="../../_images/cryptocurrency-arbitrage_27_1.png" src="../../_images/cryptocurrency-arbitrage_27_1.png" />
-<img alt="../../_images/cryptocurrency-arbitrage_27_2.png" src="../../_images/cryptocurrency-arbitrage_27_2.png" />
-<img alt="../../_images/cryptocurrency-arbitrage_27_3.png" src="../../_images/cryptocurrency-arbitrage_27_3.png" />
-<img alt="../../_images/cryptocurrency-arbitrage_27_4.png" src="../../_images/cryptocurrency-arbitrage_27_4.png" />
-<img alt="../../_images/cryptocurrency-arbitrage_27_5.png" src="../../_images/cryptocurrency-arbitrage_27_5.png" />
+<img alt="../../_images/cryptocurrency-arbitrage_28_0.png" src="../../_images/cryptocurrency-arbitrage_28_0.png" />
+<img alt="../../_images/cryptocurrency-arbitrage_28_1.png" src="../../_images/cryptocurrency-arbitrage_28_1.png" />
+<img alt="../../_images/cryptocurrency-arbitrage_28_2.png" src="../../_images/cryptocurrency-arbitrage_28_2.png" />
+<img alt="../../_images/cryptocurrency-arbitrage_28_3.png" src="../../_images/cryptocurrency-arbitrage_28_3.png" />
+<img alt="../../_images/cryptocurrency-arbitrage_28_4.png" src="../../_images/cryptocurrency-arbitrage_28_4.png" />
+<img alt="../../_images/cryptocurrency-arbitrage_28_5.png" src="../../_images/cryptocurrency-arbitrage_28_5.png" />
 </div>
 </div>
 </section>
@@ -2174,8 +2201,8 @@ BUSD     -&gt; USD     :    1000.402600
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/cryptocurrency-arbitrage_29_2.png" src="../../_images/cryptocurrency-arbitrage_29_2.png" />
-<img alt="../../_images/cryptocurrency-arbitrage_29_3.png" src="../../_images/cryptocurrency-arbitrage_29_3.png" />
+</div></div><img alt="../../_images/cryptocurrency-arbitrage_30_2.png" src="../../_images/cryptocurrency-arbitrage_30_2.png" />
+<img alt="../../_images/cryptocurrency-arbitrage_30_3.png" src="../../_images/cryptocurrency-arbitrage_30_3.png" />
 </div>
 </div>
 </section>

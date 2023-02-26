@@ -22,13 +22,9 @@
 
 # ## Installations and Imports
 # 
-# In addition to Pyomo and other standard Python libraries, this notebook uses the [open-source library `ccxt`](https://github.com/ccxt/ccxt). `ccxt` supports the real-time APIs of the largest and most common exchanges on which cryptocurrencies are traded. The library can be installed with
-# 
-#     !pip install ccxt
-# 
-# Here we import the library and list current exchanges supported by `ccxt`.
+# First we import Pyomo and necessary solvers.
 
-# In[1]:
+# In[11]:
 
 
 # install Pyomo and solvers
@@ -43,7 +39,13 @@ helper.install_pyomo()
 helper.install_cbc()
 
 
-# In[2]:
+# In addition to Pyomo and other standard Python libraries, this notebook uses the [open-source library `ccxt`](https://github.com/ccxt/ccxt). `ccxt` supports the real-time APIs of the largest and most common exchanges on which cryptocurrencies are traded. The library can be installed with
+# 
+#     !pip install ccxt
+# 
+# Here we import all needed libraries and `ccxt`.
+
+# In[12]:
 
 
 import os
@@ -60,9 +62,9 @@ import pyomo.environ as pyo
 
 # ## Cryptocurrency exchanges
 # 
-# Cryptocurrency exchanges are digital marketplaces for buying and trading cryptocurrencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, to buy and sell currencies, and to use cryptocurrencies for financial transactions. The [open-source library `ccxt`](https://github.com/ccxt/ccxt) currently supports real-time APIs for the largest and most common exchanges on which cryptocurrencies are traded. Here we import the library and list current exchanges supported by `ccxt`.
+# Cryptocurrency exchanges are digital marketplaces for buying and trading cryptocurrencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, to buy and sell currencies, and to use cryptocurrencies for financial transactions.  Here we import the library and list current exchanges supported by `ccxt`.
 
-# In[3]:
+# In[13]:
 
 
 import ccxt
@@ -83,7 +85,7 @@ for i, exchange in enumerate(ccxt.exchanges):
 # 
 # 
 
-# In[ ]:
+# In[16]:
 
 
 # global variables used in subsequent cells
@@ -126,18 +128,18 @@ def draw_dg(dg, rad=0.0):
     size = int(2.5 * np.sqrt(n_nodes))
     fig = plt.figure(figsize=(size, size))
     pos = nx.circular_layout(dg)
-    nx.draw(
-        dg,
-        pos,
-        with_labels=True,
-        node_color=[dg.nodes[node]["color"] for node in dg.nodes()],
-        edge_color=[dg.edges[u, v]["color"] for u, v in dg.edges],
-        width=[dg.edges[u, v]["width"] for u, v in dg.edges],
-        node_size=1000,
-        font_size=8,
-        arrowsize=15,
-        connectionstyle=f"arc3, rad={rad}",
-    )
+#    nx.draw(
+#        dg,
+#        pos,
+#        with_labels=True,
+#        node_color=[dg.nodes[node]["color"] for node in dg.nodes()],
+#        edge_color=[dg.edges[u, v]["color"] for u, v in dg.edges],
+#        width=[dg.edges[u, v]["width"] for u, v in dg.edges],
+#        node_size=1000,
+#        font_size=8,
+#        arrowsize=15,
+#        connectionstyle=f"arc3, rad={rad}",
+#    )
     nx.draw_networkx_edge_labels(
         dg, pos, edge_labels={(src, dst): f"{src}/{dst}" for src, dst in dg.edges()}
     )
