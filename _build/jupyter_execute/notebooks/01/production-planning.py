@@ -48,9 +48,9 @@
 # * **objective function**,
 # * **constraints**.
 # 
-# The usual starting point for a developing a mathematical model is to create a list of relevant decision variables. Decision variables are quantities the problem statement that that can be changed to achieve a desired result.  of the decision variables introduced at this stage may prove unnecessarybut for now we seek a list of variables that will be useful in expressing problem objective and constraints. 
+# A starting point in developing a mathematical model is to list of decision variables relevant to the problem at hand. Decision variables are quantities that that can be modified to achieve a desired outcome.  While some decision variables introduced at this stage may prove redundant later, the goal at this point is to create a comprehensive list of variables that will be useful in expressing the problem's objective and constraints. 
 # 
-# For the problem given above, a any lower and upper bounds that are known from the problem data. candidate set of decision variable is listed in the following table with a symbol, description, and later, Some
+# For this problem statement, listed below are decision variable with symbol, description, and any lower and upper bounds that are known from the problem data.
 # 
 # | Decision Variable | Description | lower bound | upper bound |
 # | :-: | :--- | :-: | :-: |
@@ -60,11 +60,11 @@
 # | $y_U$ | number of $U$ units to produce | 0 | 40 |
 # | $y_V$ | number of $V$ units to product | 0 | - |
 # 
-# The next step is to formulate an **objective function** describing the metric that will be used to quantify a solution to the problem. In this, that quantify is profit which is to be maximized. 
+# The next step is to formulate an **objective function** describing that describes how we will measure the value of candidate solutions to the problem. In this case, the value of the solution is measured by profit which is to be maximized. 
 # 
 # $$\max\ \text{profit}$$
 # 
-# where profit is equal to the difference between revenue and cost of operations: 
+# Profit, in turn, is equal to the difference between revenue and cost of operations: 
 # 
 # $$
 # \begin{aligned}
@@ -81,9 +81,9 @@
 # \end{aligned}
 # $$
 # 
-# As shown here, an expression is a algebraic combination of variables that can be referred to by a name. Expressions are useful when the same combination of variables appears in multiple places in a model, or when it is desirable to break up longer expressions into smaller units. Here, for example, we create expressions for revenue and cost that simplify the objective function.
+# As shown here, an expression is a algebraic combination of variables that can be referred to by name. Expressions are useful when the same combination of variables appears in multiple places in a model, or when it is desirable to break up longer expressions into smaller units. Here we have created expressions for revenue and cost that simplify the objective function.
 # 
-# The decision variables $y_U, y_V, x_M, x_A, x_B$ need to satisfy the specific conditions given in the problem statement. **Constraints** are mathematical relationships among decision variables or expressions. In this problem, for exaample, for each resource there is a corresponding linear constraint that limits production:
+# The decision variables $y_U, y_V, x_M, x_A, x_B$ need to satisfy the specific conditions given in the problem statement. **Constraints** are mathematical relationships among decision variables or expressions. In this problem, for each resource there is a linear constraint that limits overall production:
 # 
 # $$
 # \begin{aligned}
@@ -117,7 +117,7 @@
 # 
 # However, even for a simple problem like this one, it is not immediately clear what the optimal solution is. This is exactly where mathematical optimization algorithms come into play - they are generic procedures that can find the optimal solutions of problems as long as these problems can be formulated in a standardized fashion as above. 
 # 
-# For a practitioner, mathematical optimization often boils down to formulating the problem as a model above, and then passing it over to one of the open-source or commercial software packages that can solve such a model regardless of what was the original *story* behind the model. To do so, we need an interface of communication between the models and the algorithms. In this book, we opt for a Python-based interface which is the ```Pyomo``` modeling package.
+# For a practitioner, mathematical optimization often boils down to formulating the problem as a model above, then passing it over to one of the open-source or commercial software packages that can solve such a model regardless of what was the original *story* behind the model. To do so, we need an interface of communication between the models and the algorithms. In this book, we adopt Python-based interface which is the ```Pyomo``` modeling package.
 # 
 # The next step is to create the corresponding Pyomo model.
 
