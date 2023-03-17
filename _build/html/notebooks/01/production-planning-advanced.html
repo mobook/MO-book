@@ -853,6 +853,20 @@ V {&#39;M&#39;: 9, &#39;labor A&#39;: 1, &#39;labor B&#39;: 1}
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Profit = 2400.0
+
+Production Report
+ U  produced =  20.0
+ V  produced =  60.0
+
+Resource Report
+ M consumed = 740.0
+ labor A consumed = 100.0
+ labor B consumed = 80.0
+</pre></div>
+</div>
+</div>
 </div>
 </section>
 <section id="for-python-experts-creating-custom-subclasses-of-concretemodel">
@@ -867,7 +881,7 @@ V {&#39;M&#39;: 9, &#39;labor A&#39;: 1, &#39;labor B&#39;: 1}
 <span class="sd">    A class representing a production model using Pyomo.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">products</span><span class="p">,</span> <span class="n">resources</span><span class="p">,</span> <span class="n">processes</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;cbc&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">products</span><span class="p">,</span> <span class="n">resources</span><span class="p">,</span> <span class="n">processes</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initializes ProductionModel as an instance of a ConcreteModel.</span>
 <span class="sd">        </span>
@@ -881,9 +895,6 @@ V {&#39;M&#39;: 9, &#39;labor A&#39;: 1, &#39;labor B&#39;: 1}
         <span class="bp">self</span><span class="o">.</span><span class="n">products</span> <span class="o">=</span> <span class="n">products</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">resources</span> <span class="o">=</span> <span class="n">resources</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">processes</span> <span class="o">=</span> <span class="n">processes</span>
-        
-        <span class="c1"># create solver instance</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
         
         <span class="c1"># flag to monitor solution status</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">solved</span> <span class="o">=</span> <span class="kc">False</span>
@@ -928,12 +939,12 @@ V {&#39;M&#39;: 9, &#39;labor A&#39;: 1, &#39;labor B&#39;: 1}
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">processes</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="n">resource</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">product</span><span class="p">]</span> <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span>
         
-    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;cbc&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Solves the optimization model.</span>
+<span class="sd">        Solve the optimization model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">build_model</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">solved</span> <span class="o">=</span> <span class="kc">True</span>
         
     <span class="k">def</span> <span class="nf">report_solution</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -941,7 +952,7 @@ V {&#39;M&#39;: 9, &#39;labor A&#39;: 1, &#39;labor B&#39;: 1}
 <span class="sd">        Custom report of the model solution.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">solved</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Profit = </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Production Report&quot;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">:</span>
