@@ -246,7 +246,6 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Economic dispatch in energy systems</a></li>
 
 
-
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../10/10.00.html">10. Two-Stage Problems</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-10"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -254,11 +253,15 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../10/farmer.html">The Farmer’s Problem and Variants</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/opf-wind-curtailment.html">Two-stage energy dispatch optimization with wind curtailment</a></li>
 
-<li class="toctree-l2"><a class="reference internal" href="../10/opf-ldr.html">Two-stage energy dispatch optimization using linear decision rules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../10/opf-ldr.html">Optimal power flow problem with recourse actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/ccg.html">Two-stage Production Planning</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../pyomo_style_guide.html">Appendix: Pyomo style guide</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../appendix/appendix.html">Appendix</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-11"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../appendix/pyomo-style-guide.html">Pyomo style guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../appendix/functional-programming-pyomo.html">Functional Programming with Pyomo</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../../genindex.html">Index</a></li>
 </ul>
 
@@ -492,10 +495,8 @@ document.write(`
 </li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#visualizing-and-understanding-the-solution">Visualizing and understanding the solution</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sensitivity-analysis">Sensitivity analysis</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#analytical-solution-instead-of-using-optimization-solvers-for-speed-improvement">Analytical solution instead of using optimization solvers for speed improvement</a></li>
 </ul>
 </li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#suggestions-from-jg-of-additional-questions-modifications">Suggestions from JG of additional questions/modifications</a></li>
 </ul>
 
             </nav>
@@ -531,17 +532,6 @@ cbc was previously installed
 </pre></div>
 </div>
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
 </pre></div>
 </div>
 </div>
@@ -613,7 +603,18 @@ $<span class="math notranslate nohighlight">\(
 <p>In this notebook, we will solve this problem using the SAA approach to chance constraints, with the wind power production using modeled with historical data of 500 outcomes of the total wind production.</p>
 <section id="data-import">
 <h2>Data import<a class="headerlink" href="#data-import" title="Permalink to this heading">#</a></h2>
-<p>We first build a function that reads all the necessary node and wind production random sample data.</p>
+<p>We first import the necessary packages and define a function that reads all the necessary node and wind production random sample data.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+</pre></div>
+</div>
+</div>
+</div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">read_economic_dispatch_data</span><span class="p">():</span>
@@ -622,16 +623,17 @@ $<span class="math notranslate nohighlight">\(
         <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="p">)[[</span><span class="s2">&quot;node_id&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="s2">&quot;p_min&quot;</span><span class="p">,</span> <span class="s2">&quot;p_max&quot;</span><span class="p">,</span> <span class="s2">&quot;c_var&quot;</span><span class="p">]]</span>
 
-    <span class="n">wind_production_samples_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
-        <span class="s2">&quot;discrete_wind.csv&quot;</span>
-    <span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">wind_production_samples_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;discrete_wind.csv&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
 
     <span class="c1"># Read data</span>
     <span class="n">nodes</span> <span class="o">=</span> <span class="n">nodes_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;node_id&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
-    <span class="n">wind_production_samples</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">wind_production_samples_df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">wind_production_samples</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="n">wind_production_samples_df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="p">)</span>
     <span class="n">wind_production_samples</span> <span class="o">=</span> <span class="p">[</span><span class="nb">sum</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">wind_production_samples</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">wind_production_samples</span>
+
 
 <span class="n">nodes</span><span class="p">,</span> <span class="n">wind_production_samples</span> <span class="o">=</span> <span class="n">read_economic_dispatch_data</span><span class="p">()</span>
 </pre></div>
@@ -641,7 +643,7 @@ $<span class="math notranslate nohighlight">\(
 <p>The wind production samples can be accessed through the <code class="docutils literal notranslate"><span class="pre">wind_production_samples</span></code> variable - a list of 500 equiprobable outcomes for the wind generation.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">wind_production_samples</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="c1"># fifth outcome</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">wind_production_samples</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>  <span class="c1"># fifth outcome</span>
 </pre></div>
 </div>
 </div>
@@ -656,8 +658,10 @@ We see that is has two modes.
 This <a class="reference external" href="https://link.springer.com/article/10.1007/s40565-015-0172-5">paper</a> explains what one could do with this.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sns</span><span class="o">.</span><span class="n">set_style</span><span class="p">(</span><span class="s1">&#39;darkgrid&#39;</span><span class="p">)</span>
-<span class="n">sns</span><span class="o">.</span><span class="n">histplot</span><span class="p">(</span><span class="n">wind_production_samples</span><span class="p">,</span> <span class="n">kde</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stat</span><span class="o">=</span><span class="s2">&quot;density&quot;</span><span class="p">,</span> <span class="n">kde_kws</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">cut</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;wind production&#39;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sns</span><span class="o">.</span><span class="n">set_style</span><span class="p">(</span><span class="s2">&quot;darkgrid&quot;</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">histplot</span><span class="p">(</span>
+    <span class="n">wind_production_samples</span><span class="p">,</span> <span class="n">kde</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stat</span><span class="o">=</span><span class="s2">&quot;density&quot;</span><span class="p">,</span> <span class="n">kde_kws</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">cut</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">)</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;wind production&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -669,7 +673,7 @@ This <a class="reference external" href="https://link.springer.com/article/10.10
 <p>The <code class="docutils literal notranslate"><span class="pre">nodes</span></code> dictionary contains for every <span class="math notranslate nohighlight">\(i \in V\)</span> information about <span class="math notranslate nohighlight">\(p_i^{min}\)</span>, <span class="math notranslate nohighlight">\(p_i^{max}\)</span>, <span class="math notranslate nohighlight">\(c_i\)</span>, <span class="math notranslate nohighlight">\(d_i\)</span>. In our dataset, there is a clear separation of the nodes into nodes that only consume power, and nodes that only produce power, which can be seen by inspecting the node properties.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># first node properties</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># first node properties</span>
 </pre></div>
 </div>
 </div>
@@ -682,34 +686,54 @@ This <a class="reference external" href="https://link.springer.com/article/10.10
 <p>Let us now provide some locations to our producers and consumers and visualize the data, using bubbles proportional to the size of demand (for consumers) and maximum generation capacity (for producers).</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df_nodes</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s1">&#39;index&#39;</span> <span class="p">)</span>
-<span class="n">df_nodes</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;consumer&#39;</span>
-<span class="n">df_nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span> <span class="n">df_nodes</span><span class="o">.</span><span class="n">p_max</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;producer&#39;</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df_nodes</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;index&quot;</span><span class="p">)</span>
+<span class="n">df_nodes</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;consumer&quot;</span>
+<span class="n">df_nodes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df_nodes</span><span class="o">.</span><span class="n">p_max</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;producer&quot;</span>
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">2023</span><span class="p">)</span>
-<span class="n">df_nodes</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">))</span>
-<span class="n">df_nodes</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">))</span>
-<span class="n">df_nodes</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_nodes</span><span class="p">[[</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;p_max&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">df_nodes</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">))</span>
+<span class="n">df_nodes</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">))</span>
+<span class="n">df_nodes</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_nodes</span><span class="p">[[</span><span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="s2">&quot;p_max&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">ShowInstance</span><span class="p">(</span> <span class="n">df_nodes</span> <span class="p">):</span>
+
+<span class="k">def</span> <span class="nf">ShowInstance</span><span class="p">(</span><span class="n">df_nodes</span><span class="p">):</span>
     <span class="c1"># Define the size of the figure</span>
     <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
 
     <span class="c1"># Set the scales of the x and y axes</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">df_nodes</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">])</span> <span class="o">-</span> <span class="mi">10</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">df_nodes</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="mi">10</span><span class="p">])</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">df_nodes</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">])</span> <span class="o">-</span> <span class="mi">10</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">df_nodes</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="mi">10</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">df_nodes</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">])</span> <span class="o">-</span> <span class="mi">10</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">df_nodes</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">])</span> <span class="o">+</span> <span class="mi">10</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">df_nodes</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">])</span> <span class="o">-</span> <span class="mi">10</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">df_nodes</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">])</span> <span class="o">+</span> <span class="mi">10</span><span class="p">])</span>
 
     <span class="c1"># Create a scatter plot with bubbles proportional to size</span>
     <span class="c1"># ax.scatter(df_nodes[&#39;x&#39;], df_nodes[&#39;y&#39;], s=df_nodes[&#39;size&#39;]*1)</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">category</span><span class="p">,</span> <span class="n">group</span><span class="p">),</span> <span class="n">z</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">df_nodes</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">),[</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="s1">&#39;red&#39;</span><span class="p">,</span><span class="s1">&#39;green&#39;</span><span class="p">]):</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">group</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="n">group</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span><span class="o">*</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">category</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">.2</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">z</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s1">&#39;sol&#39;</span> <span class="ow">in</span> <span class="n">group</span><span class="p">:</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">group</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="n">group</span><span class="p">[</span><span class="s1">&#39;sol&#39;</span><span class="p">]</span><span class="o">*</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">z</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">category</span><span class="p">,</span> <span class="n">group</span><span class="p">),</span> <span class="n">z</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+        <span class="n">df_nodes</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">),</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="s2">&quot;green&quot;</span><span class="p">]</span>
+    <span class="p">):</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+            <span class="n">s</span><span class="o">=</span><span class="n">group</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">category</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+            <span class="n">zorder</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;sol&quot;</span> <span class="ow">in</span> <span class="n">group</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+                <span class="n">group</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+                <span class="n">group</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                <span class="n">s</span><span class="o">=</span><span class="n">group</span><span class="p">[</span><span class="s2">&quot;sol&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">zorder</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+                <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+            <span class="p">)</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
     <span class="c1"># Show the chart</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
-<span class="n">ShowInstance</span><span class="p">(</span> <span class="n">df_nodes</span> <span class="p">)</span>
+
+<span class="n">ShowInstance</span><span class="p">(</span><span class="n">df_nodes</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -723,7 +747,7 @@ This <a class="reference external" href="https://link.springer.com/article/10.10
 <p>Since we have a discrete set of <span class="math notranslate nohighlight">\(N\)</span> possible wind production outcomes, we can reformulate the chance-constrained ED problem as a mixed-integer linear optimization problem. More specifically, we introduce a binary variable <span class="math notranslate nohighlight">\(u_j\)</span> for each sample <span class="math notranslate nohighlight">\(j\)</span> of the wind production, which, thanks to the big-<span class="math notranslate nohighlight">\(M\)</span> technique, determines whether the constraint related to the <span class="math notranslate nohighlight">\(j\)</span>-th sample is allowed to be violated or not, and add one constraint to ensure that the total probability that the constraint is violated is at most <span class="math notranslate nohighlight">\(\varepsilon\)</span>, i.e.,</p>
 <div class="math notranslate nohighlight">
 \[
-\sum_{j=1}^{N} u_j \leq \varepsilon N.
+\frac{1}{N} \sum_{j=1}^{N} u_j \leq \varepsilon.
 \]</div>
 <p>The resulting MILP is</p>
 <p>\begin{align}
@@ -742,20 +766,23 @@ This <a class="reference external" href="https://link.springer.com/article/10.10
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">economic_dispatch</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">Delta</span><span class="p">):</span>
-
     <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Economic Dispatch&quot;</span><span class="p">)</span>
-    
-    <span class="n">model</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">mutable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">initialize</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">mutable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">initialize</span> <span class="o">=</span> <span class="n">eps</span><span class="p">)</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">Delta</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">mutable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">initialize</span> <span class="o">=</span> <span class="n">Delta</span><span class="p">)</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">mutable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">mutable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">eps</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">Delta</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">mutable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">Delta</span><span class="p">)</span>
 
     <span class="n">model</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">n</span><span class="p">()))</span>
     <span class="n">model</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">nodes</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">M</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">j</span><span class="p">):</span>    
-        <span class="k">return</span> <span class="n">samples</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;p_max&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="o">+</span> \
-                <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">Delta</span>
+    <span class="k">def</span> <span class="nf">M</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">samples</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;p_max&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;d&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">Delta</span>
+        <span class="p">)</span>
 
     <span class="n">model</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
     <span class="n">model</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
@@ -768,19 +795,19 @@ This <a class="reference external" href="https://link.springer.com/article/10.10
     <span class="k">def</span> <span class="nf">supply_demand_leq</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
         <span class="n">wind</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
         <span class="n">supply</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
-        <span class="n">demand</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
-        <span class="k">return</span> <span class="n">wind</span> <span class="o">+</span> <span class="n">supply</span> <span class="o">-</span> <span class="n">demand</span>  <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">Delta</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="n">demand</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;d&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">wind</span> <span class="o">+</span> <span class="n">supply</span> <span class="o">-</span> <span class="n">demand</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">Delta</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
 
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">supply_demand_geq</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
         <span class="n">wind</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
         <span class="n">supply</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
-        <span class="n">demand</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
-        <span class="k">return</span> <span class="n">wind</span> <span class="o">+</span> <span class="n">supply</span> <span class="o">-</span> <span class="n">demand</span>  <span class="o">&gt;=</span> <span class="o">-</span><span class="n">model</span><span class="o">.</span><span class="n">Delta</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="n">demand</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;d&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">wind</span> <span class="o">+</span> <span class="n">supply</span> <span class="o">-</span> <span class="n">demand</span> <span class="o">&gt;=</span> <span class="o">-</span><span class="n">model</span><span class="o">.</span><span class="n">Delta</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
 
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
     <span class="k">def</span> <span class="nf">success_probability</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">eps</span><span class="o">*</span><span class="n">model</span><span class="o">.</span><span class="n">n</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">eps</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">n</span>
 
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">generation_upper_bound</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
@@ -805,12 +832,12 @@ This <a class="reference external" href="https://link.springer.com/article/10.10
 
 <span class="c1"># Solve model and report the solution</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">economic_dispatch</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">wind_production_samples</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">Delta</span><span class="p">)</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 <span class="n">sum_production</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">])</span>
-<span class="n">sum_demand</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Total energy demand: </span><span class="si">{</span><span class="n">sum_demand</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Total optimal energy production: </span><span class="si">{</span><span class="n">sum_production</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Total energy production cost: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="n">sum_demand</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;d&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total energy demand: </span><span class="si">{</span><span class="n">sum_demand</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total optimal energy production: </span><span class="si">{</span><span class="n">sum_production</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total energy production cost: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -828,8 +855,8 @@ Total energy production cost: 7850.601
 <h1>Visualizing and understanding the solution<a class="headerlink" href="#visualizing-and-understanding-the-solution" title="Permalink to this heading">#</a></h1>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df_nodes</span><span class="p">[</span><span class="s1">&#39;sol&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">extract_values</span><span class="p">()</span>
-<span class="n">ShowInstance</span><span class="p">(</span> <span class="n">df_nodes</span> <span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df_nodes</span><span class="p">[</span><span class="s2">&quot;sol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">extract_values</span><span class="p">()</span>
+<span class="n">ShowInstance</span><span class="p">(</span><span class="n">df_nodes</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -852,15 +879,15 @@ Total energy production cost: 7850.601
 
 <span class="k">for</span> <span class="n">eps</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
     <span class="n">model</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="o">==</span> <span class="s1">&#39;optimal&#39;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="o">==</span> <span class="s2">&quot;optimal&quot;</span><span class="p">:</span>
         <span class="n">feas_eps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eps</span><span class="p">)</span>
         <span class="n">feas_objs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">())</span>
 
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">feas_eps</span><span class="p">,</span> <span class="n">feas_objs</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;$\epsilon$&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;objective value&#39;</span><span class="p">)</span> 
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">feas_eps</span><span class="p">,</span> <span class="n">feas_objs</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;$\epsilon$&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;objective value&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -881,15 +908,15 @@ Total energy production cost: 7850.601
 
 <span class="k">for</span> <span class="n">Delta</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2000</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
     <span class="n">model</span><span class="o">.</span><span class="n">Delta</span> <span class="o">=</span> <span class="n">Delta</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="o">==</span> <span class="s1">&#39;optimal&#39;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="o">==</span> <span class="s2">&quot;optimal&quot;</span><span class="p">:</span>
         <span class="n">feas_Deltas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Delta</span><span class="p">)</span>
         <span class="n">feas_objs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">())</span>
 
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">feas_Deltas</span><span class="p">,</span> <span class="n">feas_objs</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;$\Delta$&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;objective value&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">feas_Deltas</span><span class="p">,</span> <span class="n">feas_objs</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;$\Delta$&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;objective value&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -926,55 +953,6 @@ WARNING: Loading a SolverResults object with a warning status into
 <li><p>The reason why the plot becomes flat for high <span class="math notranslate nohighlight">\(\varepsilon\)</span> and <span class="math notranslate nohighlight">\(\Delta\)</span> values is because production is no longer needed. For instance, a high <span class="math notranslate nohighlight">\(\varepsilon\)</span> means we can ignore the <span class="math notranslate nohighlight">\(N\varepsilon\)</span> worst-case sample scenarios, whereas higher <span class="math notranslate nohighlight">\(\Delta\)</span> means that we do not need to produce to match demand.</p></li>
 </ul>
 </section>
-<section id="analytical-solution-instead-of-using-optimization-solvers-for-speed-improvement">
-<h2>Analytical solution instead of using optimization solvers for speed improvement<a class="headerlink" href="#analytical-solution-instead-of-using-optimization-solvers-for-speed-improvement" title="Permalink to this heading">#</a></h2>
-<p>A careful reader may notice that in fact, the above optimization problems could have been solved analytically without the need to use a solver.</p>
-<p>This is because the (deterministic) Economic Dispatch problem is always solved by producing using the cheapest generators. Therefore, any optimal solution will always use the cheapest generators possible up to their generation limits. Furthermore, it will never violate the supply-demand balance by overproduction, since producing less will always lead to cheaper solutions.</p>
-<p>This reasoning can be extended to the stochastic case. Indeed, by adding chance constraints where the outcomes follow a equiprobable discrete distribution, we know that scenarios with low wind production will be violated before the scenarios with large wind production. Therefore, given <span class="math notranslate nohighlight">\(\varepsilon\)</span> and <span class="math notranslate nohighlight">\(\Delta\)</span>, what will happen is that the <span class="math notranslate nohighlight">\(N\varepsilon\)</span> (rounded down) samples with lowest wind production will be deactivated. Therefore, the exact total production will be</p>
-<div class="math notranslate nohighlight">
-\[
-\sum_{i \in V} p_i = \sum_{i \in V}d_i - \Delta - \Omega
-\]</div>
-<p>where <span class="math notranslate nohighlight">\(\Omega\)</span> is the <span class="math notranslate nohighlight">\(N\varepsilon\)</span>-th sample with smallest wind production. The <span class="math notranslate nohighlight">\(p_i\)</span> can be determined by selecting the cheapest generators first.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Data</span>
-<span class="n">eps</span> <span class="o">=</span> <span class="mf">0.20</span>
-<span class="n">Delta</span> <span class="o">=</span> <span class="mi">1000</span>
-<span class="n">N</span> <span class="o">=</span> <span class="mi">500</span>
-
-<span class="c1"># Solve model and report the solution</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">economic_dispatch</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">wind_production_samples</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">Delta</span><span class="p">)</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-<span class="n">sum_production</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">])</span>
-<span class="n">sum_demand</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Total energy demand: </span><span class="si">{</span><span class="n">sum_demand</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Total optimal energy production: </span><span class="si">{</span><span class="n">sum_production</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Total energy production cost: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
-
-<span class="c1"># Check that the solution meets the chance constraint by checking that the total energy production </span>
-<span class="c1"># corresponds to the one using the ε-quantile of the wind production</span>
-<span class="n">argMin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">N</span><span class="o">*</span><span class="n">eps</span><span class="p">)</span>
-<span class="n">smallest_wind_production</span> <span class="o">=</span>  <span class="nb">sorted</span><span class="p">([</span><span class="n">wind_production_samples</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">)])[</span><span class="n">argMin</span><span class="p">]</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;ε-quantile of the wind production: </span><span class="si">{</span><span class="n">smallest_wind_production</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Analytical solution of total energy production: total demand - Delta - ε-quantile = </span><span class="si">{</span><span class="n">sum_demand</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> - </span><span class="si">{</span><span class="n">Delta</span><span class="si">}</span><span class="s1"> - </span><span class="si">{</span><span class="n">smallest_wind_production</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> = </span><span class="si">{</span><span class="n">sum_demand</span> <span class="o">-</span> <span class="n">Delta</span> <span class="o">-</span> <span class="n">smallest_wind_production</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-<p>This fact teaches us an important lesson – it always makes sense to take a look at the structure of the problem at hand. It might turn out that we are able to come up with an analytical solution that can be derived in a few simple steps (or manually break down a big optimization problem into a number of smaller ones that can be solved easier).</p>
-<p>While this might not make a difference for problems that are solved once (the time saved on coming up with an analytical solution might be too short compared to the time saved on not using an optimization solver). However, when the optimization problem needs to be solved many, many times (for example, in a long-horizon simulation), the effort might pay off as the analytical-solution based simulation might work much faster than the one that explicitly calls an optimization solver every time.</p>
-<p>For a simple calculation, let’s imagine that formulating the problem in Pyomo and solving it with any solver takes 0.5s per run (not unreasonable). Now, having an analytical solution to the problem can easily change this timing to 0.001s per run. Clearly, a difference of practically 0.5s is not worth spending the extra time on.</p>
-<p>However, imagine we need to solve this problem 10000 times to simulate a power grid’s performance. Then the total time spent becomes 5000s = 1.5h vs. 10s = 1.5min, so the difference between the two becomes 1.5h. Now, imagine that you need to run many such simulations. The difference of 1.5h between the two simulations gets then multiplied by the number of simulations and thus, writing a simple code that finds the analytical solution fast, pays off easily.</p>
-</section>
-</section>
-<section class="tex2jax_ignore mathjax_ignore" id="suggestions-from-jg-of-additional-questions-modifications">
-<h1>Suggestions from JG of additional questions/modifications<a class="headerlink" href="#suggestions-from-jg-of-additional-questions-modifications" title="Permalink to this heading">#</a></h1>
-<ul class="simple">
-<li><p>Our plots show fictive locations. Regardless of the actual locations, one notices that the model has no notion of the actual topology of the energy network.</p></li>
-<li><p>How would you add transportation costs from producer to consumer?</p></li>
-<li><p>Would the ability to solve the problem analytically still be present?</p></li>
-</ul>
 </section>
 
     <script type="text/x-thebe-config">
@@ -1046,10 +1024,8 @@ WARNING: Loading a SolverResults object with a warning status into
 </li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#visualizing-and-understanding-the-solution">Visualizing and understanding the solution</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sensitivity-analysis">Sensitivity analysis</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#analytical-solution-instead-of-using-optimization-solvers-for-speed-improvement">Analytical solution instead of using optimization solvers for speed improvement</a></li>
 </ul>
 </li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#suggestions-from-jg-of-additional-questions-modifications">Suggestions from JG of additional questions/modifications</a></li>
 </ul>
 
   </nav></div>
