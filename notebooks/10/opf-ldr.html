@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Two-stage energy dispatch optimization using linear decision rules &#8212; Companion Notebooks for Data-Driven Optimization in Python</title>
+    <title>Optimal power flow problem with recourse actions &#8212; Companion Notebooks for Data-Driven Optimization in Python</title>
   
   
   
@@ -246,7 +246,6 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../09/economicdispatch.html">Economic dispatch in energy systems</a></li>
 
 
-
 </ul>
 </li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="10.00.html">10. Two-Stage Problems</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-10"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
@@ -254,11 +253,15 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="farmer.html">The Farmer’s Problem and Variants</a></li>
 <li class="toctree-l2"><a class="reference internal" href="opf-wind-curtailment.html">Two-stage energy dispatch optimization with wind curtailment</a></li>
 
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Two-stage energy dispatch optimization using linear decision rules</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Optimal power flow problem with recourse actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ccg.html">Two-stage Production Planning</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../pyomo_style_guide.html">Appendix: Pyomo style guide</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../appendix/appendix.html">Appendix</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-11"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../appendix/pyomo-style-guide.html">Pyomo style guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../appendix/functional-programming-pyomo.html">Functional Programming with Pyomo</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../../genindex.html">Index</a></li>
 </ul>
 
@@ -474,7 +477,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Two-stage energy dispatch optimization using linear decision rules</h1>
+    <h1>Optimal power flow problem with recourse actions</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -484,12 +487,13 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#package-and-data-import">Package and data import</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#network-data">Network data</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-power-flow-problem-with-recourse-actions-via-participation-factors">Optimal power flow problem with recourse actions via participation factors</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-solution">Pyomo solution</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data-imports">Data imports</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#saa-implementation">SAA implementation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scenario-generation">Scenario generation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#perfect-forecast-case-no-imbalances">Perfect forecast case (no imbalances)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#stochastic-case-nonzero-imbalances">Stochastic case (nonzero imbalances)</a></li>
 </ul>
 </li>
 </ul>
@@ -503,10 +507,10 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><span class="target" id="index-5"></span><section class="tex2jax_ignore mathjax_ignore" id="two-stage-energy-dispatch-optimization-using-linear-decision-rules">
-<span id="index-6"></span><h1>Two-stage energy dispatch optimization using linear decision rules<a class="headerlink" href="#two-stage-energy-dispatch-optimization-using-linear-decision-rules" title="Permalink to this heading">#</a></h1>
-<p>This notebook illustrates a two-stage stochastic optimization problem in the context of energy systems where there are recourse actions are modeled as linear decision rules. Like in the <a class="reference internal" href="opf-wind-curtailment.html"><span class="doc std std-doc">previous notebook</span></a>, the goal of the optimization problem is to ensure that power demand meets supply while taking into account both wind and solar fluctuations and physical infrastructure constraints.</p>
-<p>For more explanation about the network topology and background information about the OPF problem <strong>read first</strong> the <a class="reference internal" href="../04/power-network.html"><span class="doc std std-doc">energy dispatch problem</span></a> from the Chapter 4 and the <a class="reference internal" href="opf-wind-curtailment.html"><span class="doc std std-doc">OPF problem with wind curtailment</span></a> from the Chapter 10.</p>
+  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><span class="target" id="index-5"></span><section class="tex2jax_ignore mathjax_ignore" id="optimal-power-flow-problem-with-recourse-actions">
+<span id="index-6"></span><h1>Optimal power flow problem with recourse actions<a class="headerlink" href="#optimal-power-flow-problem-with-recourse-actions" title="Permalink to this heading">#</a></h1>
+<p>In this notebook we illustrate an application of the idea of linear decision rules to a two-stage optimal power flow problem in which the power of the conventional generators has to adapt automatically to balance out energy surplus/shortage due to changes in renewable resources input.</p>
+<p>We will be working with a modified version of the <a class="reference internal" href="../04/power-network.html"><span class="doc std std-doc">energy dispatch problem</span></a> and the <a class="reference internal" href="opf-wind-curtailment.html"><span class="doc std std-doc">OPF problem with wind curtailment</span></a>. Please refer to the corresponding notebooks for the basics of power networks.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
@@ -525,722 +529,512 @@ document.write(`
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
 cbc was previously installed
-gurobi was previously installed
+</pre></div>
+</div>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
 </pre></div>
 </div>
 </div>
 </div>
-<section id="package-and-data-import">
-<h2>Package and data import<a class="headerlink" href="#package-and-data-import" title="Permalink to this heading">#</a></h2>
+<section id="problem-description">
+<h2>Problem description<a class="headerlink" href="#problem-description" title="Permalink to this heading">#</a></h2>
+<p>We consider a variant of the Optimal Power Flow problem in which each conventional generator <span class="math notranslate nohighlight">\(i\)</span> commits in advance to produce a specific amount <span class="math notranslate nohighlight">\(p_i\)</span> of energy as determined by the OPF problem assuming the renewable energy production from all solar panels and wind turbines will be equal to the forecasted one, also denoted as <span class="math notranslate nohighlight">\(\bar{p}_j\)</span>. The realized renewable energy output of generator <span class="math notranslate nohighlight">\(j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}\)</span>, however, shall deviate from their forecast values, by an amount <span class="math notranslate nohighlight">\(\Delta_j\)</span>, and result in a power production of</p>
+<div class="math notranslate nohighlight">
+\[
+p_j = \bar{p}_j + \Delta_j, \quad  j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}
+\]</div>
+<p>Then, the conventional generators need to take a <em>recourse action</em> to make sure that the network is balanced, i.e., that the total energy production equals the total energy demand. This means that the problem has a two-stage structure:</p>
+<ul class="simple">
+<li><p>first, the ‘nominal’ energy generation levels are set for the coal and gas units</p></li>
+<li><p>then, the actual renewable energy output of the wind/solar generators is observed</p></li>
+<li><p>power generation levels of the coal and gas units need to be adapted.</p></li>
+</ul>
+<p>If we were optimizing for the average-case total cost, then a proper two-stage formulation of our problem would be as follows:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\begin{array}{llll}
+\min \quad &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} c_i(\bar{p}_i) +  \mathbb{E} Q(\bar{p}, \Delta) \\
+\text{s.t.} \quad &amp; p_{i}^{\min } \leq \bar{p}_{i} \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}
+\end{array}
+\end{align*}
+\end{split}\]</div>
+<p>where the second stage problem is
+$<span class="math notranslate nohighlight">\(
+\begin{align*}
+\begin{array}{lllll}
+Q(\bar{p},\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \hat{c}_i(r_i) \\
+&amp;\text{s.t.} \quad &amp; p_i = \bar{p}_i + r_i &amp; \forall \, i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}} \\
+&amp;&amp; p_{i}^{\min } \leq p_{i} \leq p_{i}^{\max } &amp; \forall \, i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}} \\
+&amp;&amp; \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = p_i - d_i &amp; \forall \, i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}} \\
+&amp;&amp; \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = \bar{p}_i + \Delta_i - d_i &amp; \forall \, i \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}\\
+&amp;&amp; \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = \bar{p}_i - d_i &amp; \forall \, i \in V \setminus (\mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}} \cup \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}) \\
+&amp;&amp; f_{ij} =  b_{ij}(\theta_i - \theta_j), &amp; \forall \, (i, j) \in E \\
+&amp;&amp; -f_{ij}^{\max} \leq f_{ij} \leq  f_{ij}^{\max}    &amp; \forall \, (i, j) \in E\\
+&amp;&amp; \theta_i \in \mathbb{R} &amp; \forall \, i \in V \\
+&amp;&amp; f_{ij} \in \mathbb{R} &amp; \forall \, (i, j) \in E\\
+&amp;&amp; r_i \in \mathbb{R} &amp; \forall \, i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}},
+\end{array}
+\end{align*}
+\)</span>$</p>
+<p>where <span class="math notranslate nohighlight">\(c_i(.)\)</span> and <span class="math notranslate nohighlight">\(\hat{c}_i(.)\)</span> are the cost functions related to the pre-committed <span class="math notranslate nohighlight">\(\bar{p}_i\)</span> and changed <span class="math notranslate nohighlight">\(r_i\)</span> amounts of energy, remembering that among <span class="math notranslate nohighlight">\(\bar{p}_i\)</span>’s, only those with <span class="math notranslate nohighlight">\(i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}\)</span> are actual decision variables while <span class="math notranslate nohighlight">\(\bar{p}_i\)</span>, <span class="math notranslate nohighlight">\(i \in \mathcal{G}^{\text{solar}} \cup \mathcal{G}^{\text{wind}}\)</span> are known parameters (think of them as wind and solar power forecasts).</p>
+<p>In the <a class="reference internal" href="opf-wind-curtailment.html"><span class="doc std std-doc">OPF problem with wind curtailment</span></a> we solved a similar problem using the SAA method. More specifically, we generated a number of scenarios for the unknown parameters and combined the second-stage problems related to each of these scenarios with the single first-stage problem obtaining one large MILP.
+In this notebook, we are going to use a slightly different approach, namely implementing a specific type of linear decision rules. For each conventional generator, we set a recourse action, that is real-time adjustment of its power production, based on the realization of the renewable energy. More specifically, each conventional generator <span class="math notranslate nohighlight">\(i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}\)</span> has a <em>participation factor</em> <span class="math notranslate nohighlight">\(\alpha_i \geq 0\)</span> which determines to which extent that generator responds to the total imbalance <span class="math notranslate nohighlight">\(\sum_j \Delta_j\)</span>. Specifically, the power production <em>after the recourse action</em> at the conventional generator <span class="math notranslate nohighlight">\(i\)</span> is denoted by <span class="math notranslate nohighlight">\(p_i\)</span> and is given by</p>
+<div class="math notranslate nohighlight">
+\[
+p_i := \bar{p}_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j, \qquad i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}
+\]</div>
+<p>In the notation of the problem above, we picked the recourse action <span class="math notranslate nohighlight">\(r_i\)</span> to be a function of the uncertain parameters <span class="math notranslate nohighlight">\(\Delta\)</span>’s rather than a decision variable, since</p>
+<div class="math notranslate nohighlight">
+\[
+r_i = - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j.
+\]</div>
+<p>The participation factor <span class="math notranslate nohighlight">\(\alpha_i \in [0,1]\)</span> indicates the fraction of the power imbalance that generator <span class="math notranslate nohighlight">\(i\)</span> needs to help compensate. To ensure that the power balance is satisfied, we need to have <span class="math notranslate nohighlight">\(\sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \alpha_i = 1\)</span>. Indeed, in this case, assuming the power was balanced in the first stage, i.e., <span class="math notranslate nohighlight">\(\sum_{i \in \mathcal{G}} p_i - \sum_{i \in V} d_i =0\)</span>, then the net power balance after the second stage is</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\sum_{i \in \mathcal{G}} p_i - \sum_{i \in V} d_i 
+&amp;= \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} (\bar{p}_j + \Delta_j) + \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} (\bar{p}_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j) - \sum_{i \in V} d_i\\
+&amp;= \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j - \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}}  \left (\sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \alpha_i \right) \Delta_j + \sum_{i \in \mathcal{G}} \bar{p}_i - \sum_{i \in V} d_i \\
+&amp; = \sum_{i \in \mathcal{G}} \bar{p}_i - \sum_{i \in V} d_i = 0
+\end{align*}
+\end{split}\]</div>
+<p>The participation factors <span class="math notranslate nohighlight">\(\alpha_i\)</span>’s do not have to be equal for all generators and in fact, they can be optimized jointly together with the initial power levels <span class="math notranslate nohighlight">\(p_i\)</span>. Since the energy produced as recourse action is more expensive, we account for this by adding to the objective function the cost term <span class="math notranslate nohighlight">\(\sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \hat{c}_i(\alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j)\)</span> for some cost functions <span class="math notranslate nohighlight">\(\hat{c}_i(.)\)</span>.</p>
+<p>The resulting two-stage stochastic problem is
+$<span class="math notranslate nohighlight">\(
+\begin{align*}
+\begin{array}{llll}
+\min \quad &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} c_i(\bar{p}_i) + \mathbb{E} Q(\bar{p}, \alpha, \Delta) \\
+\text{s.t.} \quad 
+&amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \alpha_i = 1 \\
+&amp; p_{i}^{\min } \leq \bar{p}_{i} \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}} \\
+&amp; \alpha_i \geq 0 &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}
+\end{array}
+\end{align*}
+\)</span><span class="math notranslate nohighlight">\(
+where the second stage problem is
+\)</span><span class="math notranslate nohighlight">\(
+\begin{align*}
+\begin{array}{lllll}
+Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \hat{c}_i(\alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j) \\
+&amp;\text{s.t.} \quad &amp; p_{i}^{\min } \leq p_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}} \\
+&amp;&amp; \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = \bar{p}_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j - d_i &amp; \forall \, i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}} \\
+&amp;&amp; \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = \bar{p}_i + \Delta_i - d_i &amp; \forall \, i \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}\\
+&amp;&amp; \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = \bar{p}_i - d_i &amp; \forall \, i \in V \setminus (\mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}} \cup \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}) \\
+&amp;&amp; f_{ij} =  b_{ij}(\theta_i - \theta_j), &amp; \forall \, (i, j) \in E \\
+&amp;&amp; -f_{ij}^{\max} \leq f_{ij} \leq  f_{ij}^{\max}    &amp; \forall (i, j) \in E\\
+&amp;&amp; \theta_i \in \mathbb{R} &amp; \forall i \in V \\
+&amp;&amp; f_{ij} \in \mathbb{R}  &amp; \forall (i, j) \in E.
+\end{array}
+\end{align*}
+\)</span>$</p>
+<p>The only remaining question is where to take the values for <span class="math notranslate nohighlight">\(\Delta_j\)</span>’s from. One way of doing things would be to construct an uncertainty set for <span class="math notranslate nohighlight">\(\Delta_j\)</span> and make sure that the inequality constraints hold for all realizations of <span class="math notranslate nohighlight">\(\Delta_j\)</span> using the technique of robust counterparts/adversarial approach from Chapter 8. This would be a solid approach if we were optimizing for the worst-case value of the objective function, instead of an expectation.</p>
+<p>However, since in this particular application we optimize for the expected value it makes sense for us to resort to the SAA method. More specifically, we sample <span class="math notranslate nohighlight">\(T\)</span> realizations of the renewable fluctuations <span class="math notranslate nohighlight">\(\Delta\)</span>’s, denoted as <span class="math notranslate nohighlight">\(\{\Delta^s\}_{s=1,\dots,T}\)</span>, and we approximate the expectation through an empirical average across all those samples while enforcing that the constraints hold for every such realization. In this way, the resulting problem we actually solve is:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\begin{array}{llll}
+&amp; \min \quad &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} c_i(\bar{p}_i) + \frac{1}{T} \sum\limits_{s = 1}^T  \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \hat{c}_i(\alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j^s)\\
+&amp; \text{s.t.} \quad &amp; p_{i}^{\min } \leq \bar{p}_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j^s \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}, \, \forall s = 1, \ldots, T \\
+&amp;&amp; \sum_{j: (i, j) \in E} f_{ij}^s - \sum_{j: (j, i) \in E} f_{ji}^s = \bar{p}_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j^s - d_i &amp; \forall \, i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}, \, \forall s = 1, \ldots, T\\
+&amp;&amp; \sum_{j: (i, j) \in E} f_{ij}^s - \sum_{j: (j, i) \in E} f_{ji}^s = \bar{p}_i + \Delta_i^s - d_i &amp; \forall \, i \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}, \, \forall s = 1, \ldots, T\\
+&amp;&amp; \sum_{j: (i, j) \in E} f_{ij}^s - \sum_{j: (j, i) \in E} f_{ji}^s = \bar{p}_i - d_i &amp; \forall \, i \in V \setminus (\mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}} \cup \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}), \, \forall s = 1, \ldots, T\\
+&amp;&amp; f_{ij}^s =  b_{ij}(\theta_i^s - \theta_j^s), &amp; \forall \, (i, j) \in E, \, \forall s = 1, \ldots, T\\
+&amp;&amp; -f_{ij}^{\max} \leq f_{ij}^s \leq  f_{ij}^{\max}    &amp; \forall (i, j) \in E, \, \forall s = 1, \ldots, T\\
+&amp;&amp; \theta_i^s \in \mathbb{R} &amp; \forall i \in V, \, \forall s = 1, \ldots, T \\
+&amp;&amp; f_{ij}^s \in \mathbb{R} &amp; \forall (i, j) \in E, \, \forall s = 1, \ldots, T\\
+&amp;&amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \alpha_i = 1 \\
+&amp;&amp; p_{i}^{\min } \leq \bar{p}_{i} \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}} \\
+&amp;&amp; \alpha_i \geq 0 &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}.
+\end{array}
+\end{align*}
+\end{split}\]</div>
+<p>To recover a linear problem, we assume that the energy generation costs are modeled as:
+$<span class="math notranslate nohighlight">\(
+\begin{align*}
+    c_i(x) := c_i x, \quad \hat{c}_i(x) = 2 c_i |x|,
+\end{align*}
+\)</span><span class="math notranslate nohighlight">\(
+where \)</span>c_i<span class="math notranslate nohighlight">\( is the unit production cost of the \)</span>i<span class="math notranslate nohighlight">\(-th generator. This structure for the \)</span>\hat{c}_i(\cdot)$ functions means we assume that any real-time adjustment in the energy dispatch of a generator is twice as costly as a pre-scheduled unit of energy generated there.</p>
+</section>
+<section id="pyomo-solution">
+<h2>Pyomo solution<a class="headerlink" href="#pyomo-solution" title="Permalink to this heading">#</a></h2>
+<section id="data-imports">
+<h3>Data imports<a class="headerlink" href="#data-imports" title="Permalink to this heading">#</a></h3>
+<p>Importantly for our problem, the variable costs of producing a unit of energy per generator are stored in their corresponding ‘c_var’ attributes. For the rest, we are using the same data elements as in the <a class="reference internal" href="opf-wind-curtailment.html"><span class="doc std std-doc">OPF problem with wind curtailment</span></a>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load packages</span>
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">Markdown</span><span class="p">,</span> <span class="n">HTML</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.random</span> <span class="k">as</span> <span class="nn">rnd</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">ast</span> <span class="kn">import</span> <span class="n">literal_eval</span> <span class="k">as</span> <span class="n">make_tuple</span>
 <span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
 <span class="kn">import</span> <span class="nn">time</span>
 
-<span class="c1"># Load solver</span>
-<span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
-<span class="n">gsolver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;gurobi&quot;</span><span class="p">)</span>
-
 <span class="c1"># Download the data</span>
 <span class="n">nodes_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;nodes.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">edges_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;edges.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
-<span class="c1"># Read data</span>
+<span class="c1"># Rework the nodes and edges data into a form that is convenient for NetworkX to work with</span>
 <span class="n">nodes</span> <span class="o">=</span> <span class="n">nodes_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;node_id&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
 <span class="n">edges</span> <span class="o">=</span> <span class="n">edges_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">edges_df</span><span class="p">[</span><span class="s2">&quot;edge_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">make_tuple</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
-<span class="n">network</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;nodes&quot;</span><span class="p">:</span> <span class="n">nodes</span><span class="p">,</span> <span class="s2">&quot;edges&quot;</span><span class="p">:</span> <span class="n">edges</span><span class="p">}</span>
+<span class="n">I</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;nodes&quot;</span><span class="p">:</span> <span class="n">nodes</span><span class="p">,</span> <span class="s2">&quot;edges&quot;</span><span class="p">:</span> <span class="n">edges</span><span class="p">}</span>
+
+<span class="c1"># Initialize a network for demonstration purposes</span>
+<span class="n">network</span> <span class="o">=</span> <span class="n">I</span>
 </pre></div>
 </div>
 </div>
-</div>
-<section id="network-data">
-<h3>Network data<a class="headerlink" href="#network-data" title="Permalink to this heading">#</a></h3>
-<p>This notebook uses the same network as in <a class="reference internal" href="../04/power-network.html"><span class="doc std std-doc">energy dispatch problem</span></a> and hence the same data structure. In particular, the nodes and edges of the network are stored in the <code class="docutils literal notranslate"><span class="pre">nodes</span></code> and <code class="docutils literal notranslate"><span class="pre">edges</span></code> dataframes, respectively. The <code class="docutils literal notranslate"><span class="pre">edges</span></code> dataframe contains the following columns:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">edge</span> <span class="pre">id</span></code>: the unique identifier of the edge, describing the node pair <code class="docutils literal notranslate"><span class="pre">(i,j)</span></code> of the edge;</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">f_max</span></code>: describing the maximum power flow capacity of the edge; and</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">b</span></code>: the susceptance of the edge.</p></li>
-</ul>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">edges_df</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output text_html"><div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>edge_id</th>
-      <th>b</th>
-      <th>f_max</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>(0, 1)</td>
-      <td>10.0100</td>
-      <td>270.705509</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>(0, 2)</td>
-      <td>23.5849</td>
-      <td>415.734756</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>(3, 4)</td>
-      <td>125.3133</td>
-      <td>265.273978</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>(2, 4)</td>
-      <td>9.2593</td>
-      <td>400.159230</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>(4, 5)</td>
-      <td>18.5185</td>
-      <td>217.852748</td>
-    </tr>
-    <tr>
-      <th>...</th>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-    </tr>
-    <tr>
-      <th>174</th>
-      <td>(64, 65)</td>
-      <td>28.9059</td>
-      <td>1200.000000</td>
-    </tr>
-    <tr>
-      <th>175</th>
-      <td>(67, 68)</td>
-      <td>28.9059</td>
-      <td>1200.000000</td>
-    </tr>
-    <tr>
-      <th>176</th>
-      <td>(80, 79)</td>
-      <td>28.9059</td>
-      <td>1200.000000</td>
-    </tr>
-    <tr>
-      <th>177</th>
-      <td>(86, 85)</td>
-      <td>4.8216</td>
-      <td>602.814908</td>
-    </tr>
-    <tr>
-      <th>178</th>
-      <td>(67, 115)</td>
-      <td>246.9136</td>
-      <td>1200.000000</td>
-    </tr>
-  </tbody>
-</table>
-<p>179 rows × 3 columns</p>
-</div></div></div>
-</div>
-<p>The network includes 18 generators of differen type, which is described in the <code class="docutils literal notranslate"><span class="pre">energy_type</span></code> field. We distinguish between conventional generators (coal, gas) and renewable generators (hydro, solar, wind). Every conventional generator node has two parameters:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">c_fixed</span></code>, describing the activation cost of the conventional generators;</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">c_var</span></code>, describing the unit cost of producing energy for each conventional generator</p></li>
-</ul>
-<p>Renewable generators are assumed to have zero marginal cost and zero activation cost. Nodes <code class="docutils literal notranslate"><span class="pre">64</span></code> and <code class="docutils literal notranslate"><span class="pre">65</span></code> correspond to the two wind generators that this notebook focuses on.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nodes_df</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output text_html"><div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>node_id</th>
-      <th>d</th>
-      <th>p_min</th>
-      <th>p_max</th>
-      <th>c_var</th>
-      <th>is_generator</th>
-      <th>energy_type</th>
-      <th>c_fixed</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>0</td>
-      <td>44.230344</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>False</td>
-      <td>NaN</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>1</td>
-      <td>17.690399</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>False</td>
-      <td>NaN</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>2</td>
-      <td>35.514209</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>False</td>
-      <td>NaN</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>3</td>
-      <td>35.248977</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>False</td>
-      <td>NaN</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>4</td>
-      <td>0.000000</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>False</td>
-      <td>NaN</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>...</th>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-    </tr>
-    <tr>
-      <th>113</th>
-      <td>113</td>
-      <td>6.784856</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>False</td>
-      <td>NaN</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>114</th>
-      <td>114</td>
-      <td>19.664045</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>False</td>
-      <td>NaN</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>115</th>
-      <td>115</td>
-      <td>163.009206</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>False</td>
-      <td>NaN</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>116</th>
-      <td>116</td>
-      <td>16.175633</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>False</td>
-      <td>NaN</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>117</th>
-      <td>117</td>
-      <td>31.504459</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>False</td>
-      <td>NaN</td>
-      <td>0.0</td>
-    </tr>
-  </tbody>
-</table>
-<p>118 rows × 8 columns</p>
-</div></div></div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nodes_df</span><span class="p">[</span><span class="n">nodes_df</span><span class="o">.</span><span class="n">is_generator</span><span class="p">]</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output text_html"><div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>node_id</th>
-      <th>d</th>
-      <th>p_min</th>
-      <th>p_max</th>
-      <th>c_var</th>
-      <th>is_generator</th>
-      <th>energy_type</th>
-      <th>c_fixed</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>9</th>
-      <td>9</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>400.000000</td>
-      <td>0.0</td>
-      <td>True</td>
-      <td>hydro</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>11</th>
-      <td>11</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>200.000000</td>
-      <td>0.0</td>
-      <td>True</td>
-      <td>hydro</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>24</th>
-      <td>24</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>422.086431</td>
-      <td>28.0</td>
-      <td>True</td>
-      <td>coal</td>
-      <td>1689.0</td>
-    </tr>
-    <tr>
-      <th>25</th>
-      <td>25</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>227.384370</td>
-      <td>18.0</td>
-      <td>True</td>
-      <td>coal</td>
-      <td>1057.0</td>
-    </tr>
-    <tr>
-      <th>30</th>
-      <td>30</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>235.306239</td>
-      <td>19.0</td>
-      <td>True</td>
-      <td>coal</td>
-      <td>1837.0</td>
-    </tr>
-    <tr>
-      <th>45</th>
-      <td>45</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>371.349675</td>
-      <td>19.0</td>
-      <td>True</td>
-      <td>coal</td>
-      <td>1456.0</td>
-    </tr>
-    <tr>
-      <th>48</th>
-      <td>48</td>
-      <td>0.0</td>
-      <td>227.262510</td>
-      <td>227.262510</td>
-      <td>0.0</td>
-      <td>True</td>
-      <td>solar</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>53</th>
-      <td>53</td>
-      <td>0.0</td>
-      <td>97.526012</td>
-      <td>97.526012</td>
-      <td>0.0</td>
-      <td>True</td>
-      <td>solar</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>58</th>
-      <td>58</td>
-      <td>0.0</td>
-      <td>284.753966</td>
-      <td>284.753966</td>
-      <td>0.0</td>
-      <td>True</td>
-      <td>solar</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>60</th>
-      <td>60</td>
-      <td>0.0</td>
-      <td>98.693808</td>
-      <td>98.693808</td>
-      <td>0.0</td>
-      <td>True</td>
-      <td>solar</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>64</th>
-      <td>64</td>
-      <td>0.0</td>
-      <td>16.050352</td>
-      <td>16.050352</td>
-      <td>0.0</td>
-      <td>True</td>
-      <td>wind</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>65</th>
-      <td>65</td>
-      <td>0.0</td>
-      <td>77.747257</td>
-      <td>77.747257</td>
-      <td>0.0</td>
-      <td>True</td>
-      <td>wind</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>79</th>
-      <td>79</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>360.554867</td>
-      <td>38.0</td>
-      <td>True</td>
-      <td>gas</td>
-      <td>1504.0</td>
-    </tr>
-    <tr>
-      <th>86</th>
-      <td>86</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>445.397099</td>
-      <td>38.0</td>
-      <td>True</td>
-      <td>gas</td>
-      <td>1751.0</td>
-    </tr>
-    <tr>
-      <th>88</th>
-      <td>88</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>298.390683</td>
-      <td>33.0</td>
-      <td>True</td>
-      <td>gas</td>
-      <td>2450.0</td>
-    </tr>
-    <tr>
-      <th>99</th>
-      <td>99</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>440.534057</td>
-      <td>33.0</td>
-      <td>True</td>
-      <td>gas</td>
-      <td>2184.0</td>
-    </tr>
-    <tr>
-      <th>102</th>
-      <td>102</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>454.660581</td>
-      <td>35.0</td>
-      <td>True</td>
-      <td>gas</td>
-      <td>1617.0</td>
-    </tr>
-    <tr>
-      <th>110</th>
-      <td>110</td>
-      <td>0.0</td>
-      <td>0.000000</td>
-      <td>451.133883</td>
-      <td>34.0</td>
-      <td>True</td>
-      <td>gas</td>
-      <td>1627.0</td>
-    </tr>
-  </tbody>
-</table>
-</div></div></div>
 </div>
 </section>
-</section>
-<section id="problem-description">
-<h2>Problem description<a class="headerlink" href="#problem-description" title="Permalink to this heading">#</a></h2>
-<section id="optimal-power-flow-problem-with-recourse-actions-via-participation-factors">
-<h3>Optimal power flow problem with recourse actions via participation factors<a class="headerlink" href="#optimal-power-flow-problem-with-recourse-actions-via-participation-factors" title="Permalink to this heading">#</a></h3>
-<p>We now consider a variant of the OPF problem in which each conventional generator <span class="math notranslate nohighlight">\(i\)</span> commits in advance to produce a specific amount <span class="math notranslate nohighlight">\(p_i\)</span> of energy as determined by the OPF problem assuming the renewable energy production from all solar panels and wind turbines will be equal to the forecasted one, also denoted as <span class="math notranslate nohighlight">\(p_j\)</span>. Assume the realized renewable energy output of generator <span class="math notranslate nohighlight">\(j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}\)</span> deviates from their forecasted values, say by an amount <span class="math notranslate nohighlight">\(\Delta_j\)</span>, and results in a power production of</p>
-<div class="math notranslate nohighlight">
-\[
-r_j = p_j + \Delta_j.
-\]</div>
-<p>Then, the conventional generators need take a <em>recourse action</em> to make sure that the network is balanced, i.e., that the total energy production equals the total energy demand. The recourse action at a conventional generator consists of a real-time adjustment of its power production and is modeled as follows. Each conventional generator <span class="math notranslate nohighlight">\(i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}\)</span> has a <em>participation factor</em> <span class="math notranslate nohighlight">\(\alpha_i \geq 0\)</span> which determines in which that generator responds to the total imbalance <span class="math notranslate nohighlight">\(\sum_j \Delta_j\)</span>. Specfically, the power production <em>after the recourse action</em> at generator <span class="math notranslate nohighlight">\(i\)</span> is denoted by <span class="math notranslate nohighlight">\(r_i\)</span> and is given by</p>
-<div class="math notranslate nohighlight">
-\[
-r_i = p_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j.
-\]</div>
-<p>The participation factor <span class="math notranslate nohighlight">\(\alpha_i \in [0,1]\)</span> indicates the fraction of the power imbalance that generator <span class="math notranslate nohighlight">\(i\)</span> needs to help compensate. To ensure that the power balance is satisfied, we need to have <span class="math notranslate nohighlight">\(\sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \alpha_i = 1\)</span>. Indeed, in this case, assuming the power was balanced in the first stage, i.e., <span class="math notranslate nohighlight">\(\sum_{i \in \mathcal{G}} p_i - \sum_{i \in V} d_i =0\)</span>, then the net power balance after the second stage is</p>
-<div class="math notranslate nohighlight">
-\[\begin{split}
-\begin{align*}
-\sum_{i \in \mathcal{G}} r_i - \sum_{i \in V} d_i 
-&amp;= \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} (p_j + \Delta_j) + \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} (p_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j) - \sum_{i \in V} d_i\\
-&amp;= \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j - \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}}  \left (\sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \alpha_i \right) \Delta_j + \sum_{i \in \mathcal{G}} p_i - \sum_{i \in V} d_i \\
-&amp; = \sum_{i \in \mathcal{G}} p_i - \sum_{i \in V} d_i = 0
-\end{align*}
-\end{split}\]</div>
-<p>Nonetheless, the participation factors do not have to be equal for all generators and in fact, these factors can be optimized jointly together with the initial power levels <span class="math notranslate nohighlight">\(p_i\)</span>. Since the energy produced as recourse action is twice as expensive, we account for this by adding to the objective function the cost term <span class="math notranslate nohighlight">\(\sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} 2 \cdot c^{\text{var}}_i \cdot \alpha_i \sum_{j \in V} \Delta_j\)</span>.</p>
+<section id="saa-implementation">
+<h3>SAA implementation<a class="headerlink" href="#saa-implementation" title="Permalink to this heading">#</a></h3>
+<p>The following cell is the Pyomo function implementation of our final optimization problem above, with an optional argument indicating if the participation factors should be taken as uniform across all conventional generators. For ease of accounting for the second-stage costs <span class="math notranslate nohighlight">\(\hat{c}_i(\cdot)\)</span>, we assume that the function takes as an argument not only a list of scenarios for the renewable energy generation, but also the corresponding total and absolute values of the imbalances in the network.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define an OPF problem with recourse actions for the conventional generators based on participation factors</span>
+<span class="k">def</span> <span class="nf">OPF_participationfactors</span><span class="p">(</span>
+    <span class="n">network</span><span class="p">,</span>
+    <span class="n">imbalances</span><span class="p">,</span>
+    <span class="n">totalimbalances</span><span class="p">,</span>
+    <span class="n">abstotalimbalances</span><span class="p">,</span>
+    <span class="n">uniformparticipationfactors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="c1"># Define a model</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;OPF with participation factors&quot;</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">UC_participationfactors</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">imbalances</span><span class="p">,</span> <span class="n">totalimbalances</span><span class="p">,</span> <span class="n">abstotalimbalances</span><span class="p">,</span> <span class="n">uniformparticipationfactors</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># Define sets</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imbalances</span><span class="p">)))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">E</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">SWH</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span>
+        <span class="n">initialize</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">i</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy_type&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;wind&quot;</span><span class="p">,</span> <span class="s2">&quot;solar&quot;</span><span class="p">,</span> <span class="s2">&quot;hydro&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">CG</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span>
+        <span class="n">initialize</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">i</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy_type&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;coal&quot;</span><span class="p">,</span> <span class="s2">&quot;gas&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">NG</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span>
+        <span class="n">initialize</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">i</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy_type&quot;</span><span class="p">])</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
 
-  <span class="c1"># Define a model</span>
-  <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;OPF with participation factors&quot;</span><span class="p">)</span>
+    <span class="c1"># Declare decision variables</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">abs_total_imbalance</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">abstotalimbalances</span>
+    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">total_imbalance</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">totalimbalances</span>
+    <span class="p">)</span>
 
-  <span class="c1"># Define sets</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imbalances</span><span class="p">)))</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">E</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">SWH</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;wind&#39;</span> <span class="ow">or</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;solar&#39;</span> <span class="ow">or</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;hydro&#39;</span><span class="p">)])</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">CG</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;coal&#39;</span> <span class="ow">or</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;gas&#39;</span><span class="p">)])</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">NG</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">])])</span>
-  
-  <span class="c1"># Declare decision variables</span>
-  <span class="c1"># model.x = pyo.Var(model.V, domain=pyo.Binary)</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">abs_total_imbalance</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">abstotalimbalances</span><span class="p">)</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">total_imbalance</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">totalimbalances</span><span class="p">)</span>
+    <span class="c1"># Declare objective function including the recourse actions</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">objective</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span>
+        <span class="n">expr</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="o">+</span> <span class="mi">1</span>
+        <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span>
+                <span class="mi">2</span>
+                <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span>
+                <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">abs_total_imbalance</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy_type&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;coal&quot;</span><span class="p">,</span> <span class="s2">&quot;gas&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span>
+        <span class="p">),</span>
+        <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">,</span>
+    <span class="p">)</span>
 
-  <span class="c1"># Declare objective function including the recourse actions</span>
+    <span class="c1"># Declare constraints</span>
+    <span class="c1"># First-stage production levels must meet generator limits</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">generation_upper_bound</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_max&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">generation_lower_bound</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_min&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="p">)</span>
 
-  <span class="n">model</span><span class="o">.</span><span class="n">objective</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">])</span> <span class="o">+</span>
-                                  <span class="mi">2</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">abs_total_imbalance</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;coal&#39;</span><span class="p">,</span> <span class="s1">&#39;gas&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">),</span>
-                                    <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
+    <span class="c1"># Wind, solar and hydro generators have zero participation factors</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">windsolarhydro_nopartecipationfactors</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">SWH</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="p">)</span>
 
-  <span class="c1"># Declare constraints</span>
-  
-  <span class="c1"># First-stage production levels must meet generator limits</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">generation_upper_bound</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_max&quot;</span><span class="p">])</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">generation_lower_bound</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_min&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="c1"># Load nodes have zero participation factors</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">load_nopartecipationfactors</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">NG</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="p">)</span>
 
-  <span class="c1"># Wind, solar and hydro generators have zero participation factors</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">windsolarhydro_nopartecipationfactors</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">SWH</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="c1"># Participation factors must sum to one</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">sum_one</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">rule</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="p">)</span>
 
-  <span class="c1"># Load nodes have zero participation factors</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">load_nopartecipationfactors</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">NG</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">uniformparticipationfactors</span><span class="p">:</span>
+        <span class="c1"># Participation factors must be equal</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">equal_participationfactors</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">CG</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">CG</span><span class="p">)</span>
+        <span class="p">)</span>
 
-  <span class="c1"># Participation factors must sum to one</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">sum_one</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">rule</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Second-stage production levels must also meet generator limits</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">power_withrecourse</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span>
+        <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">total_imbalance</span><span class="p">[</span><span class="n">t</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">generation_upper_bound_withrecourse</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">CG</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_max&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">generation_lower_bound_withrecourse</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">CG</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_min&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">],</span>
+    <span class="p">)</span>
 
-  <span class="k">if</span> <span class="n">uniformparticipationfactors</span><span class="p">:</span>
-    <span class="c1"># Participation factors must be equal</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">equal_participationfactors</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">CG</span><span class="p">,</span> <span class="n">rule</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">CG</span><span class="p">))</span>
+    <span class="c1"># Expressions for outgoing and incoming flows</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">outgoing_flow</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">V</span> <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">E</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">incoming_flow</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">V</span> <span class="k">if</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">E</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
 
-  <span class="c1"># Second-stage production levels must also meet generator limits</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">power_withrecourse</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">total_imbalance</span><span class="p">[</span><span class="n">t</span><span class="p">])</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">generation_upper_bound_withrecourse</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">CG</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_max&quot;</span><span class="p">])</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">generation_lower_bound_withrecourse</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">CG</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_min&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">])</span>
+    <span class="c1"># Net power production at each node after recourse actions</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">flow_conservation</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">incoming_flow</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">outgoing_flow</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span>
+        <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">imbalances</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;d&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
 
-  <span class="c1"># Expressions for outgoing and incoming flows</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">outgoing_flow</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">V</span> <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">))</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">incoming_flow</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">V</span> <span class="k">if</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">susceptance</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">t</span><span class="p">]</span>
+        <span class="o">==</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)][</span><span class="s2">&quot;b&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]),</span>
+    <span class="p">)</span>
 
-  <span class="c1"># Net power production at each node after recourse actions</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">flow_conservation</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">incoming_flow</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">outgoing_flow</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">imbalances</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;d&quot;</span><span class="p">])</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">susceptance</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">t</span><span class="p">]</span> <span class="o">==</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)][</span><span class="s2">&quot;b&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">flows_upper_bound</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">t</span><span class="p">]</span>
+        <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)][</span><span class="s2">&quot;f_max&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">flows_lower_bound</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="o">-</span><span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">t</span><span class="p">]</span>
+        <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)][</span><span class="s2">&quot;f_max&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
 
-  <span class="n">model</span><span class="o">.</span><span class="n">flows_upper_bound</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">t</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)][</span><span class="s2">&quot;f_max&quot;</span><span class="p">])</span>
-  <span class="n">model</span><span class="o">.</span><span class="n">flows_lower_bound</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">t</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)][</span><span class="s2">&quot;f_max&quot;</span><span class="p">])</span>
+    <span class="c1"># Solve the model</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
-  <span class="c1"># Solve the model</span>
-  <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
-  <span class="n">result</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-  <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s1">&#39;ok&#39;</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Solver status: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-  
-  <span class="k">return</span> <span class="n">model</span>
+    <span class="k">return</span> <span class="n">model</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p>We generate <span class="math notranslate nohighlight">\(T=100\)</span> scenarios in which the wind and solar production deviate from the forecasted values. Such deviations, named <em>imbalances</em>, are generated uniformly at random assuming the realized wind or solar power is between 0.5 and 1.5 times the forecasted value.</p>
+</section>
+<section id="scenario-generation">
+<h3>Scenario generation<a class="headerlink" href="#scenario-generation" title="Permalink to this heading">#</a></h3>
+<p>Next, we generate <span class="math notranslate nohighlight">\(T=100\)</span> scenarios in which the wind and solar production deviate from the forecasted values. Such deviations, named <em>imbalances</em>, are generated uniformly at random assuming the realized wind or solar power is between 0.5 and 1.5 times the forecasted value.</p>
+<p>For ease of calculations, for each scenario, we define a separate data structure with the total energy imbalance and the total absolute imbalance.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define the set of nodes with possible deviations from forecasts, i.e. those with either a wind or a solar generator</span>
 <span class="n">SW</span> <span class="o">=</span> <span class="p">{</span><span class="mi">48</span><span class="p">,</span> <span class="mi">53</span><span class="p">,</span> <span class="mi">58</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">65</span><span class="p">}</span>
-<span class="n">SW_df</span> <span class="o">=</span> <span class="n">nodes_df</span><span class="p">[</span><span class="n">nodes_df</span><span class="p">[</span><span class="s1">&#39;node_id&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">SW</span><span class="p">)]</span>
+<span class="n">SW_df</span> <span class="o">=</span> <span class="n">nodes_df</span><span class="p">[</span><span class="n">nodes_df</span><span class="p">[</span><span class="s2">&quot;node_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">SW</span><span class="p">)]</span>
 
 <span class="c1"># Define the number of scenarios and the random seed</span>
 <span class="n">T</span> <span class="o">=</span> <span class="mi">100</span>
 <span class="n">seed</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
 
-<span class="c1"># Imbalances are generated uniformly at random assuming the realized wind or solar power is between 0.5 and 1.5 times the forecasted value</span>
-<span class="n">imbalances</span> <span class="o">=</span> <span class="p">[{</span><span class="n">i</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">nodes_df</span><span class="p">[</span><span class="s1">&#39;p_min&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">nodes_df</span><span class="p">[</span><span class="s1">&#39;p_min&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">SW</span> <span class="k">else</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nodes_df</span><span class="o">.</span><span class="n">index</span><span class="p">}</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">)]</span>
-<span class="n">totalimbalances</span> <span class="o">=</span> <span class="p">{</span><span class="n">t</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">imbalances</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imbalances</span><span class="p">))}</span>
-<span class="n">abstotalimbalances</span> <span class="o">=</span> <span class="p">{</span><span class="n">t</span><span class="p">:</span> <span class="nb">abs</span><span class="p">(</span><span class="n">totalimbalances</span><span class="p">[</span><span class="n">t</span><span class="p">])</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">totalimbalances</span><span class="p">))}</span>
+<span class="c1"># Imbalances are generated uniformly at random assuming the realized</span>
+<span class="c1"># wind or solar power is between 0.5 and 1.5 times the forecasted value</span>
+<span class="n">imbalances</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="n">i</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">nodes_df</span><span class="p">[</span><span class="s2">&quot;p_min&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">nodes_df</span><span class="p">[</span><span class="s2">&quot;p_min&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">SW</span>
+        <span class="k">else</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nodes_df</span><span class="o">.</span><span class="n">index</span>
+    <span class="p">}</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+<span class="p">]</span>
+<span class="n">totalimbalances</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">t</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">imbalances</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imbalances</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="n">abstotalimbalances</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">t</span><span class="p">:</span> <span class="nb">abs</span><span class="p">(</span><span class="n">totalimbalances</span><span class="p">[</span><span class="n">t</span><span class="p">])</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">totalimbalances</span><span class="p">))</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p>We first solve the optimization model in the case where the forecast for solar and wind power are perfect, meaning there is no imbalance. In this case the recourse actions are not needed and the second stage part of the problem is trivial.</p>
-<p>If we now test the performance of this static solution over the sampled scenarios, we can calculate the average energy production cost due to recourse actions assuming uniform participation factors, but this average is <em>misleading</em> because <strong>it does not account for the fact that for many of the scenarios there is no power flow dispatch</strong>.</p>
+</section>
+<section id="perfect-forecast-case-no-imbalances">
+<h3>Perfect forecast case (no imbalances)<a class="headerlink" href="#perfect-forecast-case-no-imbalances" title="Permalink to this heading">#</a></h3>
+<p>We first solve the optimization model in the case where the forecast for solar and wind power are perfect, meaning there is no imbalance. In this case, the recourse actions are not needed and the second stage part of the problem is trivial.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">zeroimbalances</span> <span class="o">=</span> <span class="p">[{</span><span class="n">i</span><span class="p">:</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nodes_df</span><span class="o">.</span><span class="n">index</span><span class="p">}]</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define trivial arrays for the case of perfect forecast and no need of recourse actions</span>
+<span class="n">zeroimbalances</span> <span class="o">=</span> <span class="p">[{</span><span class="n">i</span><span class="p">:</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nodes_df</span><span class="o">.</span><span class="n">index</span><span class="p">}]</span>
 <span class="n">zerototalimbalances</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">zeroimbalances</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())}</span>
-<span class="n">zeroabstotalimbalances</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="nb">abs</span><span class="p">(</span><span class="n">totalimbalances</span><span class="p">[</span><span class="mi">0</span><span class="p">])}</span>
+<span class="n">zeroabstotalimbalances</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="nb">abs</span><span class="p">(</span><span class="n">zerototalimbalances</span><span class="p">[</span><span class="mi">0</span><span class="p">])}</span>
 
-<span class="n">m</span> <span class="o">=</span> <span class="n">UC_participationfactors</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">zeroimbalances</span><span class="p">,</span> <span class="n">zerototalimbalances</span><span class="p">,</span> <span class="n">zeroabstotalimbalances</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;First-stage energy production cost = </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">])</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The optimal production levels for the conventional generators are&#39;</span><span class="p">,[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The optimal participation factors for the conventional generators are&#39;</span><span class="p">,[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Average energy production cost due to recourse actions = </span><span class="si">{</span><span class="mi">2</span><span class="o">/</span><span class="n">T</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">abstotalimbalances</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">))</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> (but including many infeasible scenarios!)&#39;</span><span class="p">)</span>
+<span class="c1"># Solve the model</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">OPF_participationfactors</span><span class="p">(</span>
+    <span class="n">network</span><span class="p">,</span>
+    <span class="n">zeroimbalances</span><span class="p">,</span>
+    <span class="n">zerototalimbalances</span><span class="p">,</span>
+    <span class="n">zeroabstotalimbalances</span><span class="p">,</span>
+    <span class="n">uniformparticipationfactors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">firststagecost</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;First-stage energy production cost = </span><span class="si">{</span><span class="n">firststagecost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;The optimal production levels for the conventional generators are: </span><span class="si">{</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>First-stage energy production cost = 40385.16
-The optimal production levels for the conventional generators are [135.69, 227.38, 235.31, 371.35, 0.0, 0.0, 298.39, 336.95, 0.0, 0.0]
-The optimal participation factors for the conventional generators are [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
-Average energy production cost due to recourse actions = 5354.25 (but including many infeasible scenarios!)
+The optimal production levels for the conventional generators are: [135.69, 227.38, 235.31, 371.35, 0.0, 0.0, 298.39, 336.95, 0.0, 0.0]
 </pre></div>
 </div>
 </div>
 </div>
-<p>We now solve the two-stage optimization model in the case where the realization of solar and wind power deviate from their forecasts. In this case, the recourse actions are needed, but we assume fixed uniform participation factors equal to <span class="math notranslate nohighlight">\(0.1\)</span> for all the ten conventional generators in <span class="math notranslate nohighlight">\(\in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}\)</span>. We solve this model using SAA after having sampled <span class="math notranslate nohighlight">\(T=100\)</span> realizations of the wind and solar power production.</p>
+<p>It is key to understand how this solution would perform if there were perturbations in renewable energy production.</p>
+<p>First of all, it is not guaranteed that it is possible to find a feasible solution in such a case. Following an approach similar to that of the <a class="reference internal" href="opf-wind-curtailment.html"><span class="doc std std-doc">OPF problem with wind curtailment</span></a>, one can solve for the remaining variables when keeping the initial solution <span class="math notranslate nohighlight">\(\bar{p}\)</span> fixed and check that with uniform participation factors, it is not possible to find a feasible flow in any of the scenarios we consider. If instead we allow for non-uniform participation factors, then this is not possible in 13 out of 100 scenarios.</p>
+<p>Putting the feasibility issues aside for a moment, let us check how much extra cost would there be with uniform participation factors would there be on average across our scenarios. We can calculate this by taking the total imbalance and computing the cost of the recourse action to cover it, assuming that every coal and gas generator adjusts its production proportionally to the optimal participation factor previously obtained.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">UC_participationfactors</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">imbalances</span><span class="p">,</span> <span class="n">totalimbalances</span><span class="p">,</span> <span class="n">abstotalimbalances</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The optimal production levels for the conventional generators are&#39;</span><span class="p">,[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The optimal participation factors for the conventional generators are&#39;</span><span class="p">,[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;First-stage energy production cost = </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">])</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Average energy production cost due to recourse actions = </span><span class="si">{</span><span class="mi">2</span><span class="o">/</span><span class="n">T</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">abs_total_imbalance</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Total cost = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">averagerecoursecost</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="mi">1</span>
+    <span class="o">/</span> <span class="n">T</span>
+    <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span>
+        <span class="nb">sum</span><span class="p">(</span>
+            <span class="mi">2</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">abstotalimbalances</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="n">averagetotalcost</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">T</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span>
+    <span class="nb">sum</span><span class="p">(</span>
+        <span class="mi">2</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">abstotalimbalances</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Average energy production cost due to recourse actions = </span><span class="si">{</span><span class="n">averagerecoursecost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> (but including many infeasible scenarios!)&quot;</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Average total cost = </span><span class="si">{</span><span class="n">averagetotalcost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> (but including many infeasible scenarios!)&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Average energy production cost due to recourse actions = 5354.25 (but including many infeasible scenarios!)
+Average total cost = 45739.41 (but including many infeasible scenarios!)
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="stochastic-case-nonzero-imbalances">
+<h3>Stochastic case (nonzero imbalances)<a class="headerlink" href="#stochastic-case-nonzero-imbalances" title="Permalink to this heading">#</a></h3>
+<p>If we assume that the forecast for solar and wind power is not perfect, then the total energy imbalance in the network will be nonzero in each scenario. The resulting average total cost of energy production would be much higher than the deterministic scenario. This is intuitive because recourse actions are needed to cover the imbalance, and the recourse actions are much more expensive than the first-stage production-level decisions.</p>
+<p>We now solve the two-stage stochastic optimization model that accounts for the fluctuations of solar and wind power from their forecasts, using the 100 generated scenarios. In this case, the recourse actions are still needed, but we assume fixed uniform participation factors equal to <span class="math notranslate nohighlight">\(0.1\)</span> for all the ten conventional generators in <span class="math notranslate nohighlight">\(\in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}\)</span>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">OPF_participationfactors</span><span class="p">(</span>
+    <span class="n">network</span><span class="p">,</span>
+    <span class="n">imbalances</span><span class="p">,</span>
+    <span class="n">totalimbalances</span><span class="p">,</span>
+    <span class="n">abstotalimbalances</span><span class="p">,</span>
+    <span class="n">uniformparticipationfactors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="s2">&quot;The optimal production levels for the conventional generators are&quot;</span><span class="p">,</span>
+    <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="s2">&quot;The participation factors for the conventional generators are&quot;</span><span class="p">,</span>
+    <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">firststagecost</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="n">averagerecoursecost</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="mi">1</span>
+    <span class="o">/</span> <span class="n">T</span>
+    <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span>
+        <span class="nb">sum</span><span class="p">(</span>
+            <span class="mi">2</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">abs_total_imbalance</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">First-stage energy production cost = </span><span class="si">{</span><span class="n">firststagecost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Average energy production cost due to recourse actions = </span><span class="si">{</span><span class="n">averagerecoursecost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total cost = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal production levels for the conventional generators are [127.0, 205.65, 213.57, 349.62, 27.39, 27.39, 276.66, 323.04, 27.39, 27.39]
-The optimal participation factors for the conventional generators are [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+The participation factors for the conventional generators are [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+
 First-stage energy production cost = 41719.19
 Average energy production cost due to recourse actions = 5354.25
 Total cost = 47073.44
@@ -1248,21 +1042,55 @@ Total cost = 47073.44
 </div>
 </div>
 </div>
-<p>If we instead let the model optimize the participation factors jointly with the initial power levels, we can achieve a reduction in the average total cost.</p>
+<p>We see that the total average production cost is slightly higher than in the first “perfect forecast” nominal scenario, but the benefit of this newly obtained solution is that we are sure that in all scenarios we have a feasible power flow dispatch.</p>
+<p>We argue that using this solution should be preferable: even if the ‘nominal’ solution had a slightly lower average production cost, we need to factor in how costly will it be for the network operator when the solution becomes infeasible. Having an infeasible network configuration means there is a risk of cascading failures and/or blackout, which besides possibly damaging the infrastructure is dramatically more expensive from a financial and societal perspective, and having a 13% chance of this happening is just unaffordable.</p>
+<p>Next, we also optimize the participation factors <span class="math notranslate nohighlight">\(\alpha_i\)</span>’s jointly with the initial power levels, to see if we can achieve a reduction in the average total cost. We can do this using the same function as before but changing the argument <code class="docutils literal notranslate"><span class="pre">uniformparticipationfactors</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">UC_participationfactors</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">imbalances</span><span class="p">,</span> <span class="n">totalimbalances</span><span class="p">,</span> <span class="n">abstotalimbalances</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The optimal production levels for the conventional generators are&#39;</span><span class="p">,[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The optimal participation factors for the conventional generators are&#39;</span><span class="p">,[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;First-stage energy production cost = </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">])</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Average energy production cost due to recourse actions = </span><span class="si">{</span><span class="mi">2</span><span class="o">/</span><span class="n">T</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">abs_total_imbalance</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Total cost = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">OPF_participationfactors</span><span class="p">(</span>
+    <span class="n">network</span><span class="p">,</span>
+    <span class="n">imbalances</span><span class="p">,</span>
+    <span class="n">totalimbalances</span><span class="p">,</span>
+    <span class="n">abstotalimbalances</span><span class="p">,</span>
+    <span class="n">uniformparticipationfactors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="s2">&quot;The optimal production levels for the conventional generators are&quot;</span><span class="p">,</span>
+    <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="s2">&quot;The optimal participation factors for the conventional generators are&quot;</span><span class="p">,</span>
+    <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">firststagecost</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="n">averagerecoursecost</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="mi">1</span>
+    <span class="o">/</span> <span class="n">T</span>
+    <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span>
+        <span class="nb">sum</span><span class="p">(</span>
+            <span class="mi">2</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">abs_total_imbalance</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">First-stage energy production cost = </span><span class="si">{</span><span class="n">firststagecost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Average energy production cost due to recourse actions = </span><span class="si">{</span><span class="n">averagerecoursecost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total cost = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal production levels for the conventional generators are [134.75, 227.38, 235.31, 371.35, -0.0, 0.0, 298.39, 281.66, 0.0, 56.24]
 The optimal participation factors for the conventional generators are [0.06, -0.0, 0.0, 0.0, 0.0, -0.0, -0.0, 0.73, 0.0, 0.21]
+
 First-stage energy production cost = 40446.13
 Average energy production cost due to recourse actions = 5969.05
 Total cost = 46415.18
@@ -1270,6 +1098,7 @@ Total cost = 46415.18
 </div>
 </div>
 </div>
+<p>This energy dispatch is about 1.4% cheaper than the solution with uniform participation factors. It might seem like a small difference but in view of the high volumes of energy produced and consumed, say at the national level, this makes a huge difference.</p>
 </section>
 </section>
 </section>
@@ -1335,12 +1164,13 @@ Total cost = 46415.18
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#package-and-data-import">Package and data import</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#network-data">Network data</a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-power-flow-problem-with-recourse-actions-via-participation-factors">Optimal power flow problem with recourse actions via participation factors</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-solution">Pyomo solution</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data-imports">Data imports</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#saa-implementation">SAA implementation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scenario-generation">Scenario generation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#perfect-forecast-case-no-imbalances">Perfect forecast case (no imbalances)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#stochastic-case-nonzero-imbalances">Stochastic case (nonzero imbalances)</a></li>
 </ul>
 </li>
 </ul>
