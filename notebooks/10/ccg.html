@@ -73,8 +73,8 @@ const thebe_selector_output = ".output, .cell_output"
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/10/ccg';</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Appendix: Pyomo style guide" href="../../pyomo_style_guide.html" />
-    <link rel="prev" title="Two-stage energy dispatch optimization using linear decision rules" href="opf-ldr.html" />
+    <link rel="next" title="Extra: The farmer’s problem and its ariants" href="farmer.html" />
+    <link rel="prev" title="Optimal power flow problem with recourse actions" href="opf-ldr.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -246,19 +246,22 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../09/economicdispatch.html">Economic dispatch in energy systems</a></li>
 
 
-
 </ul>
 </li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="10.00.html">10. Two-Stage Problems</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-10"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="airline-seating.html">Airline seat allocation problem</a></li>
-<li class="toctree-l2"><a class="reference internal" href="farmer.html">The Farmer’s Problem and Variants</a></li>
-<li class="toctree-l2"><a class="reference internal" href="opf-wind-curtailment.html">Two-stage energy dispatch optimization with wind curtailment</a></li>
-
-<li class="toctree-l2"><a class="reference internal" href="opf-ldr.html">Two-stage energy dispatch optimization using linear decision rules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="opf-ldr.html">Optimal power flow problem with recourse actions</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Two-stage Production Planning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="farmer.html">Extra: The farmer’s problem and its ariants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="opf-wind-curtailment.html">Extra: Two-stage energy dispatch optimization with wind curtailment</a></li>
+
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../pyomo_style_guide.html">Appendix: Pyomo style guide</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../appendix/appendix.html">Appendix: Working with Pyomo</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-11"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../appendix/pyomo-style-guide.html">Pyomo style guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../appendix/functional-programming-pyomo.html">Functional Programming with Pyomo</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../../genindex.html">Index</a></li>
 </ul>
 
@@ -511,7 +514,7 @@ document.write(`
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and the cbc solver and import the required packages</span>
 <span class="kn">import</span> <span class="nn">requests</span>
 <span class="kn">import</span> <span class="nn">types</span>
 
@@ -520,14 +523,18 @@ document.write(`
 <span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
 
 <span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
+<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+cbc was previously installed
 </pre></div>
 </div>
 </div>
@@ -536,14 +543,14 @@ document.write(`
 <h2>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this heading">#</a></h2>
 <p>Consider again the production planning example from <a class="reference internal" href="../01/01.00.html"><span class="doc std std-doc">Chapter 1</span></a> where a small startup company has announced the initial production of two models, <span class="math notranslate nohighlight">\(U\)</span> and <span class="math notranslate nohighlight">\(V\)</span>. For completeness we first recall the problem setting and then introduce the additional layer of uncertainty:</p>
 <ul class="simple">
-<li><p>Model <span class="math notranslate nohighlight">\(U\)</span> is the higher priced version requiring 10 units of raw material. The labor requirement is estimated to be 1 hour of labor A and 2 hours of labor B. The <span class="math notranslate nohighlight">\(U\)</span> model will sell for 270€ per unit.</p></li>
+<li><p>Model <span class="math notranslate nohighlight">\(U\)</span> is the higher-priced version requiring 10 units of raw material. The labor requirement is estimated to be 1 hour of labor A and 2 hours of labor B. The <span class="math notranslate nohighlight">\(U\)</span> model will sell for 270€ per unit.</p></li>
 <li><p>Model <span class="math notranslate nohighlight">\(V\)</span> requires 9 units of the same raw materials and is estimated to require 1 hour of labor A and 1 hour of labor B. Model <span class="math notranslate nohighlight">\(V\)</span> sells for 210€ per unit with unlimited demand.</p></li>
 <li><p>A pre-production  marketing campaign offers guaranteed delivery of model <span class="math notranslate nohighlight">\(U\)</span> in return for a down payment. Initially it is expected that the number of such orders will be 20 units. Because of the higher price, the demand for model <span class="math notranslate nohighlight">\(U\)</span> is limited so no more than 40 units will be produced.</p></li>
 <li><p>The raw materials cost 10€ per unit. The raw materials have a long lead time and must be ordered now. Unused raw materials have no waste value.</p></li>
 <li><p>Given current staffing, there are 80 hours of labor A available at a cost of 50€/hour, and 100 hours of labor B available at a cost of 40€/hour.</p></li>
-<li><p>The company will not have not accurate knowledge of the labor required to produce each product until production starts. The estimated amount of labor A and labor B needed for each unit produced could be off by 15% and 25%, respectively. Additionally, there is uncertainty about the amount of down-payment demand for model <span class="math notranslate nohighlight">\(U\)</span> - it can differ by up to 25%, up or down, from the nominal value of 20. It is not expected, however, that more than two of those parameters are perturbed by their maximum amount.</p></li>
+<li><p>The company will not have not accurate knowledge of the labor required to produce each product until production starts. The estimated amount of labor A and labor B needed for each unit produced could be off by 15% and 25%, respectively. Additionally, there is uncertainty about the amount of down-payment demand for model <span class="math notranslate nohighlight">\(U\)</span> – it can differ by up to 25%, up or down, from the nominal value of 20. It is not expected, however, that more than two of those parameters are perturbed by their maximum amount.</p></li>
 </ul>
-<p>The company’s chief operating officer (COO) must decide how much raw material to order now without complete information about labor needed to manufacture the models, or knowledge about the outcome of the pre-production marketing campaign. If the COO orders too much now then raw material will be left over and wasted. If the COO orders too little then a profit opportunity will be lost. In either case, the profit realized will be less than than the potential. In what way can the best decision be made?</p>
+<p>The company’s chief operating officer (COO) must decide how much raw material to order now without complete information about the labor needed to manufacture the models or knowledge about the outcome of the pre-production marketing campaign. If the COO orders too much now then raw material will be left over and wasted. If the COO orders too little then a profit opportunity will be lost. In either case, the profit realized will be less than the potential. In what way can the best decision be made?</p>
 </section>
 <section id="problem-description">
 <h2>Problem description<a class="headerlink" href="#problem-description" title="Permalink to this heading">#</a></h2>
@@ -584,30 +591,30 @@ P_V &amp; = 210 - 50(1+z_A) - 40(1+z_B) - 90) \\
 \end{align*}
 \end{split}\]</div>
 <p>It is therefore not clear in advance which of the products would be more profitable. Taking into account the additional uncertainty about the preorder demand for product <span class="math notranslate nohighlight">\(U\)</span>, it is not possible to determine in advance what is the worst-case outcome of the uncertainty <span class="math notranslate nohighlight">\(z_A\)</span>, <span class="math notranslate nohighlight">\(z_B\)</span>, <span class="math notranslate nohighlight">\(z_D\)</span> for this problem.</p>
-<p>Since have no information about the probabilities with which the different outcomes of the uncertain parameters could happen, a natural approach is to solve this problem with a worst-case formulation in mind. However, for sake of completeness, we also investigate how the optimal solution would look if each each realization of <span class="math notranslate nohighlight">\((z_A, z_B, z_D)\)</span> was equally probable.</p>
+<p>Since we have no information about the underlying probability distribution of the uncertain parameters, a natural approach is to solve this problem with a worst-case formulation in mind. However, for sake of completeness, we also investigate how the optimal solution would look if each realization of <span class="math notranslate nohighlight">\((z_A, z_B, z_D)\)</span> was equally probable.</p>
 </section>
 <section id="two-stage-problem-formulation">
 <h2>Two-stage problem formulation<a class="headerlink" href="#two-stage-problem-formulation" title="Permalink to this heading">#</a></h2>
-<p>We formulate the robust optimization problem where the objective is to maximize the worst case profit subject to constraints and uncertainty as follows:</p>
+<p>We formulate the robust optimization problem where the objective is to maximize the worst-case profit subject to constraints and uncertainty as follows:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
-\max \quad &amp; - 10x + \inf\limits_{z \in Z} Q(x, z) \\
+\max \quad &amp; - 10x + \inf\limits_{\bm{z} \in Z} Q(x, \bm{z}) \\
 \text{s.t.} \quad &amp; x \geq 0, 
 \end{align*}
 \end{split}\]</div>
-<p>where <span class="math notranslate nohighlight">\(x\)</span> is the amount of raw material to order, and where the uncertainty <span class="math notranslate nohighlight">\(z = (z_A, z_B, z_D)\)</span> is given by</p>
+<p>where <span class="math notranslate nohighlight">\(x\)</span> is the amount of raw material to order, and where the uncertainty <span class="math notranslate nohighlight">\(\bm{z} = (z_A, z_B, z_D)\)</span> is given by</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
-Z = \left\{ (z_A, z_B, z_D): \ |z_A| \leq 0.15, \ |z_B| \leq 0.25, \ |z_D| \leq 0.25, \ \frac{|z_A|}{0.15} + \frac{|z_A|}{0.25} + \frac{|z_D|}{0.25} \leq 2 \right\}.
+Z = \left\{ \bm{z}=(z_A, z_B, z_D): \ |z_A| \leq 0.15, \ |z_B| \leq 0.25, \ |z_D| \leq 0.25, \ \frac{|z_A|}{0.15} + \frac{|z_A|}{0.25} + \frac{|z_D|}{0.25} \leq 2 \right\}.
 \end{align*}
 \]</div>
-<p><span class="math notranslate nohighlight">\(Q(x, z)\)</span> is the second-stage profit defined by</p>
+<p><span class="math notranslate nohighlight">\(Q(x, \bm{z})\)</span> is the second-stage profit defined by</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
-Q(x, z) = \min \quad &amp; y_3 \\
+Q(x, \bm{z}) = \min \quad &amp; y_3 \\
 \text{s.t.}\quad &amp; (140 - 50z_A - 80z_B) y_1 + (120 - 50z_A - 40z_B) y_2 \geq y_3 &amp;&amp; \text{(worst-case profit)} \\
 &amp; y_1 \geq 20 (1 + z_D) &amp;&amp; \text{(pre-production orders)} \\
 &amp; y_2 \leq 40 &amp;&amp; \text{(maximum demand for $U$)}\\
@@ -623,12 +630,12 @@ Q(x, z) = \min \quad &amp; y_3 \\
 \begin{align*}
 x = \begin{pmatrix} x \end{pmatrix},
 \
-y = \begin{pmatrix} y_1 \\ y_2 \\ y_3 \end{pmatrix},
+\bm{y} = \begin{pmatrix} y_1 \\ y_2 \\ y_3 \end{pmatrix},
 \
-z = \begin{pmatrix} z_A \\ z_B \\ z_D \end{pmatrix}
+\bm{z} = \begin{pmatrix} z_A \\ z_B \\ z_D \end{pmatrix}
 \end{align*}
 \end{split}\]</div>
-<p>Then following are the definitions of the data matrices as functions of uncertainties, consistently with the notation used in Section 10.1.</p>
+<p>Lastly, we define the data matrices as functions of uncertainties:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -639,58 +646,67 @@ q = \begin{pmatrix} 0 \\ 0 \\ 1 \end{pmatrix} \\
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
-R(z)  = \begin{pmatrix} 0 \\ 0 \\ 0 \\ 0 \\ -1 \end{pmatrix}, 
+R(\bm{z})  = \begin{pmatrix} 0 \\ 0 \\ 0 \\ 0 \\ -1 \end{pmatrix}, 
 \
-S(z) = \begin{pmatrix} - (140 - 50z_A - 80z_B) &amp; - (120 - 50z_A - 40z_B) &amp; 1 \\ 1 &amp; 0 &amp; 0 \\ 1+z_A &amp; 1 + z_A &amp; 0 \\ 2(1+z_B) &amp; 1 + z_B &amp; 0 \\ 10 &amp; 9 &amp; 0 \end{pmatrix},
+S(\bm{z}) = \begin{pmatrix} - (140 - 50z_A - 80z_B) &amp; - (120 - 50z_A - 40z_B) &amp; 1 \\ 1 &amp; 0 &amp; 0 \\ 1+z_A &amp; 1 + z_A &amp; 0 \\ 2(1+z_B) &amp; 1 + z_B &amp; 0 \\ 10 &amp; 9 &amp; 0 \end{pmatrix},
 \
-t(z) = \begin{pmatrix} 0 \\ -20(1+z_D) \\ 80 \\ 100 \\ 0 \end{pmatrix} \\
+t(\bm{z}) = \begin{pmatrix} 0 \\ -20(1+z_D) \\ 80 \\ 100 \\ 0 \end{pmatrix} \\
 \end{align*}
 \end{split}\]</div>
 </section>
 <section id="solving-the-robust-problem-using-sampled-scenarios">
 <h2>Solving the robust problem using sampled scenarios<a class="headerlink" href="#solving-the-robust-problem-using-sampled-scenarios" title="Permalink to this heading">#</a></h2>
-<p>How can we actually solve such a two-stage problem if it is indeed the worst-case profit that we are interested in? Note that the matrix <span class="math notranslate nohighlight">\(D(z)\)</span> depends on <span class="math notranslate nohighlight">\(z\)</span> and, therefore, we cannot easily formulate the second-stage decisions as linear functions of <span class="math notranslate nohighlight">\(z\)</span> (linear decision rules). However, we can apply the column-and-constraint generation approach where we would gradually build a finite list of scenarios and solve a problem that will maximize the worst-case profit across such a set of scenarios:</p>
+<p>How can we actually solve such a two-stage problem if it is indeed the worst-case profit that we are interested in? Note that the matrix <span class="math notranslate nohighlight">\(S(\bm{z})\)</span> depends on <span class="math notranslate nohighlight">\(\bm{z}\)</span> and, therefore, we cannot easily formulate the second-stage decisions as linear functions of <span class="math notranslate nohighlight">\(\bm{z}\)</span> (linear decision rules). However, we can generate a finite list of <span class="math notranslate nohighlight">\(N\)</span> scenarios and solve a problem that will maximize the worst-case profit across such a set of scenarios:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
 \max \quad &amp; c^\top x + \tau  \\ 
-\text{s.t.} \quad  &amp; q^\top y^j \geq \tau, &amp;&amp; j = 1, \ldots, k  \\
-&amp; R (z^j) x + S(z^j) y^j \leq t(z^j)  &amp;&amp;  j = 1, \ldots, k \\
-&amp; x, y^1, \ldots, y^k, \tau \geq 0 
+\text{s.t.} \quad  &amp; q^\top y^j \geq \tau, &amp;&amp; j = 1, \ldots, N  \\
+&amp; R (z^j) x + S(z^j) y^j \leq t(z^j)  &amp;&amp;  j = 1, \ldots, N \\
+&amp; x, y^1, \ldots, y^N, \tau \geq 0 
 \end{align*}
 \end{split}\]</div>
-<p>We first define an auxiliary function that evaluates the system matrix coefficients for a particular scenario <span class="math notranslate nohighlight">\(z\in Z\)</span> and returns them as nested dictionaries.</p>
+<p>We first define an auxiliary function that evaluates the system matrix coefficients for a particular scenario <span class="math notranslate nohighlight">\(\bm{z} \in Z\)</span> and returns them as nested dictionaries.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># function to return c, q, C, D, e evaluated for a scenario</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Function to return the vectors and matrices c, q, R, S, t evaluated for a specific realization (z_A, z_B, z_D)</span>
+
 
 <span class="k">def</span> <span class="nf">model_params</span><span class="p">(</span><span class="n">z_A</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">z_B</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">z_D</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    
     <span class="n">c</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">10</span><span class="p">}</span>
 
-    <span class="n">q</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-         <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-         <span class="s2">&quot;y3&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;y3&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 
-    <span class="n">R</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;profit&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
-         <span class="s2">&quot;demand&quot;</span> <span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
-         <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
-         <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
-         <span class="s2">&quot;raw materials&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">}}</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;profit&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+        <span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+        <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+        <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+        <span class="s2">&quot;raw materials&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">},</span>
+    <span class="p">}</span>
 
-    <span class="n">S</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;profit&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="o">-</span><span class="p">(</span><span class="mi">140</span> <span class="o">-</span> <span class="mi">50</span><span class="o">*</span><span class="n">z_A</span> <span class="o">-</span> <span class="mi">80</span><span class="o">*</span><span class="n">z_B</span><span class="p">),</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="o">-</span><span class="p">(</span><span class="mi">120</span> <span class="o">-</span> <span class="mi">50</span><span class="o">*</span><span class="n">z_A</span> <span class="o">-</span> <span class="mi">40</span><span class="o">*</span><span class="n">z_B</span><span class="p">),</span> <span class="s2">&quot;y3&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
-         <span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;y3&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
-         <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">z_A</span><span class="p">,</span> <span class="s2">&quot;y3&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
-         <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">z_B</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">z_B</span><span class="p">,</span> <span class="s2">&quot;y3&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
-         <span class="s2">&quot;raw materials&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span> <span class="s2">&quot;y3&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}}</span>
+    <span class="n">S</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;profit&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="o">-</span><span class="p">(</span><span class="mi">140</span> <span class="o">-</span> <span class="mi">50</span> <span class="o">*</span> <span class="n">z_A</span> <span class="o">-</span> <span class="mi">80</span> <span class="o">*</span> <span class="n">z_B</span><span class="p">),</span>
+            <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="o">-</span><span class="p">(</span><span class="mi">120</span> <span class="o">-</span> <span class="mi">50</span> <span class="o">*</span> <span class="n">z_A</span> <span class="o">-</span> <span class="mi">40</span> <span class="o">*</span> <span class="n">z_B</span><span class="p">),</span>
+            <span class="s2">&quot;y3&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;y3&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+        <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">z_A</span><span class="p">,</span> <span class="s2">&quot;y3&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+        <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">z_B</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">z_B</span><span class="p">,</span> <span class="s2">&quot;y3&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+        <span class="s2">&quot;raw materials&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span> <span class="s2">&quot;y3&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+    <span class="p">}</span>
 
-    <span class="n">t</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;profit&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-          <span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">20</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">z_D</span><span class="p">),</span>
-          <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="mi">80</span><span class="p">,</span>
-          <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
-          <span class="s2">&quot;raw materials&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;profit&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">20</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">z_D</span><span class="p">),</span>
+        <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="mi">80</span><span class="p">,</span>
+        <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="s2">&quot;raw materials&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">}</span>
 
     <span class="k">return</span> <span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">t</span>
+
 
 <span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">model_params</span><span class="p">()</span>
 
@@ -712,54 +728,54 @@ t = {&#39;profit&#39;: 0, &#39;demand&#39;: -20, &#39;labor A&#39;: 80, &#39;lab
 </div>
 </div>
 </div>
-<p>We then generate <span class="math notranslate nohighlight">\(N=1000\)</span> scenarios sampling uniformly at random from the given uncertainty set.</p>
+<p>We define Pyomo model to maximize the worst-case profit for a set of scenarios, where the block structure is used to repeat the parts of the model which are structurally identical for each outcome of <span class="math notranslate nohighlight">\(\bm{z}\)</span>.</p>
+<p>We then generate <span class="math notranslate nohighlight">\(N=1000\)</span> scenarios sampling uniformly at random from the given uncertainty set. We then solve both the nominal problem (inputting a single scenario with the nominal values for the parameters) and the robust problem using <span class="math notranslate nohighlight">\(N=1000\)</span> samples.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sample the random variables z_A, z_B, z_D uniformly in the given set</span>
 <span class="k">def</span> <span class="nf">z_sample</span><span class="p">(</span><span class="n">seed</span><span class="p">):</span>
     <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
         <span class="n">sample</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="mf">0.15</span> <span class="o">*</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="mi">1</span><span class="p">),</span>
-            <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="mi">1</span><span class="p">),</span>
-            <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="mf">0.15</span> <span class="o">*</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+            <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+            <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
         <span class="p">}</span>
-        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mf">0.15</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mf">0.25</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mf">0.25</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">abs</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mf">0.15</span>
+            <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mf">0.25</span>
+            <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mf">0.25</span>
+            <span class="o">&lt;=</span> <span class="mi">2</span>
+        <span class="p">):</span>
             <span class="k">break</span>
     <span class="k">return</span> <span class="n">sample</span>
 
+
+<span class="c1"># Get a sample of 1000 realizations of the random variables z_A, z_B, z_D</span>
 <span class="n">N</span> <span class="o">=</span> <span class="mi">1000</span>
 <span class="n">Z</span> <span class="o">=</span> <span class="p">[</span><span class="n">z_sample</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">)]</span>
-</pre></div>
-</div>
-</div>
-</div>
-<p>We define Pyomo model to maximize the worst-case profit for a set of scenarios, where the block structure is used to repeat the parts of the model which are structurally identical for each outcome of <span class="math notranslate nohighlight">\(z\)</span>.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 
+
+<span class="c1"># Function to solve the robust problem using the sampled realizations</span>
 <span class="k">def</span> <span class="nf">max_min_profit</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">Z</span><span class="p">):</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Worst case problem&quot;</span><span class="p">)</span>
 
     <span class="c1"># first stage variables</span>
     <span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">model_params</span><span class="p">()</span>
-    
+
     <span class="n">m</span><span class="o">.</span><span class="n">I</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
     <span class="n">m</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">q</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-    
+
     <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">tau</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">()</span>
-    
+
     <span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="p">)))</span>
-    
+
     <span class="nd">@m</span><span class="o">.</span><span class="n">Block</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">scenario</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-
         <span class="c1"># get model parameters for the scenario</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">model_params</span><span class="p">(</span><span class="o">**</span><span class="n">Z</span><span class="p">[</span><span class="n">s</span><span class="p">])</span>
-        
+
         <span class="c1"># second stage variables</span>
         <span class="n">b</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">J</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
 
@@ -769,26 +785,33 @@ t = {&#39;profit&#39;: 0, &#39;demand&#39;: -20, &#39;labor A&#39;: 80, &#39;lab
 
         <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="k">def</span> <span class="nf">model_constraints</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
-            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">R</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">I</span><span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">S</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">J</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">t</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
-    
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="nb">sum</span><span class="p">(</span><span class="n">R</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+                <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">S</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">J</span><span class="p">)</span>
+                <span class="o">&lt;=</span> <span class="n">t</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="p">)</span>
+
     <span class="c1"># worst case profit</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">worst_case_profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">tau</span>
-    
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">m</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Solution to the nominal problem&quot;</span><span class="p">)</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">max_min_profit</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="p">[{</span><span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_B&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}])</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Objective value: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">worst_case_profit</span><span class="p">()</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Optimal solution: x = </span><span class="si">{</span><span class="p">[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
+<span class="c1"># Solve the nominal problem</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Solution to the nominal problem&quot;</span><span class="p">)</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">max_min_profit</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="p">[{</span><span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Objective value: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">worst_case_profit</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Optimal solution: x = </span><span class="si">{</span><span class="p">[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Solve the robust problem using the sampled realizations</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Solution to the robust problem using sampling&quot;</span><span class="p">)</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">max_min_profit</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Objective value: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">worst_case_profit</span><span class="p">()</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Optimal solution: x = </span><span class="si">{</span><span class="p">[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Objective value: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">worst_case_profit</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Optimal solution: x = </span><span class="si">{</span><span class="p">[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -804,57 +827,63 @@ Optimal solution: x = 547.81
 </div>
 </div>
 </div>
-<p>With the nominal data without any perturbation the optimal quantity of raw material to order is equal to <span class="math notranslate nohighlight">\(740.00\)</span> with a profit of <span class="math notranslate nohighlight">\(2600.00\)</span>, while for the worst-case profit optimization calculated over <span class="math notranslate nohighlight">\(1000\)</span> sampled scenarios, the optimal quantity of raw material to order is equal to <span class="math notranslate nohighlight">\(547.81\)</span> and the worst-case profit is equal to <span class="math notranslate nohighlight">\(883.04\)</span>.</p>
+<p>With the nominal data without any perturbation the optimal quantity of raw material to order is equal to <span class="math notranslate nohighlight">\(x^*=740.00\)</span> with a profit of <span class="math notranslate nohighlight">\(2600.00\)</span>, while for the worst-case profit optimization calculated over <span class="math notranslate nohighlight">\(1000\)</span> sampled scenarios, the optimal quantity of raw material to order is equal to <span class="math notranslate nohighlight">\(x^*=547.81\)</span> and the worst-case profit is equal to <span class="math notranslate nohighlight">\(883.04\)</span>.</p>
 </section>
 <section id="the-average-case-optimization-using-saa">
 <h2>The average-case optimization using SAA<a class="headerlink" href="#the-average-case-optimization-using-saa" title="Permalink to this heading">#</a></h2>
-<p>Instead of looking at the worst-case profit, we could be interested in optimizing for the average-case profit, assuming that every scenario within the uncertainty set is equally likely. We can approximate the optimal solution in this case using the Sample Average Approximation (SAA) method with the same sample as before with <span class="math notranslate nohighlight">\(N=1000\)</span> samples. The corresponding optimization model that we are implementing is:</p>
+<p>Instead of looking at the worst-case profit, we could be interested in optimizing for the average-case profit, assuming that every scenario within the uncertainty set is equally likely. In this case, we can approximate the optimal solution using the Sample Average Approximation (SAA) method with the same <span class="math notranslate nohighlight">\(N=1000\)</span> samples as before. The corresponding optimization model that we are implementing is:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
-\begin{align}
+\begin{align*}
 \max \limits_{x, y^j} \quad &amp; c^\top x + \frac{1}{N} \sum\limits_{j = 1}^N q^\top y^j \\
 \text{s.t.} \quad &amp; A x \leq b \\
 &amp; R ( z^j) x + S (z^j) y^j \leq t(z^j) &amp;\  j = 1, \ldots, N.
-\end{align}
+\end{align*}
 \end{split}\]</div>
 <p>The Pyomo implementation is a slight modification of previous worst-case model.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">max_avg_profit</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">Z</span><span class="p">):</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Average case problem (using SAA)&quot;</span><span class="p">)</span>
 
     <span class="c1"># first stage variables</span>
     <span class="n">c</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">model_params</span><span class="p">()</span>
     <span class="n">m</span><span class="o">.</span><span class="n">I</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
     <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-    
+
     <span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="p">)))</span>
-    
+
     <span class="nd">@m</span><span class="o">.</span><span class="n">Block</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">scenario</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-
         <span class="c1"># get model parameters for the scenario</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">model_params</span><span class="p">(</span><span class="o">**</span><span class="n">Z</span><span class="p">[</span><span class="n">s</span><span class="p">])</span>
-        
+
         <span class="c1"># second stage variables</span>
         <span class="n">b</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
 
         <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="k">def</span> <span class="nf">model_constraints</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
-            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">R</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">S</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">q</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&lt;=</span> <span class="n">t</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
-    
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="nb">sum</span><span class="p">(</span><span class="n">R</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+                <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">S</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">q</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="o">&lt;=</span> <span class="n">t</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="p">)</span>
+
     <span class="c1"># average profit</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">avg_profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">scenario</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="s2">&quot;y3&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
-    
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">scenario</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="s2">&quot;y3&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
+
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">m</span>
 
+
 <span class="n">m</span> <span class="o">=</span> <span class="n">max_avg_profit</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Objective value: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">avg_profit</span><span class="p">()</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Optimal solution: x = </span><span class="si">{</span><span class="p">[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Objective value: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">avg_profit</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Optimal solution: x = </span><span class="si">{</span><span class="p">[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="c1"># Store the per-scenario profit realizations into a numpy array</span>
 <span class="n">avg_case_ps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="p">))</span>
@@ -872,38 +901,37 @@ Optimal solution: x = 637.08
 </div>
 </div>
 </div>
-<p>For this model, the optimal to-order quantity of the raw material changes to <span class="math notranslate nohighlight">\( 637.08\)</span>, with the average profit that is promised being equal to <span class="math notranslate nohighlight">\(2305.93\)</span>.</p>
+<p>For this model, the optimal to-order quantity of the raw material changes to <span class="math notranslate nohighlight">\(x^*= 637.08\)</span>, with the average profit is equal to <span class="math notranslate nohighlight">\(2305.93\)</span>.</p>
 <p>Of course, this is only the comparison of the two approaches by looking at the first-stage decision. One can also be interested in the following two quantities:</p>
 <ul class="simple">
-<li><p>‘average-case performance’ of the optimal ordering decision of the robust solution - to find this one, one would need to fix this first-stage decision and for each of the sampled scenarios one would need to optimize the second-stage decisions, taking the average of their costs in the end.</p></li>
+<li><p>‘average-case performance’ of the optimal ordering decision of the robust solution - to find this one, one would need to fix this first-stage decision and for each of the sampled scenarios, one would need to optimize the second-stage decisions, taking the average of their costs in the end.</p></li>
 <li><p>‘worst-case performance’ of the optimal ordering decision of the robust solution - to find this, one would need to use a function like the one we used to solve the robust solution, but fixing the first-stage decision to be the one obtained from the stochastic solution.</p></li>
 </ul>
 <p>To do this, we define below a new function similar to the ones above, but which now takes as one of its arguments the fixed first-stage ordering decision and a boolean variable to indicate if we want to optimize for the average or for the worst-case. A careful reader will notice that this function could substitute both of the previous ones combined if the ‘first stage decision’ argument was made optional.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">max_profit_fixed_x</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">fixed_x_value</span><span class="p">,</span> <span class="n">worst_case</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">max_profit_fixed_x</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">fixed_x_value</span><span class="p">,</span> <span class="n">worst_case</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
 
     <span class="c1"># first stage variables</span>
     <span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">model_params</span><span class="p">()</span>
-    
+
     <span class="n">m</span><span class="o">.</span><span class="n">I</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
     <span class="n">m</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">q</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-    
+
     <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">tau</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">()</span>
-    
+
     <span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="p">)))</span>
 
     <span class="c1"># Fixing the first stage decision</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">Fixed_x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">fixed_x_value</span><span class="p">)</span>
-    
+    <span class="n">m</span><span class="o">.</span><span class="n">Fixed_x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">fixed_x_value</span><span class="p">)</span>
+
     <span class="nd">@m</span><span class="o">.</span><span class="n">Block</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">scenario</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-
         <span class="c1"># get model parameters for the scenario</span>
         <span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">model_params</span><span class="p">(</span><span class="o">**</span><span class="n">Z</span><span class="p">[</span><span class="n">s</span><span class="p">])</span>
-        
+
         <span class="c1"># second stage variables</span>
         <span class="n">b</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">J</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
 
@@ -913,93 +941,108 @@ Optimal solution: x = 637.08
 
         <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="k">def</span> <span class="nf">model_constraints</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
-            <span class="k">return</span>  <span class="nb">sum</span><span class="p">(</span><span class="n">R</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">I</span><span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">S</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">J</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">t</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
-    
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="nb">sum</span><span class="p">(</span><span class="n">R</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+                <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">S</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">J</span><span class="p">)</span>
+                <span class="o">&lt;=</span> <span class="n">t</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="p">)</span>
+
     <span class="c1"># deciding what do we optimize for based on the worst_case flag variable</span>
 
     <span class="c1"># worst-case minded optimization</span>
     <span class="k">if</span> <span class="n">worst_case</span><span class="p">:</span>
+
         <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
         <span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
             <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">tau</span>
 
     <span class="c1"># average-case minded optimization</span>
-    <span class="k">else</span><span class="p">:</span> 
+    <span class="k">else</span><span class="p">:</span>
+
         <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
         <span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">scenario</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="s2">&quot;y3&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
-    
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">scenario</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="s2">&quot;y3&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span>
+            <span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
+
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">m</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Solving for the average with optimal-worst-case first stage decision&quot;</span><span class="p">)</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">max_profit_fixed_x</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="mf">555.27</span><span class="p">,</span> <span class="n">worst_case</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Objective value: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">()</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Optimal solution: x = </span><span class="si">{</span><span class="p">[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+<span class="n">xopt_rob</span> <span class="o">=</span> <span class="mf">547.81</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Solving for the average with optimal-worst-case first-stage decision x = </span><span class="si">{</span><span class="n">xopt_rob</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">max_profit_fixed_x</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">xopt_rob</span><span class="p">,</span> <span class="n">worst_case</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Objective value: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> (average profit)&quot;</span><span class="p">)</span>
 
 <span class="c1"># Extracting the per-scenario realizations of the worst-case optimal solution</span>
 <span class="n">worst_case_ps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="p">))</span>
-
 <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="p">)):</span>
     <span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">model_params</span><span class="p">(</span><span class="o">**</span><span class="n">Z</span><span class="p">[</span><span class="n">s</span><span class="p">])</span>
-    <span class="n">worst_case_ps</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">scenario</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="s2">&quot;y3&quot;</span><span class="p">]()</span>
+    <span class="n">worst_case_ps</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">scenario</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="s2">&quot;y3&quot;</span><span class="p">]()</span>
+    <span class="p">)</span>
+
+<span class="n">xopt_avg</span> <span class="o">=</span> <span class="mf">637.08</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Solving for the worst-case with optimal-average first-stage decision x = </span><span class="si">{</span><span class="n">xopt_avg</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">max_profit_fixed_x</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">xopt_avg</span><span class="p">,</span> <span class="n">worst_case</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Objective value: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> (worst-case profit)&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Solving for the average with optimal-worst-case first stage decision
-Objective value: 2163.67
-Optimal solution: x = 555.27
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Solving for the worst-case with optimal-average first stage decision&quot;</span><span class="p">)</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">max_profit_fixed_x</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="mf">626.74</span><span class="p">,</span> <span class="n">worst_case</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Objective value: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">()</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Optimal solution: x = </span><span class="si">{</span><span class="p">[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Solving for the worst-case with optimal-average first stage decision
-Objective value: 93.77
-Optimal solution: x = 626.74
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Solving for the average with optimal-worst-case first-stage decision x = 547.81
+Objective value: 2140.78 (average profit)
+
+Solving for the worst-case with optimal-average first-stage decision x = 637.08
+Objective value: -9.63 (worst-case profit)
 </pre></div>
 </div>
 </div>
 </div>
 <p>To summarize the above results:</p>
 <ul class="simple">
-<li><p>the robust-minded first-stage solution has a worst-case performance of <span class="math notranslate nohighlight">\(883.04\)</span> and expected performance of <span class="math notranslate nohighlight">\(2163.67\)</span>,</p></li>
-<li><p>the average-minded first-stage solution has a worst-case performance of <span class="math notranslate nohighlight">\(93.77\)</span> and average-case performance of <span class="math notranslate nohighlight">\(2305.93\)</span>.</p></li>
+<li><p>the robust-minded first-stage solution <span class="math notranslate nohighlight">\(x^*=547.81\)</span> has a worst-case performance of <span class="math notranslate nohighlight">\(883.04\)</span> and an average performance of <span class="math notranslate nohighlight">\(2140.78\)</span>,</p></li>
+<li><p>the average-minded first-stage solution <span class="math notranslate nohighlight">\(x^*=637.08\)</span> has a worst-case performance of <span class="math notranslate nohighlight">\(-9.63\)</span> and an average performance of <span class="math notranslate nohighlight">\(2305.93\)</span>.</p></li>
 </ul>
 <p>There is thus a <strong>tradeoff</strong>: some solutions are good on average and underperform when things go very bad, and vice versa. To understand this tradeoff even better, we display the histograms of per-scenario profit performance of the two solutions.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;Robust&quot;</span><span class="p">:</span> <span class="n">worst_case_ps</span><span class="p">,</span>
-                     <span class="s2">&quot;Stochastic&quot;</span><span class="p">:</span> <span class="n">avg_case_ps</span><span class="p">})</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Collecting the per-scenario optimal values of both the stochastic and robust problems</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;Robust&quot;</span><span class="p">:</span> <span class="n">worst_case_ps</span><span class="p">,</span> <span class="s2">&quot;Stochastic&quot;</span><span class="p">:</span> <span class="n">avg_case_ps</span><span class="p">})</span>
 
-<span class="n">data</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">bins</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
-               <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">,</span>
-               <span class="n">xlabel</span> <span class="o">=</span> <span class="s2">&quot;Profit&quot;</span><span class="p">);</span>
+<span class="c1"># Plotting the results in a histogram</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">data</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">bins</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Profit&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/46bb18ff2f40adf0f908eb86e6fd456e8505a2c62259734b126d05d9b4df75b4.png" src="../../_images/46bb18ff2f40adf0f908eb86e6fd456e8505a2c62259734b126d05d9b4df75b4.png" />
+<img alt="../../_images/23b6ff5e3929c14e215165f9f49b4433f033aab9cd4441c4e492c376b7688952.png" src="../../_images/23b6ff5e3929c14e215165f9f49b4433f033aab9cd4441c4e492c376b7688952.png" />
 </div>
 </div>
-<p>What we observe is a very typical pattern - the robust solution’s ‘range’ of values is narrower, both in the best- and worst-situation sense, it gives thus stabler profit relations. This comes, however, at the expense of having a worse performance on an ‘average’ scenario. You can expect to observe this kind of phenomenon very often whenever you need to solve a problem under uncertainty and are unsure whether the worst-case or average-case performance should be optimized for. The degree of tradeoff can help you then make the right decision.</p>
+<p>What we observe is a very typical pattern: the robust solution’s ‘range’ of values is narrower, both in the best- and worst-situation sense, it gives thus stabler profit relations. This comes, however, at the expense of having a worse performance in an ‘average’ scenario. You can expect to observe this kind of phenomenon very often whenever you need to solve a problem under uncertainty and are unsure whether the worst-case or average-case performance should be optimized for. The degree of tradeoff can help you then make the right decision.</p>
 </section>
 <section id="column-and-constraint-generation-for-the-robust-solution">
 <h2>Column and constraint generation for the robust solution<a class="headerlink" href="#column-and-constraint-generation-for-the-robust-solution" title="Permalink to this heading">#</a></h2>
-<p>We now come back to trying to solve for the worst-case solution. The downside of the approach of sampling many scenarios and solving the max-min optimization problem just as before is that it requires really many scenarios to be reasonably sure that we cover most of the extreme outcomes of <span class="math notranslate nohighlight">\(z\)</span>. This is exactly an issue that the CCG algorithm is supposed to mitigate against - the idea is to gradually build a list of scenarios that are `bad’ and hopefully, end up with solving a problem with far less than 1000 problem copies included.</p>
-<p>In the pessimization step of the CCG, having solved problem \ref{ch10:complete.example.ccg.master} we want to find a new realization <span class="math notranslate nohighlight">\(z\)</span> where for each <span class="math notranslate nohighlight">\(i\)</span>, at least one of the rows in the constraint system</p>
+<p>We now come back to trying to solve for the worst-case solution. The downside of the approach of sampling many scenarios and solving the max-min optimization problem just as before is that it requires really many scenarios to be reasonably sure that we cover most of the extreme outcomes of <span class="math notranslate nohighlight">\(z\)</span>. This is exactly an issue that the CCG algorithm is supposed to mitigate against - the idea is to gradually build a list of scenarios that are `bad’ and hopefully, end up solving a problem with far less than 1000 problem copies included.</p>
+<p>In the pessimization step of the CCG, having solved the problem</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\max \quad &amp; c^\top x + \tau  \\ 
+\text{s.t.} \quad  &amp; q^\top y^j \geq \tau, &amp;&amp; j = 1, \ldots, k  \\
+&amp; R (z^j) x + S(z^j) y^j \leq t(z^j)  &amp;&amp;  j = 1, \ldots, k \\
+&amp; x, y^1, \ldots, y^k, \tau \geq 0 
+\end{align*}
+\end{split}\]</div>
+<p>for a collection of <span class="math notranslate nohighlight">\(k\)</span> realizations, we want to find a new realization <span class="math notranslate nohighlight">\(z\)</span> where for each <span class="math notranslate nohighlight">\(i\)</span>, at least one of the rows in the constraint system</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
@@ -1034,36 +1077,45 @@ C(z^i) \bar{x} + D(z^i) \bar{y}^i \leq e(z^i)
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">subproblem_params</span><span class="p">(</span><span class="n">dec</span><span class="p">):</span>
+    <span class="n">Left</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
+        <span class="s2">&quot;profit&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">50</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">50</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">]),</span>
+            <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">80</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">40</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">]),</span>
+            <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">],</span> <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+        <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">],</span> <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+    <span class="p">}</span>
 
-    <span class="n">Left</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;demand&quot;</span> <span class="p">:</span> <span class="p">{</span><span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
-            <span class="s2">&quot;profit&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">50</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">50</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">]),</span> <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">80</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">40</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">]),</span> <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
-             <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">],</span> <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
-             <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">],</span> <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}}</span>
-
-    <span class="n">Right</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span>
-             <span class="s2">&quot;profit&quot;</span><span class="p">:</span> <span class="mi">140</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">120</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y3&quot;</span><span class="p">],</span>
-              <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="mi">80</span> <span class="o">-</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">],</span>
-              <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="mi">100</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">]}</span>
+    <span class="n">Right</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span>
+        <span class="s2">&quot;profit&quot;</span><span class="p">:</span> <span class="mi">140</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">120</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y3&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;labor A&quot;</span><span class="p">:</span> <span class="mi">80</span> <span class="o">-</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;labor B&quot;</span><span class="p">:</span> <span class="mi">100</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">dec</span><span class="p">[</span><span class="s2">&quot;y2&quot;</span><span class="p">],</span>
+    <span class="p">}</span>
 
     <span class="k">return</span> <span class="n">Left</span><span class="p">,</span> <span class="n">Right</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p>We then implement formulate the pessimization problem, where for extra flexibility we include the following as arguments:</p>
-<ul class="simple">
-<li><p>tha maximum values of the parameters deviations,</p></li>
-<li><p>the uncertainty budget.</p></li>
-</ul>
+<p>We then implement the pessimization problem, which, for extra flexibility, includes the maximum values of the parameters’ deviations and an uncertainty budget <span class="math notranslate nohighlight">\(\Gamma\)</span>.</p>
 <p>Inspecting the implementation below (c.f. the comment ‘hack for faster CCG convergence’), one can notice that in fact we look for scenarios <span class="math notranslate nohighlight">\(z\)</span> that will make only the ‘feasibility’ constraints of the second-stage problem violated, without accounting for the ‘profit related’ proxy constraint. The reason for doing this is to (possibly) accelerate the CCG convergence - the profit constraint will be taken care of anyway as the variable <span class="math notranslate nohighlight">\(y_3\)</span> can adapt freely for each newly generated <span class="math notranslate nohighlight">\(z^i\)</span> and each newly generated solution to the master problem, and at the same time, we eliminate the risk of iteratively building a list of scenarios <span class="math notranslate nohighlight">\(z\)</span> that violate only the profit constraints across all <span class="math notranslate nohighlight">\(i\)</span>, without actually hurting the feasibility of the production plans made.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">pessimization_problem</span><span class="p">(</span><span class="n">subproblem_params</span><span class="p">,</span> <span class="n">master_solution</span><span class="p">,</span> <span class="n">z_A_max</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span> <span class="n">z_B_max</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">z_D_max</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">Gamma</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
-    
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">pessimization_problem</span><span class="p">(</span>
+    <span class="n">subproblem_params</span><span class="p">,</span>
+    <span class="n">master_solution</span><span class="p">,</span>
+    <span class="n">z_A_max</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span>
+    <span class="n">z_B_max</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
+    <span class="n">z_D_max</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">Gamma</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="p">):</span>
     <span class="c1"># Initial definitions</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
     <span class="n">big_M</span> <span class="o">=</span> <span class="mi">1000</span>
-    
+
     <span class="n">L</span><span class="p">,</span> <span class="n">R</span> <span class="o">=</span> <span class="n">subproblem_params</span><span class="p">(</span><span class="n">master_solution</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
     <span class="c1"># indices for the variables</span>
@@ -1071,61 +1123,75 @@ C(z^i) \bar{x} + D(z^i) \bar{y}^i \leq e(z^i)
 
     <span class="c1"># indices for the scenarios</span>
     <span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">master_solution</span><span class="p">)))</span>
-    
+
     <span class="n">m</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Z_INDICES</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">z_abs</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Z_INDICES</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-    
+
     <span class="n">m</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
-    
+
     <span class="c1"># Constraints on z itself</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">A_ub</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">z_A_max</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">A_lb</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="o">-</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">z_A_max</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">A_abs</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">z_abs</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">])</span>
-    
-    <span class="n">m</span><span class="o">.</span><span class="n">B_lb</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">z_B_max</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">B_ub</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="o">-</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">z_B_max</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">B_abs</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">z_abs</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">])</span>
-    
-    <span class="n">m</span><span class="o">.</span><span class="n">D_lb</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">z_D_max</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">D_ub</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="o">-</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">z_D_max</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">D_abs</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">z_abs</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">])</span>
-    
-    <span class="n">m</span><span class="o">.</span><span class="n">z_budget</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">z_abs</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">]</span><span class="o">/</span><span class="n">z_A_max</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">z_abs</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">]</span><span class="o">/</span><span class="n">z_B_max</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">z_abs</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">]</span><span class="o">/</span><span class="n">z_D_max</span> <span class="o">&lt;=</span> <span class="n">Gamma</span><span class="p">)</span>
-    
-    <span class="c1">#bounds = {&quot;z_A&quot;: (-0.15, 0.15),&quot;z_B&quot;: (-0.25, 0.25), &quot;z_D&quot;: (-0.5, 0.5)}</span>
-    
+    <span class="n">m</span><span class="o">.</span><span class="n">A_ub</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">z_A_max</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">A_lb</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=-</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">z_A_max</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">A_abs</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">z_abs</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">])</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">B_lb</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">z_B_max</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">B_ub</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=-</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">z_B_max</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">B_abs</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">z_abs</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">])</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">D_lb</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">z_D_max</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">D_ub</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=-</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">z_D_max</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">D_abs</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">z_abs</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">])</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">z_budget</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
+        <span class="n">expr</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">z_abs</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">z_A_max</span>
+        <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">z_abs</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">z_B_max</span>
+        <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">z_abs</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">z_D_max</span>
+        <span class="o">&lt;=</span> <span class="n">Gamma</span>
+    <span class="p">)</span>
+
+    <span class="c1"># bounds = {&quot;z_A&quot;: (-0.15, 0.15),&quot;z_B&quot;: (-0.25, 0.25), &quot;z_D&quot;: (-0.5, 0.5)}</span>
+
     <span class="c1"># Constraint violation: blockwise</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Block</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">scenario</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
         <span class="c1"># get model parameters for the scenario</span>
         <span class="n">L</span><span class="p">,</span> <span class="n">R</span> <span class="o">=</span> <span class="n">subproblem_params</span><span class="p">(</span><span class="n">master_solution</span><span class="p">[</span><span class="n">s</span><span class="p">])</span>
-        
+
         <span class="c1"># second stage variables</span>
         <span class="n">b</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
-        
+
         <span class="c1"># hack for faster CCG convergence</span>
         <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-        <span class="k">def</span> <span class="nf">at_least_one_violated</span><span class="p">(</span><span class="n">b</span><span class="p">):</span> <span class="c1"># only care for violations related to the `actual&#39; constraints, not the profit constraint</span>
-            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">L</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">&quot;profit&quot;</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="k">def</span> <span class="nf">at_least_one_violated</span><span class="p">(</span>
+            <span class="n">b</span><span class="p">,</span>
+        <span class="p">):</span>  <span class="c1"># only care for violations related to the `actual&#39; constraints, not the profit constraint</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">L</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">&quot;profit&quot;</span><span class="p">)</span>
+                <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="mi">2</span>
+            <span class="p">)</span>
 
         <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="k">def</span> <span class="nf">model_constraints</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
-            <span class="k">return</span>  <span class="nb">sum</span><span class="p">(</span><span class="n">L</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">Z_INDICES</span><span class="p">)</span> <span class="o">-</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">theta</span> <span class="o">&gt;=</span> <span class="n">R</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">b</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">big_M</span>
-    
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="nb">sum</span><span class="p">(</span><span class="n">L</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">Z_INDICES</span><span class="p">)</span>
+                <span class="o">-</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span><span class="o">.</span><span class="n">theta</span>
+                <span class="o">&gt;=</span> <span class="n">R</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">b</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">big_M</span>
+            <span class="p">)</span>
+
     <span class="c1"># worst case profit</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">max_violation</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">theta</span>
-    
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">(),</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_A&quot;</span><span class="p">](),</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_B&quot;</span><span class="p">](),</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="s2">&quot;z_D&quot;</span><span class="p">]()</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p>With the two functions above defined, we are ready to put them together into an implementation of the CCG algorithm. In the below code, we hard-limit the maximum number of iterations to 50 scenarios and we decide to stop the algorithm when the optimal value of the pessimization subproblem is less than 0.1 (constraint violation of 0.1 seems to be “acceptably small” given the fact that the labor availability numbers are in the magnitude of 80 and 100, and the amount of raw material purchased is also expected to be in the hundreds, just like the optimal profit).</p>
+<p>With the two functions above defined, we are ready to put them together into an implementation of the CCG algorithm. In the below code, we put a hard limit of 50 iterations and we decide to stop the algorithm when the optimal value of the pessimization subproblem is less than 0.1 (constraint violation of 0.1 seems to be “acceptably small” given the fact that the labor availability numbers are in the magnitude of 80 and 100, and the amount of raw material purchased is also expected to be in the hundreds, just like the optimal profit).</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ccg_converged</span> <span class="o">=</span> <span class="kc">False</span>
@@ -1134,44 +1200,48 @@ C(z^i) \bar{x} + D(z^i) \bar{y}^i \leq e(z^i)
 <span class="n">ccg_iterations</span> <span class="o">=</span> <span class="mi">0</span>
 
 <span class="c1"># Initialize the null scenario - no perturbation</span>
-<span class="n">Z</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_B&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}]</span>
+<span class="n">Z</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}]</span>
 
-<span class="k">while</span><span class="p">((</span><span class="ow">not</span> <span class="n">ccg_converged</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">ccg_iterations</span> <span class="o">&lt;</span> <span class="n">max_iterations</span><span class="p">)):</span>
-    
+<span class="k">while</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ccg_converged</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">ccg_iterations</span> <span class="o">&lt;</span> <span class="n">max_iterations</span><span class="p">):</span>
     <span class="c1"># Building and solving the master problem</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">max_min_profit</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
-    
+
     <span class="c1"># Exporting the data from the master problem into a list of dictionaries</span>
     <span class="n">c</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">model_params</span><span class="p">()</span>
-    
+
     <span class="n">master_solution</span> <span class="o">=</span> <span class="p">[]</span>
-    
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Iteration #</span><span class="si">{</span><span class="n">ccg_iterations</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Iteration #</span><span class="si">{</span><span class="n">ccg_iterations</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="p">)):</span>
         <span class="n">single_solution</span> <span class="o">=</span> <span class="p">{}</span>
-        
+
         <span class="k">for</span> <span class="n">x_key</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="n">single_solution</span><span class="p">[</span><span class="n">x_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">x_key</span><span class="p">]()</span>
-        
+
         <span class="k">for</span> <span class="n">y_key</span> <span class="ow">in</span> <span class="n">q</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="n">single_solution</span><span class="p">[</span><span class="n">y_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">scenario</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">y_key</span><span class="p">]()</span>
-            
+
         <span class="n">master_solution</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">single_solution</span><span class="p">)</span>
-    
+
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Current solution: x = </span><span class="si">{</span><span class="n">master_solution</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;x&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-    
+
     <span class="c1"># Pessimization</span>
-    <span class="n">theta_opt</span><span class="p">,</span> <span class="n">z_A</span><span class="p">,</span> <span class="n">z_B</span><span class="p">,</span> <span class="n">z_D</span> <span class="o">=</span> <span class="n">pessimization_problem</span><span class="p">(</span><span class="n">subproblem_params</span><span class="p">,</span> <span class="n">master_solution</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-    
+    <span class="n">theta_opt</span><span class="p">,</span> <span class="n">z_A</span><span class="p">,</span> <span class="n">z_B</span><span class="p">,</span> <span class="n">z_D</span> <span class="o">=</span> <span class="n">pessimization_problem</span><span class="p">(</span>
+        <span class="n">subproblem_params</span><span class="p">,</span> <span class="n">master_solution</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mi">2</span>
+    <span class="p">)</span>
+
     <span class="c1"># If pessimization yields no violation, stop the procedure, otherwise add a scenario and repeat</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">theta_opt</span> <span class="o">&lt;</span> <span class="n">stopping_precision</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">theta_opt</span> <span class="o">&lt;</span> <span class="n">stopping_precision</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No violation found. Stopping the procedure.&quot;</span><span class="p">)</span>
         <span class="n">ccg_converged</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Violation found: z_A = </span><span class="si">{</span><span class="n">z_A</span><span class="si">:</span><span class="s2">4.2f</span><span class="si">}</span><span class="s2">,  z_B = </span><span class="si">{</span><span class="n">z_B</span><span class="si">:</span><span class="s2">4.2f</span><span class="si">}</span><span class="s2">,  z_D = </span><span class="si">{</span><span class="n">z_D</span><span class="si">:</span><span class="s2">4.2f</span><span class="si">}</span><span class="s2">, constraint violation: </span><span class="si">{</span><span class="n">theta_opt</span><span class="si">:</span><span class="s2">6.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Violation found: z_A = </span><span class="si">{</span><span class="n">z_A</span><span class="si">:</span><span class="s2">4.2f</span><span class="si">}</span><span class="s2">,  z_B = </span><span class="si">{</span><span class="n">z_B</span><span class="si">:</span><span class="s2">4.2f</span><span class="si">}</span><span class="s2">,  z_D = </span><span class="si">{</span><span class="n">z_D</span><span class="si">:</span><span class="s2">4.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Constraint violation: </span><span class="si">{</span><span class="n">theta_opt</span><span class="si">:</span><span class="s2">6.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">Z</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;z_A&quot;</span><span class="p">:</span> <span class="n">z_A</span><span class="p">,</span> <span class="s2">&quot;z_B&quot;</span><span class="p">:</span> <span class="n">z_B</span><span class="p">,</span> <span class="s2">&quot;z_D&quot;</span><span class="p">:</span> <span class="n">z_D</span><span class="p">})</span>
-    
+
     <span class="n">ccg_iterations</span> <span class="o">+=</span> <span class="mi">1</span>
 </pre></div>
 </div>
@@ -1192,7 +1262,7 @@ No violation found. Stopping the procedure.
 </div>
 </div>
 </div>
-<p>It takes only two iterations, instead of 1000 scenarios, to arrive at an “almost” robust solution which pretty much the same first-stage decisions as in the first case.</p>
+<p>It takes only two iterations, instead of 1000 scenarios, to arrive at an “almost” robust solution that has essentially the same first-stage decisions as in the first case.</p>
 <p>It really pays off thus to generate scenarios only when they are needed and if they are needed. This principle of “delayed generation of scenarios” has its applications in many fields of large-scale optimization, not just in the context of robustness but even for deterministic problems, where it is known as <strong>column generation</strong> but which is not discussed throughout this book.</p>
 </section>
 <section id="bibliographic-notes">
@@ -1212,16 +1282,16 @@ No violation found. Stopping the procedure.
         },
         codeMirrorConfig: {
             theme: "abcdef",
-            mode: "pyenv_3.11.1"
+            mode: "python"
         },
         kernelOptions: {
-            name: "pyenv_3.11.1",
+            name: "python3",
             path: "./notebooks/10"
         },
         predefinedOutput: true
     }
     </script>
-    <script>kernelName = 'pyenv_3.11.1'</script>
+    <script>kernelName = 'python3'</script>
 
                 </article>
               
@@ -1237,15 +1307,15 @@ No violation found. Stopping the procedure.
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Two-stage energy dispatch optimization using linear decision rules</p>
+        <p class="prev-next-title">Optimal power flow problem with recourse actions</p>
       </div>
     </a>
     <a class="right-next"
-       href="../../pyomo_style_guide.html"
+       href="farmer.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Appendix: Pyomo style guide</p>
+        <p class="prev-next-title">Extra: The farmer’s problem and its ariants</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
