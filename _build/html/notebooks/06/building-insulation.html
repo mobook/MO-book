@@ -510,6 +510,7 @@ document.write(`
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><section class="tex2jax_ignore mathjax_ignore" id="optimal-design-of-multilayered-building-insulation">
 <span id="index-4"></span><h1>Optimal Design of Multilayered Building Insulation<a class="headerlink" href="#optimal-design-of-multilayered-building-insulation" title="Permalink to this heading">#</a></h1>
 <p>Thermal insulation is installed in buildings to reduce annual energy costs. However, the installation costs money, so the decision of how much insulation to install is a trade-off between the annualized capital costs of insulation and the annual operating costs for heating and air conditioning. This notebook shows the formulation and solution of an optimization problem using conic programming.</p>
+<p>Note on Pyomo and</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
@@ -522,14 +523,12 @@ document.write(`
 
 <span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
 <span class="n">helper</span><span class="o">.</span><span class="n">install_mosek</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_gurobi</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
 mosek was previously installed
-gurobi was previously installed
 </pre></div>
 </div>
 </div>
@@ -627,7 +626,7 @@ C(x) = \frac{\alpha k}{k R_0 + x} + \beta(a + bx).
 The optimal thickness is 0.28641 meters
 </pre></div>
 </div>
-<img alt="../../_images/9a91c6999bd4f80f8dd3360abcfbfaf32d173a8788279b4c0d6eff646877ded5.png" src="../../_images/9a91c6999bd4f80f8dd3360abcfbfaf32d173a8788279b4c0d6eff646877ded5.png" />
+<img alt="../../_images/678d7ac24b69d4c79c4a8aefb6cd897f7248b99fc87f4fb0044148ab95dabd55.png" src="../../_images/678d7ac24b69d4c79c4a8aefb6cd897f7248b99fc87f4fb0044148ab95dabd55.png" />
 </div>
 </div>
 </section>
@@ -653,6 +652,7 @@ The optimal thickness is 0.28641 meters
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
+<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">block</span><span class="p">()</span>
 
@@ -671,7 +671,13 @@ The optimal thickness is 0.28641 meters
 <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">rotated_quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)])</span>
 
 <span class="c1"># solve with &#39;mosek_direct&#39; or &#39;gurobi_direct&#39;</span>
-<span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;mosek_direct&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="c1">#pmo.SolverFactory(&#39;mosek_direct&#39;).solve(m)</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;NEOS_EMAIL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;jeff@nd.edu&#39;</span>
+
+<span class="n">solver_manager</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverManagerFactory</span><span class="p">(</span><span class="s1">&#39;neos&#39;</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">solver_manager</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">&quot;mosek&quot;</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal thickness is xopt = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> meters&quot;</span><span class="p">)</span>
@@ -679,8 +685,38 @@ The optimal thickness is 0.28641 meters
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal cost is equal to 4.99615 per sq. meter
-The optimal thickness is xopt = 0.28640 meters
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">TypeError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="nn">/var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/ipykernel_38469/241066547.py</span> in <span class="ni">&lt;cell line: 29&gt;</span><span class="nt">()</span>
+<span class="g g-Whitespace">     </span><span class="mi">27</span> <span class="n">results</span> <span class="o">=</span> <span class="n">solver_manager</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">&quot;mosek&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">28</span> 
+<span class="ne">---&gt; </span><span class="mi">29</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">30</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal thickness is xopt = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> meters&quot;</span><span class="p">)</span>
+
+<span class="ne">TypeError</span>: unsupported format string passed to NoneType.__format__
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Problem: 
+- Lower bound: -inf
+  Upper bound: inf
+  Number of objectives: 1
+  Number of constraints: 5
+  Number of variables: 6
+  Sense: unknown
+Solver: 
+- Status: error
+  Message: MOSEK finished.; Problem status    \x3a UNKNOWN; Solution status   \x3a UNKNOWN
+  Termination condition: internalSolverError
+  Id: 500
 </pre></div>
 </div>
 </div>
@@ -972,7 +1008,7 @@ z = 2
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/18b0ae66cf0a244b105d7472d011565dd8e923379624d7513b1e1b85dc21a0b7.png" src="../../_images/18b0ae66cf0a244b105d7472d011565dd8e923379624d7513b1e1b85dc21a0b7.png" />
+<img alt="../../_images/d69a7543e49c808c7cc827c08291773c9d0eab1ef03c5dad885b057007a4009b.png" src="../../_images/d69a7543e49c808c7cc827c08291773c9d0eab1ef03c5dad885b057007a4009b.png" />
 </div>
 </div>
 </section>
