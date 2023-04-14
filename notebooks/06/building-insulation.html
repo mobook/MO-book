@@ -252,7 +252,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../10/airline-seating.html">Airline seat allocation problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/opf-ldr.html">Optimal power flow problem with recourse actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/ccg.html">Two-stage Production Planning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../10/farmer.html">Extra: The farmer’s problem and its ariants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../10/farmer.html">Extra: The farmer’s problem and its variants</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/opf-wind-curtailment.html">Extra: Two-stage energy dispatch optimization with wind curtailment</a></li>
 
 </ul>
@@ -513,22 +513,17 @@ document.write(`
 <p>Note on Pyomo and</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># install Pyomo and solvers</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install -q idaes-pse &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>idaes -q get-extensions
+    <span class="kn">import</span> <span class="nn">idaes</span>
+    <span class="n">conic_solver</span> <span class="o">=</span> <span class="s2">&quot;/root/.idaes/bin/ipopt&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_mosek</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-mosek was previously installed
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">conic_solver</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -671,13 +666,7 @@ The optimal thickness is 0.28641 meters
 <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">rotated_quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)])</span>
 
 <span class="c1"># solve with &#39;mosek_direct&#39; or &#39;gurobi_direct&#39;</span>
-<span class="c1">#pmo.SolverFactory(&#39;mosek_direct&#39;).solve(m)</span>
-
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;NEOS_EMAIL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;jeff@nd.edu&#39;</span>
-
-<span class="n">solver_manager</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverManagerFactory</span><span class="p">(</span><span class="s1">&#39;neos&#39;</span><span class="p">)</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">solver_manager</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">&quot;mosek&quot;</span><span class="p">)</span>
+<span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">conic_solver</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal thickness is xopt = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> meters&quot;</span><span class="p">)</span>
@@ -685,15 +674,8 @@ The optimal thickness is 0.28641 meters
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">TypeError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="nn">/var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/ipykernel_38469/241066547.py</span> in <span class="ni">&lt;cell line: 29&gt;</span><span class="nt">()</span>
-<span class="g g-Whitespace">     </span><span class="mi">27</span> <span class="n">results</span> <span class="o">=</span> <span class="n">solver_manager</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s2">&quot;mosek&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">28</span> 
-<span class="ne">---&gt; </span><span class="mi">29</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">30</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal thickness is xopt = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> meters&quot;</span><span class="p">)</span>
-
-<span class="ne">TypeError</span>: unsupported format string passed to NoneType.__format__
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal cost is equal to 4.99615 per sq. meter
+The optimal thickness is xopt = 0.28640 meters
 </pre></div>
 </div>
 </div>
@@ -816,7 +798,7 @@ z = 2
     <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">rotated_quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)])</span>
 
     <span class="c1"># solve with &#39;mosek_direct&#39; or &#39;gurobi_direct&#39;</span>
-    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;mosek_direct&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">conic_solver</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     
     <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
         <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;x opt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]()</span> 
