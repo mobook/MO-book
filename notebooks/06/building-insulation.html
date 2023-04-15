@@ -73,7 +73,7 @@ const thebe_selector_output = ".output, .cell_output"
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/06/building-insulation';</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Training Support Vector Machines with Conic Programming" href="svm-conic.html" />
+    <link rel="next" title="Support Vector Machines Revisited" href="svm-conic.html" />
     <link rel="prev" title="Markowitz portfolio optimization revisited" href="markowitz_portfolio_revisited.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -225,9 +225,9 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="kelly-criterion.html">The Kelly Criterion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="markowitz_portfolio_revisited.html">Markowitz portfolio optimization revisited</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Optimal Design of Multilayered Building Insulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="svm-conic.html">Training Support Vector Machines with Conic Programming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="svm-conic.html">Support Vector Machines Revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="investment-wheel.html">Extra material: Luenberger’s Investment Wheel</a></li>
-<li class="toctree-l2"><a class="reference internal" href="optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios with Risk Aversion</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../07/07.00.html">7. Accounting for Uncertainty: Optimization Meets Reality</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-7"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -510,7 +510,6 @@ document.write(`
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><section class="tex2jax_ignore mathjax_ignore" id="optimal-design-of-multilayered-building-insulation">
 <span id="index-4"></span><h1>Optimal Design of Multilayered Building Insulation<a class="headerlink" href="#optimal-design-of-multilayered-building-insulation" title="Permalink to this heading">#</a></h1>
 <p>Thermal insulation is installed in buildings to reduce annual energy costs. However, the installation costs money, so the decision of how much insulation to install is a trade-off between the annualized capital costs of insulation and the annual operating costs for heating and air conditioning. This notebook shows the formulation and solution of an optimization problem using conic programming.</p>
-<p>Note on Pyomo and</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># install Pyomo and solvers</span>
@@ -520,10 +519,10 @@ document.write(`
     <span class="o">!</span>pip install -q idaes-pse &gt;/dev/null <span class="m">2</span>&gt;/dev/null
     <span class="o">!</span>idaes -q get-extensions
     <span class="kn">import</span> <span class="nn">idaes</span>
-    <span class="n">conic_solver</span> <span class="o">=</span> <span class="s2">&quot;/root/.idaes/bin/ipopt&quot;</span>
+    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;/root/.idaes/bin/ipopt&quot;</span>
 
 <span class="k">else</span><span class="p">:</span>
-    <span class="n">conic_solver</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
+    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -665,8 +664,8 @@ The optimal thickness is 0.28641 meters
 <span class="c1"># conic constraint</span>
 <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">rotated_quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)])</span>
 
-<span class="c1"># solve with &#39;mosek_direct&#39; or &#39;gurobi_direct&#39;</span>
-<span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">conic_solver</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="c1"># solve</span>
+<span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal thickness is xopt = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> meters&quot;</span><span class="p">)</span>
@@ -676,29 +675,6 @@ The optimal thickness is 0.28641 meters
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal cost is equal to 4.99615 per sq. meter
 The optimal thickness is xopt = 0.28640 meters
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Problem: 
-- Lower bound: -inf
-  Upper bound: inf
-  Number of objectives: 1
-  Number of constraints: 5
-  Number of variables: 6
-  Sense: unknown
-Solver: 
-- Status: error
-  Message: MOSEK finished.; Problem status    \x3a UNKNOWN; Solution status   \x3a UNKNOWN
-  Termination condition: internalSolverError
-  Id: 500
 </pre></div>
 </div>
 </div>
@@ -797,8 +773,8 @@ z = 2
     <span class="c1"># conic constraint</span>
     <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">rotated_quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)])</span>
 
-    <span class="c1"># solve with &#39;mosek_direct&#39; or &#39;gurobi_direct&#39;</span>
-    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">conic_solver</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="c1"># solve</span>
+    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     
     <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
         <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;x opt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]()</span> 
@@ -1068,7 +1044,7 @@ z = 2
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Training Support Vector Machines with Conic Programming</p>
+        <p class="prev-next-title">Support Vector Machines Revisited</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

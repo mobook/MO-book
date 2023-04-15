@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Extra material: Optimal Growth Portfolios &#8212; Companion Notebooks for Data-Driven Optimization in Python</title>
+    <title>Extra material: Optimal Growth Portfolios with Risk Aversion &#8212; Companion Notebooks for Data-Driven Optimization in Python</title>
   
   
   
@@ -225,9 +225,9 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="kelly-criterion.html">The Kelly Criterion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="markowitz_portfolio_revisited.html">Markowitz portfolio optimization revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="building-insulation.html">Optimal Design of Multilayered Building Insulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="svm-conic.html">Training Support Vector Machines with Conic Programming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="svm-conic.html">Support Vector Machines Revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="investment-wheel.html">Extra material: Luenberger’s Investment Wheel</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Extra material: Optimal Growth Portfolios</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Extra material: Optimal Growth Portfolios with Risk Aversion</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../07/07.00.html">7. Accounting for Uncertainty: Optimization Meets Reality</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-7"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -252,7 +252,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../10/airline-seating.html">Airline seat allocation problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/opf-ldr.html">Optimal power flow problem with recourse actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/ccg.html">Two-stage Production Planning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../10/farmer.html">Extra: The farmer’s problem and its ariants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../10/farmer.html">Extra: The farmer’s problem and its variants</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/opf-wind-curtailment.html">Extra: Two-stage energy dispatch optimization with wind curtailment</a></li>
 
 </ul>
@@ -477,7 +477,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Extra material: Optimal Growth Portfolios</h1>
+    <h1>Extra material: Optimal Growth Portfolios with Risk Aversion</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -509,28 +509,23 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><section class="tex2jax_ignore mathjax_ignore" id="extra-material-optimal-growth-portfolios">
-<span id="index-4"></span><h1>Extra material: Optimal Growth Portfolios<a class="headerlink" href="#extra-material-optimal-growth-portfolios" title="Permalink to this heading">#</a></h1>
+  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><section class="tex2jax_ignore mathjax_ignore" id="extra-material-optimal-growth-portfolios-with-risk-aversion">
+<span id="index-4"></span><h1>Extra material: Optimal Growth Portfolios with Risk Aversion<a class="headerlink" href="#extra-material-optimal-growth-portfolios-with-risk-aversion" title="Permalink to this heading">#</a></h1>
 <p>Among the reasons why Kelly was neglected by investors were high profile critiques by the most famous economist of the 20th Century, Paul Samuelson. Samuelson objected on several grounds, among them is a lack of risk aversion that results in large bets and risky short term behavior, and that Kelly’s result is applicable to only one of many utility functions that describe investor preferences. The controversy didn’t end there, however, as other academic economists, including Harry Markowitz, and practitioners found ways to adapt the Kelly criterion to investment funds.</p>
 <p>This notebook presents solutions to Kelly’s problem for optimal growth portfolios using exponential cones. A significant feature of this notebook is the the inclusion of a risk constraints recently proposed by Boyd and coworkers. These notes are based on recent papers such as Cajas (2021), Busseti, Ryu and Boyd (2016), Fu, Narasimhan, and Boyd (2017). Additional bibliographic notes are provided at the end of the notebook.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install -q idaes-pse &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>idaes -q get-extensions
+    <span class="kn">import</span> <span class="nn">idaes</span>
+    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;/root/.idaes/bin/ipopt&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_mosek</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-mosek was previously installed
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -586,8 +581,8 @@ mosek was previously installed
 <span class="n">today</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
 
 <span class="c1"># training data dates</span>
-<span class="n">start</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="nb">int</span><span class="p">((</span><span class="n">n_test</span> <span class="o">+</span> <span class="n">n_train</span><span class="p">)</span><span class="o">*</span><span class="mi">365</span><span class="p">))</span>
 <span class="n">end</span> <span class="o">=</span> <span class="n">today</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">n_test</span><span class="o">*</span><span class="mi">365</span><span class="p">))</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="nb">int</span><span class="p">((</span><span class="n">n_test</span> <span class="o">+</span> <span class="n">n_train</span><span class="p">)</span><span class="o">*</span><span class="mi">365</span><span class="p">))</span>
 
 <span class="c1"># get training data</span>
 <span class="n">S</span> <span class="o">=</span> <span class="n">yf</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">symbols</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">)[</span><span class="s2">&quot;Adj Close&quot;</span><span class="p">]</span>
@@ -619,7 +614,7 @@ mosek was previously installed
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/447247fdfade36a12c09ca5cf293837e88eb52e60ad59570b1451e5752004c11.png" src="../../_images/447247fdfade36a12c09ca5cf293837e88eb52e60ad59570b1451e5752004c11.png" />
+<img alt="../../_images/56d98c7f951bc55e1ef21d300d6f66d4dce84a7b62b81628249917fcf289057d.png" src="../../_images/56d98c7f951bc55e1ef21d300d6f66d4dce84a7b62b81628249917fcf289057d.png" />
 </div>
 </div>
 </section>
@@ -717,7 +712,7 @@ mosek was previously installed
     <span class="c1"># equity multiplier constraint</span>
     <span class="n">m</span><span class="o">.</span><span class="n">w_sum</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">EM</span><span class="p">)</span>
 
-    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;mosek_direct&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     
     <span class="k">return</span> <span class="n">m</span>
 
@@ -771,46 +766,46 @@ Equity Multiplier Limit = 1.00000
 Risk Aversion = 10.00000
 
 Portfolio
-AAPL     Apple                              68.86 %
+AAPL     Apple                              66.96 %
 AMGN     Amgen                               0.00 %
 AXP      American Express                    0.00 %
 BA       Boeing                              0.00 %
-CAT      Caterpillar                         0.00 %
+CAT      Caterpillar                         4.93 %
 CVX      Chevron                             0.00 %
 JPM      JPMorgan Chase                      0.00 %
 MCD      McDonald&#39;s                          0.00 %
 MMM      3 M                                 0.00 %
-MSFT     Microsoft                          18.46 %
-PG       Proctor &amp; Gamble                   12.69 %
+MSFT     Microsoft                           0.00 %
+PG       Proctor &amp; Gamble                   13.67 %
 XOM      ExxonMobil                          0.00 %
 ^DJI     Dow Jones Industrial                0.00 %
 ^GSPC    S&amp;P 500                             0.00 %
 ^IXIC    Nasdaq                              0.00 %
 ^RUT     Russell 2000                        0.00 %
-         Risk Free                           0.00 %
+         Risk Free                          14.44 %
 
-Annualized return = 58.97 %
+Annualized return = 38.37 %
 
-2021-12-23 00:00:00
-AAPL 462.1402751330245
-AMGN 130.04382101546432
-AXP 182.80976448910283
-BA 66.94755058346549
-CAT 178.73960275702083
-CVX 125.44263918160813
-JPM 179.53259722238695
-MCD 164.0841327472793
-MMM 103.91645653491713
-MSFT 344.18644579603733
-PG 191.93066674515254
-XOM 106.78186016458329
-^DJI 157.13721786827566
-^GSPC 191.50586102732186
-^IXIC 238.8237820886309
-^RUT 168.56392863319368
+2022-04-13 00:00:00
+AAPL 351.3577689029902
+AMGN 144.86162489189198
+AXP 169.37670882626404
+BA 49.873702831238866
+CAT 168.04128929376037
+CVX 165.43126321323123
+JPM 126.55155145543813
+MCD 140.5484585059288
+MMM 76.40264037232453
+MSFT 245.17532487831429
+PG 162.48017807142713
+XOM 129.28882165245506
+^DJI 131.00205329749747
+^GSPC 153.03621735386585
+^IXIC 171.05783774928577
+^RUT 128.23824662520434
 </pre></div>
 </div>
-<img alt="../../_images/0ef9ba79397a67ca3a744f008a3fa7e0dff282650b8a70a7be16b2b490c06dec.png" src="../../_images/0ef9ba79397a67ca3a744f008a3fa7e0dff282650b8a70a7be16b2b490c06dec.png" />
+<img alt="../../_images/d2dd6f24e4659ca8743f5c7b149236a74a5bb23e777fe53405a2afa2199fc711.png" src="../../_images/d2dd6f24e4659ca8743f5c7b149236a74a5bb23e777fe53405a2afa2199fc711.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -838,9 +833,21 @@ XOM 106.78186016458329
   <thead>
     <tr style="text-align: right;">
       <th></th>
+      <th>AAPL</th>
+      <th>AMGN</th>
+      <th>AXP</th>
+      <th>BA</th>
+      <th>CAT</th>
+      <th>CVX</th>
+      <th>JPM</th>
+      <th>MCD</th>
+      <th>MMM</th>
+      <th>MSFT</th>
+      <th>PG</th>
+      <th>XOM</th>
+      <th>^DJI</th>
       <th>^GSPC</th>
       <th>^IXIC</th>
-      <th>^DJI</th>
       <th>^RUT</th>
     </tr>
     <tr>
@@ -849,43 +856,115 @@ XOM 106.78186016458329
       <th></th>
       <th></th>
       <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th>2018-12-24</th>
-      <td>2351.100098</td>
-      <td>6192.919922</td>
-      <td>21792.199219</td>
-      <td>1266.920044</td>
+      <th>2019-04-15</th>
+      <td>48.205555</td>
+      <td>169.602066</td>
+      <td>104.482323</td>
+      <td>366.666168</td>
+      <td>126.918045</td>
+      <td>100.327843</td>
+      <td>97.336708</td>
+      <td>174.866989</td>
+      <td>186.001526</td>
+      <td>116.172272</td>
+      <td>95.680504</td>
+      <td>64.799583</td>
+      <td>26384.769531</td>
+      <td>2905.580078</td>
+      <td>7976.009766</td>
+      <td>1579.170044</td>
     </tr>
     <tr>
-      <th>2018-12-26</th>
-      <td>2467.699951</td>
-      <td>6554.359863</td>
-      <td>22878.449219</td>
-      <td>1329.810059</td>
+      <th>2019-04-16</th>
+      <td>48.210403</td>
+      <td>166.807877</td>
+      <td>105.758430</td>
+      <td>372.779541</td>
+      <td>128.528854</td>
+      <td>101.187988</td>
+      <td>98.363708</td>
+      <td>174.730240</td>
+      <td>186.923676</td>
+      <td>115.903542</td>
+      <td>96.304924</td>
+      <td>65.241478</td>
+      <td>26452.660156</td>
+      <td>2907.060059</td>
+      <td>8000.229980</td>
+      <td>1582.790039</td>
     </tr>
     <tr>
-      <th>2018-12-27</th>
-      <td>2488.830078</td>
-      <td>6579.490234</td>
-      <td>23138.820312</td>
-      <td>1331.819946</td>
+      <th>2019-04-17</th>
+      <td>49.149212</td>
+      <td>161.858200</td>
+      <td>105.645012</td>
+      <td>368.677887</td>
+      <td>129.171371</td>
+      <td>100.436401</td>
+      <td>101.196877</td>
+      <td>174.648239</td>
+      <td>187.561401</td>
+      <td>116.863243</td>
+      <td>96.465302</td>
+      <td>65.426285</td>
+      <td>26449.539062</td>
+      <td>2900.449951</td>
+      <td>7996.080078</td>
+      <td>1567.599976</td>
     </tr>
     <tr>
-      <th>2018-12-28</th>
-      <td>2485.739990</td>
-      <td>6584.520020</td>
-      <td>23062.400391</td>
-      <td>1337.920044</td>
+      <th>2019-04-18</th>
+      <td>49.325829</td>
+      <td>157.423004</td>
+      <td>107.450493</td>
+      <td>371.168182</td>
+      <td>130.518799</td>
+      <td>100.094002</td>
+      <td>100.453171</td>
+      <td>177.656082</td>
+      <td>188.630035</td>
+      <td>118.398796</td>
+      <td>96.647575</td>
+      <td>65.185234</td>
+      <td>26559.539062</td>
+      <td>2905.030029</td>
+      <td>7998.060059</td>
+      <td>1565.750000</td>
     </tr>
     <tr>
-      <th>2018-12-31</th>
-      <td>2506.850098</td>
-      <td>6635.279785</td>
-      <td>23327.460938</td>
-      <td>1348.560059</td>
+      <th>2019-04-22</th>
+      <td>49.487946</td>
+      <td>156.438400</td>
+      <td>106.183815</td>
+      <td>366.382935</td>
+      <td>129.626587</td>
+      <td>101.797607</td>
+      <td>100.577110</td>
+      <td>176.753754</td>
+      <td>188.337021</td>
+      <td>118.773071</td>
+      <td>96.611122</td>
+      <td>66.607376</td>
+      <td>26511.050781</td>
+      <td>2907.969971</td>
+      <td>8015.270020</td>
+      <td>1560.040039</td>
     </tr>
   </tbody>
 </table>
@@ -927,7 +1006,7 @@ XOM 106.78186016458329
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/4c71c0429716fb2950a698532299b344cd749d0a7693a5dd6450281f7e73b38b.png" src="../../_images/4c71c0429716fb2950a698532299b344cd749d0a7693a5dd6450281f7e73b38b.png" />
+<img alt="../../_images/b71319e403e8c0dc690e6e93a9a308e55b686655e7fad9d7fbf5a8c18659290b.png" src="../../_images/b71319e403e8c0dc690e6e93a9a308e55b686655e7fad9d7fbf5a8c18659290b.png" />
 </div>
 </div>
 </section>
@@ -966,7 +1045,7 @@ XOM 106.78186016458329
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/d7c438c439a8702b33bff6fe39d552382e046b545e6797b52db1ac25b256b1d1.png" src="../../_images/d7c438c439a8702b33bff6fe39d552382e046b545e6797b52db1ac25b256b1d1.png" />
+<img alt="../../_images/48e3ee0538ea054b4a8b140adeb8b627e0f2c33038b646f2190a74c96edcc145.png" src="../../_images/48e3ee0538ea054b4a8b140adeb8b627e0f2c33038b646f2190a74c96edcc145.png" />
 </div>
 </div>
 </section>
@@ -1006,7 +1085,7 @@ XOM 106.78186016458329
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/7e792005f7534c30683d056b2248a6a630b5d2084c39cc3bcc5eb6a8a921f806.png" src="../../_images/7e792005f7534c30683d056b2248a6a630b5d2084c39cc3bcc5eb6a8a921f806.png" />
+<img alt="../../_images/34c59e690c4068547123e4b967165a8d0008cabd5c0d452145b178cc363ad57a.png" src="../../_images/34c59e690c4068547123e4b967165a8d0008cabd5c0d452145b178cc363ad57a.png" />
 </div>
 </div>
 </section>
