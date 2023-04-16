@@ -487,7 +487,6 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#imports">Imports</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#job-shop-scheduling">Job Shop Scheduling</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#job-shop-example">Job shop example</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#task-decomposition">Task decomposition</a></li>
@@ -521,47 +520,32 @@ document.write(`
                   
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><section class="tex2jax_ignore mathjax_ignore" id="extra-material-job-shop-scheduling">
 <span id="index-4"></span><h1>Extra material: Job shop scheduling<a class="headerlink" href="#extra-material-job-shop-scheduling" title="Permalink to this heading">#</a></h1>
-<section id="imports">
-<h2>Imports<a class="headerlink" href="#imports" title="Permalink to this heading">#</a></h2>
-<p>The following cell specifies the solver to used in the subsequent calculations. Some of these problems can become quite larger, and therefore the <code class="docutils literal notranslate"><span class="pre">gurobi</span></code> solver has been set as a default. If you don’t have the <code class="docutils literal notranslate"><span class="pre">gurobi</span></code> solver then adjust the code to use the <code class="docutils literal notranslate"><span class="pre">glpk</span></code> solver, but know the calculations may take longer (and the benchmark problem will not solve at all). If you do have the <code class="docutils literal notranslate"><span class="pre">gurobi</span></code> solver, edit the location of the executable to match the location on your computer.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
-</section>
 <section id="job-shop-scheduling">
 <h2>Job Shop Scheduling<a class="headerlink" href="#job-shop-scheduling" title="Permalink to this heading">#</a></h2>
 <p>Job shop scheduling is one of the classic problems in Operations Research.</p>
-<p>A <em>job shop</em> refers to a collection of <em>machines</em> that process <em>jobs</em>. The jobs may be simple or complex, such as the production of a custom part, a print job at printing house, a patient treated in a hospital, or a meal produced in a fast food restaurant. The term “machines” can refer any device, person, or resource involved in the processing the jobs. In what follows in this notebook, a job comprises a series of tasks that requiring use of particular machines for known durations, and which must be completed in specified order.</p>
+<p>A <em>job shop</em> refers to a collection of <em>machines</em> that process <em>jobs</em>. The jobs may be simple or complex, such as the production of a custom part, a print job at printing house, a patient treated in a hospital, or a meal produced in a fast food restaurant. The term “machines” can refer any device, person, or resource involved in the processing the jobs. In what follows in this notebook, a job comprises a series of tasks that requiring use of particular machines for known duration, and which must be completed in specified order.</p>
 <p>The <em>job shop scheduling problem</em> is to schedule a set of jobs on the available machines to optimize a metric of productivity. A typical metric is the <em>makespan</em> which refers to the time needed to process all jobs.</p>
-<p>At a basic level, the data required to specify a job shop schedulig problem consists of two tables. The first table is a decomposition of the jobs into a series of tasks, each task listing the job name, name of the required machine, and task duration. A second table list task pairs where the first task must be completed before the second task can be started.</p>
-<p>Real applications of job shop sceduling oten include additional considerations such as time that may be required to set up machines prior to the start of the next job, or limits on the time a job can wait between processing steps.</p>
+<p>At a basic level, the data required to specify a job shop scheduling problem consists of two tables. The first table is a decomposition of the jobs into a series of tasks, each task listing the job name, name of the required machine, and task duration. A second table list task pairs where the first task must be completed before the second task can be started.</p>
+<p>Real applications of job shop scheduling often include additional considerations such as time that may be required to set up machines prior to the start of the next job, or limits on the time a job can wait between processing steps.</p>
 </section>
 <section id="job-shop-example">
 <h2>Job shop example<a class="headerlink" href="#job-shop-example" title="Permalink to this heading">#</a></h2>
 <p>The following example of a job shop is from from Christelle Gueret, Christian Prins, Marc Sevaux, “Applications of Optimization with Xpress-MP,” Dash Optimization, 2000.</p>
-<p>In this example, there are three printed paper products that must pass through color printing presses in a particular order. The given data consists of a flowsheet showing the order in which each job passes through the color presses</p>
+<p>In this example, there are three printed paper products that must pass through color printing presses in a particular order. The given data consists of a flow sheet showing the order in which each job passes through the color presses</p>
 <p><img alt="jobshopdiagram.jpg" src="https://github.com/jckantor/ND-Pyomo-Cookbook/blob/master/notebooks/figures/jobshopdiagram.jpg?raw=1" /></p>
 <p>and a table of data showing, in minutes, the amount of time each job requires on each machine.</p>
 <table class="table">
@@ -641,7 +625,7 @@ cbc was previously installed
 </tr>
 </tbody>
 </table>
-<p>We convert this to a JSON style representation where tasks are denoted by (Job,Machine) tuples in Python. The task data is stored in a Python dictionary indexed by (Job,Machine) tuples. The task data conists of a dictionary with duration (‘dur’) and (Job,Machine) pair for any prerequisite task.</p>
+<p>We convert this to a JSON style representation where tasks are denoted by (Job,Machine) tuples in Python. The task data is stored in a Python dictionary indexed by (Job,Machine) tuples. The task data consists of a dictionary with duration (‘dur’) and (Job,Machine) pair for any prerequisite task.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TASKS</span> <span class="o">=</span> <span class="p">{</span>
@@ -693,7 +677,7 @@ cbc was previously installed
 </tr>
 </tbody>
 </table>
-<p>The constraints include lower bounda on the start and an upper bound on the completion of each task <span class="math notranslate nohighlight">\((j,m)\)</span></p>
+<p>The constraints include lower bounds on the start and an upper bound on the completion of each task <span class="math notranslate nohighlight">\((j,m)\)</span></p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
@@ -782,7 +766,7 @@ cbc was previously installed
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;pyomo.core.base.PyomoModel.ConcreteModel at 0x7f79bb148080&gt;
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;pyomo.core.base.PyomoModel.ConcreteModel at 0x7fe269ce1900&gt;
 </pre></div>
 </div>
 </div>
@@ -790,7 +774,7 @@ cbc was previously installed
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">jobshop_solve</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
     <span class="n">results</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;Job&#39;</span><span class="p">:</span> <span class="n">j</span><span class="p">,</span>
                 <span class="s1">&#39;Machine&#39;</span><span class="p">:</span> <span class="n">m</span><span class="p">,</span>
                 <span class="s1">&#39;Start&#39;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">start</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">m</span><span class="p">](),</span> 
@@ -952,7 +936,7 @@ Yellow  Paper_3    0.0        28    28.0
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/bc5363815fd43b78778f33dc28b13352f632e6ccca73ad0e142b2cd13780bf96.png" src="../../_images/bc5363815fd43b78778f33dc28b13352f632e6ccca73ad0e142b2cd13780bf96.png" />
+<img alt="../../_images/3302010e004b5e491311c29cf9d99461ba5756b1b97e8a03c214752ecc93d666.png" src="../../_images/3302010e004b5e491311c29cf9d99461ba5756b1b97e8a03c214752ecc93d666.png" />
 </div>
 </div>
 </section>
@@ -1014,7 +998,7 @@ Yellow  Paper_3    0.0        28    28.0
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/4b155c64ebce07ed09dc6e5edcc51df403d30b90dcb1206ea95368e26a55b062.png" src="../../_images/4b155c64ebce07ed09dc6e5edcc51df403d30b90dcb1206ea95368e26a55b062.png" />
+<img alt="../../_images/1b9883709f4b8882578b946cb42cad5e1512ac0fc81daefac011031a539da46e.png" src="../../_images/1b9883709f4b8882578b946cb42cad5e1512ac0fc81daefac011031a539da46e.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -1025,7 +1009,7 @@ Yellow  Paper_3    0.0        28    28.0
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/9dedcd60a65cf78a84314f754d62b21e5a808a6c9e22fa521fa9e46638cebcb4.png" src="../../_images/9dedcd60a65cf78a84314f754d62b21e5a808a6c9e22fa521fa9e46638cebcb4.png" />
+<img alt="../../_images/9628bfbba2e67516e60dd18f70fc234eccead2baf8f1e428e15f91a179234102.png" src="../../_images/9628bfbba2e67516e60dd18f70fc234eccead2baf8f1e428e15f91a179234102.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -1036,7 +1020,7 @@ Yellow  Paper_3    0.0        28    28.0
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/e3a3a4088c46afb618db46b0a4d252f67809da1b72f0f7c8c000c29f77c24c97.png" src="../../_images/e3a3a4088c46afb618db46b0a4d252f67809da1b72f0f7c8c000c29f77c24c97.png" />
+<img alt="../../_images/1752fd3daa4e3d58fd68b0b416f5e8bf8a806d56bff592736647fb4d0792bdb6.png" src="../../_images/1752fd3daa4e3d58fd68b0b416f5e8bf8a806d56bff592736647fb4d0792bdb6.png" />
 </div>
 </div>
 </section>
@@ -1056,10 +1040,10 @@ Yellow  Paper_3    0.0        28    28.0
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Makespan = 26.5
 </pre></div>
 </div>
-<img alt="../../_images/ffa89129cae86af89104366cc2d3f02c55aaab3154be848d37db364c0e64de43.png" src="../../_images/ffa89129cae86af89104366cc2d3f02c55aaab3154be848d37db364c0e64de43.png" />
+<img alt="../../_images/3717b8056cf422d4d1648073c6b56eb566812612fa3dafa725d17e17ba5c31e5.png" src="../../_images/3717b8056cf422d4d1648073c6b56eb566812612fa3dafa725d17e17ba5c31e5.png" />
 </div>
 </div>
-<p>Earlier we found it tood 11.5 hours to produce one batch of product A.  As we see here, we can produce a second batch with only 5.0 additional hours because some of the tasks overlap.  The overlapping of tasks is the key to gaining efficiency in batch processing facilities.</p>
+<p>Earlier we found that it took 11.5 hours to produce one batch of product A.  As we see here, we can produce a second batch with only 5.0 additional hours because some of the tasks overlap.  The overlapping of tasks is the key to gaining efficiency in batch processing facilities.</p>
 <p>Let’s next consider production of a single batch each of products A, B, and C.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1090,11 +1074,11 @@ Yellow  Paper_3    0.0        28    28.0
 Makespan = 15.0
 </pre></div>
 </div>
-<img alt="../../_images/dc560c21beefbd8798fb159df8603cf7058eb2ce1f5baab3e51f350e9b67436f.png" src="../../_images/dc560c21beefbd8798fb159df8603cf7058eb2ce1f5baab3e51f350e9b67436f.png" />
+<img alt="../../_images/b75fbefa3f9d127607a0a3fb23ab360fbc88c4527342bf117e04903e37c2e0fe.png" src="../../_images/b75fbefa3f9d127607a0a3fb23ab360fbc88c4527342bf117e04903e37c2e0fe.png" />
 </div>
 </div>
 <p>The individual production of A, B, and C required 11.5, 5.5, and 9.5 hours, respectively, for a total of 25.5 hours. As we see here, by scheduling the production simultaneously, we can get all three batches done in just 15 hours.</p>
-<p>As we see below, each additional set of three products takes an additionl 13 hours.  So there is considerable efficiency gained by scheduling over longer intervals whenever possible.</p>
+<p>As we see below, each additional set of three products takes an additional 13 hours.  So there is considerable efficiency gained by scheduling over longer intervals whenever possible.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TASKS</span> <span class="o">=</span> <span class="n">recipe_to_tasks</span><span class="p">([</span><span class="s1">&#39;A1&#39;</span><span class="p">,</span><span class="s1">&#39;A2&#39;</span><span class="p">],[</span><span class="s1">&#39;Mixer&#39;</span><span class="p">,</span><span class="s1">&#39;Reactor&#39;</span><span class="p">,</span><span class="s1">&#39;Separator&#39;</span><span class="p">,</span><span class="s1">&#39;Packaging&#39;</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mf">1.5</span><span class="p">])</span>
@@ -1111,7 +1095,7 @@ Makespan = 15.0
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Makespan = 28.0
 </pre></div>
 </div>
-<img alt="../../_images/68ad8438e660a41ed8e999e6a46fa471a053200dd8ac744803a92d8f4cb3cbb3.png" src="../../_images/68ad8438e660a41ed8e999e6a46fa471a053200dd8ac744803a92d8f4cb3cbb3.png" />
+<img alt="../../_images/a011af7d31c64e51938e7b58ede20393afa739f99e668c82d4499742fb23a02a.png" src="../../_images/a011af7d31c64e51938e7b58ede20393afa739f99e668c82d4499742fb23a02a.png" />
 </div>
 </div>
 </section>
@@ -1193,7 +1177,7 @@ Makespan = 15.0
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Makespan = 30.5
 </pre></div>
 </div>
-<img alt="../../_images/e79c1416b2edd164c47fc0d9320ce052e24bfad9cdf93a8d7d0033ae1ee256b6.png" src="../../_images/e79c1416b2edd164c47fc0d9320ce052e24bfad9cdf93a8d7d0033ae1ee256b6.png" />
+<img alt="../../_images/1335d22199aaa740904b4341b94827c4d4d625926241c80042cc8c0457bf30c2.png" src="../../_images/1335d22199aaa740904b4341b94827c4d4d625926241c80042cc8c0457bf30c2.png" />
 </div>
 </div>
 </section>
@@ -1285,7 +1269,7 @@ Makespan = 15.0
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Makespan = 32.0
 </pre></div>
 </div>
-<img alt="../../_images/b8658fe64639c5391b1003f1a9ae0c6610a0f5101687e0b5d137fc791727eff7.png" src="../../_images/b8658fe64639c5391b1003f1a9ae0c6610a0f5101687e0b5d137fc791727eff7.png" />
+<img alt="../../_images/11b043d28ff0a14bbf44c859b7af773738d0cb84ec6dcb83f58d3e9c42d7c8ec.png" src="../../_images/11b043d28ff0a14bbf44c859b7af773738d0cb84ec6dcb83f58d3e9c42d7c8ec.png" />
 </div>
 </div>
 </section>
@@ -1303,7 +1287,7 @@ Makespan = 15.0
 <h2>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">#</a></h2>
 <section id="task-specific-cleanout">
 <h3>Task specific cleanout<a class="headerlink" href="#task-specific-cleanout" title="Permalink to this heading">#</a></h3>
-<p>Clean out operations are often slow and time consuming. Further more, the time required to perform a clean out frequently depends on the type of machine, and the task performed by the machine. For this exercise, create a data format to include task-specific clean out times, and model the job shop model to accomodate this additional informaton.</p>
+<p>Clean out operations are often slow and time consuming. Further more, the time required to perform a clean out frequently depends on the type of machine, and the task performed by the machine. For this exercise, create a data format to include task-specific clean out times, and model the job shop model to accommodate this additional information.</p>
 </section>
 <section id="computational-impact-of-a-zero-wait-policy">
 <h3>Computational impact of a zero-wait policy<a class="headerlink" href="#computational-impact-of-a-zero-wait-policy" title="Permalink to this heading">#</a></h3>
@@ -1373,7 +1357,6 @@ Makespan = 15.0
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#imports">Imports</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#job-shop-scheduling">Job Shop Scheduling</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#job-shop-example">Job shop example</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#task-decomposition">Task decomposition</a></li>

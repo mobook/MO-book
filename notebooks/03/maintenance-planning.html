@@ -524,25 +524,14 @@ document.write(`
 <h2>Imports<a class="headerlink" href="#imports" title="Permalink to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -623,7 +612,7 @@ cbc was previously installed
 </section>
 <section id="pyomo-model">
 <h3>Pyomo model<a class="headerlink" href="#pyomo-model" title="Permalink to this heading">#</a></h3>
-<p>The disjunctive constraints can be represented directly in Pyomo using the <a class="reference external" href="https://pyomo.readthedocs.io/en/latest/modeling_extensions/gdp.html">Generalized Disjunctive Programming</a> extension. The GDP extension transforms the disjunctive constraints to an MILP using convex hull and cutting plane methods.</p>
+<p>The disjunctive constraints can be represented directly in Pyomo using the <a class="reference external" href="https://pyomo.readthedocs.io/en/latest/modeling_extensions/gdp.html">Generalized Disjunctive Programming</a> extension. The GDP extension transforms the disjunctive constraints to a mixed integer linear optimization (MILO) problem using convex hull and cutting plane methods.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">maintenance_planning</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">P</span><span class="p">):</span>
@@ -675,20 +664,20 @@ cbc was previously installed
     <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">maintenance_planning</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 <span class="n">plot_schedule</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/60ec34c4a58b32a0145efe4b055cf3bef5887c51ef39e9ab27b87c86494bf6b9.png" src="../../_images/60ec34c4a58b32a0145efe4b055cf3bef5887c51ef39e9ab27b87c86494bf6b9.png" />
+<img alt="../../_images/809b0b963949de344c7c63b796fc1dacd5c2b909b3f38a291c420408bb8e4e1d.png" src="../../_images/809b0b963949de344c7c63b796fc1dacd5c2b909b3f38a291c420408bb8e4e1d.png" />
 </div>
 </div>
 </section>
 </section>
 <section id="ramping-constraints">
 <h2>Ramping constraints<a class="headerlink" href="#ramping-constraints" title="Permalink to this heading">#</a></h2>
-<p>Prior to maintenance shutdown, a large processing unit may take some time to safely ramp down from full production. And then require more time to safely ramp back up to full production following maintenace. To provide for ramp-down and ramp-up periods, we modify the problem formation in the following ways.</p>
+<p>Prior to maintenance shutdown, a large processing unit may take some time to safely ramp down from full production. And then require more time to safely ramp back up to full production following maintenance. To provide for ramp-down and ramp-up periods, we modify the problem formation in the following ways.</p>
 <ul class="simple">
 <li><p>The variable denoting unit operation, <span class="math notranslate nohighlight">\(x_t\)</span> is changed from a binary variable to a continuous variable <span class="math notranslate nohighlight">\(0 \leq x_t \leq 1\)</span> denoting the fraction of total capacity at which the unit is operating on day <span class="math notranslate nohighlight">\(t\)</span>.</p></li>
 <li><p>Two new variable sequences, <span class="math notranslate nohighlight">\(0 \leq u_t^+ \leq u_t^{+,\max}\)</span> and <span class="math notranslate nohighlight">\(0\leq u_t^- \leq u_t^{-,\max}\)</span>, are introduced which denote the fraction increase or decrease in unit capacity to completed on day <span class="math notranslate nohighlight">\(t\)</span>.</p></li>
@@ -753,20 +742,20 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t
     <span class="k">return</span> <span class="n">m</span>
   
 <span class="n">m</span> <span class="o">=</span> <span class="n">maintenance_planning_ramp</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">P</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">plot_schedule</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/1bff558dbd19038584a2fee601b5cc60482acd131124500a1c4ac665320facb1.png" src="../../_images/1bff558dbd19038584a2fee601b5cc60482acd131124500a1c4ac665320facb1.png" />
+<img alt="../../_images/12194ed6dc101f1a5307f31e0db79697d721180bf9abf4514b5f164465c80407.png" src="../../_images/12194ed6dc101f1a5307f31e0db79697d721180bf9abf4514b5f164465c80407.png" />
 </div>
 </div>
 </section>
 <section id="specifying-the-minimum-number-of-operational-days-between-maintenance-periods">
 <h2>Specifying the minimum number of operational days between maintenance periods<a class="headerlink" href="#specifying-the-minimum-number-of-operational-days-between-maintenance-periods" title="Permalink to this heading">#</a></h2>
 <p>Up to this point we have imposed no constraints on the frequency of maintenance periods. Without such constraints, particularly when ramping constraints are imposed, is that maintenance periods will be scheduled back-to-back, which is clearly not a useful result for most situations.</p>
-<p>The next revision of the model is to incorporate a requirement that <span class="math notranslate nohighlight">\(N\)</span> operational days be scheduled between any mainteance periods. This does allow for maintenance to be postponed until the very end of the planning period. The disjunctive constraints read</p>
+<p>The next revision of the model is to incorporate a requirement that <span class="math notranslate nohighlight">\(N\)</span> operational days be scheduled between any maintenance periods. This does allow for maintenance to be postponed until the very end of the planning period. The disjunctive constraints read</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
@@ -842,21 +831,21 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t
     <span class="k">return</span> <span class="n">m</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">maintenance_planning_ramp_operational</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">plot_schedule</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/33f4a30ff3725bc993f2f205d5632b5142c30921acf862c22323f7190f1e70f2.png" src="../../_images/33f4a30ff3725bc993f2f205d5632b5142c30921acf862c22323f7190f1e70f2.png" />
+<img alt="../../_images/7017dd109712ba0687ecf61506df656f89bc514a376b6eadd5aa880dcfc8f97e.png" src="../../_images/7017dd109712ba0687ecf61506df656f89bc514a376b6eadd5aa880dcfc8f97e.png" />
 </div>
 </div>
 </section>
 <section id="exercises">
 <h2>Exercises<a class="headerlink" href="#exercises" title="Permalink to this heading">#</a></h2>
 <ol class="arabic simple">
-<li><p>Rather than specify how many maintenance periods must be accomodated, modify the model so that the process unit can operate no more than <span class="math notranslate nohighlight">\(N\)</span> days without a maintenance shutdown.  (Hint. You may to introduce an additional set of binary variables, <span class="math notranslate nohighlight">\(z_t\)</span> to denote the start of an operational period.)</p></li>
-<li><p>Do a systematic comparison of the Big-M, Convex Hull, and Cutting Plane techniques for implementing the disjunctive constraints. Your comparison should include a measure of complexity (such as the number of decision variables and constraints in the resulting transformed problems), computational effort, and the effect of solver (such as glpk vs cbc).</p></li>
+<li><p>Rather than specify how many maintenance periods must be accommodated, modify the model so that the process unit can operate no more than <span class="math notranslate nohighlight">\(N\)</span> days without a maintenance shutdown.  (Hint. You may to introduce an additional set of binary variables, <span class="math notranslate nohighlight">\(z_t\)</span> to denote the start of an operational period.)</p></li>
+<li><p>Do a systematic comparison of the Big-M, Convex Hull, and Cutting Plane techniques for implementing the disjunctive constraints. Your comparison should include a measure of complexity (such as the number of decision variables and constraints in the resulting transformed problems), computational effort, and the effect of solver (such as HiGHS vs cbc).</p></li>
 </ol>
 </section>
 </section>

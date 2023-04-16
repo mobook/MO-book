@@ -507,8 +507,8 @@ document.write(`
                   
   <section class="tex2jax_ignore mathjax_ignore" id="extra-material-strip-packing">
 <span id="index-0"></span><h1>Extra material: Strip packing<a class="headerlink" href="#extra-material-strip-packing" title="Permalink to this heading">#</a></h1>
-<p><em>Strip packing</em> (SP) refers to the problem of packing rectanges onto a two dimensional strip of fixed width.</p>
-<p>Many variants of this problem have been studied, the most basic is the pack a set of rectangles onto the shortest possible strip without rotation. Other variants allow rotation of the rectangles, require a packing that allows cutting the rectanges out of the strip with edge-to-edge cuts (guillotine packing), extends the strip to three dimensions, or extends the packing to non-rectangular shapes.</p>
+<p><em>Strip packing</em> (SP) refers to the problem of packing rectangles onto a two dimensional strip of fixed width.</p>
+<p>Many variants of this problem have been studied, the most basic is the pack a set of rectangles onto the shortest possible strip without rotation. Other variants allow rotation of the rectangles, require a packing that allows cutting the rectangles out of the strip with edge-to-edge cuts (guillotine packing), extends the strip to three dimensions, or extends the packing to non-rectangular shapes.</p>
 <p>The extensive study of strip packing problems is motivated by their many industrial applications including</p>
 <ul class="simple">
 <li><p>placement of macro cells in semiconductor layouts,</p></li>
@@ -518,26 +518,18 @@ document.write(`
 <li><p>planning and scheduling <span class="math notranslate nohighlight">\(CO_2\)</span> utilization for enhanced oil recovery,</p></li>
 <li><p>scheduling allocations of a common resource.</p></li>
 </ul>
-<p>Finding optimial solutions to strip packing problems is combinatorially difficult. Strip packing belongs to a class of problems called “NP-hard” for which known solution algorithms require effort that grows exponentially with problem size. For that reason much research on strip packing has been directed towards practical heurestic algorithms for finding good, though not optimal, for industrial applications.</p>
+<p>Finding optimal solutions to strip packing problems is combinatorially difficult. Strip packing belongs to a class of problems called “NP-hard” for which known solution algorithms require effort that grows exponentially with problem size. For that reason much research on strip packing has been directed towards practical heuristic algorithms for finding good, though not optimal, for industrial applications.</p>
 <p>Here we consider we develop Pyomo models to find optimal solutions to smaller but economically relevant problems. We use the problem of packing boxes onto shortest possible shelf of fixed width.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_mosek</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-mosek was previously installed
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -650,7 +642,7 @@ mosek was previously installed
 <p>A lower bound on the shelf width is established by from the area required to place all boxes on the shelf.</p>
 <div class="math notranslate nohighlight">
 \[W_{lb} = \frac{1}{D}\sum_{i=0}^{N-1} w_i d_i\]</div>
-<p>An upper bound is established by aligning the boxes along the front of the shelf without rotation. To set the stage for later calculations, the position of the rectange on the shelf is defined by bounding box <span class="math notranslate nohighlight">\((x_{i,1}, y_{i,1})\)</span> and <span class="math notranslate nohighlight">\((x_{i,2}, y_{i,2})\)</span> extending from the lower left corner to the upper right corner.</p>
+<p>An upper bound is established by aligning the boxes along the front of the shelf without rotation. To set the stage for later calculations, the position of the rectangle on the shelf is defined by bounding box <span class="math notranslate nohighlight">\((x_{i,1}, y_{i,1})\)</span> and <span class="math notranslate nohighlight">\((x_{i,2}, y_{i,2})\)</span> extending from the lower left corner to the upper right corner.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -658,7 +650,7 @@ x_{i,2} &amp; = x_{i,1} + w_i \\
 y_{i,2} &amp; = y_{i,1} + d_i \\
 \end{align*}
 \end{split}\]</div>
-<p>An additional binary variable <span class="math notranslate nohighlight">\(r_i\)</span> designates whether the rectangle has been rotated. The following cell performs these calculations to create and display a dataframe showing the bounding boxes.</p>
+<p>An additional binary variable <span class="math notranslate nohighlight">\(r_i\)</span> designates whether the rectangle has been rotated. The following cell performs these calculations to create and display a data frame showing the bounding boxes.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">pack_boxes_V0</span><span class="p">(</span><span class="n">boxes</span><span class="p">):</span>
@@ -813,14 +805,14 @@ y_{i,2} &amp; = y_{i,1} + d_i \\
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/01ffa888bbbabf73f933e28b7561b97feca13dd51043c443b53d6e7f2f21552d.png" src="../../_images/01ffa888bbbabf73f933e28b7561b97feca13dd51043c443b53d6e7f2f21552d.png" />
+</div></div><img alt="../../_images/b3ea033540103ec5b255996d5046e1a8136c047b945175963100005c9734ea91.png" src="../../_images/b3ea033540103ec5b255996d5046e1a8136c047b945175963100005c9734ea91.png" />
 </div>
 </div>
 </section>
 <section id="modeling-strategy">
 <h2>Modeling Strategy<a class="headerlink" href="#modeling-strategy" title="Permalink to this heading">#</a></h2>
 <p>At this point the reader may have some ideas on how to efficiently pack boxes on the shelf. For example, one might start by placing the larger boxes to left edge of the shelf, then rotating and placing the smaller boxes with a goal of minimized the occupied with of the shelf.</p>
-<p>Modeling for optimization takes a different approach. The strategy is to describe constraints that must be satisified for any solution to the problem, then let the solver find the a choice for the decision variables that minimizes width. The constaints include:</p>
+<p>Modeling for optimization takes a different approach. The strategy is to describe constraints that must be satisfied for any solution to the problem, then let the solver find the a choice for the decision variables that minimizes width. The constraints include:</p>
 <ul class="simple">
 <li><p>The bounding boxes must fit within the boundaries of the shelf, and to the left of vertical line drawn at <span class="math notranslate nohighlight">\(x = W\)</span>.</p></li>
 <li><p>The boxes can be rotated 90 degrees.</p></li>
@@ -844,7 +836,7 @@ x_{i, 1}, x_{i, 2} &amp; \geq 0  &amp; \forall i \\
 \end{align*}
 \end{split}\]</div>
 <p>This first model does not consider rotation or placement of the boxes in the <span class="math notranslate nohighlight">\(y\)</span> dimension, so those decisions are not included.</p>
-<p>The disjunctive constraints specify relationships between <span class="math notranslate nohighlight">\(x_{i,1}\)</span> and <span class="math notranslate nohighlight">\(x_{i,2}\)</span> to prevent overlapping positions of boxes on the shelf. The disjunctions require that either that box <span class="math notranslate nohighlight">\(i\)</span> is to the left of box <span class="math notranslate nohighlight">\(j\)</span> or that box <span class="math notranslate nohighlight">\(j\)</span> is the left of box <span class="math notranslate nohighlight">\(i\)</span>. This is specified as an exclusive or disjunction because both conditions can be true at the same time. This disjuctive relationship must hold for every pair of boxes that are different from each other, but specifying <span class="math notranslate nohighlight">\(i\)</span> doesn’t overlap with <span class="math notranslate nohighlight">\(j\)</span> assures <span class="math notranslate nohighlight">\(j\)</span> doesn’t overlap <span class="math notranslate nohighlight">\(i\)</span>. So it is only necessary to specify disjunctions for all pairs <span class="math notranslate nohighlight">\(i, j\)</span> where <span class="math notranslate nohighlight">\(i &lt; j\)</span>.</p>
+<p>The disjunctive constraints specify relationships between <span class="math notranslate nohighlight">\(x_{i,1}\)</span> and <span class="math notranslate nohighlight">\(x_{i,2}\)</span> to prevent overlapping positions of boxes on the shelf. The disjunctions require that either that box <span class="math notranslate nohighlight">\(i\)</span> is to the left of box <span class="math notranslate nohighlight">\(j\)</span> or that box <span class="math notranslate nohighlight">\(j\)</span> is the left of box <span class="math notranslate nohighlight">\(i\)</span>. This is specified as an exclusive or disjunction because both conditions can be true at the same time. This disjunctive relationship must hold for every pair of boxes that are different from each other, but specifying <span class="math notranslate nohighlight">\(i\)</span> doesn’t overlap with <span class="math notranslate nohighlight">\(j\)</span> assures <span class="math notranslate nohighlight">\(j\)</span> doesn’t overlap <span class="math notranslate nohighlight">\(i\)</span>. So it is only necessary to specify disjunctions for all pairs <span class="math notranslate nohighlight">\(i, j\)</span> where <span class="math notranslate nohighlight">\(i &lt; j\)</span>.</p>
 <p>The corresponding Pyomo model is a direct implementation of this model. One feature of the implementation is the use of a set <code class="docutils literal notranslate"><span class="pre">m.PAIRS</span></code> to identify the disjunctions. Defining this set simplifies coding for the corresponding disjunction.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -883,7 +875,7 @@ x_{i, 1}, x_{i, 2} &amp; \geq 0  &amp; \forall i \\
                 <span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
 
     <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;mosek_direct&quot;</span><span class="p">)</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="n">soln</span> <span class="o">=</span> <span class="n">boxes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -933,8 +925,8 @@ x_{i, 1}, x_{i, 2} &amp; \geq 0  &amp; \forall i \\
       <th>0</th>
       <td>82</td>
       <td>103</td>
-      <td>200.0</td>
-      <td>282.0</td>
+      <td>815.0</td>
+      <td>897.0</td>
       <td>0</td>
       <td>103</td>
       <td>0</td>
@@ -943,8 +935,8 @@ x_{i, 1}, x_{i, 2} &amp; \geq 0  &amp; \forall i \\
       <th>1</th>
       <td>73</td>
       <td>48</td>
-      <td>127.0</td>
-      <td>200.0</td>
+      <td>742.0</td>
+      <td>815.0</td>
       <td>0</td>
       <td>48</td>
       <td>0</td>
@@ -953,8 +945,8 @@ x_{i, 1}, x_{i, 2} &amp; \geq 0  &amp; \forall i \\
       <th>2</th>
       <td>171</td>
       <td>53</td>
-      <td>282.0</td>
-      <td>453.0</td>
+      <td>571.0</td>
+      <td>742.0</td>
       <td>0</td>
       <td>53</td>
       <td>0</td>
@@ -963,8 +955,8 @@ x_{i, 1}, x_{i, 2} &amp; \geq 0  &amp; \forall i \\
       <th>3</th>
       <td>73</td>
       <td>99</td>
-      <td>0.0</td>
-      <td>73.0</td>
+      <td>498.0</td>
+      <td>571.0</td>
       <td>0</td>
       <td>99</td>
       <td>0</td>
@@ -973,8 +965,8 @@ x_{i, 1}, x_{i, 2} &amp; \geq 0  &amp; \forall i \\
       <th>4</th>
       <td>167</td>
       <td>85</td>
-      <td>730.0</td>
-      <td>897.0</td>
+      <td>331.0</td>
+      <td>498.0</td>
       <td>0</td>
       <td>85</td>
       <td>0</td>
@@ -983,8 +975,8 @@ x_{i, 1}, x_{i, 2} &amp; \geq 0  &amp; \forall i \\
       <th>5</th>
       <td>151</td>
       <td>172</td>
-      <td>579.0</td>
-      <td>730.0</td>
+      <td>180.0</td>
+      <td>331.0</td>
       <td>0</td>
       <td>172</td>
       <td>0</td>
@@ -993,8 +985,8 @@ x_{i, 1}, x_{i, 2} &amp; \geq 0  &amp; \forall i \\
       <th>6</th>
       <td>54</td>
       <td>130</td>
-      <td>73.0</td>
-      <td>127.0</td>
+      <td>126.0</td>
+      <td>180.0</td>
       <td>0</td>
       <td>130</td>
       <td>0</td>
@@ -1003,21 +995,21 @@ x_{i, 1}, x_{i, 2} &amp; \geq 0  &amp; \forall i \\
       <th>7</th>
       <td>126</td>
       <td>94</td>
-      <td>453.0</td>
-      <td>579.0</td>
+      <td>0.0</td>
+      <td>126.0</td>
       <td>0</td>
       <td>94</td>
       <td>0</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/0836006c4198c26f5db75dbdd7744e5bf3adc9108c939f2c9de6d6dfb224b509.png" src="../../_images/0836006c4198c26f5db75dbdd7744e5bf3adc9108c939f2c9de6d6dfb224b509.png" />
+</div></div><img alt="../../_images/62994ae27f6319ebd46e9440e170d812d01a84e6018aa45ce9454fff63fb932e.png" src="../../_images/62994ae27f6319ebd46e9440e170d812d01a84e6018aa45ce9454fff63fb932e.png" />
 </div>
 </div>
 </section>
 <section id="version-2-rotating-boxes">
 <h2>Version 2: Rotating boxes<a class="headerlink" href="#version-2-rotating-boxes" title="Permalink to this heading">#</a></h2>
-<p>Rotating the boxes is an option for packing the boxes more tightly on the shelf. The boxes can be placed either in their original orientation or in a rotated orientation. This introduces a second exclusive or disjuction to the model that determines the orientation of the bounding box. A binary indicator variable <span class="math notranslate nohighlight">\(r_i\)</span> tracks which boxes were rotated which is used in the <code class="docutils literal notranslate"><span class="pre">show_boxes</span></code> function to show which boxes have been rotated.</p>
+<p>Rotating the boxes is an option for packing the boxes more tightly on the shelf. The boxes can be placed either in their original orientation or in a rotated orientation. This introduces a second exclusive or disjunction to the model that determines the orientation of the bounding box. A binary indicator variable <span class="math notranslate nohighlight">\(r_i\)</span> tracks which boxes were rotated which is used in the <code class="docutils literal notranslate"><span class="pre">show_boxes</span></code> function to show which boxes have been rotated.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -1092,7 +1084,7 @@ y_{i,2} = y_{i,1} + w_i\\
                 <span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
 
     <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;mosek_direct&quot;</span><span class="p">)</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="n">soln</span> <span class="o">=</span> <span class="n">boxes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -1143,8 +1135,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>0</th>
       <td>82</td>
       <td>103</td>
-      <td>3.570000e+02</td>
-      <td>439.0</td>
+      <td>558.0</td>
+      <td>640.0</td>
       <td>0.0</td>
       <td>103.0</td>
       <td>0</td>
@@ -1153,8 +1145,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>1</th>
       <td>73</td>
       <td>48</td>
-      <td>3.090000e+02</td>
-      <td>357.0</td>
+      <td>510.0</td>
+      <td>558.0</td>
       <td>0.0</td>
       <td>73.0</td>
       <td>1</td>
@@ -1163,8 +1155,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>2</th>
       <td>171</td>
       <td>53</td>
-      <td>5.330000e+02</td>
-      <td>586.0</td>
+      <td>457.0</td>
+      <td>510.0</td>
       <td>0.0</td>
       <td>171.0</td>
       <td>1</td>
@@ -1173,8 +1165,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>3</th>
       <td>73</td>
       <td>99</td>
-      <td>2.360000e+02</td>
-      <td>309.0</td>
+      <td>384.0</td>
+      <td>457.0</td>
       <td>0.0</td>
       <td>99.0</td>
       <td>0</td>
@@ -1183,8 +1175,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>4</th>
       <td>167</td>
       <td>85</td>
-      <td>-5.752920e-15</td>
-      <td>85.0</td>
+      <td>299.0</td>
+      <td>384.0</td>
       <td>0.0</td>
       <td>167.0</td>
       <td>1</td>
@@ -1193,8 +1185,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>5</th>
       <td>151</td>
       <td>172</td>
-      <td>8.500000e+01</td>
-      <td>236.0</td>
+      <td>148.0</td>
+      <td>299.0</td>
       <td>0.0</td>
       <td>172.0</td>
       <td>0</td>
@@ -1203,8 +1195,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>6</th>
       <td>54</td>
       <td>130</td>
-      <td>5.860000e+02</td>
-      <td>640.0</td>
+      <td>94.0</td>
+      <td>148.0</td>
       <td>0.0</td>
       <td>130.0</td>
       <td>0</td>
@@ -1213,21 +1205,21 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>7</th>
       <td>126</td>
       <td>94</td>
-      <td>4.390000e+02</td>
-      <td>533.0</td>
+      <td>0.0</td>
+      <td>94.0</td>
       <td>0.0</td>
       <td>126.0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/39e3d946f1cd5e128ef3c06a3f9bd419e4d7f44d893ed340756451dacbd1c8f0.png" src="../../_images/39e3d946f1cd5e128ef3c06a3f9bd419e4d7f44d893ed340756451dacbd1c8f0.png" />
+</div></div><img alt="../../_images/f31562f8645370b5e49cc1b44aa6ed64296a4f9dfd430d2c7b63f6e39458dbea.png" src="../../_images/f31562f8645370b5e49cc1b44aa6ed64296a4f9dfd430d2c7b63f6e39458dbea.png" />
 </div>
 </div>
 </section>
 <section id="version-3-placing-and-rotating-boxes-in-two-dimensions">
 <h2>Version 3: Placing and Rotating boxes in two dimensions<a class="headerlink" href="#version-3-placing-and-rotating-boxes-in-two-dimensions" title="Permalink to this heading">#</a></h2>
-<p>Obiously the packages can be packed closer together by allowing boxes to be stacked deeper into the shelf. New constraints are needed to maintain the bounding boxes within the shelf depth, and to avoid overlaps in the <span class="math notranslate nohighlight">\(y\)</span> dimension.</p>
+<p>Obviously the packages can be packed closer together by allowing boxes to be stacked deeper into the shelf. New constraints are needed to maintain the bounding boxes within the shelf depth, and to avoid overlaps in the <span class="math notranslate nohighlight">\(y\)</span> dimension.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -1321,7 +1313,7 @@ y_{i,2} = y_{i,1} + w_i\\
                 <span class="n">m</span><span class="o">.</span><span class="n">y2</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">y1</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
 
     <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;mosek_direct&quot;</span><span class="p">)</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="n">soln</span> <span class="o">=</span> <span class="n">boxes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -1371,93 +1363,92 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>0</th>
       <td>82</td>
       <td>103</td>
+      <td>178.0</td>
+      <td>260.0</td>
       <td>0.0</td>
-      <td>82.0</td>
-      <td>85.0</td>
-      <td>188.0</td>
+      <td>103.0</td>
       <td>0</td>
     </tr>
     <tr>
       <th>1</th>
       <td>73</td>
       <td>48</td>
-      <td>212.0</td>
-      <td>260.0</td>
-      <td>138.0</td>
-      <td>211.0</td>
+      <td>0.0</td>
+      <td>48.0</td>
+      <td>53.0</td>
+      <td>126.0</td>
       <td>1</td>
     </tr>
     <tr>
       <th>2</th>
       <td>171</td>
       <td>53</td>
-      <td>82.0</td>
-      <td>253.0</td>
-      <td>85.0</td>
-      <td>138.0</td>
+      <td>0.0</td>
+      <td>171.0</td>
+      <td>0.0</td>
+      <td>53.0</td>
       <td>0</td>
     </tr>
     <tr>
       <th>3</th>
       <td>73</td>
       <td>99</td>
-      <td>167.0</td>
-      <td>266.0</td>
       <td>0.0</td>
-      <td>73.0</td>
+      <td>99.0</td>
+      <td>258.0</td>
+      <td>331.0</td>
       <td>1</td>
     </tr>
     <tr>
       <th>4</th>
       <td>167</td>
       <td>85</td>
-      <td>0.0</td>
-      <td>167.0</td>
-      <td>0.0</td>
-      <td>85.0</td>
+      <td>99.0</td>
+      <td>266.0</td>
+      <td>258.0</td>
+      <td>343.0</td>
       <td>0</td>
     </tr>
     <tr>
       <th>5</th>
       <td>151</td>
       <td>172</td>
-      <td>0.0</td>
-      <td>172.0</td>
-      <td>193.0</td>
-      <td>344.0</td>
+      <td>94.0</td>
+      <td>266.0</td>
+      <td>107.0</td>
+      <td>258.0</td>
       <td>1</td>
     </tr>
     <tr>
       <th>6</th>
       <td>54</td>
       <td>130</td>
-      <td>82.0</td>
-      <td>212.0</td>
-      <td>138.0</td>
-      <td>192.0</td>
+      <td>48.0</td>
+      <td>178.0</td>
+      <td>53.0</td>
+      <td>107.0</td>
       <td>1</td>
     </tr>
     <tr>
       <th>7</th>
       <td>126</td>
       <td>94</td>
-      <td>172.0</td>
-      <td>266.0</td>
-      <td>211.0</td>
-      <td>337.0</td>
+      <td>0.0</td>
+      <td>94.0</td>
+      <td>126.0</td>
+      <td>252.0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/b3b02eaa26c73b2b15787ee3509a5500bb73c38126d3ee0afa67f7750eb36e53.png" src="../../_images/b3b02eaa26c73b2b15787ee3509a5500bb73c38126d3ee0afa67f7750eb36e53.png" />
+</div></div><img alt="../../_images/205b1dd0fd8a21f37bef805dd1eb98150ff0efa11fbe4c26020bc46255e4fa21.png" src="../../_images/205b1dd0fd8a21f37bef805dd1eb98150ff0efa11fbe4c26020bc46255e4fa21.png" />
 </div>
 </div>
 </section>
 <section id="advanced-topic-symmetry-breaking">
 <h2>Advanced Topic: Symmetry Breaking<a class="headerlink" href="#advanced-topic-symmetry-breaking" title="Permalink to this heading">#</a></h2>
-<p>One of the issues in combinatorial problem is the challenge of symmetries. A symmetry is a sitatuion where a change in solution configuration leaves the objective unchanged. Strip packing problems are especially susceptable to symmetries.</p>
+<p>One of the issues in combinatorial problem is the challenge of symmetries. A symmetry is a situation where a change in solution configuration leaves the objective unchanged. Strip packing problems are especially susceptible to symmetries.</p>
 <p>Symmetries can significantly increase the effort needed to find and and verify an optimal solution. Trespalacios and Grossmann recently presented modification to the strip packing problem to reduce the number of symmetries. This is described in the following paper and implemented in the accompanying Pyomo model.</p>
-<p>While symmetry breaking does speed up solutioin of sample problems, the netw</p>
 <p>Trespalacios, F., &amp; Grossmann, I. E. (2017). Symmetry breaking for generalized disjunctive programming formulation of the strip packing problem. Annals of Operations Research, 258(2), 747-759.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1521,7 +1512,7 @@ y_{i,2} = y_{i,1} + w_i\\
                <span class="p">]</span>
 
     <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;mosek_direct&quot;</span><span class="p">)</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="n">soln</span> <span class="o">=</span> <span class="n">boxes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -1571,37 +1562,37 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>0</th>
       <td>82</td>
       <td>103</td>
-      <td>1.840000e+02</td>
-      <td>266.0</td>
-      <td>86.0</td>
-      <td>189.0</td>
+      <td>0.0</td>
+      <td>82.0</td>
+      <td>73.0</td>
+      <td>176.0</td>
       <td>0</td>
     </tr>
     <tr>
       <th>1</th>
       <td>73</td>
       <td>48</td>
-      <td>-1.199041e-14</td>
-      <td>48.0</td>
-      <td>139.0</td>
-      <td>212.0</td>
+      <td>218.0</td>
+      <td>266.0</td>
+      <td>138.0</td>
+      <td>211.0</td>
       <td>1</td>
     </tr>
     <tr>
       <th>2</th>
       <td>171</td>
       <td>53</td>
-      <td>1.300000e+01</td>
-      <td>184.0</td>
-      <td>86.0</td>
-      <td>139.0</td>
+      <td>95.0</td>
+      <td>266.0</td>
+      <td>85.0</td>
+      <td>138.0</td>
       <td>0</td>
     </tr>
     <tr>
       <th>3</th>
       <td>73</td>
       <td>99</td>
-      <td>0.000000e+00</td>
+      <td>0.0</td>
       <td>99.0</td>
       <td>0.0</td>
       <td>73.0</td>
@@ -1611,18 +1602,18 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>4</th>
       <td>167</td>
       <td>85</td>
-      <td>9.900000e+01</td>
+      <td>99.0</td>
       <td>266.0</td>
-      <td>1.0</td>
-      <td>86.0</td>
+      <td>0.0</td>
+      <td>85.0</td>
       <td>0</td>
     </tr>
     <tr>
       <th>5</th>
       <td>151</td>
       <td>172</td>
-      <td>9.400000e+01</td>
-      <td>266.0</td>
+      <td>0.0</td>
+      <td>172.0</td>
       <td>193.0</td>
       <td>344.0</td>
       <td>1</td>
@@ -1631,8 +1622,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>6</th>
       <td>54</td>
       <td>130</td>
-      <td>5.400000e+01</td>
-      <td>184.0</td>
+      <td>88.0</td>
+      <td>218.0</td>
       <td>139.0</td>
       <td>193.0</td>
       <td>1</td>
@@ -1641,15 +1632,15 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>7</th>
       <td>126</td>
       <td>94</td>
-      <td>0.000000e+00</td>
-      <td>94.0</td>
-      <td>212.0</td>
-      <td>338.0</td>
+      <td>172.0</td>
+      <td>266.0</td>
+      <td>211.0</td>
+      <td>337.0</td>
       <td>1</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/c6ab8b8bc948a40103bf7045e4dadbc3e6550f242f773e1f443c062ee0b22bc4.png" src="../../_images/c6ab8b8bc948a40103bf7045e4dadbc3e6550f242f773e1f443c062ee0b22bc4.png" />
+</div></div><img alt="../../_images/431ef6a80db43968589e9dc7bfb961c867d65bc4351457f224f32b30aa40ea7f.png" src="../../_images/431ef6a80db43968589e9dc7bfb961c867d65bc4351457f224f32b30aa40ea7f.png" />
 </div>
 </div>
 </section>
