@@ -73,7 +73,7 @@ const thebe_selector_output = ".output, .cell_output"
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/02/multiproductionfaciliity_worstcase';</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="3. Mixed Integer Linear Programming" href="../03/03.00.html" />
+    <link rel="next" title="3. Mixed Integer Linear Optimization" href="../03/03.00.html" />
     <link rel="prev" title="BIM production using demand forecasts" href="bim-rawmaterialplanning.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -183,7 +183,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Extra material: Multi-product facility production</a></li>
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../03/03.00.html">3. Mixed Integer Linear Programming</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../03/03.00.html">3. Mixed Integer Linear Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../03/bim-perturbed.html">BIM production with perturbed data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/shift-scheduling.html">Workforce shift scheduling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/simple-production-model-gdp.html">Production model using disjunctions</a></li>
@@ -225,9 +225,9 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../06/kelly-criterion.html">The Kelly Criterion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/markowitz_portfolio_revisited.html">Markowitz portfolio optimization revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/building-insulation.html">Optimal Design of Multilayered Building Insulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../06/svm-conic.html">Training Support Vector Machines with Conic Programming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../06/svm-conic.html">Support Vector Machines Revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/investment-wheel.html">Extra material: Luenberger’s Investment Wheel</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../06/optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../06/optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios with Risk Aversion</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../07/07.00.html">7. Accounting for Uncertainty: Optimization Meets Reality</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-7"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -252,7 +252,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../10/airline-seating.html">Airline seat allocation problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/opf-ldr.html">Optimal power flow problem with recourse actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/ccg.html">Two-stage Production Planning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../10/farmer.html">Extra: The farmer’s problem and its ariants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../10/farmer.html">Extra: The farmer’s problem and its variants</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/opf-wind-curtailment.html">Extra: Two-stage energy dispatch optimization with wind curtailment</a></li>
 
 </ul>
@@ -504,29 +504,18 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><section class="tex2jax_ignore mathjax_ignore" id="extra-material-multi-product-facility-production">
-<span id="index-3"></span><h1>Extra material: Multi-product facility production<a class="headerlink" href="#extra-material-multi-product-facility-production" title="Permalink to this heading">#</a></h1>
+  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><section class="tex2jax_ignore mathjax_ignore" id="extra-material-multi-product-facility-production">
+<span id="index-5"></span><h1>Extra material: Multi-product facility production<a class="headerlink" href="#extra-material-multi-product-facility-production" title="Permalink to this heading">#</a></h1>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
-
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+    
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span><span class="c1"># install Pyomo and solvers</span>
 </pre></div>
 </div>
 </div>
@@ -746,7 +735,7 @@ x_j &amp; \geq 0 &amp; \forall \, j\in J
     <span class="k">return</span> <span class="n">model</span>
 
 <span class="n">BIM</span> <span class="o">=</span> <span class="n">maxmin</span><span class="p">(</span><span class="n">BIM_scenarios</span><span class="p">,</span> <span class="n">BIM_resources</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">BIM</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">BIM</span><span class="p">)</span>
 
 <span class="n">worst_case_plan</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="n">j</span><span class="p">:</span> <span class="n">BIM</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]()</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">BIM</span><span class="o">.</span><span class="n">J</span><span class="p">},</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;worst case&quot;</span><span class="p">)</span>
 <span class="n">worst_case_profit</span> <span class="o">=</span> <span class="n">BIM</span><span class="o">.</span><span class="n">profit</span><span class="p">()</span>
@@ -815,7 +804,7 @@ Name: worst case, dtype: float64
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create mean scenario</span>
 <span class="n">mean_case</span> <span class="o">=</span> <span class="n">max_profit</span><span class="p">(</span><span class="n">BIM_scenarios</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">BIM_resources</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">mean_case</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">mean_case</span><span class="p">)</span>
 
 <span class="n">mean_case_profit</span> <span class="o">=</span> <span class="n">mean_case</span><span class="o">.</span><span class="n">profit</span><span class="p">()</span>
 <span class="n">mean_case_plan</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="n">j</span><span class="p">:</span> <span class="n">mean_case</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]()</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">mean_case</span><span class="o">.</span><span class="n">J</span><span class="p">},</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mean case&quot;</span><span class="p">)</span>
@@ -856,7 +845,7 @@ Name: mean case, dtype: float64
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/09bfd1cd316f727db01a9e1ae22bc51c803fc84312bb33d41396aa23301a7b59.png" src="../../_images/09bfd1cd316f727db01a9e1ae22bc51c803fc84312bb33d41396aa23301a7b59.png" />
+<img alt="../../_images/10db7b44e8465e7b5215de73ca0645dba688db977a9739587fd96ebfc9b5f47b.png" src="../../_images/10db7b44e8465e7b5215de73ca0645dba688db977a9739587fd96ebfc9b5f47b.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -866,7 +855,7 @@ Name: mean case, dtype: float64
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/c4bc9fa27d1a7e32369e6990710dd46068fd9690f38084da95c615be65bd2f91.png" src="../../_images/c4bc9fa27d1a7e32369e6990710dd46068fd9690f38084da95c615be65bd2f91.png" />
+<img alt="../../_images/f4e82b67e6f4fa9122c78401234d7d3224cf309166caf045deb24b5ecbbd48f4.png" src="../../_images/f4e82b67e6f4fa9122c78401234d7d3224cf309166caf045deb24b5ecbbd48f4.png" />
 </div>
 </div>
 </section>
@@ -922,7 +911,7 @@ Name: mean case, dtype: float64
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">3. Mixed Integer Linear Programming</p>
+        <p class="prev-next-title">3. Mixed Integer Linear Optimization</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
