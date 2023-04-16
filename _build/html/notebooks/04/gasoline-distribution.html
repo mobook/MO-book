@@ -210,6 +210,7 @@ const thebe_selector_output = ".output, .cell_output"
 
 
 
+<li class="toctree-l2"><a class="reference internal" href="forex-arbitrage.html">Forex Arbitrage</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../05/05.00.html">5. Convex Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-5"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -529,32 +530,21 @@ document.write(`
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
 <section id="problem-distributing-gasoline-to-franchise-operators">
 <h2>Problem: Distributing gasoline to franchise operators<a class="headerlink" href="#problem-distributing-gasoline-to-franchise-operators" title="Permalink to this heading">#</a></h2>
-<p>YaYa Gas-n-Grub is franchisor and operator for a network of regional convenience stores selling gasoline and convenience items in the United States. Each store is individually owned by a YaYa Gas-n-Grub franchisee who pays feea to the franchisor for services.
+<p>YaYa Gas-n-Grub is franchiser and operator for a network of regional convenience stores selling gasoline and convenience items in the United States. Each store is individually owned by a YaYa Gas-n-Grub franchisee who pays a fee to the franchiser for services.
 Gasoline is delivered by truck from regional distribution terminals. Each delivery truck carries 8,000 gallons delivered at a fixed charge of 700€ per delivery, or 0.0875€  per gallon. The franchise owners are eager to reduce delivery costs to boost profits.
 YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, “A” and “B”, to supply the franchise operators. Rather than a fixed fee per delivery, they proposed pricing based on location. But they already have existing customers, “A” and “B” can only provide a limited amount of gasoline to new customers totaling 100,000 and 80,000 gallons respectively. The only difference between the new suppliers and the current supplier is the delivery charge.</p>
 <p>The following chart shows the pricing of gasoline delivery in cents/gallon.</p>
@@ -624,7 +614,7 @@ YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, �
 </tr>
 </tbody>
 </table>
-<p>The franchisor and operator of YaYa Gas-n-Grub has the challenge of allocating the gasoline delivery to minimize the cost to the franchise owners. The following model will present a global objective to minimize the total cost of delivery to all franchise owners.</p>
+<p>The operator of YaYa Gas-n-Grub has the challenge of allocating the gasoline delivery to minimize the cost to the franchise owners. The following model will present a global objective to minimize the total cost of delivery to all franchise owners.</p>
 </section>
 <section id="model-1-minimize-total-delivery-cost">
 <h2>Model 1: Minimize total delivery cost<a class="headerlink" href="#model-1-minimize-total-delivery-cost" title="Permalink to this heading">#</a></h2>
@@ -646,6 +636,7 @@ Given the cost rate <span class="math notranslate nohighlight">\(r_{d, s}\)</spa
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">HTML</span><span class="p">,</span> <span class="n">display</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
 <span class="n">rates</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
     <span class="p">[</span>
@@ -910,7 +901,7 @@ Given the cost rate <span class="math notranslate nohighlight">\(r_{d, s}\)</spa
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">shipped_to_destination</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span> <span class="o">==</span> <span class="n">demand</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">dual</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="o">.</span><span class="n">IMPORT</span><span class="p">)</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 
@@ -1064,7 +1055,7 @@ New Delivery Costs = 26113.50€
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/6461ca5d2b16f2ab7661a59b69f487d0c6f288b1bbf23fb004f0922680b9f011.png" src="../../_images/6461ca5d2b16f2ab7661a59b69f487d0c6f288b1bbf23fb004f0922680b9f011.png" />
+</div></div><img alt="../../_images/cffc48027d05b6d88cf86e61678900ecf960e5d871e6a8b823fc6a0ce3b21b6f.png" src="../../_images/cffc48027d05b6d88cf86e61678900ecf960e5d871e6a8b823fc6a0ce3b21b6f.png" />
 </div>
 </div>
 </section>
@@ -1132,7 +1123,7 @@ New Delivery Costs = 26113.50€
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">shipped_to_destination</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span> <span class="o">==</span> <span class="n">demand</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">dual</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="o">.</span><span class="n">IMPORT</span><span class="p">)</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 
@@ -1290,15 +1281,15 @@ New Delivery Costs = $ 27387.49999
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/9dfbf81570b95b8fd4cad460644c16a3f88297d173b47f30a480ddf28be14cbd.png" src="../../_images/9dfbf81570b95b8fd4cad460644c16a3f88297d173b47f30a480ddf28be14cbd.png" />
+</div></div><img alt="../../_images/8ca5eebcccf585a3cfe782424924bfe4ac2aacc6f6dc5c837387f248da4e1ab7.png" src="../../_images/8ca5eebcccf585a3cfe782424924bfe4ac2aacc6f6dc5c837387f248da4e1ab7.png" />
 </div>
 </div>
 </section>
 <section id="model-3-minimize-total-cost-for-a-cost-sharing-plan">
 <h2>Model 3: Minimize total cost for a cost-sharing plan<a class="headerlink" href="#model-3-minimize-total-cost-for-a-cost-sharing-plan" title="Permalink to this heading">#</a></h2>
-<p>The prior two models demonstrated some practical difficulties in realizing the benefits of a cost optimization plan. Model 1 will likely fail in a franchisor/franchisee arrangement because the realized savings would be fore the benefit of a few.</p>
-<p>Model 2 was an attempt to remedy the problem by solving for an allocation of deliveries that would lower the cost rate that would be paid by each franchisee directly to the gasoline distributors. Perhaps surprisingly, the resulting solution offered no savings to any franchisee. Inspecting the data shows the source of the problem is that two franschisees, Emma and Fujita, simply have no lower cost alternative than the current supplier. Therefore finding a distribution plan with direct payments to the distributors that lowers everyone’s cost is an impossible task.</p>
-<p>The third model addresses this problem with a plan to share the cost savings among the franchisees. In this plan, the franchisor would collect delivery fees from the franchisees to pay the gasoline distributors. The optimization objective returns to the problem to minimizing total delivery costs, but then adds a constraint that defines a common cost rate to charge all franchisees. By offering a benefit to all parties, the franchisor offers incentive for group participation in contracting for gasoline distribution services.</p>
+<p>The prior two models demonstrated some practical difficulties in realizing the benefits of a cost optimization plan. Model 1 will likely fail in a franchiser/franchisee arrangement because the realized savings would be fore the benefit of a few.</p>
+<p>Model 2 was an attempt to remedy the problem by solving for an allocation of deliveries that would lower the cost rate that would be paid by each franchisee directly to the gasoline distributors. Perhaps surprisingly, the resulting solution offered no savings to any franchisee. Inspecting the data shows the source of the problem is that two franchisees, Emma and Fujita, simply have no lower cost alternative than the current supplier. Therefore finding a distribution plan with direct payments to the distributors that lowers everyone’s cost is an impossible task.</p>
+<p>The third model addresses this problem with a plan to share the cost savings among the franchisees. In this plan, the franchiser would collect delivery fees from the franchisees to pay the gasoline distributors. The optimization objective returns to the problem to minimizing total delivery costs, but then adds a constraint that defines a common cost rate to charge all franchisees. By offering a benefit to all parties, the franchiser offers incentive for group participation in contracting for gasoline distribution services.</p>
 <p>In mathematical terms, the problem can be formulated as follows:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -1357,7 +1348,7 @@ New Delivery Costs = $ 27387.49999
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">shipped_to_destination</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span> <span class="o">==</span> <span class="n">demand</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">dual</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="o">.</span><span class="n">IMPORT</span><span class="p">)</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 
@@ -1515,7 +1506,7 @@ New Delivery Costs = 26113.50€
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/3b903fd0daed8e69a0ea4795e4bc49946e6ac6a5df032b7c850586b6dcaa12aa.png" src="../../_images/3b903fd0daed8e69a0ea4795e4bc49946e6ac6a5df032b7c850586b6dcaa12aa.png" />
+</div></div><img alt="../../_images/7a94735efd52d91b29a627fdafbd58d0e16da99a0fe34e3a675bf586432a52d7.png" src="../../_images/7a94735efd52d91b29a627fdafbd58d0e16da99a0fe34e3a675bf586432a52d7.png" />
 </div>
 </div>
 </section>
@@ -1550,13 +1541,13 @@ New Delivery Costs = 26113.50€
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/f85b921d04e08e0c911f82432686c6a51437c9d6fff16f74a4db78382d6af0fa.png" src="../../_images/f85b921d04e08e0c911f82432686c6a51437c9d6fff16f74a4db78382d6af0fa.png" />
+<img alt="../../_images/3e4c6137628591a7c3d315644ef319f098e60cf9ffce6101d74fc7f184d8ec27.png" src="../../_images/3e4c6137628591a7c3d315644ef319f098e60cf9ffce6101d74fc7f184d8ec27.png" />
 </div>
 </div>
 </section>
 <section id="didactics-reporting-solutions">
 <h2>Didactics: Reporting solutions<a class="headerlink" href="#didactics-reporting-solutions" title="Permalink to this heading">#</a></h2>
-<p>Pyomo models can produce considerable amounts of data that must be summarized and presented for analysis and decision making. In this application, for example, the individual franchise owners receive differing amounts of savings which is certain to result in considerable discussion and possibly negotiation with the franchisor.</p>
+<p>Pyomo models can produce considerable amounts of data that must be summarized and presented for analysis and decision making. In this application, for example, the individual franchise owners receive differing amounts of savings which is certain to result in considerable discussion and possibly negotiation with the franchiser.</p>
 <p>The following cells demonstrate techniques for extracting and displaying information generated by a Pyomo model.</p>
 <section id="pyomo-display-method">
 <h3>Pyomo <code class="docutils literal notranslate"><span class="pre">.display()</span></code> method<a class="headerlink" href="#pyomo-display-method" title="Permalink to this heading">#</a></h3>
@@ -2053,7 +2044,7 @@ Current Supplier -&gt; Helen             0.00
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/a5b2b622f5148bc4a15c966f5bb1055d86ceec1fba83a6692433ead609069bb1.png" src="../../_images/a5b2b622f5148bc4a15c966f5bb1055d86ceec1fba83a6692433ead609069bb1.png" />
+</div></div><img alt="../../_images/a27c3b21d4a1c5a0ef4aa99c48c090348fc2df9c848ec9823ed2293695c8241c.png" src="../../_images/a27c3b21d4a1c5a0ef4aa99c48c090348fc2df9c848ec9823ed2293695c8241c.png" />
 </div>
 </div>
 </section>
@@ -2064,10 +2055,11 @@ Current Supplier -&gt; Helen             0.00
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="kn">import</span> <span class="nn">graphviz</span>
-<span class="kn">from</span> <span class="nn">graphviz</span> <span class="kn">import</span> <span class="n">Digraph</span>
 
 <span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    
+    <span class="kn">import</span> <span class="nn">graphviz</span>
+    <span class="kn">from</span> <span class="nn">graphviz</span> <span class="kn">import</span> <span class="n">Digraph</span>
 
     <span class="n">dot</span> <span class="o">=</span> <span class="n">Digraph</span><span class="p">(</span>
         <span class="n">node_attr</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fontsize&quot;</span><span class="p">:</span> <span class="s2">&quot;10&quot;</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="s2">&quot;rectangle&quot;</span><span class="p">,</span> <span class="s2">&quot;style&quot;</span><span class="p">:</span> <span class="s2">&quot;filled&quot;</span><span class="p">},</span>
