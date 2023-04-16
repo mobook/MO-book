@@ -183,7 +183,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="multiproductionfaciliity_worstcase.html">Extra material: Multi-product facility production</a></li>
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../03/03.00.html">3. Mixed Integer Linear Programming</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../03/03.00.html">3. Mixed Integer Linear Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../03/bim-perturbed.html">BIM production with perturbed data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/shift-scheduling.html">Workforce shift scheduling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/simple-production-model-gdp.html">Production model using disjunctions</a></li>
@@ -225,9 +225,9 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../06/kelly-criterion.html">The Kelly Criterion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/markowitz_portfolio_revisited.html">Markowitz portfolio optimization revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/building-insulation.html">Optimal Design of Multilayered Building Insulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../06/svm-conic.html">Training Support Vector Machines with Conic Programming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../06/svm-conic.html">Support Vector Machines Revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/investment-wheel.html">Extra material: Luenberger’s Investment Wheel</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../06/optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../06/optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios with Risk Aversion</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../07/07.00.html">7. Accounting for Uncertainty: Optimization Meets Reality</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-7"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -252,7 +252,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../10/airline-seating.html">Airline seat allocation problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/opf-ldr.html">Optimal power flow problem with recourse actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/ccg.html">Two-stage Production Planning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../10/farmer.html">Extra: The farmer’s problem and its ariants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../10/farmer.html">Extra: The farmer’s problem and its variants</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/opf-wind-curtailment.html">Extra: Two-stage energy dispatch optimization with wind curtailment</a></li>
 
 </ul>
@@ -487,7 +487,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#general-lp-formulation">General LP formulation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#general-lo-formulation">General LO formulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-microchip-production-problem">The microchip production problem</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dual-problem">Dual problem</a></li>
 </ul>
@@ -501,36 +501,25 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><section class="tex2jax_ignore mathjax_ignore" id="bim-production">
-<span id="index-2"></span><h1>BIM production<a class="headerlink" href="#bim-production" title="Permalink to this heading">#</a></h1>
+  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><section class="tex2jax_ignore mathjax_ignore" id="bim-production">
+<span id="index-3"></span><h1>BIM production<a class="headerlink" href="#bim-production" title="Permalink to this heading">#</a></h1>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
-
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+    
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
-<section id="general-lp-formulation">
-<h2>General LP formulation<a class="headerlink" href="#general-lp-formulation" title="Permalink to this heading">#</a></h2>
-<p>The simplest and most scalable class of optimization problems is the one where the objective function and the constraints are formulated using the simplest possible type of functions - linear functions. A <strong>linear program (LP)</strong> is an optimization problem of the form</p>
+<section id="general-lo-formulation">
+<h2>General LO formulation<a class="headerlink" href="#general-lo-formulation" title="Permalink to this heading">#</a></h2>
+<p>The simplest and most scalable class of optimization problems is the one where the objective function and the constraints are formulated using the simplest possible type of functions - linear functions. A <strong>linear optimization (LO)</strong> is a problem of the form</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -592,7 +581,7 @@ cbc was previously installed
 <span class="n">m</span><span class="o">.</span><span class="n">plastic</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">&lt;=</span> <span class="mi">1750</span><span class="p">)</span>
 <span class="n">m</span><span class="o">.</span><span class="n">copper</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="mi">4</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">&lt;=</span> <span class="mi">4800</span><span class="p">)</span>
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;x = (</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;optimal value = </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
@@ -659,7 +648,7 @@ optimal value = 17700.00
 <span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">y1</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">y3</span> <span class="o">+</span> <span class="mi">4</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">y4</span> <span class="o">&gt;=</span> <span class="mi">12</span><span class="p">)</span>
 <span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">y2</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">y3</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">y4</span> <span class="o">&gt;=</span> <span class="mi">9</span><span class="p">)</span>
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;y = (</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">y1</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">y2</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">y3</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">y4</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;optimal value = </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
@@ -737,7 +726,7 @@ optimal value = 17700.00
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#general-lp-formulation">General LP formulation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#general-lo-formulation">General LO formulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-microchip-production-problem">The microchip production problem</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dual-problem">Dual problem</a></li>
 </ul>
