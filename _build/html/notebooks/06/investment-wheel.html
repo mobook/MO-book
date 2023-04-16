@@ -73,8 +73,8 @@ const thebe_selector_output = ".output, .cell_output"
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/06/investment-wheel';</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Extra material: Optimal Growth Portfolios" href="optimal-growth-portfolios.html" />
-    <link rel="prev" title="Training Support Vector Machines with Conic Programming" href="svm-conic.html" />
+    <link rel="next" title="Extra material: Optimal Growth Portfolios with Risk Aversion" href="optimal-growth-portfolios.html" />
+    <link rel="prev" title="Support Vector Machines Revisited" href="svm-conic.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -225,9 +225,9 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="kelly-criterion.html">The Kelly Criterion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="markowitz_portfolio_revisited.html">Markowitz portfolio optimization revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="building-insulation.html">Optimal Design of Multilayered Building Insulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="svm-conic.html">Training Support Vector Machines with Conic Programming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="svm-conic.html">Support Vector Machines Revisited</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Extra material: Luenberger’s Investment Wheel</a></li>
-<li class="toctree-l2"><a class="reference internal" href="optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios with Risk Aversion</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../07/07.00.html">7. Accounting for Uncertainty: Optimization Meets Reality</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-7"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -252,7 +252,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../10/airline-seating.html">Airline seat allocation problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/opf-ldr.html">Optimal power flow problem with recourse actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/ccg.html">Two-stage Production Planning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../10/farmer.html">Extra: The farmer’s problem and its ariants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../10/farmer.html">Extra: The farmer’s problem and its variants</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/opf-wind-curtailment.html">Extra: Two-stage energy dispatch optimization with wind curtailment</a></li>
 
 </ul>
@@ -510,21 +510,16 @@ document.write(`
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install -q idaes-pse &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>idaes -q get-extensions
+    <span class="kn">import</span> <span class="nn">idaes</span>
+    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;/root/.idaes/bin/ipopt&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_mosek</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-mosek was previously installed
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -619,8 +614,8 @@ mosek was previously installed
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/5b73553cd3520f7c24789f5b1f777028f8bf7c87bd0f4dea2df280d249999c58.png" src="../../_images/5b73553cd3520f7c24789f5b1f777028f8bf7c87bd0f4dea2df280d249999c58.png" />
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7a7695cd9ec6441ca12f906cdca7faf3", "version_major": 2, "version_minor": 0}</script></div>
+<img alt="../../_images/f3cc61a17327477fc1d3b940d6a546f8cb9d4855024a77d8132d12b53c4b613c.png" src="../../_images/f3cc61a17327477fc1d3b940d6a546f8cb9d4855024a77d8132d12b53c4b613c.png" />
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d14db46751c8401a8c31340642f24f92", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 </section>
 <section id="modeling">
@@ -717,8 +712,8 @@ mosek was previously installed
     <span class="n">m</span><span class="o">.</span><span class="n">sum_w</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">conic</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">block_dict</span><span class="p">({</span><span class="n">s</span><span class="p">:</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">primal_exponential</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">q</span><span class="p">[</span><span class="n">s</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">})</span>
 
-    <span class="c1"># solve with &#39;mosek_direct&#39; (conic) or &#39;ipopt&#39; (nonlinear)</span>
-    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;mosek_direct&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="c1"># solve</span>
+    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
         
@@ -741,7 +736,7 @@ Sector B:  p = 0.333   b = 2.00   w = 0.218
 Sector C:  p = 0.167   b = 6.00   w = 0.128
 </pre></div>
 </div>
-<img alt="../../_images/9520736e7786dd0880dedbcc290c014f74ea7085660c353a5755a474403e405d.png" src="../../_images/9520736e7786dd0880dedbcc290c014f74ea7085660c353a5755a474403e405d.png" />
+<img alt="../../_images/48cdae8e5fe5717c4fe465ef3eb7804ebd5a8c36accc6d846e4df15e95baa62a.png" src="../../_images/48cdae8e5fe5717c4fe465ef3eb7804ebd5a8c36accc6d846e4df15e95baa62a.png" />
 </div>
 </div>
 </section>
@@ -811,8 +806,8 @@ Sector C:  p = 0.167   b = 6.00   w = 0.128
         <span class="p">{</span><span class="n">s</span><span class="p">:</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">primal_exponential</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">wheel</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;p&quot;</span><span class="p">])</span> <span class="o">-</span> <span class="n">lambd</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">q</span><span class="p">[</span><span class="n">s</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">}</span>
     <span class="p">)</span>
 
-    <span class="c1"># solve with &#39;mosek_direct&#39; (conic) or &#39;ipopt&#39; (nonlinear)</span>
-    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;mosek_direct&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="c1"># solve</span>
+    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
     
@@ -833,15 +828,15 @@ Sector C:  p = 0.167   b = 6.00   w = 0.128
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Risk-aversion lambda = 2.000
 Expected Log Gross Return =  0.06025
 
-Sector A:  p = 0.5000   b = 3.00   w = 0.36309
-Sector B:  p = 0.3333   b = 2.00   w = 0.26517
-Sector C:  p = 0.1667   b = 6.00   w = 0.12565
+Sector A:  p = 0.5000   b = 3.00   w = 0.36329
+Sector B:  p = 0.3333   b = 2.00   w = 0.26547
+Sector C:  p = 0.1667   b = 6.00   w = 0.12575
 </pre></div>
 </div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;AxesSubplot:title={&#39;center&#39;:&#39;E[log(R)] = 0.06025&#39;}, xlabel=&#39;Stages&#39;, ylabel=&#39;Wealth&#39;&gt;
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={&#39;center&#39;: &#39;E[log(R)] = 0.06025&#39;}, xlabel=&#39;Stages&#39;, ylabel=&#39;Wealth&#39;&gt;
 </pre></div>
 </div>
-<img alt="../../_images/17018053fd98f900fb6a4a4b11fddb4b4b5d62b88b759c2e7371dc2e87366f91.png" src="../../_images/17018053fd98f900fb6a4a4b11fddb4b4b5d62b88b759c2e7371dc2e87366f91.png" />
+<img alt="../../_images/207e247163b14a98ef4bf139139fb3d00b9a5ae2b84ab481bfa46d5630f666b1.png" src="../../_images/207e247163b14a98ef4bf139139fb3d00b9a5ae2b84ab481bfa46d5630f666b1.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -857,7 +852,7 @@ Sector C:  p = 0.1667   b = 6.00   w = 0.12565
 </div>
 </div>
 <div class="cell_output docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "1e3e2e4d05ca407f942ea00d2f7b7114", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0ac7d620bbe843798e2de6fa72599bf2", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 </section>
 <section id="how-does-risk-aversion-change-the-solution">
@@ -891,7 +886,7 @@ Sector C:  p = 0.1667   b = 6.00   w = 0.12565
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/17c54de8aa054d3fb36f777446d15d07ad3db1fe3dc3cb9c263a16e5b3d651db.png" src="../../_images/17c54de8aa054d3fb36f777446d15d07ad3db1fe3dc3cb9c263a16e5b3d651db.png" />
+<img alt="../../_images/ef1cfc5ea77a698751bcc52294c6548a59d12410b712f73fd60501cdd16c7017.png" src="../../_images/ef1cfc5ea77a698751bcc52294c6548a59d12410b712f73fd60501cdd16c7017.png" />
 </div>
 </div>
 </section>
@@ -981,7 +976,7 @@ Sector C:  p = 0.1667   b = 6.00   w = 0.12565
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Training Support Vector Machines with Conic Programming</p>
+        <p class="prev-next-title">Support Vector Machines Revisited</p>
       </div>
     </a>
     <a class="right-next"
@@ -989,7 +984,7 @@ Sector C:  p = 0.1667   b = 6.00   w = 0.12565
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Extra material: Optimal Growth Portfolios</p>
+        <p class="prev-next-title">Extra material: Optimal Growth Portfolios with Risk Aversion</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
