@@ -73,7 +73,7 @@ const thebe_selector_output = ".output, .cell_output"
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/04/power-network';</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="5. Convex Optimization" href="../05/05.00.html" />
+    <link rel="next" title="Forex Arbitrage" href="forex-arbitrage.html" />
     <link rel="prev" title="Extra material: Shortest path in real life" href="shortest-path-road-networks.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -210,6 +210,7 @@ const thebe_selector_output = ".output, .cell_output"
 
 
 
+<li class="toctree-l2"><a class="reference internal" href="forex-arbitrage.html">Forex Arbitrage</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../05/05.00.html">5. Convex Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-5"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -519,28 +520,17 @@ document.write(`
                   
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><section class="tex2jax_ignore mathjax_ignore" id="extra-material-energy-dispatch-problem">
 <span id="index-5"></span><h1>Extra material: Energy dispatch problem<a class="headerlink" href="#extra-material-energy-dispatch-problem" title="Permalink to this heading">#</a></h1>
-<p>To meet the energy demand, power plants run day and night across the country to produce electricy from a variety of sources such as fossil fuels and renewable energy. On the short-time scale, the best operating levels for electric power plants are derived every 15 minutes by solving the so-called <em>Optimal Power Flow (OPF)</em> model. The OPF model is an optimization problem with the objective of minimizing the total energy dispatching cost, while ensuring that the generation meets the total energy demand. Furthermore, the model takes into account many constraints, among which operational and physical constraints.</p>
+<p>To meet the energy demand, power plants run day and night across the country to produce electricity from a variety of sources such as fossil fuels and renewable energy. On the short-time scale, the best operating levels for electric power plants are derived every 15 minutes by solving the so-called <em>Optimal Power Flow (OPF)</em> model. The OPF model is an optimization problem with the objective of minimizing the total energy dispatching cost, while ensuring that the generation meets the total energy demand. Furthermore, the model takes into account many constraints, among which operational and physical constraints.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -599,6 +589,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load packages</span>
+
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">Markdown</span><span class="p">,</span> <span class="n">HTML</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -609,8 +600,8 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 <span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
 <span class="kn">import</span> <span class="nn">time</span> 
 
-<span class="c1"># Load cbc solver</span>
-<span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+<span class="c1"># Load solver</span>
+<span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -676,7 +667,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/3329e20903967e24e3e62ecf35f604c48db83bec56af69ce868ca3d58ddb4483.png" src="../../_images/3329e20903967e24e3e62ecf35f604c48db83bec56af69ce868ca3d58ddb4483.png" />
+<img alt="../../_images/10b0339f74ffd30f81a9f8bfbbc417f967fff8cc0a48ef26ace5bc694a09d2b7.png" src="../../_images/10b0339f74ffd30f81a9f8bfbbc417f967fff8cc0a48ef26ace5bc694a09d2b7.png" />
 </div>
 </div>
 <p>The IEEE-118 network has 18 generators, of which:</p>
@@ -1622,7 +1613,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/cd73645a03078f1a9872c129cc06e71d0a89bc669ba96bbc853d49d3d47b2dd0.png" src="../../_images/cd73645a03078f1a9872c129cc06e71d0a89bc669ba96bbc853d49d3d47b2dd0.png" />
+<img alt="../../_images/258c50b38f5ecda52d5c51c47534d316df133b382c74b29385d7372c04e8a711.png" src="../../_images/258c50b38f5ecda52d5c51c47534d316df133b382c74b29385d7372c04e8a711.png" />
 </div>
 </div>
 <p>The goal of the OPF problem is to minimize the total costs of dispatching energy. OPF1 is the original OPF formulation, whereas OPF2 and OPF3 are restricted versions of OPF1. This means that the feasible region of OPF1 is at least as large as OPF2 and OPF3, where we may assume that <span class="math notranslate nohighlight">\(x_i = 1\)</span> for all the generators <span class="math notranslate nohighlight">\(i\)</span>.</p>
@@ -1644,16 +1635,16 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
         },
         codeMirrorConfig: {
             theme: "abcdef",
-            mode: "mu_venv-38-20210424-081821"
+            mode: "python"
         },
         kernelOptions: {
-            name: "mu_venv-38-20210424-081821",
+            name: "python3",
             path: "./notebooks/04"
         },
         predefinedOutput: true
     }
     </script>
-    <script>kernelName = 'mu_venv-38-20210424-081821'</script>
+    <script>kernelName = 'python3'</script>
 
                 </article>
               
@@ -1673,11 +1664,11 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
       </div>
     </a>
     <a class="right-next"
-       href="../05/05.00.html"
+       href="forex-arbitrage.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">5. Convex Optimization</p>
+        <p class="prev-next-title">Forex Arbitrage</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
