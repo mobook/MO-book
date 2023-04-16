@@ -73,7 +73,7 @@ const thebe_selector_output = ".output, .cell_output"
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/05/svm';</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Extra material: Refinery production and shadow pricing" href="refinery-production.html" />
+    <link rel="next" title="Extra material: Refinery production and shadow pricing with CVXPY" href="refinery-production.html" />
     <link rel="prev" title="Markowitz portfolio optimization" href="markowitz_portfolio.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -214,7 +214,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="ols-regression.html">Ordinary Least Squares (OLS) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="markowitz_portfolio.html">Markowitz portfolio optimization</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Support Vector Machines for Binary Classification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="refinery-production.html">Extra material: Refinery production and shadow pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="refinery-production.html">Extra material: Refinery production and shadow pricing with CVXPY</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../06/06.00.html">6. Conic Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-6"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -530,21 +530,16 @@ document.write(`
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="n">SOLVER_LO</span> <span class="o">=</span> <span class="s2">&quot;clp&quot;</span>
+<span class="n">SOLVER_NLO</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_mosek</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-mosek was previously installed
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install idaes-pse --pre &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>idaes get-extensions --to ./bin 
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
 </pre></div>
 </div>
 </div>
@@ -850,7 +845,7 @@ mosek was previously installed
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/7672e665f89a4ec6dbb1b4ab2dd0997cd1380e7d8da5847b7133676a8b680615.png" src="../../_images/7672e665f89a4ec6dbb1b4ab2dd0997cd1380e7d8da5847b7133676a8b680615.png" />
+<img alt="../../_images/cf0695aabc81fd39d1171eb468effd0df78cdcf70ab57a35fc965b3501e5c5eb.png" src="../../_images/cf0695aabc81fd39d1171eb468effd0df78cdcf70ab57a35fc965b3501e5c5eb.png" />
 </div>
 </div>
 </section>
@@ -935,7 +930,7 @@ mosek was previously installed
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 1, &#39;skewness&#39;: 0}, b = 0.0)
-Accuracy =  85.8%
+Accuracy =  87.6%
 </pre></div>
 </div>
 </div>
@@ -988,8 +983,8 @@ Accuracy =  85.8%
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/1d9a87d09d00cf65c829f213b5f45a05bc444ddf73192a2174d39002b6ff3ac1.png" src="../../_images/1d9a87d09d00cf65c829f213b5f45a05bc444ddf73192a2174d39002b6ff3ac1.png" />
-<img alt="../../_images/a3c76d8d48e942c5a9f8f2b14a9b22b52a87135b6507788e258345cb390a7814.png" src="../../_images/a3c76d8d48e942c5a9f8f2b14a9b22b52a87135b6507788e258345cb390a7814.png" />
+<img alt="../../_images/ff419ac8935f0831f6fa2e45b7121d8b5c1241de03305edeaab232561d98bc7e.png" src="../../_images/ff419ac8935f0831f6fa2e45b7121d8b5c1241de03305edeaab232561d98bc7e.png" />
+<img alt="../../_images/90d9e4b2066112c5d3ec0fa19399d5a1f353a6fda8cbef88b0bce6a87b4bb5f8.png" src="../../_images/90d9e4b2066112c5d3ec0fa19399d5a1f353a6fda8cbef88b0bce6a87b4bb5f8.png" />
 </div>
 </div>
 </section>
@@ -1070,10 +1065,10 @@ Accuracy =  85.8%
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 1, &#39;skewness&#39;: 0}, b = 0.0) 
 
-Matthews correlation coefficient (MCC) = 0.710
-Sensitivity =  89.7%
-Precision =  85.9%
-Accuracy =  85.8%
+Matthews correlation coefficient (MCC) = 0.752
+Sensitivity =  88.4%
+Precision =  88.4%
+Accuracy =  87.6%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1101,18 +1096,18 @@ Accuracy =  85.8%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>140</td>
-      <td>16</td>
+      <td>130</td>
+      <td>17</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>23</td>
-      <td>96</td>
+      <td>17</td>
+      <td>111</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/1d9a87d09d00cf65c829f213b5f45a05bc444ddf73192a2174d39002b6ff3ac1.png" src="../../_images/1d9a87d09d00cf65c829f213b5f45a05bc444ddf73192a2174d39002b6ff3ac1.png" />
-<img alt="../../_images/a3c76d8d48e942c5a9f8f2b14a9b22b52a87135b6507788e258345cb390a7814.png" src="../../_images/a3c76d8d48e942c5a9f8f2b14a9b22b52a87135b6507788e258345cb390a7814.png" />
+</div></div><img alt="../../_images/ff419ac8935f0831f6fa2e45b7121d8b5c1241de03305edeaab232561d98bc7e.png" src="../../_images/ff419ac8935f0831f6fa2e45b7121d8b5c1241de03305edeaab232561d98bc7e.png" />
+<img alt="../../_images/90d9e4b2066112c5d3ec0fa19399d5a1f353a6fda8cbef88b0bce6a87b4bb5f8.png" src="../../_images/90d9e4b2066112c5d3ec0fa19399d5a1f353a6fda8cbef88b0bce6a87b4bb5f8.png" />
 </div>
 </div>
 </section>
@@ -1230,7 +1225,7 @@ y_i (w^\top x_i + b) &amp; \geq 1 - z_i &amp; \forall i = 1, 2, \dots, n
     <span class="k">def</span> <span class="nf">hingeloss</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="n">X</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
 
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_LO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="n">w</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">p</span><span class="p">]()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span>
     <span class="n">b</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">()</span>
@@ -1244,12 +1239,12 @@ y_i (w^\top x_i + b) &amp; \geq 1 - z_i &amp; \forall i = 1, 2, \dots, n
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 0.24294812, &#39;skewness&#39;: 0.061679193}, b = 0.0059203812) 
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 0.24263495238146326, &#39;skewness&#39;: 0.05832409256289308}, b = 0.02283616952711413) 
 
-Matthews correlation coefficient (MCC) = 0.721
-Sensitivity =  94.2%
-Precision =  83.5%
-Accuracy =  86.2%
+Matthews correlation coefficient (MCC) = 0.815
+Sensitivity =  97.3%
+Precision =  86.7%
+Accuracy =  90.5%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1277,18 +1272,18 @@ Accuracy =  86.2%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>147</td>
-      <td>9</td>
+      <td>143</td>
+      <td>4</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>29</td>
-      <td>90</td>
+      <td>22</td>
+      <td>106</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/93dd418611d3a44c041cff4681f76ba253a26c10d8820f990dbfb1d108641b7e.png" src="../../_images/93dd418611d3a44c041cff4681f76ba253a26c10d8820f990dbfb1d108641b7e.png" />
-<img alt="../../_images/19774912deee84f424c96253be838d1862b1e679f4d1821379eceb265954d2c8.png" src="../../_images/19774912deee84f424c96253be838d1862b1e679f4d1821379eceb265954d2c8.png" />
+</div></div><img alt="../../_images/6e12a72491271832d4719fcd75b7090b1b2ca6c71f54374c9e246b1a2dd61bba.png" src="../../_images/6e12a72491271832d4719fcd75b7090b1b2ca6c71f54374c9e246b1a2dd61bba.png" />
+<img alt="../../_images/d7300a17a9118b28803c3cf541a92ce3da79742e980b8ac658be3bddf25d9844.png" src="../../_images/d7300a17a9118b28803c3cf541a92ce3da79742e980b8ac658be3bddf25d9844.png" />
 </div>
 </div>
 </section>
@@ -1370,7 +1365,7 @@ y_i \left( w^\top x_i + b \right) &amp; \geq 1 - z_i&amp; \forall i \in 1, 2, \d
     <span class="k">def</span> <span class="nf">hingeloss</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="n">X</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
 
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;ipopt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_NLO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="n">w</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">p</span><span class="p">]()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span>
     <span class="n">b</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">()</span>
@@ -1384,12 +1379,12 @@ y_i \left( w^\top x_i + b \right) &amp; \geq 1 - z_i&amp; \forall i \in 1, 2, \d
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 0.36879740713794434, &#39;skewness&#39;: 0.12865329434300102}, b = -0.1102264931734968) 
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 0.3586451949732893, &#39;skewness&#39;: 0.12389591904222624}, b = -0.12668288702071473) 
 
-Matthews correlation coefficient (MCC) = 0.673
-Sensitivity =  88.5%
-Precision =  84.1%
-Accuracy =  84.0%
+Matthews correlation coefficient (MCC) = 0.781
+Sensitivity =  91.8%
+Precision =  88.2%
+Accuracy =  89.1%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1417,18 +1412,18 @@ Accuracy =  84.0%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>138</td>
-      <td>18</td>
+      <td>135</td>
+      <td>12</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>26</td>
-      <td>93</td>
+      <td>18</td>
+      <td>110</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/a8e8725d7b8ea04221b1e1e805ac6e64ff28c79fe76c98d2e908903db2167cb5.png" src="../../_images/a8e8725d7b8ea04221b1e1e805ac6e64ff28c79fe76c98d2e908903db2167cb5.png" />
-<img alt="../../_images/3f2dbd1cd676fe49c9c732f8291936f1e87037ed136835faf47a109abc4a2c9d.png" src="../../_images/3f2dbd1cd676fe49c9c732f8291936f1e87037ed136835faf47a109abc4a2c9d.png" />
+</div></div><img alt="../../_images/cab0d0f1ab30064e0e0430036b687225ce59ca2b8d592d3b9ad02caea9b04c71.png" src="../../_images/cab0d0f1ab30064e0e0430036b687225ce59ca2b8d592d3b9ad02caea9b04c71.png" />
+<img alt="../../_images/f9261dbef7da2337161d87adc71ba0db16230f52bc245fcc53cb4b84c959af96.png" src="../../_images/f9261dbef7da2337161d87adc71ba0db16230f52bc245fcc53cb4b84c959af96.png" />
 </div>
 </div>
 </section>
@@ -1542,7 +1537,7 @@ b &amp; = y_i - w^\top x_i &amp; \forall i\in 1, 2, \ldots, n\quad \text{s.t.}\q
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
 
     <span class="c1"># Solve QP with the interior point method</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;ipopt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_NLO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="c1"># Extract solution</span>
     <span class="n">w</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">p</span><span class="p">]()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span>
@@ -1561,12 +1556,12 @@ b &amp; = y_i - w^\top x_i &amp; \forall i\in 1, 2, \ldots, n\quad \text{s.t.}\q
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 0.36879081299590405, &#39;skewness&#39;: 0.12866554602772357}, b = -0.1103417346180755) 
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 0.35862968210500457, &#39;skewness&#39;: 0.12389059260370978}, b = -0.12666670733273744) 
 
-Matthews correlation coefficient (MCC) = 0.673
-Sensitivity =  88.5%
-Precision =  84.1%
-Accuracy =  84.0%
+Matthews correlation coefficient (MCC) = 0.781
+Sensitivity =  91.8%
+Precision =  88.2%
+Accuracy =  89.1%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1594,18 +1589,18 @@ Accuracy =  84.0%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>138</td>
-      <td>18</td>
+      <td>135</td>
+      <td>12</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>26</td>
-      <td>93</td>
+      <td>18</td>
+      <td>110</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/a8e8725d7b8ea04221b1e1e805ac6e64ff28c79fe76c98d2e908903db2167cb5.png" src="../../_images/a8e8725d7b8ea04221b1e1e805ac6e64ff28c79fe76c98d2e908903db2167cb5.png" />
-<img alt="../../_images/3f2dbd1cd676fe49c9c732f8291936f1e87037ed136835faf47a109abc4a2c9d.png" src="../../_images/3f2dbd1cd676fe49c9c732f8291936f1e87037ed136835faf47a109abc4a2c9d.png" />
+</div></div><img alt="../../_images/cab0d0f1ab30064e0e0430036b687225ce59ca2b8d592d3b9ad02caea9b04c71.png" src="../../_images/cab0d0f1ab30064e0e0430036b687225ce59ca2b8d592d3b9ad02caea9b04c71.png" />
+<img alt="../../_images/f9261dbef7da2337161d87adc71ba0db16230f52bc245fcc53cb4b84c959af96.png" src="../../_images/f9261dbef7da2337161d87adc71ba0db16230f52bc245fcc53cb4b84c959af96.png" />
 </div>
 </div>
 </section>
@@ -1834,7 +1829,7 @@ G = \begin{bmatrix}
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">q</span><span class="p">]</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">q</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
 
     <span class="c1"># Solve QP with the interior point method</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;ipopt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_NLO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     
     <span class="c1"># Extract solution</span>
     <span class="n">a</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
@@ -1870,76 +1865,11 @@ G = \begin{bmatrix}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;__main__.KernelSVM object at 0x7fad60750d60&gt; 
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;__main__.KernelSVM object at 0x7fe07af63b80&gt; 
 
-Matthews correlation coefficient (MCC) = 0.673
-Sensitivity =  88.5%
-Precision =  84.1%
-Accuracy =  84.0%
-</pre></div>
-</div>
-<div class="output text_html"><div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>Predicted Positive</th>
-      <th>Predicted Negative</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>Actual Positive</th>
-      <td>138</td>
-      <td>18</td>
-    </tr>
-    <tr>
-      <th>Actual Negative</th>
-      <td>26</td>
-      <td>93</td>
-    </tr>
-  </tbody>
-</table>
-</div></div><img alt="../../_images/0c6e53ae5c718e14dddf4a1be6fcf41e6d8ac45e34afb4d463c897ca7008c41d.png" src="../../_images/0c6e53ae5c718e14dddf4a1be6fcf41e6d8ac45e34afb4d463c897ca7008c41d.png" />
-<img alt="../../_images/a8e8725d7b8ea04221b1e1e805ac6e64ff28c79fe76c98d2e908903db2167cb5.png" src="../../_images/a8e8725d7b8ea04221b1e1e805ac6e64ff28c79fe76c98d2e908903db2167cb5.png" />
-<img alt="../../_images/3f2dbd1cd676fe49c9c732f8291936f1e87037ed136835faf47a109abc4a2c9d.png" src="../../_images/3f2dbd1cd676fe49c9c732f8291936f1e87037ed136835faf47a109abc4a2c9d.png" />
-</div>
-</div>
-</section>
-<section id="polynomial-kernels">
-<h3>Polynomial kernels<a class="headerlink" href="#polynomial-kernels" title="Permalink to this heading">#</a></h3>
-<p>A polynomial kernel of order <span class="math notranslate nohighlight">\(d\)</span> has the form</p>
-<div class="math notranslate nohighlight">
-\[K(x, z) = (1 + x^\top z)^d\]</div>
-<p>The following cell demonstrates a quadratic kernel applied to the banknote data.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">quadratic</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
-
-<span class="n">svm_kernel</span> <span class="o">=</span> <span class="n">svm_factory_kernel</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="n">quadratic</span><span class="p">)</span>
-<span class="n">test</span><span class="p">(</span><span class="n">svm_kernel</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;__main__.KernelSVM object at 0x7fad4d25caf0&gt; 
-
-Matthews correlation coefficient (MCC) = 0.779
-Sensitivity =  89.1%
-Precision =  91.4%
+Matthews correlation coefficient (MCC) = 0.781
+Sensitivity =  91.8%
+Precision =  88.2%
 Accuracy =  89.1%
 </pre></div>
 </div>
@@ -1968,37 +1898,44 @@ Accuracy =  89.1%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>139</td>
-      <td>17</td>
+      <td>135</td>
+      <td>12</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>13</td>
-      <td>106</td>
+      <td>18</td>
+      <td>110</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/cc8d62a1ae3e1c10961b904d9e9a8f6cc55aaf0cbf572c71196abb35bc8a51ec.png" src="../../_images/cc8d62a1ae3e1c10961b904d9e9a8f6cc55aaf0cbf572c71196abb35bc8a51ec.png" />
-<img alt="../../_images/024097dd5a96ec76e9e690ea70451fc57f4266ea160ed6c2c51835e14a017c3a.png" src="../../_images/024097dd5a96ec76e9e690ea70451fc57f4266ea160ed6c2c51835e14a017c3a.png" />
-<img alt="../../_images/ba38f4e14470fcdb7df9b33910940c80c203bfb239bfdd6e96f739e59387530d.png" src="../../_images/ba38f4e14470fcdb7df9b33910940c80c203bfb239bfdd6e96f739e59387530d.png" />
+</div></div><img alt="../../_images/14263a73befa3d2abb887e6040ea405dcf6bdf72c99c3e18479ebc9d693c6663.png" src="../../_images/14263a73befa3d2abb887e6040ea405dcf6bdf72c99c3e18479ebc9d693c6663.png" />
+<img alt="../../_images/cab0d0f1ab30064e0e0430036b687225ce59ca2b8d592d3b9ad02caea9b04c71.png" src="../../_images/cab0d0f1ab30064e0e0430036b687225ce59ca2b8d592d3b9ad02caea9b04c71.png" />
+<img alt="../../_images/f9261dbef7da2337161d87adc71ba0db16230f52bc245fcc53cb4b84c959af96.png" src="../../_images/f9261dbef7da2337161d87adc71ba0db16230f52bc245fcc53cb4b84c959af96.png" />
 </div>
 </div>
+</section>
+<section id="polynomial-kernels">
+<h3>Polynomial kernels<a class="headerlink" href="#polynomial-kernels" title="Permalink to this heading">#</a></h3>
+<p>A polynomial kernel of order <span class="math notranslate nohighlight">\(d\)</span> has the form</p>
+<div class="math notranslate nohighlight">
+\[K(x, z) = (1 + x^\top z)^d\]</div>
+<p>The following cell demonstrates a quadratic kernel applied to the banknote data.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cubic</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">quadratic</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
 
-<span class="n">svm_kernel</span> <span class="o">=</span> <span class="n">svm_factory_kernel</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="n">cubic</span><span class="p">)</span>
+<span class="n">svm_kernel</span> <span class="o">=</span> <span class="n">svm_factory_kernel</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="n">quadratic</span><span class="p">)</span>
 <span class="n">test</span><span class="p">(</span><span class="n">svm_kernel</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;__main__.KernelSVM object at 0x7fad6ba4bf70&gt; 
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;__main__.KernelSVM object at 0x7fe07b035a60&gt; 
 
-Matthews correlation coefficient (MCC) = 0.804
-Sensitivity =  88.5%
-Precision =  93.9%
-Accuracy =  90.2%
+Matthews correlation coefficient (MCC) = 0.861
+Sensitivity =  93.2%
+Precision =  93.8%
+Accuracy =  93.1%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -2026,19 +1963,77 @@ Accuracy =  90.2%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>138</td>
-      <td>18</td>
+      <td>137</td>
+      <td>10</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
       <td>9</td>
-      <td>110</td>
+      <td>119</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/d61f086a4147dc3e380b6c67622581fe50ec7ec4d4b564c923152a6929995d7f.png" src="../../_images/d61f086a4147dc3e380b6c67622581fe50ec7ec4d4b564c923152a6929995d7f.png" />
-<img alt="../../_images/b93e7e23bc5cadbfce2282f801dc2bf5beebf924da87214556f33edabfe3f671.png" src="../../_images/b93e7e23bc5cadbfce2282f801dc2bf5beebf924da87214556f33edabfe3f671.png" />
-<img alt="../../_images/31feab7b5ab062d2130e48fd8007653af4d58309363669dc4e18e37aef244ac1.png" src="../../_images/31feab7b5ab062d2130e48fd8007653af4d58309363669dc4e18e37aef244ac1.png" />
+</div></div><img alt="../../_images/ab79e7cdf317751cadbe8067b0d415836175c04260b5dab81208aad0be5d96bc.png" src="../../_images/ab79e7cdf317751cadbe8067b0d415836175c04260b5dab81208aad0be5d96bc.png" />
+<img alt="../../_images/5f54273119e7f55b6bdc27a45d45f4d4e64a297b8792350785d168711fa461b9.png" src="../../_images/5f54273119e7f55b6bdc27a45d45f4d4e64a297b8792350785d168711fa461b9.png" />
+<img alt="../../_images/14262f494b297fc1b26e04c295fb4a8d674c69985e5537045dc9500779fa5f8a.png" src="../../_images/14262f494b297fc1b26e04c295fb4a8d674c69985e5537045dc9500779fa5f8a.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cubic</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span>
+
+<span class="n">svm_kernel</span> <span class="o">=</span> <span class="n">svm_factory_kernel</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="n">cubic</span><span class="p">)</span>
+<span class="n">test</span><span class="p">(</span><span class="n">svm_kernel</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;__main__.KernelSVM object at 0x7fe097a95040&gt; 
+
+Matthews correlation coefficient (MCC) = 0.843
+Sensitivity =  88.4%
+Precision =  96.3%
+Accuracy =  92.0%
+</pre></div>
+</div>
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Predicted Positive</th>
+      <th>Predicted Negative</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Actual Positive</th>
+      <td>130</td>
+      <td>17</td>
+    </tr>
+    <tr>
+      <th>Actual Negative</th>
+      <td>5</td>
+      <td>123</td>
+    </tr>
+  </tbody>
+</table>
+</div></div><img alt="../../_images/7f85cb3b8be2682441e161982a12ca5082400cafb26b1cde964d04c909826201.png" src="../../_images/7f85cb3b8be2682441e161982a12ca5082400cafb26b1cde964d04c909826201.png" />
+<img alt="../../_images/b3c21c12d9f0cc5f8d1d60a071bda27b3e18dd0945d1348a79122fc5f911d0ea.png" src="../../_images/b3c21c12d9f0cc5f8d1d60a071bda27b3e18dd0945d1348a79122fc5f911d0ea.png" />
+<img alt="../../_images/1de5f7c6797cf70bab63a73cb0c6c85644e1559ec77c5e39e1ee6d594dfed400.png" src="../../_images/1de5f7c6797cf70bab63a73cb0c6c85644e1559ec77c5e39e1ee6d594dfed400.png" />
 </div>
 </div>
 </section>
@@ -2087,7 +2082,7 @@ Accuracy =  90.2%
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Extra material: Refinery production and shadow pricing</p>
+        <p class="prev-next-title">Extra material: Refinery production and shadow pricing with CVXPY</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
