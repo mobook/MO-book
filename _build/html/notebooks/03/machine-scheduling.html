@@ -508,33 +508,22 @@ document.write(`
 <span id="index-2"></span><h1>Machine Scheduling<a class="headerlink" href="#machine-scheduling" title="Permalink to this heading">#</a></h1>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
 <section id="problem-description">
 <h2>Problem description<a class="headerlink" href="#problem-description" title="Permalink to this heading">#</a></h2>
-<p>“Which job should be done next?” is a questiona one face in modern life, whetherfor a busy student working on course assignments, a courier delivering packages, a server waiting on tables in a busy restaurant, a computer processing threads, or a machine on a complex assembly line. There are empirical answers to this question, among them “first in, first  out”, “last  in, first out”, or “shortest job first”.</p>
-<p>What we consider in this notebook is the modeling finding solutions to this class of problem using optimiziation techniques. This notebook demonstrates the formulation of a model for scheduling a single machine scheduling using disjuctive programming in Pyomo. The problem is to schedule a set of jobs on a single machine given the release time, duration, and due time for each job. Date for the example problem is from Christelle Gueret, Christian Prins, Marc Sevaux, “Applications of Optimization with Xpress-MP,” Chapter 5, Dash Optimization, 2000.</p>
+<p>“Which job should be done next?” is a question one face in modern life, whether for a busy student working on course assignments, a courier delivering packages, a server waiting on tables in a busy restaurant, a computer processing threads, or a machine on a complex assembly line. There are empirical answers to this question, among them “first in, first  out”, “last  in, first out”, or “shortest job first”.</p>
+<p>What we consider in this notebook is the modeling finding solutions to this class of problem using optimization techniques. This notebook demonstrates the formulation of a model for scheduling a single machine scheduling using disjunctive programming in Pyomo. The problem is to schedule a set of jobs on a single machine given the release time, duration, and due time for each job. Date for the example problem is from Christelle Gueret, Christian Prins, Marc Sevaux, “Applications of Optimization with Xpress-MP,” Chapter 5, Dash Optimization, 2000.</p>
 <section id="job-data">
 <h3>Job data<a class="headerlink" href="#job-data" title="Permalink to this heading">#</a></h3>
 <p>The problem is to schedule a sequence of jobs for a single machine. The problem data as a nested Python dictionary of jobs. Each job is labeled by a key. For each key there is an associated data dictionary giving the time at which the job is released to the for machine processing, the expected duration of the job, and the due date. The optimization objective is to find a sequence the jobs on the machine that meets the the due dates. If no such schedule exists, then the objective is to find a schedule minimizing some measure of “badness”.</p>
@@ -630,7 +619,7 @@ cbc was previously installed
 </section>
 <section id="gantt-chart">
 <h3>Gantt chart<a class="headerlink" href="#gantt-chart" title="Permalink to this heading">#</a></h3>
-<p>A traditional means of visualizing scheduling data in the form of a Gantt chart. The next cell presents a function <code class="docutils literal notranslate"><span class="pre">gantt</span></code> that plots a Gantt chart given jobs and schedule information. If no schedule information is given, the jobs are performed in the order listed in the jobs dataframe.</p>
+<p>A traditional means of visualizing scheduling data in the form of a Gantt chart. The next cell presents a function <code class="docutils literal notranslate"><span class="pre">gantt</span></code> that plots a Gantt chart given jobs and schedule information. If no schedule information is given, the jobs are performed in the order listed in the jobs data frame.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -683,7 +672,7 @@ cbc was previously installed
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/444fe14c43668e40ffe12827f4651959f130020a88f95728f1c07f96c278bdc3.png" src="../../_images/444fe14c43668e40ffe12827f4651959f130020a88f95728f1c07f96c278bdc3.png" />
+<img alt="../../_images/d62e5440c8c8b3d5122d2b37f81e265866394929925041b12e630dcac825a3d2.png" src="../../_images/d62e5440c8c8b3d5122d2b37f81e265866394929925041b12e630dcac825a3d2.png" />
 </div>
 </div>
 </section>
@@ -733,7 +722,7 @@ cbc was previously installed
 \[
 \min \sum_j \text{past}_j
 \]</div>
-<p>The constraints describe the relationships amomg the decision variables. For example, a job cannot start until it is released for processing</p>
+<p>The constraints describe the relationships among the decision variables. For example, a job cannot start until it is released for processing</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -749,7 +738,7 @@ cbc was previously installed
 \text{past}_{j} &amp; \geq 0
 \end{align*}
 \end{split}\]</div>
-<p>The final set of constraints require that no pair of jobs be operating on the same machine at the same time. For this purpose, we consider each unique pair (<span class="math notranslate nohighlight">\(i\)</span>, <span class="math notranslate nohighlight">\(j\)</span>) where the constraint <span class="math notranslate nohighlight">\(i &lt; j\)</span> to imposed to avoid considering the same pair twice. Then for any unique pair <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span>,  either <span class="math notranslate nohighlight">\(i\)</span> finishes before <span class="math notranslate nohighlight">\(j\)</span> starts, or <span class="math notranslate nohighlight">\(j\)</span> finishes before <span class="math notranslate nohighlight">\(i\)</span> starts. This is expressed as the family of disjuctions</p>
+<p>The final set of constraints require that no pair of jobs be operating on the same machine at the same time. For this purpose, we consider each unique pair (<span class="math notranslate nohighlight">\(i\)</span>, <span class="math notranslate nohighlight">\(j\)</span>) where the constraint <span class="math notranslate nohighlight">\(i &lt; j\)</span> to imposed to avoid considering the same pair twice. Then for any unique pair <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span>,  either <span class="math notranslate nohighlight">\(i\)</span> finishes before <span class="math notranslate nohighlight">\(j\)</span> starts, or <span class="math notranslate nohighlight">\(j\)</span> finishes before <span class="math notranslate nohighlight">\(i\)</span> starts. This is expressed as the family of disjunctions</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
@@ -804,7 +793,7 @@ cbc was previously installed
     <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">m</span>
 
-<span class="k">def</span> <span class="nf">solve_model</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">solver_name</span><span class="o">=</span><span class="s2">&quot;cbc&quot;</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">solve_model</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">solver_name</span><span class="o">=</span><span class="n">SOLVER</span><span class="p">):</span>
     <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver_name</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="n">schedule</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
@@ -960,7 +949,7 @@ cbc was previously installed
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/bfc9ecd58edfaeab87378710e7ef717b5992d62e1701c7489a19db1d78a90d7d.png" src="../../_images/bfc9ecd58edfaeab87378710e7ef717b5992d62e1701c7489a19db1d78a90d7d.png" />
+</div></div><img alt="../../_images/15d63a8e72a6947b89f402d12f2f94997016db48843bd0a45983a0681e4bffbb.png" src="../../_images/15d63a8e72a6947b89f402d12f2f94997016db48843bd0a45983a0681e4bffbb.png" />
 </div>
 </div>
 </section>

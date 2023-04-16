@@ -503,25 +503,14 @@ document.write(`
 <span id="index-1"></span><h1>BIM production with perturbed data<a class="headerlink" href="#bim-production-with-perturbed-data" title="Permalink to this heading">#</a></h1>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -540,12 +529,12 @@ cbc was previously installed
         &amp;x_1, x_2 \geq 0.
 \end{align*}
 \end{split}\]</div>
-<p>If we solve it, we obtain a different optimal solution than the original one, namely <span class="math notranslate nohighlight">\((x_1,x_2) \approx (626.238,1123.762)\)</span> and an optimal value of roughly <span class="math notranslate nohighlight">\(17628.713\)</span>. Note, in particular, that this new optimal solution is not integer, but on the other hand in the LP above there is no constraint requiring <span class="math notranslate nohighlight">\(x_1\)</span> and <span class="math notranslate nohighlight">\(x_2\)</span> to be such.</p>
+<p>If we solve it, we obtain a different optimal solution than the original one, namely <span class="math notranslate nohighlight">\((x_1,x_2) \approx (626.238,1123.762)\)</span> and an optimal value of roughly <span class="math notranslate nohighlight">\(17628.713\)</span>. Note, in particular, that this new optimal solution is not integer, but on the other hand in the linear optimization problem above there is no constraint requiring <span class="math notranslate nohighlight">\(x_1\)</span> and <span class="math notranslate nohighlight">\(x_2\)</span> to be such.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 
-<span class="n">m</span>    <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;BIM perturbed LP&#39;</span><span class="p">)</span>
+<span class="n">m</span>    <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;BIM perturbed LO&#39;</span><span class="p">)</span>
 
 <span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
 <span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
@@ -573,7 +562,7 @@ cbc was previously installed
 </div>
 </div>
 <p>In terms of production, of course, we would simply produce entire chips but it is not clear how to implement the fractional solution <span class="math notranslate nohighlight">\((x_1,x_2) \approx (626.238,1123.762)\)</span>. Rounding down to <span class="math notranslate nohighlight">\((x_1,x_2) = (626,1123)\)</span> will intuitively yield a feasible solution, but we might be giving away some profit and/or not using efficiently the available material. Rounding up to <span class="math notranslate nohighlight">\((x_1,x_2) = (627,1124)\)</span> could possibly lead to an unfeasible solution for which the available material is not enough. We can of course manually inspect by hand all these candidate integer solutions, but if the problem involved many more decision variables or had a more complex structure, this would become much harder and possibly not lead to the true optimal solution.</p>
-<p>A much safer approach is to explicitly require the two decision variables to be nonnegative integers, thus transforming the original into the following MILP:</p>
+<p>A much safer approach is to explicitly require the two decision variables to be non-negative integers, thus transforming the original into the following mixed-integer linear optimization (MILO) problem:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -585,10 +574,10 @@ cbc was previously installed
         &amp;x_1, x_2 \in \mathbb{N}.
 \end{align*}
 \end{split}\]</div>
-<p>The optimal solution is <span class="math notranslate nohighlight">\((x_1,x_2) = (626,1124)\)</span> with a profit of <span class="math notranslate nohighlight">\(17628\)</span>. Note that for this specific problem both the naive rounding strategies outlined above would have not yielded the true optimal solution. The Python code for obtaining the optimal solution using MILP solvers is given below.</p>
+<p>The optimal solution is <span class="math notranslate nohighlight">\((x_1,x_2) = (626,1124)\)</span> with a profit of <span class="math notranslate nohighlight">\(17628\)</span>. Note that for this specific problem both the naive rounding strategies outlined above would have not yielded the true optimal solution. The Python code for obtaining the optimal solution using MILO solvers is given below.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span>    <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;BIM perturbed MILP&#39;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span>    <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;BIM perturbed MILO&#39;</span><span class="p">)</span>
 
 <span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
 <span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
@@ -600,7 +589,7 @@ cbc was previously installed
 <span class="n">m</span><span class="o">.</span><span class="n">plastic</span>   <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span>       <span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">+</span>      <span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">&lt;=</span> <span class="mi">1750</span><span class="p">)</span>
 <span class="n">m</span><span class="o">.</span><span class="n">copper</span>    <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span>  <span class="mf">4.04</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">+</span> <span class="mf">2.02</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">&lt;=</span> <span class="mi">4800</span><span class="p">)</span>
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;x = (</span><span class="si">{:.3f}</span><span class="s1">, </span><span class="si">{:.3f}</span><span class="s1">), optimal value = </span><span class="si">{:.3f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
     <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">),</span>
