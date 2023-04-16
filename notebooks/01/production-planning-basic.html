@@ -528,24 +528,14 @@ document.write(`
 <p>We start by verifying the installation of Pyomo and any needed solvers. The following cell downloads a Python module that checks if Pyomo and designated solvers have been installed previously. If not, the <code class="docutils literal notranslate"><span class="pre">helper</span></code> functions perform the needed installations. These installations need to be done only once for each Python environment on a personal laptop. For Google Colab, however, a new installation must be done for each new Colab session.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -808,21 +798,21 @@ model.labor_B = pyo.Constraint(expr = 1 * model.y_U + 1 * model.y_V &lt;= model.
 </section>
 <section id="step-7-solve-the-model">
 <h2>Step 7. Solve the model<a class="headerlink" href="#step-7-solve-the-model" title="Permalink to this heading">#</a></h2>
-<p>With the model now fully specified, the next step is to compute a solution. A solver object is created with <code class="docutils literal notranslate"><span class="pre">SolverFactory</span></code> then applied to the model as shown in the following cell. Here we have chosen to use the open source <a class="reference external" href="https://github.com/coin-or/Cbc">COIN-OR Cbc</a>  (“COIN-OR branch and cut”) solver for mixed integer linear programming. There are other suitable solvers such as the open-source GNU Linear Programming Kit <a class="reference external" href="https://en.wikibooks.org/wiki/GLPK">GLPK</a>, or commercial solvers such as CPLEX, Gurobi, and Mosek.</p>
+<p>With the model now fully specified, the next step is to compute a solution. A solver object is created with <code class="docutils literal notranslate"><span class="pre">SolverFactory</span></code> then applied to the model as shown in the following cell. Here we have chosen to use the open source <a class="reference external" href="https://github.com/coin-or/Cbc">COIN-OR Cbc</a>  (“COIN-OR branch and cut”) solver for mixed integer linear programming. There are other suitable solvers such as the open-source <a class="reference external" href="https://highs.dev/">HiGHS</a>, or commercial solvers such as CPLEX, Gurobi, and Mosek.</p>
 <p>The optional keyword <code class="docutils literal notranslate"><span class="pre">tee=True</span></code> causes the solver to print its output to the output. This can be useful for debugging problems that arise when developing a new model.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Welcome to the CBC MILP Solver 
-Version: 2.10.5 
-Build Date: Apr 19 2021 
+Version: 2.10.8 
+Build Date: Mar 31 2023 
 
-command line - /Users/jeff/opt/anaconda3/bin/cbc -printingOptions all -import /var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/tmp18b8eo84.pyomo.lp -stat=1 -solve -solu /var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/tmp18b8eo84.pyomo.soln (default strategy 1)
+command line - /Users/jeff/opt/anaconda3/bin/cbc -printingOptions all -import /var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/tmpe8rkv62h.pyomo.lp -stat=1 -solve -solu /var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/tmpe8rkv62h.pyomo.soln (default strategy 1)
 Option for printingOptions changed from normal to all
  CoinLpIO::readLp(): Maximization problem reformulated as minimization
 Coin0009I Switching back to maximization to get correct duals etc
@@ -848,7 +838,7 @@ Presolve 3 (-1) rows, 5 (-1) columns and 9 (-1) elements
 Optimal - objective value 2400
 After Postsolve, objective 2400, infeasibilities - dual 0 (0), primal 0 (0)
 Optimal objective 2400 - 3 iterations time 0.002, Presolve 0.00
-Total time (CPU seconds):       0.00   (Wallclock seconds):       0.01
+Total time (CPU seconds):       0.00   (Wallclock seconds):       0.00
 </pre></div>
 </div>
 </div>
@@ -1029,7 +1019,7 @@ dtype: float64
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/80fc8f60efdf20c1b1c4c11a022759e6e2634f590851229f39a6979fdfffa0be.png" src="../../_images/80fc8f60efdf20c1b1c4c11a022759e6e2634f590851229f39a6979fdfffa0be.png" />
+<img alt="../../_images/da5860ace99acaa924ab6bf4ac2c3d51fc01e267aaf4917b507b32d9fafef551.png" src="../../_images/da5860ace99acaa924ab6bf4ac2c3d51fc01e267aaf4917b507b32d9fafef551.png" />
 </div>
 </div>
 </section>
