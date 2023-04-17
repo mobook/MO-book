@@ -214,7 +214,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../05/ols-regression.html">Ordinary Least Squares (OLS) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/markowitz_portfolio.html">Markowitz portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/svm.html">Support Vector Machines for Binary Classification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing with CVXPY</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../06/06.00.html">6. Conic Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-6"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -688,24 +688,14 @@ document.write(`
 <p>Let us model the material acquisition planning and solve it optimally based on the forecasted chip demand above.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_gurobi</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-gurobi was previously installed
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -1036,7 +1026,7 @@ gurobi was previously installed
 
 <span class="n">problem_data</span> <span class="o">=</span> <span class="n">initialize_problem_data</span><span class="p">()</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">BIMProductAcquisitionAndInventory</span><span class="p">(</span><span class="n">problem_data</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The optimal solution yields a total cost of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">total_cost</span><span class="p">)</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
@@ -1283,7 +1273,7 @@ gurobi was previously installed
         <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span>
     
     <span class="c1"># solve</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;gurobi&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     
     <span class="c1"># update inventory</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">:</span>
@@ -1361,7 +1351,7 @@ gurobi was previously installed
 
 <span class="n">problem_data</span><span class="p">[</span><span class="s2">&quot;demand_chips_ref&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">demand_chips</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">BIMProductAcquisitionAndInventory</span><span class="p">(</span><span class="n">problem_data</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="n">problem_data</span><span class="p">[</span><span class="s2">&quot;purchases&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ShowTableOfPyomoVariables</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
 <span class="n">problem_data</span><span class="p">[</span><span class="s2">&quot;stock&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ShowTableOfPyomoVariables</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
@@ -1382,13 +1372,13 @@ gurobi was previously installed
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Purchasing cost: 20309.77
 Theoretical inventory cost: 3270.57
 
-Simulated realized inventory cost: 3313.86
-Simulated average missed demand for logic chips is 16.360 and for memory chips is 0.000
+Simulated realized inventory cost: 3309.54
+Simulated average missed demand for logic chips is 4.543 and for memory chips is 13.154
 
 Plot of missed chips demand over time under 8.0% uncertainty
 </pre></div>
 </div>
-<img alt="../../_images/58f334c3fd0797754aff0cb921306c29c198ad754f1594f80e60ad854bcfd260.png" src="../../_images/58f334c3fd0797754aff0cb921306c29c198ad754f1594f80e60ad854bcfd260.png" />
+<img alt="../../_images/888330743176092b9494dfab64a860d3b63684522ed500ca79c65a4755948a82.png" src="../../_images/888330743176092b9494dfab64a860d3b63684522ed500ca79c65a4755948a82.png" />
 </div>
 </div>
 </section>
