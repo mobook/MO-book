@@ -517,33 +517,18 @@ document.write(`
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
-
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
-
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_ipopt</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_gurobi</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_xpress</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cplex</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
 <span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
 
 <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="n">SOLVER_NLO</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
+<span class="n">SOLVER_MINLO</span> <span class="o">=</span> <span class="s2">&quot;bonmin&quot;</span>
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install highspy &gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install idaes-pse --pre &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>idaes get-extensions --to ./bin 
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
+    
 </pre></div>
 </div>
 </div>
@@ -635,12 +620,7 @@ document.write(`
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING: Implicitly replacing the Component attribute dual (type=&lt;class
-    &#39;pyomo.core.base.suffix.Suffix&#39;&gt;) on block BIM basic problem with a new
-    Component (type=&lt;class &#39;pyomo.core.base.suffix.Suffix&#39;&gt;). This is usually
-    indicative of a modelling error. To avoid this warning, use
-    block.del_component() and block.add_component().
-The dual variable corresponding to:
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The dual variable corresponding to:
 
 - the constraint on silicon is equal to 0
 - the constraint on gemanium is equal to 0
@@ -1368,9 +1348,9 @@ No violation found. Stopping the procedure.
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">radius</span> <span class="o">=</span> <span class="mf">0.05</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">BIMWithBallUncertainty</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span>
 
-<span class="n">results</span> <span class="o">=</span> <span class="n">gurobi</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">pyk</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_NLO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;Solver: gurobi, solver status:&quot;</span><span class="p">,</span>
+    <span class="sa">f</span><span class="s2">&quot;Solver: </span><span class="si">{</span><span class="n">SOLVER_NLO</span><span class="si">}</span><span class="s2">, solver status:&quot;</span><span class="p">,</span>
     <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
     <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
     <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
@@ -1381,76 +1361,25 @@ No violation found. Stopping the procedure.
     <span class="s2">&quot;and yields a profit of&quot;</span><span class="p">,</span>
     <span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span>
     <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">results</span> <span class="o">=</span> <span class="n">cplex</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;Solver: cplex, solver status:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
-    <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;The optimal solution is x=&quot;</span><span class="p">,</span>
-    <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">))],</span>
-    <span class="s2">&quot;and yields a profit of&quot;</span><span class="p">,</span>
-    <span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span>
-<span class="p">)</span>
-
-<span class="n">results</span> <span class="o">=</span> <span class="n">xpress</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;Solver: xpress, solver status:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
-    <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;The optimal solution is x=&quot;</span><span class="p">,</span>
-    <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">))],</span>
-    <span class="s2">&quot;and yields a profit of&quot;</span><span class="p">,</span>
-    <span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span>
-    <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">results</span> <span class="o">=</span> <span class="n">ipopt</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;Solver: ipopt, solver status:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
-    <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;The optimal solution is x=&quot;</span><span class="p">,</span>
-    <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">))],</span>
-    <span class="s2">&quot;and yields a profit of&quot;</span><span class="p">,</span>
-    <span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="nn">/var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/ipykernel_3234/2358763091.py</span> in <span class="ni">&lt;cell line: 4&gt;</span><span class="nt">()</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="n">m</span> <span class="o">=</span> <span class="n">BIMWithBallUncertainty</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> 
-<span class="ne">----&gt; </span><span class="mi">4</span> <span class="n">results</span> <span class="o">=</span> <span class="n">gurobi</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="nb">print</span><span class="p">(</span>
-<span class="g g-Whitespace">      </span><span class="mi">6</span>     <span class="s2">&quot;Solver: gurobi, solver status:&quot;</span><span class="p">,</span>
-
-<span class="ne">NameError</span>: name &#39;gurobi&#39; is not defined
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Solver: ipopt, solver status: ok and solver terminal condition: optimal
+The optimal solution is x= [617.755, 1132.245] and yields a profit of 17603.265 
 </pre></div>
 </div>
 </div>
 </div>
-<p>The solvers <code class="docutils literal notranslate"><span class="pre">cplex</span></code>, <code class="docutils literal notranslate"><span class="pre">gurobi</span></code> and <code class="docutils literal notranslate"><span class="pre">xpress</span></code> are capable of solving the mixed integer version of the same model:</p>
+<p>The solvers <code class="docutils literal notranslate"><span class="pre">bonmin</span></code>, <code class="docutils literal notranslate"><span class="pre">cplex</span></code>, <code class="docutils literal notranslate"><span class="pre">gurobi</span></code> and <code class="docutils literal notranslate"><span class="pre">xpress</span></code> are capable of solving the mixed integer version of the same model:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">BIMWithBallUncertainty</span><span class="p">(</span><span class="n">radius</span><span class="p">,</span> <span class="n">domain_type</span><span class="o">=</span><span class="n">pyk</span><span class="o">.</span><span class="n">IntegerSet</span><span class="p">)</span>
 
-<span class="n">results</span> <span class="o">=</span> <span class="n">gurobi</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">pyk</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_MINLO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;Solver: gurobi, solver status:&quot;</span><span class="p">,</span>
+    <span class="sa">f</span><span class="s2">&quot;Solver: </span><span class="si">{</span><span class="n">SOLVER_MINLO</span><span class="si">}</span><span class="s2">, solver status:&quot;</span><span class="p">,</span>
     <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
     <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
     <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
@@ -1462,46 +1391,12 @@ No violation found. Stopping the procedure.
     <span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span>
     <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span>
 <span class="p">)</span>
-
-<span class="n">results</span> <span class="o">=</span> <span class="n">cplex</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;Solver: cplex, solver status:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
-    <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;The optimal solution is x=&quot;</span><span class="p">,</span>
-    <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">))],</span>
-    <span class="s2">&quot;and yields a profit of&quot;</span><span class="p">,</span>
-    <span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span>
-<span class="p">)</span>
-
-<span class="n">results</span> <span class="o">=</span> <span class="n">xpress</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;Solver: xpress, solver status:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
-    <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;The optimal solution is x=&quot;</span><span class="p">,</span>
-    <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">))],</span>
-    <span class="s2">&quot;and yields a profit of&quot;</span><span class="p">,</span>
-    <span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span>
-<span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Solver: gurobi, solver status: ok and solver terminal condition: optimal
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Solver: bonmin, solver status: ok and solver terminal condition: optimal
 The optimal solution is x= [617.0, 1133.0] and yields a profit of 17601.0 
-
-Solver: cplex, solver status: ok and solver terminal condition: optimal
-The optimal solution is x= [617.0, 1133.0] and yields a profit of 17601.0
-
-Solver: xpress, solver status: ok and solver terminal condition: optimal
-The optimal solution is x= [617.0, 1133.0] and yields a profit of 17601.0
 </pre></div>
 </div>
 </div>
@@ -1546,9 +1441,9 @@ The optimal solution is x= [617.0, 1133.0] and yields a profit of 17601.0
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">BIMWithBallUncertaintyAsSquaredSecondOrderCone</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span>
 
-<span class="n">results</span> <span class="o">=</span> <span class="n">gurobi</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">pyk</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_NLO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;Solver: gurobi, solver status:&quot;</span><span class="p">,</span>
+    <span class="sa">f</span><span class="s2">&quot;Solver: </span><span class="si">{</span><span class="n">SOLVER_NLO</span><span class="si">}</span><span class="s2">, solver status:&quot;</span><span class="p">,</span>
     <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
     <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
     <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
@@ -1556,25 +1451,11 @@ The optimal solution is x= [617.0, 1133.0] and yields a profit of 17601.0
 <span class="nb">print</span><span class="p">(</span>
     <span class="sa">f</span><span class="s2">&quot;The optimal solution is x=</span><span class="si">{</span><span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">c</span><span class="p">]),</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">chips</span><span class="p">]</span><span class="si">}</span><span class="s2"> and yields a profit of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
 <span class="p">)</span>
-
-<span class="n">results</span> <span class="o">=</span> <span class="n">cplex</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;Solver: cplex, solver status:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
-    <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;The optimal solution is x=</span><span class="si">{</span><span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">c</span><span class="p">]),</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">chips</span><span class="p">]</span><span class="si">}</span><span class="s2"> and yields a profit of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Solver: gurobi, solver status: ok and solver terminal condition: optimal
-The optimal solution is x=[617.755, 1132.245] and yields a profit of 17603.26
-
-Solver: cplex, solver status: ok and solver terminal condition: optimal
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Solver: ipopt, solver status: ok and solver terminal condition: optimal
 The optimal solution is x=[617.755, 1132.245] and yields a profit of 17603.26
 </pre></div>
 </div>
@@ -1586,9 +1467,9 @@ The optimal solution is x=[617.755, 1132.245] and yields a profit of 17603.26
     <span class="n">radius</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span>
 <span class="p">)</span>
 
-<span class="n">results</span> <span class="o">=</span> <span class="n">gurobi</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">pyk</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_MINLO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;Solver: gurobi, solver status:&quot;</span><span class="p">,</span>
+    <span class="sa">f</span><span class="s2">&quot;Solver: </span><span class="si">{</span><span class="n">SOLVER_MINLO</span><span class="si">}</span><span class="s2">, solver status:&quot;</span><span class="p">,</span>
     <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
     <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
     <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
@@ -1596,130 +1477,11 @@ The optimal solution is x=[617.755, 1132.245] and yields a profit of 17603.26
 <span class="nb">print</span><span class="p">(</span>
     <span class="sa">f</span><span class="s2">&quot;The optimal solution is x=</span><span class="si">{</span><span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">c</span><span class="p">]),</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">chips</span><span class="p">]</span><span class="si">}</span><span class="s2"> and yields a profit of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
 <span class="p">)</span>
-
-<span class="n">results</span> <span class="o">=</span> <span class="n">cplex</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;Solver: cplex, solver status:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
-    <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;The optimal solution is x=</span><span class="si">{</span><span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">c</span><span class="p">]),</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">chips</span><span class="p">]</span><span class="si">}</span><span class="s2"> and yields a profit of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Solver: gurobi, solver status: ok and solver terminal condition: optimal
-The optimal solution is x=[617.0, 1133.0] and yields a profit of 17601.00
-
-Solver: cplex, solver status: ok and solver terminal condition: optimal
-The optimal solution is x=[617.0, 1133.0] and yields a profit of 17601.00
-</pre></div>
-</div>
-</div>
-</div>
-<p>Note how the verbose <code class="docutils literal notranslate"><span class="pre">xpress</span></code> solver confirms that the convex quadratic constraint is recognized as conic.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">BIMWithBallUncertaintyAsSquaredSecondOrderCone</span><span class="p">(</span>
-    <span class="n">radius</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span>
-<span class="p">)</span>
-
-<span class="n">results</span> <span class="o">=</span> <span class="n">xpress</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Solver: xpress, solver status:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
-    <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;The optimal solution is x=</span><span class="si">{</span><span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">c</span><span class="p">]),</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">chips</span><span class="p">]</span><span class="si">}</span><span class="s2"> and yields a profit of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>FICO Xpress v8.14.2, Community, solve started 21:04:43, Nov 20, 2022
-Heap usage: 382KB (peak 382KB, 292KB system)
-Maximizing MIQCQP BIM with Ball Uncertainty as SOC using up to 12 threads and up to 32GB memory, with these control settings:
-OUTPUTLOG = 1
-Original problem has:
-         5 rows            3 cols            7 elements         2 globals
-         1 qrows           3 qrowelem
-Converted 1 second order cones to standard form
-Presolved problem has:
-         7 rows            7 cols           12 elements         2 globals
-         2 cones           4 celems
-LP relaxation tightened
-Presolve finished in 0 seconds
-Heap usage: 415KB (peak 417KB, 292KB system)
-
-Coefficient range                    original                 solved        
-  Coefficients   [min,max] : [ 1.00e+00,  4.00e+00] / [ 5.00e-02,  1.00e+00]
-  RHS and bounds [min,max] : [ 1.00e+03,  4.80e+03] / [ 5.00e+01,  4.80e+03]
-  Objective      [min,max] : [ 9.00e+00,  1.20e+01] / [ 9.00e+00,  1.20e+01]
-  Quadratic      [min,max] : [ 5.00e-03,  2.00e+00] / [ 2.00e+00,  2.00e+00]
-Autoscaling applied standard scaling
-
-Will try to keep branch and bound tree memory usage below 30.3GB
-Barrier cache sizes : L1=32K L2=9216K
-Using AVX support
-Cores per CPU (CORESPERCPU): 12
-Barrier starts after 0 seconds, using up to 12 threads, 6 cores
-Matrix ordering - Dense cols.:      6   NZ(L):        65   Flops:          204
- 
-  Its   P.inf      D.inf      U.inf      Primal obj.     Dual obj.      Compl.
-   0   1.75e+03   1.20e+01   4.80e+03   2.1000000e+01   1.7025000e+04   2.1e+01
-   1   4.60e+02   3.16e+00   1.26e+03   3.7406273e+01   1.7005455e+04   6.0e+00
-   2   2.94e+01   2.02e-01   8.08e+01   4.1730066e+02   1.6525350e+04   4.0e-01
-   3   2.07e+00   1.42e-02   5.69e+00   4.8623681e+03   1.3182663e+04   2.8e-02
-   4   6.18e-01   4.24e-03   1.70e+00   1.3833777e+04   1.6780848e+04   9.7e-03
-   5   1.25e-01   8.59e-04   3.43e-01   1.6699952e+04   1.7301331e+04   2.3e-03
-   6   3.79e-02   2.60e-04   1.04e-01   1.7382902e+04   1.7557645e+04   7.4e-04
-   7   2.72e-02   1.87e-04   7.46e-02   1.7444645e+04   1.7564254e+04   5.5e-04
-   8   2.10e-03   1.44e-05   5.77e-03   1.7592811e+04   1.7601778e+04   4.5e-05
-   9   3.35e-05   2.30e-07   9.19e-05   1.7603052e+04   1.7603194e+04   7.3e-07
-  10   6.33e-07   4.35e-09   1.74e-06   1.7603261e+04   1.7603264e+04   1.4e-08
-  11   1.87e-08   1.28e-10   5.13e-08   1.7603264e+04   1.7603265e+04   4.1e-10
-Barrier method finished in 0 seconds
-Crossover crash basis containing 5 structurals form 7 candidates
-Crossover starts
- 
-   Its         Obj Value      S   Ninf  Nneg        Sum Inf  Time
-     7       17603.26614      P      0     0        .000000     0
-     0       17603.26614      N      0     0        .000000     0
-     0       17603.26614      D      0     0        .000000     0
-Crossover successful
-Objective function value:  17603.26453 time: 0
-     0       17603.26453      P      0     0        .000000     0
-Optimal solution found
-Barrier solved problem
-  11 barrier and 7 simplex iterations in 0.01 seconds at time 0
-
-Final objective                       : 1.760326453188758e+04
-  Max primal violation      (abs/rel) :       0.0 /       0.0
-  Max dual violation        (abs/rel) :       0.0 /       0.0
-  Max complementarity viol. (abs/rel) :       0.0 /       0.0
-
-Starting root cutting &amp; heuristics
- 
- Its Type    BestSoln    BestBound   Sols    Add    Del     Gap     GInf   Time
-k         12000.00000  17603.26453      1                 31.83%       0      0
-c         12009.00000  17603.26453      2                 31.78%       0      0
-d         12018.00000  17603.26453      3                 31.73%       0      0
-k         17601.00000  17601.00000      4                 -0.00%       0      0
- *** Search completed ***
-Uncrunching matrix
-Final MIP objective                   : 1.760100000000000e+04
-Final MIP bound                       : 1.760100000000000e+04
-  Solution time / primaldual integral :         0s/ 65.418287%
-  Number of solutions found / nodes   :         4 /         1
-  Max primal violation      (abs/rel) :       0.0 /       0.0
-  Max integer violation     (abs    ) :       0.0
-
-Solver: xpress, solver status: ok and solver terminal condition: optimal
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Solver: bonmin, solver status: ok and solver terminal condition: optimal
 The optimal solution is x=[617.0, 1133.0] and yields a profit of 17601.00
 </pre></div>
 </div>
