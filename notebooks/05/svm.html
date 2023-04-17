@@ -222,7 +222,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../06/kelly-criterion.html">The Kelly Criterion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/markowitz_portfolio_revisited.html">Markowitz portfolio optimization revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/building-insulation.html">Optimal Design of Multilayered Building Insulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../06/svm-conic.html">Support Vector Machines Revisited</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../06/svm-conic.html">Training Support Vector Machines with Conic Optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/investment-wheel.html">Extra material: Luenberger’s Investment Wheel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios with Risk Aversion</a></li>
 </ul>
@@ -592,7 +592,10 @@ document.write(`
 <span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
 
 <span class="c1"># read data set</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/datasets/data_banknote_authentication.txt&quot;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+    <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/datasets/data_banknote_authentication.txt&quot;</span><span class="p">,</span>
+    <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;variance&quot;</span><span class="p">,</span> <span class="s2">&quot;skewness&quot;</span><span class="p">,</span> <span class="s2">&quot;curtosis&quot;</span><span class="p">,</span> <span class="s2">&quot;entropy&quot;</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">]</span>
 <span class="n">df</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Banknotes&quot;</span>
 
@@ -800,7 +803,9 @@ document.write(`
 <p>The following cell defines a function <code class="docutils literal notranslate"><span class="pre">scatter</span></code> that produces a 2D scatter plots of a labeled features. The function assigns default labels and colors, and otherwise passes along other keyword arguments.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">scatter_labeled_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="s2">&quot;-1&quot;</span><span class="p">],</span> <span class="n">colors</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">scatter_labeled_data</span><span class="p">(</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;+1&quot;</span><span class="p">,</span> <span class="s2">&quot;-1&quot;</span><span class="p">],</span> <span class="n">colors</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Creates a scatter plot for labeled data with default labels and colors.</span>
 
@@ -826,11 +831,11 @@ document.write(`
 
     <span class="c1"># Ignore warnings from matplotlib scatter plot</span>
     <span class="kn">import</span> <span class="nn">warnings</span>
+
     <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
         <span class="n">kw</span><span class="p">[</span><span class="s2">&quot;ax&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">labels</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">X</span><span class="p">[</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">labels</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> 
-        
+        <span class="n">X</span><span class="p">[</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">labels</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
@@ -839,8 +844,20 @@ document.write(`
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot training and test sets in two axes</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
-<span class="n">scatter_labeled_data</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;genuine&quot;</span><span class="p">,</span> <span class="s2">&quot;counterfeit&quot;</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Training Set&quot;</span><span class="p">)</span>
-<span class="n">scatter_labeled_data</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span>  <span class="n">y_test</span><span class="p">,</span>  <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;genuine&quot;</span><span class="p">,</span> <span class="s2">&quot;counterfeit&quot;</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Test Set&quot;</span><span class="p">)</span>
+<span class="n">scatter_labeled_data</span><span class="p">(</span>
+    <span class="n">X_train</span><span class="p">,</span>
+    <span class="n">y_train</span><span class="p">,</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;genuine&quot;</span><span class="p">,</span> <span class="s2">&quot;counterfeit&quot;</span><span class="p">],</span>
+    <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Training Set&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">scatter_labeled_data</span><span class="p">(</span>
+    <span class="n">X_test</span><span class="p">,</span>
+    <span class="n">y_test</span><span class="p">,</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;genuine&quot;</span><span class="p">,</span> <span class="s2">&quot;counterfeit&quot;</span><span class="p">],</span>
+    <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Test Set&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -912,7 +929,7 @@ document.write(`
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visual estimaate of w and b for a linear classifier</span>
-<span class="n">w</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="s1">&#39;variance&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;skewness&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+<span class="n">w</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="s2">&quot;variance&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;skewness&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
 <span class="n">b</span> <span class="o">=</span> <span class="mi">0</span>
 
 <span class="c1"># create an instance of LinearSVM</span>
@@ -961,17 +978,42 @@ Accuracy =  87.6%
     <span class="c1"># Plot training and test sets</span>
     <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;genuine&quot;</span><span class="p">,</span> <span class="s2">&quot;counterfeit&quot;</span><span class="p">]</span>
     <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
-    <span class="n">scatter_labeled_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xlim</span><span class="o">=</span><span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="n">ylim</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Actual&quot;</span><span class="p">)</span>
-    <span class="n">scatter_labeled_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;m&quot;</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">xlim</span><span class="o">=</span><span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="n">ylim</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Prediction&quot;</span><span class="p">)</span>
+    <span class="n">scatter_labeled_data</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xlim</span><span class="o">=</span><span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="n">ylim</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Actual&quot;</span>
+    <span class="p">)</span>
+    <span class="n">scatter_labeled_data</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">y_pred</span><span class="p">,</span>
+        <span class="n">labels</span><span class="p">,</span>
+        <span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;m&quot;</span><span class="p">],</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">xlim</span><span class="o">=</span><span class="n">xlim</span><span class="p">,</span>
+        <span class="n">ylim</span><span class="o">=</span><span class="n">ylim</span><span class="p">,</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Prediction&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="c1"># Plot actual positives and actual negatives</span>
     <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
-    <span class="n">scatter_labeled_data</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y_pred</span><span class="p">[</span><span class="n">y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;true positive&quot;</span><span class="p">,</span> <span class="s2">&quot;false negative&quot;</span><span class="p">],</span> 
-                         <span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;m&quot;</span><span class="p">],</span> <span class="n">xlim</span><span class="o">=</span><span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="n">ylim</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Actual Positives&quot;</span><span class="p">)</span>
-    <span class="n">scatter_labeled_data</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y_pred</span><span class="p">[</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;false positive&quot;</span><span class="p">,</span> <span class="s2">&quot;true negative&quot;</span><span class="p">],</span> 
-                         <span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;m&quot;</span><span class="p">],</span> <span class="n">xlim</span><span class="o">=</span><span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="n">ylim</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Actual Negatives&quot;</span><span class="p">)</span>
-
-    
+    <span class="n">scatter_labeled_data</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">[</span><span class="n">y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="n">y_pred</span><span class="p">[</span><span class="n">y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="s2">&quot;true positive&quot;</span><span class="p">,</span> <span class="s2">&quot;false negative&quot;</span><span class="p">],</span>
+        <span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;m&quot;</span><span class="p">],</span>
+        <span class="n">xlim</span><span class="o">=</span><span class="n">xlim</span><span class="p">,</span>
+        <span class="n">ylim</span><span class="o">=</span><span class="n">ylim</span><span class="p">,</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Actual Positives&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">scatter_labeled_data</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">[</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="n">y_pred</span><span class="p">[</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="s2">&quot;false positive&quot;</span><span class="p">,</span> <span class="s2">&quot;true negative&quot;</span><span class="p">],</span>
+        <span class="p">[</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;m&quot;</span><span class="p">],</span>
+        <span class="n">xlim</span><span class="o">=</span><span class="n">xlim</span><span class="p">,</span>
+        <span class="n">ylim</span><span class="o">=</span><span class="n">ylim</span><span class="p">,</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Actual Negatives&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -998,13 +1040,13 @@ Accuracy =  87.6%
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This function calculates and displays the sensitivity, precision, and Matthews correlation coefficient</span>
 <span class="sd">    (MCC) for a binary classifier based on its true labels (y_true) and predicted labels (y_pred).</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">    y_true (array-like): A list or array containing the true labels of the samples.</span>
 <span class="sd">    y_pred (array-like): A list or array containing the predicted labels of the samples.</span>
-<span class="sd">    verbose (bool, optional): If True, the function prints and displays the calculated metrics and </span>
+<span class="sd">    verbose (bool, optional): If True, the function prints and displays the calculated metrics and</span>
 <span class="sd">                              confusion matrix. Defaults to True.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">    float: The calculated Matthews correlation coefficient (MCC).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1017,30 +1059,38 @@ Accuracy =  87.6%
     <span class="n">total</span> <span class="o">=</span> <span class="n">true_positives</span> <span class="o">+</span> <span class="n">true_negatives</span> <span class="o">+</span> <span class="n">false_positives</span> <span class="o">+</span> <span class="n">false_negatives</span>
 
     <span class="c1"># Calculate the Matthews correlation coefficient (MCC)</span>
-    <span class="n">mcc_numerator</span> <span class="o">=</span> <span class="p">(</span><span class="n">true_positives</span> <span class="o">*</span> <span class="n">true_negatives</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">false_positives</span> <span class="o">*</span> <span class="n">false_negatives</span><span class="p">)</span>
-    <span class="n">mcc_denominator</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">true_positives</span> <span class="o">+</span> <span class="n">false_positives</span><span class="p">)</span> \
-                              <span class="o">*</span> <span class="p">(</span><span class="n">true_positives</span> <span class="o">+</span> <span class="n">false_negatives</span><span class="p">)</span> \
-                              <span class="o">*</span> <span class="p">(</span><span class="n">true_negatives</span> <span class="o">+</span> <span class="n">false_positives</span><span class="p">)</span> \
-                              <span class="o">*</span> <span class="p">(</span><span class="n">true_negatives</span> <span class="o">+</span> <span class="n">false_negatives</span><span class="p">))</span>
+    <span class="n">mcc_numerator</span> <span class="o">=</span> <span class="p">(</span><span class="n">true_positives</span> <span class="o">*</span> <span class="n">true_negatives</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span>
+        <span class="n">false_positives</span> <span class="o">*</span> <span class="n">false_negatives</span>
+    <span class="p">)</span>
+    <span class="n">mcc_denominator</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">true_positives</span> <span class="o">+</span> <span class="n">false_positives</span><span class="p">)</span>
+        <span class="o">*</span> <span class="p">(</span><span class="n">true_positives</span> <span class="o">+</span> <span class="n">false_negatives</span><span class="p">)</span>
+        <span class="o">*</span> <span class="p">(</span><span class="n">true_negatives</span> <span class="o">+</span> <span class="n">false_positives</span><span class="p">)</span>
+        <span class="o">*</span> <span class="p">(</span><span class="n">true_negatives</span> <span class="o">+</span> <span class="n">false_negatives</span><span class="p">)</span>
+    <span class="p">)</span>
     <span class="n">mcc</span> <span class="o">=</span> <span class="n">mcc_numerator</span> <span class="o">/</span> <span class="n">mcc_denominator</span>
 
     <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Matthews correlation coefficient (MCC) = </span><span class="si">{</span><span class="n">mcc</span><span class="si">:</span><span class="s2">0.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        
+
         <span class="c1"># report sensitivity and precision, and accuracy</span>
         <span class="n">sensitivity</span> <span class="o">=</span> <span class="n">true_positives</span> <span class="o">/</span> <span class="p">(</span><span class="n">true_positives</span> <span class="o">+</span> <span class="n">false_negatives</span><span class="p">)</span>
         <span class="n">precision</span> <span class="o">=</span> <span class="n">true_positives</span> <span class="o">/</span> <span class="p">(</span><span class="n">true_positives</span> <span class="o">+</span> <span class="n">false_positives</span><span class="p">)</span>
         <span class="n">accuracy</span> <span class="o">=</span> <span class="p">(</span><span class="n">true_positives</span> <span class="o">+</span> <span class="n">true_negatives</span><span class="p">)</span> <span class="o">/</span> <span class="n">total</span>
-        
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sensitivity = </span><span class="si">{</span><span class="mi">100</span> <span class="o">*</span> <span class="n">sensitivity</span><span class="si">:</span><span class="s2"> 0.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span> 
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Precision = </span><span class="si">{</span><span class="mi">100</span> <span class="o">*</span> <span class="n">precision</span><span class="si">:</span><span class="s2"> 0.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span> 
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sensitivity = </span><span class="si">{</span><span class="mi">100</span> <span class="o">*</span> <span class="n">sensitivity</span><span class="si">:</span><span class="s2"> 0.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Precision = </span><span class="si">{</span><span class="mi">100</span> <span class="o">*</span> <span class="n">precision</span><span class="si">:</span><span class="s2"> 0.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Accuracy = </span><span class="si">{</span><span class="mi">100</span> <span class="o">*</span> <span class="n">accuracy</span><span class="si">:</span><span class="s2"> 0.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
 
         <span class="c1"># Display the binary confusion matrix</span>
         <span class="n">confusion_matrix</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
-            <span class="p">[[</span><span class="n">true_positives</span><span class="p">,</span> <span class="n">false_negatives</span><span class="p">],</span> <span class="p">[</span><span class="n">false_positives</span><span class="p">,</span> <span class="n">true_negatives</span><span class="p">]],</span> 
-            <span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Actual Positive&quot;</span><span class="p">,</span> <span class="s2">&quot;Actual Negative&quot;</span><span class="p">],</span> 
-            <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Predicted Positive&quot;</span><span class="p">,</span> <span class="s2">&quot;Predicted Negative&quot;</span><span class="p">])</span>
+            <span class="p">[</span>
+                <span class="p">[</span><span class="n">true_positives</span><span class="p">,</span> <span class="n">false_negatives</span><span class="p">],</span>
+                <span class="p">[</span><span class="n">false_positives</span><span class="p">,</span> <span class="n">true_negatives</span><span class="p">],</span>
+            <span class="p">],</span>
+            <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Actual Positive&quot;</span><span class="p">,</span> <span class="s2">&quot;Actual Negative&quot;</span><span class="p">],</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Predicted Positive&quot;</span><span class="p">,</span> <span class="s2">&quot;Predicted Negative&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
         <span class="n">display</span><span class="p">(</span><span class="n">confusion_matrix</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">mcc</span>
@@ -1056,8 +1106,9 @@ Accuracy =  87.6%
     <span class="n">validate</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
     <span class="n">scatter_comparison</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
 
+
 <span class="c1"># train and test</span>
-<span class="n">svm</span> <span class="o">=</span> <span class="n">LinearSVM</span><span class="p">({</span><span class="s1">&#39;variance&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;skewness&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span> <span class="mf">0.0</span><span class="p">)</span>
+<span class="n">svm</span> <span class="o">=</span> <span class="n">LinearSVM</span><span class="p">({</span><span class="s2">&quot;variance&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;skewness&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span> <span class="mf">0.0</span><span class="p">)</span>
 <span class="n">test</span><span class="p">(</span><span class="n">svm</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1184,6 +1235,7 @@ y_i (w^\top x_i + b) &amp; \geq 1 - z_i &amp; \forall i = 1, 2, \dots, n
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 
+
 <span class="k">def</span> <span class="nf">svm_factory_lp</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">lambd</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Creates a linear support vector machine (SVM) model using linear programming.</span>
@@ -1197,7 +1249,7 @@ y_i (w^\top x_i + b) &amp; \geq 1 - z_i &amp; \forall i = 1, 2, \dots, n
 <span class="sd">        Regularization parameter. Default is 1.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">    LinearSvm : </span>
+<span class="sd">    LinearSvm :</span>
 <span class="sd">        A trained linear SVM model.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1219,11 +1271,15 @@ y_i (w^\top x_i + b) &amp; \geq 1 - z_i &amp; \forall i = 1, 2, \dots, n
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">lasso</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">+</span> <span class="n">lambd</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">wp</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">wn</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">+</span> <span class="n">lambd</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">wp</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">wn</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span>
+        <span class="p">)</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">hingeloss</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="n">X</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="n">X</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span>
+        <span class="p">)</span>
 
     <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_LO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
@@ -1231,6 +1287,7 @@ y_i (w^\top x_i + b) &amp; \geq 1 - z_i &amp; \forall i = 1, 2, \dots, n
     <span class="n">b</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">LinearSVM</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+
 
 <span class="c1"># Train and test</span>
 <span class="n">svm_lp</span> <span class="o">=</span> <span class="n">svm_factory_lp</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
@@ -1329,6 +1386,7 @@ y_i \left( w^\top x_i + b \right) &amp; \geq 1 - z_i&amp; \forall i \in 1, 2, \d
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 
+
 <span class="k">def</span> <span class="nf">svm_factory_qp</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Creates a linear support vector machine (SVM) model using quadratic programming.</span>
@@ -1342,7 +1400,7 @@ y_i \left( w^\top x_i + b \right) &amp; \geq 1 - z_i&amp; \forall i \in 1, 2, \d
 <span class="sd">        Regularization parameter. Default is 1.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">    LinearSvm : </span>
+<span class="sd">    LinearSvm :</span>
 <span class="sd">        A trained linear SVM model.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1359,11 +1417,15 @@ y_i \left( w^\top x_i + b \right) &amp; \geq 1 - z_i&amp; \forall i \in 1, 2, \d
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">qp</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">c</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">))</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">c</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">))</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span>
+        <span class="p">)</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">hingeloss</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="n">X</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="n">X</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span>
+        <span class="p">)</span>
 
     <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_NLO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
@@ -1371,6 +1433,7 @@ y_i \left( w^\top x_i + b \right) &amp; \geq 1 - z_i&amp; \forall i \in 1, 2, \d
     <span class="n">b</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">LinearSVM</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+
 
 <span class="c1"># Train and test</span>
 <span class="n">svm_qp</span> <span class="o">=</span> <span class="n">svm_factory_qp</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
@@ -1477,7 +1540,7 @@ Accuracy =  89.1%
 \min_{\alpha_i}\ &amp; \frac{1}{2} w^\top w -  1^\top\alpha \\
 \text{s. t.}\quad &amp; y^\top\alpha = 0 \\
 &amp; w = F^\top\alpha &amp; w\in\mathbb{R}^p \\
-&amp; 0 \leq \alpha \leq \frac{c}{n} &amp; \alpha\in\mathbb{R}^n \\
+&amp; 0 \leq \alpha_i \leq \frac{c}{n} &amp; \alpha\in\mathbb{R}^n \\
 \end{align*}
 \end{split}\]</div>
 <p>The solution for the bias term <span class="math notranslate nohighlight">\(b\)</span> is obtained by considering the complementarity conditions on the dual variables. The slack variables <span class="math notranslate nohighlight">\(z_i\)</span> are zero if <span class="math notranslate nohighlight">\(\beta_i &gt; 0\)</span> which is equivalent to <span class="math notranslate nohighlight">\(\alpha_i &lt; \frac{c}{n}\)</span>. If <span class="math notranslate nohighlight">\(\alpha_i &gt; 0\)</span> then <span class="math notranslate nohighlight">\(1 - y_i (w^\top x_i + b)\)</span>. Putting these facts together gives a formula for <span class="math notranslate nohighlight">\(b\)</span></p>
@@ -1491,6 +1554,7 @@ b &amp; = y_i - w^\top x_i &amp; \forall i\in 1, 2, \ldots, n\quad \text{s.t.}\q
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+
 
 <span class="k">def</span> <span class="nf">svm_factory_dual</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1506,7 +1570,7 @@ b &amp; = y_i - w^\top x_i &amp; \forall i\in 1, 2, \ldots, n\quad \text{s.t.}\q
 <span class="sd">        Regularization parameter. Default is 1.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">    LinearSvm : </span>
+<span class="sd">    LinearSvm :</span>
 <span class="sd">        A trained linear SVM model.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1548,6 +1612,7 @@ b &amp; = y_i - w^\top x_i &amp; \forall i\in 1, 2, \ldots, n\quad \text{s.t.}\q
     <span class="n">b</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">X</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">LinearSVM</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+
 
 <span class="c1"># Train and test</span>
 <span class="n">svm_dual</span> <span class="o">=</span> <span class="n">svm_factory_dual</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
@@ -1640,8 +1705,8 @@ y_i \left( w^\top \phi(x_i) + b \right) &amp; \geq 1 - z_i  &amp; i = 1, 2, \ldo
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
-\min_{\alpha_i}\ &amp; \frac{1}{2} \sum_{i=1}^n\sum_{j=1}^n \alpha_i \alpha_j y_i y_j  \phi(x_i)^\top \phi(x_j) -  \sum_{i=1}^n \alpha_i \\
-\text{s. t.}\quad &amp; \alpha_i \in \left[0, \frac{c}{n}\right] &amp; i = 1, \dots, n \\
+\min_{\alpha_i}\quad  &amp; \frac{1}{2} \sum_{i=1}^n\sum_{j=1}^n \alpha_i \alpha_j y_i y_j  \phi(x_i)^\top \phi(x_j) -  \sum_{i=1}^n \alpha_i \\
+\text{s.t.}\quad &amp; \alpha_i \in \left[0, \frac{c}{n}\right] &amp; i = 1, \dots, n \\
 &amp; \sum_{i=1}^n \alpha_i y_i = 0 \\
 \end{align*}
 \end{split}\]</div>
@@ -1669,8 +1734,8 @@ y_i \left( w^\top \phi(x_i) + b \right) &amp; \geq 1 - z_i  &amp; i = 1, 2, \ldo
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
-\min_{\alpha_i}\ &amp; \frac{1}{2} \sum_{i=1}^n\sum_{j=1}^n \alpha_i \alpha_j y_i y_j K(x_i, x_j) -  \sum_{i=1}^n \alpha_i \\
-\text{s. t.}\quad &amp; \sum_{i=1}^n \alpha_i y_i = 0 \\
+\min_{\alpha_i}\quad &amp; \frac{1}{2} \sum_{i=1}^n\sum_{j=1}^n \alpha_i \alpha_j y_i y_j K(x_i, x_j) -  \sum_{i=1}^n \alpha_i \\
+\text{s.t.}\quad &amp; \sum_{i=1}^n \alpha_i y_i = 0 \\
 &amp; \alpha_i \in \left[0, \frac{c}{n}\right] &amp; i = 1, \dots, n \\
 \end{align*}
 \end{split}\]</div>
@@ -1700,19 +1765,19 @@ G = \begin{bmatrix}
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
-\min\ &amp; \frac{1}{2} \alpha^\top F F^\top \alpha -  1^\top \alpha \\
-\text{s. t.}\quad &amp; \sum_{i=1}^n \alpha_i y_i = 0 \\
-&amp; 0 \leq \alpha \leq \frac{c}{n} &amp; \alpha\in\mathbb{R}^n \\
+\min\quad &amp; \frac{1}{2} \alpha^\top F F^\top \alpha -  1^\top \alpha \\
+\text{s.t.}\quad &amp; \sum_{i=1}^n \alpha_i y_i = 0 \\
+&amp; 0 \leq \alpha_i \leq \frac{c}{n} &amp; \alpha\in\mathbb{R}^n \\
 \end{align*}
 \end{split}\]</div>
 <p>The result is a quadratic program for the dual coefficients <span class="math notranslate nohighlight">\(\alpha\)</span> and auxiliary variables <span class="math notranslate nohighlight">\(v\)</span>.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
-&amp; \min\ \frac{1}{2} v^\top v - 1^\top \alpha\\
-\text{s. t.}\qquad &amp; y^\top \alpha = 1 \\
+\min\quad &amp; \frac{1}{2} v^\top v - 1^\top \alpha\\
+\text{s.t.}\quad &amp; y^\top \alpha = 1 \\
 &amp; v = F^\top \alpha &amp; u\in\mathbb{R}^{q} \\
-&amp; 0 \leq \alpha \leq \frac{c}{n} &amp; \alpha\in\mathbb{R}^n \\
+&amp; 0 \leq \alpha_i \leq \frac{c}{n} &amp; \alpha\in\mathbb{R}^n \\
 \end{align*}
 \end{split}\]</div>
 <p>Summarizing, the essential difference between training the linear and kernelized SVM is the need to compute and factor the Gram matrix. The result will be a set of non-zero coefficients <span class="math notranslate nohighlight">\(\alpha_i &gt; 0\)</span> the define a set of support vectors <span class="math notranslate nohighlight">\(\mathcal{SV}\)</span>. The classifier is then given by</p>
@@ -1723,6 +1788,7 @@ G = \begin{bmatrix}
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
 
 <span class="k">class</span> <span class="nc">KernelSVM</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1751,7 +1817,10 @@ G = \begin{bmatrix}
 <span class="sd">        :param Z: pandas DataFrame, test data.</span>
 <span class="sd">        :return: pandas Series, predicted labels.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">K</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">Z</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">Z</span><span class="o">.</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">))]</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">Z</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">Z</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">))</span>
+        <span class="p">]</span>
         <span class="n">y_pred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">u</span> <span class="o">@</span> <span class="n">K</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">Z</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 </pre></div>
@@ -1764,6 +1833,7 @@ G = \begin{bmatrix}
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+
 
 <span class="k">def</span> <span class="nf">svm_factory_kernel</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1799,8 +1869,10 @@ G = \begin{bmatrix}
 
     <span class="c1"># Factor the Gram matrix</span>
     <span class="n">eigvals</span><span class="p">,</span> <span class="n">eigvecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
-    <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">eigvals</span> <span class="o">&gt;=</span> <span class="n">tol</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="n">eigvals</span><span class="p">))</span>
-    <span class="n">F</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">eigvecs</span><span class="p">[:,</span> <span class="n">idx</span><span class="p">]</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">eigvals</span><span class="p">[</span><span class="n">idx</span><span class="p">])),</span> <span class="n">index</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">eigvals</span> <span class="o">&gt;=</span> <span class="n">tol</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="n">eigvals</span><span class="p">)</span>
+    <span class="n">F</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="n">eigvecs</span><span class="p">[:,</span> <span class="n">idx</span><span class="p">]</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">eigvals</span><span class="p">[</span><span class="n">idx</span><span class="p">])),</span> <span class="n">index</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">index</span>
+    <span class="p">)</span>
 
     <span class="c1"># Build model</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
@@ -1830,21 +1902,31 @@ G = \begin{bmatrix}
 
     <span class="c1"># Solve QP with the interior point method</span>
     <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_NLO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    
+
     <span class="c1"># Extract solution</span>
     <span class="n">a</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
 
     <span class="c1"># Find b by locating a closest to the center of [0, c/n]</span>
     <span class="n">i</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">index</span><span class="p">[(</span><span class="n">a</span> <span class="o">-</span> <span class="n">C</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">argmin</span><span class="p">()]</span>
-    <span class="n">b</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">([</span><span class="n">a</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">y</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">kernel</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:],</span> <span class="n">X</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">])</span>
-    
+    <span class="n">b</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">a</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">y</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">kernel</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:],</span> <span class="n">X</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">]</span>
+    <span class="p">)</span>
+
     <span class="c1"># Display the support vectors</span>
-    <span class="n">y_support</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mi">1</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">1e-4</span> <span class="o">*</span> <span class="n">C</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
-    <span class="n">scatter_labeled_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y_support</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Support Vector&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Support Vectors&quot;</span><span class="p">)</span>
- 
+    <span class="n">y_support</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
+        <span class="p">[</span><span class="mi">1</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">1e-4</span> <span class="o">*</span> <span class="n">C</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">index</span>
+    <span class="p">)</span>
+    <span class="n">scatter_labeled_data</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">y_support</span><span class="p">,</span>
+        <span class="n">colors</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">],</span>
+        <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Support Vector&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Support Vectors&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
     <span class="c1"># Find support vectors</span>
     <span class="n">SV</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">C</span><span class="p">]</span>
-    
+
     <span class="k">return</span> <span class="n">KernelSVM</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">SV</span><span class="p">,</span> <span class="p">:],</span> <span class="n">y</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span> <span class="n">a</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">SV</span><span class="p">],</span> <span class="n">b</span><span class="p">,</span> <span class="n">kernel</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1922,7 +2004,7 @@ Accuracy =  89.1%
 <p>The following cell demonstrates a quadratic kernel applied to the banknote data.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">quadratic</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">quadratic</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
 
 <span class="n">svm_kernel</span> <span class="o">=</span> <span class="n">svm_factory_kernel</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="n">quadratic</span><span class="p">)</span>
 <span class="n">test</span><span class="p">(</span><span class="n">svm_kernel</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
@@ -1980,7 +2062,7 @@ Accuracy =  93.1%
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cubic</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cubic</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">)</span> <span class="o">**</span> <span class="mi">3</span>
 
 <span class="n">svm_kernel</span> <span class="o">=</span> <span class="n">svm_factory_kernel</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="n">cubic</span><span class="p">)</span>
 <span class="n">test</span><span class="p">(</span><span class="n">svm_kernel</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
