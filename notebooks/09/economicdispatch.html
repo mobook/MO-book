@@ -214,7 +214,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../05/ols-regression.html">Ordinary Least Squares (OLS) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/markowitz_portfolio.html">Markowitz portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/svm.html">Support Vector Machines for Binary Classification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing with CVXPY</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../06/06.00.html">6. Conic Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-6"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -487,7 +487,7 @@ document.write(`
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Economic dispatch in energy systems</a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#chance-constrained-economic-energy-dispatch-problem">Chance-constrained economic energy dispatch problem</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-import">Data import</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#milp-reformulation-for-the-chance-constrained-ed-problem">MILP reformulation for the chance-constrained ED problem</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#milo-reformulation-for-the-chance-constrained-ed-problem">MILO reformulation for the chance-constrained ED problem</a></li>
 </ul>
 </li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#visualizing-and-understanding-the-solution">Visualizing and understanding the solution</a><ul class="visible nav section-nav flex-column">
@@ -511,24 +511,17 @@ document.write(`
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install idaes-pse --pre &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>idaes get-extensions --to ./bin 
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
+    
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -549,7 +542,7 @@ Importantly, not all the nodes have demand and generation, more specifically it 
 <li><p>no production limits are exceeded</p></li>
 <li><p>the total energy production costs are minimized.</p></li>
 </ul>
-<p>If we fully control the energy production and the customer demand is known, can formulate the problem as the following MILP problem:
+<p>If we fully control the energy production and the customer demand is known, can formulate the problem as the following MILO problem:
 $<span class="math notranslate nohighlight">\(
 \begin{align}
 \begin{array}{llll}
@@ -559,7 +552,7 @@ $<span class="math notranslate nohighlight">\(
 \end{array}
 \end{align}
 \)</span>$</p>
-<p>Now, assume that we have built several offshore wind turbines. These wind turbines combined together produce a random nonnegative amount of extra energy, denoted by <span class="math notranslate nohighlight">\(\omega\)</span>. For a fixed value of <span class="math notranslate nohighlight">\(\omega\)</span>, the optimization problem to be solved is thus to ‘fill in’ to the remaining energy demand not satisfied by wind power:</p>
+<p>Now, assume that we have built several offshore wind turbines. These wind turbines combined together produce a random non-negative amount of extra energy, denoted by <span class="math notranslate nohighlight">\(\omega\)</span>. For a fixed value of <span class="math notranslate nohighlight">\(\omega\)</span>, the optimization problem to be solved is thus to ‘fill in’ to the remaining energy demand not satisfied by wind power:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
@@ -575,7 +568,7 @@ $<span class="math notranslate nohighlight">\(
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\(\Delta \geq 0\)</span> the tolerance of the absolute power mismatch between supply and demand;</p></li>
 <li><p><span class="math notranslate nohighlight">\(\varepsilon \in [0,1]\)</span> is the risk level at which we are willing to accept for the supply to deviate from the demand more than <span class="math notranslate nohighlight">\(\Delta\)</span>;</p></li>
-<li><p><span class="math notranslate nohighlight">\(\omega\)</span> the nonnegative random variable describing the total power production of offshore wind turbines.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\omega\)</span> the non-negative random variable describing the total power production of offshore wind turbines.</p></li>
 </ul>
 <p>In this setting, instead of requiring that the supply and demand are matched perfectly, we require that the absolute difference remains below power threshold <span class="math notranslate nohighlight">\(\Delta\)</span> using the following chance constraint:</p>
 <div class="math notranslate nohighlight">
@@ -584,7 +577,7 @@ $<span class="math notranslate nohighlight">\(
   \mathbb{P} \Big ( \Big | \omega + \sum_{i \in V } p_i  - \sum_{i \in V} d_i \Big | \leq \Delta \Big) \geq 1 - \varepsilon.
 \end{align}
 \]</div>
-<p>To formulate the problem as a MILP, we can break up this absolute-value function including constraint into two individual chance constraints - note that in this way we relax the constraint because requiring that two one-sided constraints hold with probability <span class="math notranslate nohighlight">\(1 - \varepsilon\)</span> each is not the same as requiring that together they hold with probability <span class="math notranslate nohighlight">\(1 - \varepsilon\)</span>, but in practice we can fine-tune the <span class="math notranslate nohighlight">\(\varepsilon\)</span> to adapt for this change.</p>
+<p>To formulate the problem as an MILO, we can break up this absolute-value function including constraint into two individual chance constraints - note that in this way we relax the constraint because requiring that two one-sided constraints hold with probability <span class="math notranslate nohighlight">\(1 - \varepsilon\)</span> each is not the same as requiring that together they hold with probability <span class="math notranslate nohighlight">\(1 - \varepsilon\)</span>, but in practice we can fine-tune the <span class="math notranslate nohighlight">\(\varepsilon\)</span> to adapt for this change.</p>
 <p>Such breaking up leads us to the following optimization problem with chance constraints:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -664,7 +657,7 @@ This <a class="reference external" href="https://link.springer.com/article/10.10
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/93e4abdd60c3b523ea8c8c6acb7fa93060924163bd8c43853cce58873738f2c2.png" src="../../_images/93e4abdd60c3b523ea8c8c6acb7fa93060924163bd8c43853cce58873738f2c2.png" />
+<img alt="../../_images/b24a10f7dd648102b3bef39554040bf695fa4be06701456630d7794b70d32816.png" src="../../_images/b24a10f7dd648102b3bef39554040bf695fa4be06701456630d7794b70d32816.png" />
 </div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">nodes</span></code> dictionary contains for every <span class="math notranslate nohighlight">\(i \in V\)</span> information about <span class="math notranslate nohighlight">\(p_i^{min}\)</span>, <span class="math notranslate nohighlight">\(p_i^{max}\)</span>, <span class="math notranslate nohighlight">\(c_i\)</span>, <span class="math notranslate nohighlight">\(d_i\)</span>. In our dataset, there is a clear separation of the nodes into nodes that only consume power, and nodes that only produce power, which can be seen by inspecting the node properties.</p>
@@ -735,18 +728,18 @@ This <a class="reference external" href="https://link.springer.com/article/10.10
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/f1fccbaa66f968a245daec1af2978576d4266e3a952d30b1a4c5aef3c1a8972f.png" src="../../_images/f1fccbaa66f968a245daec1af2978576d4266e3a952d30b1a4c5aef3c1a8972f.png" />
+<img alt="../../_images/8d133589ab4c667a59e37e6eb19c864425de87958b3e4a9b676cf478a8f35c73.png" src="../../_images/8d133589ab4c667a59e37e6eb19c864425de87958b3e4a9b676cf478a8f35c73.png" />
 </div>
 </div>
 </section>
-<section id="milp-reformulation-for-the-chance-constrained-ed-problem">
-<h2>MILP reformulation for the chance-constrained ED problem<a class="headerlink" href="#milp-reformulation-for-the-chance-constrained-ed-problem" title="Permalink to this heading">#</a></h2>
+<section id="milo-reformulation-for-the-chance-constrained-ed-problem">
+<h2>MILO reformulation for the chance-constrained ED problem<a class="headerlink" href="#milo-reformulation-for-the-chance-constrained-ed-problem" title="Permalink to this heading">#</a></h2>
 <p>Since we have a discrete set of <span class="math notranslate nohighlight">\(N\)</span> possible wind production outcomes, we can reformulate the chance-constrained ED problem as a mixed-integer linear optimization problem. More specifically, we introduce a binary variable <span class="math notranslate nohighlight">\(u_j\)</span> for each sample <span class="math notranslate nohighlight">\(j\)</span> of the wind production, which, thanks to the big-<span class="math notranslate nohighlight">\(M\)</span> technique, determines whether the constraint related to the <span class="math notranslate nohighlight">\(j\)</span>-th sample is allowed to be violated or not, and add one constraint to ensure that the total probability that the constraint is violated is at most <span class="math notranslate nohighlight">\(\varepsilon\)</span>, i.e.,</p>
 <div class="math notranslate nohighlight">
 \[
 \frac{1}{N} \sum_{j=1}^{N} u_j \leq \varepsilon.
 \]</div>
-<p>The resulting MILP is</p>
+<p>The resulting MILO is</p>
 <p>\begin{align}
 \begin{array}{llll}
 \min        &amp; \sum_{i \in V} c_i(p_i)\
@@ -829,7 +822,7 @@ This <a class="reference external" href="https://link.springer.com/article/10.10
 
 <span class="c1"># Solve model and report the solution</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">economic_dispatch</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">wind_production_samples</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">Delta</span><span class="p">)</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 <span class="n">sum_production</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">])</span>
 <span class="n">sum_demand</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;d&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total energy demand: </span><span class="si">{</span><span class="n">sum_demand</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -858,12 +851,12 @@ Total energy production cost: 7850.601
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/b3ba40933f06dc3cf11f0497405206432278ec0c340272e28560c133ffa6b51d.png" src="../../_images/b3ba40933f06dc3cf11f0497405206432278ec0c340272e28560c133ffa6b51d.png" />
+<img alt="../../_images/d31d19797e7d51a2cc5d7da4ef12be5b8308964281963fbc96ac7b8c47b7a546.png" src="../../_images/d31d19797e7d51a2cc5d7da4ef12be5b8308964281963fbc96ac7b8c47b7a546.png" />
 </div>
 </div>
 <section id="sensitivity-analysis">
 <h2>Sensitivity analysis<a class="headerlink" href="#sensitivity-analysis" title="Permalink to this heading">#</a></h2>
-<p>Next, we will study the sensitivity of the optimal solution and value to the different risk guarantee levels - this helps the decision maker find a level that offers the best risk-reward tradeoff. To this end, we solve the same MILP varying the values first of <span class="math notranslate nohighlight">\(\varepsilon \in [0, 1]\)</span> (for fixed <span class="math notranslate nohighlight">\(\Delta=1000\)</span>) and then of <span class="math notranslate nohighlight">\(\Delta \in [0, 2000]\)</span> (for fixed <span class="math notranslate nohighlight">\(\varepsilon = 0.02\)</span>).</p>
+<p>Next, we will study the sensitivity of the optimal solution and value to the different risk guarantee levels - this helps the decision maker find a level that offers the best risk-reward tradeoff. To this end, we solve the same MILO varying the values first of <span class="math notranslate nohighlight">\(\varepsilon \in [0, 1]\)</span> (for fixed <span class="math notranslate nohighlight">\(\Delta=1000\)</span>) and then of <span class="math notranslate nohighlight">\(\Delta \in [0, 2000]\)</span> (for fixed <span class="math notranslate nohighlight">\(\varepsilon = 0.02\)</span>).</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fixed_Delta</span> <span class="o">=</span> <span class="mi">1000</span>
@@ -876,7 +869,7 @@ Total energy production cost: 7850.601
 
 <span class="k">for</span> <span class="n">eps</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
     <span class="n">model</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="o">==</span> <span class="s2">&quot;optimal&quot;</span><span class="p">:</span>
         <span class="n">feas_eps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eps</span><span class="p">)</span>
@@ -890,7 +883,7 @@ Total energy production cost: 7850.601
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/dc7d51934a6ca7fac6bc0fed9f9845c11e3e31027a4937c1239496c9d0fd9638.png" src="../../_images/dc7d51934a6ca7fac6bc0fed9f9845c11e3e31027a4937c1239496c9d0fd9638.png" />
+<img alt="../../_images/c9f9db02322d03a63b707d06e5331193e5daaf43427681c6b12a5755789254d7.png" src="../../_images/c9f9db02322d03a63b707d06e5331193e5daaf43427681c6b12a5755789254d7.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -905,7 +898,7 @@ Total energy production cost: 7850.601
 
 <span class="k">for</span> <span class="n">Delta</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2000</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
     <span class="n">model</span><span class="o">.</span><span class="n">Delta</span> <span class="o">=</span> <span class="n">Delta</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="o">==</span> <span class="s2">&quot;optimal&quot;</span><span class="p">:</span>
         <span class="n">feas_Deltas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Delta</span><span class="p">)</span>
@@ -922,26 +915,31 @@ Total energy production cost: 7850.601
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING: Loading a SolverResults object with a warning status into
     model.name=&quot;Economic Dispatch&quot;;
       - termination condition: infeasible
-      - message from solver: &lt;undefined&gt;
+      - message from solver:  The solution status is unknown. Problem is
+        primal infeasible.
 WARNING: Loading a SolverResults object with a warning status into
     model.name=&quot;Economic Dispatch&quot;;
       - termination condition: infeasible
-      - message from solver: &lt;undefined&gt;
+      - message from solver:  The solution status is unknown. Problem is
+        primal infeasible.
 WARNING: Loading a SolverResults object with a warning status into
     model.name=&quot;Economic Dispatch&quot;;
       - termination condition: infeasible
-      - message from solver: &lt;undefined&gt;
+      - message from solver:  The solution status is unknown. Problem is
+        primal infeasible.
 WARNING: Loading a SolverResults object with a warning status into
     model.name=&quot;Economic Dispatch&quot;;
       - termination condition: infeasible
-      - message from solver: &lt;undefined&gt;
+      - message from solver:  The solution status is unknown. Problem is
+        primal infeasible.
 WARNING: Loading a SolverResults object with a warning status into
     model.name=&quot;Economic Dispatch&quot;;
       - termination condition: infeasible
-      - message from solver: &lt;undefined&gt;
+      - message from solver:  The solution status is unknown. Problem is
+        primal infeasible.
 </pre></div>
 </div>
-<img alt="../../_images/0f7516984b8dd8e169b1b2502c121a4a85a53d0eba670034904b4a159c98e235.png" src="../../_images/0f7516984b8dd8e169b1b2502c121a4a85a53d0eba670034904b4a159c98e235.png" />
+<img alt="../../_images/8623bcdb6cf61c3735101bfb682fbd7d6eef02323c0d8462a12277c1530eff89.png" src="../../_images/8623bcdb6cf61c3735101bfb682fbd7d6eef02323c0d8462a12277c1530eff89.png" />
 </div>
 </div>
 <p>Based on the above plots, we can make the following observations:</p>
@@ -1016,7 +1014,7 @@ WARNING: Loading a SolverResults object with a warning status into
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Economic dispatch in energy systems</a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#chance-constrained-economic-energy-dispatch-problem">Chance-constrained economic energy dispatch problem</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-import">Data import</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#milp-reformulation-for-the-chance-constrained-ed-problem">MILP reformulation for the chance-constrained ED problem</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#milo-reformulation-for-the-chance-constrained-ed-problem">MILO reformulation for the chance-constrained ED problem</a></li>
 </ul>
 </li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#visualizing-and-understanding-the-solution">Visualizing and understanding the solution</a><ul class="visible nav section-nav flex-column">
