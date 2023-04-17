@@ -214,7 +214,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../05/ols-regression.html">Ordinary Least Squares (OLS) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/markowitz_portfolio.html">Markowitz portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/svm.html">Support Vector Machines for Binary Classification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing with CVXPY</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../06/06.00.html">6. Conic Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-6"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -530,30 +530,36 @@ document.write(`
 <span class="n">helper</span><span class="o">.</span><span class="n">install_gurobi</span><span class="p">()</span>
 <span class="n">helper</span><span class="o">.</span><span class="n">install_xpress</span><span class="p">()</span>
 <span class="n">helper</span><span class="o">.</span><span class="n">install_cplex</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="nn">patches</span>
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 
-<span class="n">cbc</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
-<span class="n">ipopt</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;ipopt&quot;</span><span class="p">)</span>
-<span class="n">cplex</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cplex_direct&quot;</span><span class="p">)</span>
-<span class="n">gurobi</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;gurobi_direct&quot;</span><span class="p">)</span>
-<span class="n">xpress</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;xpress_direct&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-ipopt was previously installed
-Consult gurobi.com for installation procedures ... installation failed
-Installing xpress via conda ... installation failed
-Consult ibm.com for installation procedures ... installation failed
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>sh: conda: command not found
+<span class="c1">#cbc = pyo.SolverFactory(&quot;cbc&quot;)</span>
+<span class="c1">#ipopt = pyo.SolverFactory(&quot;ipopt&quot;)</span>
+<span class="c1">#cplex = pyo.SolverFactory(&quot;cplex_direct&quot;)</span>
+<span class="c1">#gurobi = pyo.SolverFactory(&quot;gurobi_direct&quot;)</span>
+<span class="c1">#xpress = pyo.SolverFactory(&quot;xpress_direct&quot;)</span>
 </pre></div>
 </div>
 </div>
@@ -595,7 +601,7 @@ Consult ibm.com for installation procedures ... installation failed
     <span class="n">expr</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">copper</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">chips</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">4800</span>
 <span class="p">)</span>
 
-<span class="n">cbc</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
     <span class="sa">f</span><span class="s2">&quot;The optimal solution is x=</span><span class="si">{</span><span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">c</span><span class="p">]),</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">chips</span><span class="p">]</span><span class="si">}</span><span class="s2"> and yields a profit of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
 <span class="p">)</span>
@@ -623,13 +629,18 @@ Consult ibm.com for installation procedures ... installation failed
 
 <span class="n">m</span><span class="o">.</span><span class="n">dual</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="o">.</span><span class="n">IMPORT</span><span class="p">)</span>
 
-<span class="n">cbc</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">ShowDuals</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The dual variable corresponding to:
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING: Implicitly replacing the Component attribute dual (type=&lt;class
+    &#39;pyomo.core.base.suffix.Suffix&#39;&gt;) on block BIM basic problem with a new
+    Component (type=&lt;class &#39;pyomo.core.base.suffix.Suffix&#39;&gt;). This is usually
+    indicative of a modelling error. To avoid this warning, use
+    block.del_component() and block.add_component().
+The dual variable corresponding to:
 
 - the constraint on silicon is equal to 0
 - the constraint on gemanium is equal to 0
@@ -664,7 +675,7 @@ Consult ibm.com for installation procedures ... installation failed
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/0f8a1c0ab5576a1c872a7cda3dd83cd911817ab044038572c3a96a51c0850e15.png" src="../../_images/0f8a1c0ab5576a1c872a7cda3dd83cd911817ab044038572c3a96a51c0850e15.png" />
+<img alt="../../_images/a16de4cc0e75fdc5087311000a89fc88818c087cd2c157c5545b75d6654be10e.png" src="../../_images/a16de4cc0e75fdc5087311000a89fc88818c087cd2c157c5545b75d6654be10e.png" />
 </div>
 </div>
 <section id="box-uncertainty-for-copper-consumption">
@@ -697,7 +708,7 @@ Consult ibm.com for installation procedures ... installation failed
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/bd80b67f00a7d62e027e833d8cbb772467f0452753821c7678784e0d7a295139.png" src="../../_images/bd80b67f00a7d62e027e833d8cbb772467f0452753821c7678784e0d7a295139.png" />
+<img alt="../../_images/62900a28a743526ed2c6668b3f322bd6bec23f6693b1e766f36ba374c733a9e2.png" src="../../_images/62900a28a743526ed2c6668b3f322bd6bec23f6693b1e766f36ba374c733a9e2.png" />
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Lower bounds {&#39;logic&#39;: 3.922766922829344, &#39;memory&#39;: 1.9701110863753781}
 Upper bounds {&#39;logic&#39;: 4.061793174956137, &#39;memory&#39;: 2.0328386701386703}
 </pre></div>
@@ -788,7 +799,7 @@ Upper bounds {&#39;logic&#39;: 4.061793174956137, &#39;memory&#39;: 2.0328386701
 
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">BIMWithBoxUncertainty</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">)</span>
-<span class="n">cbc</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span>
     <span class="sa">f</span><span class="s2">&quot;The optimal solution is x=</span><span class="si">{</span><span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">c</span><span class="p">]),</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">chips</span><span class="p">]</span><span class="si">}</span><span class="s2"> and yields a profit of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -817,7 +828,7 @@ Upper bounds {&#39;logic&#39;: 4.061793174956137, &#39;memory&#39;: 2.0328386701
 
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">BIMWithSymmetricalBoxUncertainty</span><span class="p">(</span><span class="n">delta</span><span class="p">)</span>
-<span class="n">cbc</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span>
     <span class="sa">f</span><span class="s2">&quot;The optimal solution is x=</span><span class="si">{</span><span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">c</span><span class="p">]),</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">chips</span><span class="p">]</span><span class="si">}</span><span class="s2"> and yields a profit of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -838,7 +849,7 @@ Upper bounds {&#39;logic&#39;: 4.061793174956137, &#39;memory&#39;: 2.0328386701
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">BIMWithBoxUncertainty</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
-<span class="n">cbc</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span>
     <span class="sa">f</span><span class="s2">&quot;The optimal solution is x=</span><span class="si">{</span><span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">c</span><span class="p">]),</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">chips</span><span class="p">]</span><span class="si">}</span><span class="s2"> and yields a profit of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -860,7 +871,7 @@ Upper bounds {&#39;logic&#39;: 4.061793174956137, &#39;memory&#39;: 2.0328386701
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
 <span class="k">for</span> <span class="n">delta</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">21</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">BIMWithSymmetricalBoxUncertainty</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
-    <span class="n">cbc</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">chips</span><span class="p">]</span>
     <span class="n">df</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">delta</span><span class="p">,</span> <span class="s2">&quot;profit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">df</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">delta</span><span class="p">,</span> <span class="n">chips</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
@@ -1040,8 +1051,8 @@ Upper bounds {&#39;logic&#39;: 4.061793174956137, &#39;memory&#39;: 2.0328386701
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/e9c7c66d648e9f8802f2c88022164a46608e0c184b235b7fc1e0db5f3c44d192.png" src="../../_images/e9c7c66d648e9f8802f2c88022164a46608e0c184b235b7fc1e0db5f3c44d192.png" />
-<img alt="../../_images/2f3c0d01f437821c6b2449d9e961bf93df8dc80a221720eff8684fce52fad515.png" src="../../_images/2f3c0d01f437821c6b2449d9e961bf93df8dc80a221720eff8684fce52fad515.png" />
+<img alt="../../_images/2b0651470639fdcb956a73969c589840b2d82fd0702691dbf1064f444306c097.png" src="../../_images/2b0651470639fdcb956a73969c589840b2d82fd0702691dbf1064f444306c097.png" />
+<img alt="../../_images/2413d2ee497acc321f2a7781872eefb07fa4c2f8f50113e6b3df4c807a85ab00.png" src="../../_images/2413d2ee497acc321f2a7781872eefb07fa4c2f8f50113e6b3df4c807a85ab00.png" />
 </div>
 </div>
 </section>
@@ -1116,7 +1127,7 @@ Upper bounds {&#39;logic&#39;: 4.061793174956137, &#39;memory&#39;: 2.0328386701
 
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">BIMWithBudgetUncertainty</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
-<span class="n">cbc</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span>
     <span class="sa">f</span><span class="s2">&quot;The optimal solution is x=</span><span class="si">{</span><span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">c</span><span class="p">]),</span><span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">chips</span><span class="p">]</span><span class="si">}</span><span class="s2"> and yields a profit of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -1168,7 +1179,7 @@ Upper bounds {&#39;logic&#39;: 4.061793174956137, &#39;memory&#39;: 2.0328386701
             <span class="o">&lt;=</span> <span class="mi">4800</span>
         <span class="p">)</span>
 
-    <span class="n">cbc</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 </pre></div>
@@ -1215,7 +1226,7 @@ Such a function is implemented below and takes as argument also the maximum magn
         <span class="p">),</span>
         <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">cbc</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="n">worst_z</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">chips</span><span class="p">}</span>
 
@@ -1418,49 +1429,16 @@ No violation found. Stopping the procedure.
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING: The gurobipy module (an optional Pyomo dependency) failed to import:
-    ModuleNotFoundError: No module named &#39;gurobipy&#39;
-</pre></div>
-</div>
 <div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">ApplicationError</span><span class="g g-Whitespace">                          </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">16</span><span class="p">],</span> <span class="n">line</span> <span class="mi">4</span>
-<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="n">radius</span> <span class="o">=</span> <span class="mf">0.05</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="nn">/var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/ipykernel_3234/2358763091.py</span> in <span class="ni">&lt;cell line: 4&gt;</span><span class="nt">()</span>
 <span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="n">m</span> <span class="o">=</span> <span class="n">BIMWithBallUncertainty</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">3</span> 
 <span class="ne">----&gt; </span><span class="mi">4</span> <span class="n">results</span> <span class="o">=</span> <span class="n">gurobi</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="nb">print</span><span class="p">(</span>
 <span class="g g-Whitespace">      </span><span class="mi">6</span>     <span class="s2">&quot;Solver: gurobi, solver status:&quot;</span><span class="p">,</span>
-<span class="g g-Whitespace">      </span><span class="mi">7</span>     <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
-<span class="g g-Whitespace">      </span><span class="mi">8</span>     <span class="s2">&quot;and solver terminal condition:&quot;</span><span class="p">,</span>
-<span class="g g-Whitespace">      </span><span class="mi">9</span>     <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">,</span>
-<span class="g g-Whitespace">     </span><span class="mi">10</span> <span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">11</span> <span class="nb">print</span><span class="p">(</span>
-<span class="g g-Whitespace">     </span><span class="mi">12</span>     <span class="s2">&quot;The optimal solution is x=&quot;</span><span class="p">,</span>
-<span class="g g-Whitespace">     </span><span class="mi">13</span>     <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">))],</span>
-   <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">16</span>     <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span>
-<span class="g g-Whitespace">     </span><span class="mi">17</span> <span class="p">)</span>
 
-<span class="nn">File ~/Library/Caches/pypoetry/virtualenvs/python310-rd3A6LPh-py3.10/lib/python3.10/site-packages/pyomo/solvers/plugins/solvers/direct_solver.py:75,</span> in <span class="ni">DirectSolver.solve</span><span class="nt">(self, *args, **kwds)</span>
-<span class="g g-Whitespace">     </span><span class="mi">72</span> <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
-<span class="g g-Whitespace">     </span><span class="mi">73</span>     <span class="sd">&quot;&quot;&quot;Solve the problem&quot;&quot;&quot;</span>
-<span class="ne">---&gt; </span><span class="mi">75</span>     <span class="bp">self</span><span class="o">.</span><span class="n">available</span><span class="p">(</span><span class="n">exception_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">76</span>     <span class="c1">#</span>
-<span class="g g-Whitespace">     </span><span class="mi">77</span>     <span class="c1"># If the inputs are models, then validate that they have been</span>
-<span class="g g-Whitespace">     </span><span class="mi">78</span>     <span class="c1"># constructed! Collect suffix names to try and import from solution.</span>
-<span class="g g-Whitespace">     </span><span class="mi">79</span>     <span class="c1">#</span>
-<span class="g g-Whitespace">     </span><span class="mi">80</span>     <span class="n">_model</span> <span class="o">=</span> <span class="kc">None</span>
-
-<span class="nn">File ~/Library/Caches/pypoetry/virtualenvs/python310-rd3A6LPh-py3.10/lib/python3.10/site-packages/pyomo/solvers/plugins/solvers/gurobi_direct.py:129,</span> in <span class="ni">GurobiDirect.available</span><span class="nt">(self, exception_flag)</span>
-<span class="g g-Whitespace">    </span><span class="mi">127</span>     <span class="k">if</span> <span class="n">exception_flag</span><span class="p">:</span>
-<span class="g g-Whitespace">    </span><span class="mi">128</span>         <span class="n">gurobipy</span><span class="o">.</span><span class="n">log_import_warning</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="vm">__name__</span><span class="p">)</span>
-<span class="ne">--&gt; </span><span class="mi">129</span>         <span class="k">raise</span> <span class="n">ApplicationError</span><span class="p">(</span>
-<span class="g g-Whitespace">    </span><span class="mi">130</span>             <span class="s2">&quot;No Python bindings available for </span><span class="si">%s</span><span class="s2"> solver plugin&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">),)</span>
-<span class="g g-Whitespace">    </span><span class="mi">131</span>         <span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">132</span>     <span class="k">return</span> <span class="kc">False</span>
-<span class="g g-Whitespace">    </span><span class="mi">133</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verified_license</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-
-<span class="ne">ApplicationError</span>: No Python bindings available for &lt;class &#39;pyomo.solvers.plugins.solvers.gurobi_direct.GurobiDirect&#39;&gt; solver plugin
+<span class="ne">NameError</span>: name &#39;gurobi&#39; is not defined
 </pre></div>
 </div>
 </div>

@@ -214,7 +214,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../05/ols-regression.html">Ordinary Least Squares (OLS) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/markowitz_portfolio.html">Markowitz portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/svm.html">Support Vector Machines for Binary Classification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing with CVXPY</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../06/06.00.html">6. Conic Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-6"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -490,7 +490,7 @@ document.write(`
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-data">Problem data</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#analytics">Analytics</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-1-deterministic-solution-for-the-average-demand-scenario">Model 1. Deterministic solution for the average demand scenario</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-2-two-stage-stochastic-program-and-its-extensive-form">Model 2. Two-stage stochastic program and its extensive form</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-2-two-stage-stochastic-optimization-and-its-extensive-form">Model 2. Two-stage stochastic optimization and its extensive form</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-3-adding-chance-constraints">Model 3. Adding chance constraints</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-4-solving-the-case-of-continuous-demand-distributions-using-the-saa-method">Model 4. Solving the case of continuous demand distributions using the SAA method</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scenario-generation-uncorrelated-case">Scenario generation (uncorrelated case)</a></li>
@@ -568,25 +568,14 @@ document.write(`
 <h2>Installation and imports<a class="headerlink" href="#installation-and-imports" title="Permalink to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">types</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/python/helper.py&quot;</span>
-<span class="n">helper</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">ModuleType</span><span class="p">(</span><span class="s2">&quot;helper&quot;</span><span class="p">)</span>
-<span class="n">exec</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">helper</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
 
-<span class="n">helper</span><span class="o">.</span><span class="n">install_pyomo</span><span class="p">()</span>
-<span class="n">helper</span><span class="o">.</span><span class="n">install_cbc</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>pyomo was previously installed
-cbc was previously installed
-</pre></div>
-</div>
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install highspy &gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -893,13 +882,13 @@ cbc was previously installed
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Expected Revenue (in units of economy ticket price): 175.00
 </pre></div>
 </div>
-<img alt="../../_images/990310f94d7c6f3812afffe80640504f2f5e160fc994b31a573a701db31928f4.png" src="../../_images/990310f94d7c6f3812afffe80640504f2f5e160fc994b31a573a701db31928f4.png" />
+<img alt="../../_images/aec05e4113b7e50cb309d28650d7eb0d56ee41906dc25b4d0a38345e96322db4.png" src="../../_images/aec05e4113b7e50cb309d28650d7eb0d56ee41906dc25b4d0a38345e96322db4.png" />
 </div>
 </div>
 </section>
 <section id="model-1-deterministic-solution-for-the-average-demand-scenario">
 <h2>Model 1. Deterministic solution for the average demand scenario<a class="headerlink" href="#model-1-deterministic-solution-for-the-average-demand-scenario" title="Permalink to this heading">#</a></h2>
-<p>A common starting point in stochastic programming is to solve the deterministic problem where future demands are fixed at their mean values and compute the corresponding optimal solution. The resulting value of the objective has been called the <em>expectation of the expected value problem (EEV)</em> by Birge, or the <em>expected value of the mean (EVM)</em> solution by others.</p>
+<p>A common starting point in stochastic optimization is to solve the deterministic problem where future demands are fixed at their mean values and compute the corresponding optimal solution. The resulting value of the objective has been called the <em>expectation of the expected value problem (EEV)</em> by Birge, or the <em>expected value of the mean (EVM)</em> solution by others.</p>
 <p>Let us introduce the set <span class="math notranslate nohighlight">\(C\)</span> of the three possible classes, i.e., <span class="math notranslate nohighlight">\(C=\{F,B,E\}\)</span>. The objective function is to maximize ticket revenue.</p>
 <div class="math notranslate nohighlight">
 \[
@@ -955,7 +944,7 @@ cbc was previously installed
 
 
 <span class="k">def</span> <span class="nf">airline_solve</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="n">c</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">seats</span><span class="p">[</span><span class="n">c</span><span class="p">]()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CLASSES</span><span class="p">})</span>
 
 
@@ -1155,13 +1144,13 @@ cbc was previously installed
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Expected Revenue (in units of economy ticket price): 203.33
 </pre></div>
 </div>
-<img alt="../../_images/7592897be106cf6f9f50440fe7ad8e153d856926e13185379f6d7801c99d18e8.png" src="../../_images/7592897be106cf6f9f50440fe7ad8e153d856926e13185379f6d7801c99d18e8.png" />
+<img alt="../../_images/dd9444138203cd364755cc3cf7e85c0058b4a1258ee3a0cd5fb1afdcf95bc9ed.png" src="../../_images/dd9444138203cd364755cc3cf7e85c0058b4a1258ee3a0cd5fb1afdcf95bc9ed.png" />
 </div>
 </div>
 </section>
-<section id="model-2-two-stage-stochastic-program-and-its-extensive-form">
-<h2>Model 2. Two-stage stochastic program and its extensive form<a class="headerlink" href="#model-2-two-stage-stochastic-program-and-its-extensive-form" title="Permalink to this heading">#</a></h2>
-<p>If we assume demand is not certain, we can formulate a two-stage stochastic program. The first-stage or here-and-now variables are the <span class="math notranslate nohighlight">\(s_c\)</span>’s, those related to the seat allocations. Due to their dependence on the realized demand <span class="math notranslate nohighlight">\(\bm{z}\)</span>, the variables <span class="math notranslate nohighlight">\(t_c\)</span>’s describing the number of tickets sold, are second-stage or recourse decision variables. The full problem formulation is as follows: the first stage problem is</p>
+<section id="model-2-two-stage-stochastic-optimization-and-its-extensive-form">
+<h2>Model 2. Two-stage stochastic optimization and its extensive form<a class="headerlink" href="#model-2-two-stage-stochastic-optimization-and-its-extensive-form" title="Permalink to this heading">#</a></h2>
+<p>If we assume demand is not certain, we can formulate a two-stage stochastic optimization problem. The first-stage or here-and-now variables are the <span class="math notranslate nohighlight">\(s_c\)</span>’s, those related to the seat allocations. Due to their dependence on the realized demand <span class="math notranslate nohighlight">\(\bm{z}\)</span>, the variables <span class="math notranslate nohighlight">\(t_c\)</span>’s describing the number of tickets sold, are second-stage or recourse decision variables. The full problem formulation is as follows: the first stage problem is</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -1181,7 +1170,7 @@ cbc was previously installed
     &amp; \bm{t} \in \mathbb{Z}_+.
 \end{align*}
 \end{split}\]</div>
-<p>In view of the assumption that there is only a finite number <span class="math notranslate nohighlight">\(N=|S|\)</span> of scenarios for ticket demand, we can write the extensive form of the two-stage stochastic program above and solve it exactly. To do so, we modify the second-stage variables <span class="math notranslate nohighlight">\(t_{c,s}\)</span> so that they are indexed by both class <span class="math notranslate nohighlight">\(c\)</span> and scenario <span class="math notranslate nohighlight">\(s\)</span>. The expectation can thus be replaced with the average revenue over the <span class="math notranslate nohighlight">\(N\)</span> scenarios, that is</p>
+<p>In view of the assumption that there is only a finite number <span class="math notranslate nohighlight">\(N=|S|\)</span> of scenarios for ticket demand, we can write the extensive form of the two-stage stochastic optimization problem above and solve it exactly. To do so, we modify the second-stage variables <span class="math notranslate nohighlight">\(t_{c,s}\)</span> so that they are indexed by both class <span class="math notranslate nohighlight">\(c\)</span> and scenario <span class="math notranslate nohighlight">\(s\)</span>. The expectation can thus be replaced with the average revenue over the <span class="math notranslate nohighlight">\(N\)</span> scenarios, that is</p>
 <div class="math notranslate nohighlight">
 \[
 \max \quad \sum_{s \in S} \frac{1}{N} \sum_{c\in C}  r_c t_{c, s},
@@ -1429,7 +1418,7 @@ t_{c,s} &amp; \leq z_{c, s} &amp; \forall \, (c, s) \in C \times S
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Expected Revenue (in units of economy ticket price): 209.33
 </pre></div>
 </div>
-<img alt="../../_images/9fd6ef7ba7921f5236c2da54ed639be251ab986b31ed3e1136ffff946d61b902.png" src="../../_images/9fd6ef7ba7921f5236c2da54ed639be251ab986b31ed3e1136ffff946d61b902.png" />
+<img alt="../../_images/6d717b9c0df99f8d8522c0745e2d99097805c028a954604c6b1efb25fd5a807d.png" src="../../_images/6d717b9c0df99f8d8522c0745e2d99097805c028a954604c6b1efb25fd5a807d.png" />
 </div>
 </div>
 </section>
@@ -1473,7 +1462,7 @@ t_{c,s} &amp; \leq z_{c, s} &amp; \forall \, (c, s) \in C \times S
 \frac{s_F - \mu_F}{\sigma_F} \geq \Phi^{-1}(0.98) \approx 2.054 \qquad \text{ and } \qquad \frac{(s_F + s_B) - (\mu_F + \mu_B)}{\sqrt{\sigma_F^2 + \sigma_B^2}} \geq \Phi^{-1}(0.95) \approx 1.645.
 \]</div>
 <p>For the second constraint, we use the fact that the sum of the two independent random variables <span class="math notranslate nohighlight">\(z_F\)</span> and <span class="math notranslate nohighlight">\(z_B\)</span> is normally distributed with mean <span class="math notranslate nohighlight">\(\mu_F + \mu_B\)</span> and variance <span class="math notranslate nohighlight">\(\sigma_F^2 + \sigma_B^2\)</span>.</p>
-<p>We add these equivalent linear counterparts of the two chance constraints to the stochastic programming model. Rather than writing a function to create a whole new model, we can use the prior function to create and add the two chance constraints using decorators.</p>
+<p>We add these equivalent linear counterparts of the two chance constraints to the stochastic optimization model. Rather than writing a function to create a whole new model, we can use the prior function to create and add the two chance constraints using decorators.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># import the scipy.stats.norm object needed to use the quantile function of the standard normal distribution</span>
@@ -1742,7 +1731,7 @@ t_{c,s} &amp; \leq z_{c, s} &amp; \forall \, (c, s) \in C \times S
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Expected Revenue (in units of economy ticket price): 177.00
 </pre></div>
 </div>
-<img alt="../../_images/1da413d0fe923c9ceb8700b941232d9433429f51b34a4ff6d0e2dc90e980fdce.png" src="../../_images/1da413d0fe923c9ceb8700b941232d9433429f51b34a4ff6d0e2dc90e980fdce.png" />
+<img alt="../../_images/8e7c42c6f90ca7f835e4e98f0bca53dedff4b75d713ce9700847c711f9a92a46.png" src="../../_images/8e7c42c6f90ca7f835e4e98f0bca53dedff4b75d713ce9700847c711f9a92a46.png" />
 </div>
 </div>
 </section>
@@ -1917,7 +1906,7 @@ t_{c,s} &amp; \leq z_{c, s} &amp; \forall \, (c, s) \in C \times S
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/1e721a0fdcf60686f831eaf9e338bad4cb7a1eea2d7b3988f3c27e1c4b6e2388.png" src="../../_images/1e721a0fdcf60686f831eaf9e338bad4cb7a1eea2d7b3988f3c27e1c4b6e2388.png" />
+</div></div><img alt="../../_images/41168d302d65513a23b33648085b60ecd1e2197c03f5caffca7b217c055890a0.png" src="../../_images/41168d302d65513a23b33648085b60ecd1e2197c03f5caffca7b217c055890a0.png" />
 </div>
 </div>
 <p>We also introduce a new function to report the solution and its features in this more general continuous demand case.</p>
@@ -1984,7 +1973,7 @@ t_{c,s} &amp; \leq z_{c, s} &amp; \forall \, (c, s) \in C \times S
 </div>
 </div>
 </div>
-<p>We can now solve the stochastic program using the generated <span class="math notranslate nohighlight">\(N=1000\)</span> scenarios. Note that we can use the previously defined function <code class="docutils literal notranslate"><span class="pre">airline_stochastic</span></code> to solve the model by simply calling it with a different dataframe as argument.</p>
+<p>We can now solve the stochastic optimization problem using the generated <span class="math notranslate nohighlight">\(N=1000\)</span> scenarios. Note that we can use the previously defined function <code class="docutils literal notranslate"><span class="pre">airline_stochastic</span></code> to solve the model by simply calling it with a different dataframe as argument.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model_ssa</span> <span class="o">=</span> <span class="n">airline_stochastic</span><span class="p">(</span><span class="n">demand_saa</span><span class="p">)</span>
@@ -2068,8 +2057,8 @@ dtype: float64
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Expected Revenue (in units of economy ticket price): 211.18
 </pre></div>
 </div>
-<img alt="../../_images/d4361a2542b7a2a26ec9a1befc6a49d71b29f4bc1e6d48f440145daef26df76b.png" src="../../_images/d4361a2542b7a2a26ec9a1befc6a49d71b29f4bc1e6d48f440145daef26df76b.png" />
-<img alt="../../_images/66b9eb1315a6936379b7c4345337e403c30bc1ff0fdfa396f4384074633c9a5b.png" src="../../_images/66b9eb1315a6936379b7c4345337e403c30bc1ff0fdfa396f4384074633c9a5b.png" />
+<img alt="../../_images/2ea558f42b3d4c8ba2ab1c80d56cc99b1ea2b54ce303557c4c8f64d06065de6f.png" src="../../_images/2ea558f42b3d4c8ba2ab1c80d56cc99b1ea2b54ce303557c4c8f64d06065de6f.png" />
+<img alt="../../_images/69b9adbfe76df9e2076dfe66fede2b5ead8aa814aa83c9f427f28965183015e6.png" src="../../_images/69b9adbfe76df9e2076dfe66fede2b5ead8aa814aa83c9f427f28965183015e6.png" />
 </div>
 </div>
 </section>
@@ -2099,7 +2088,7 @@ P = \left(
 \right)
 \end{split}\]</div>
 <p>We assume <span class="math notranslate nohighlight">\(\rho_{FB} = 0.6\)</span>, <span class="math notranslate nohighlight">\(\rho_{BE} = 0.4\)</span> and <span class="math notranslate nohighlight">\(\rho_{FE} = 0.2\)</span>.</p>
-<p>We now sample <span class="math notranslate nohighlight">\(N=1000\)</span> scenarios from this multivariate correlated normal distribution and use the SAA method to approximate the solution of the two-stage stochastic program.</p>
+<p>We now sample <span class="math notranslate nohighlight">\(N=1000\)</span> scenarios from this multivariate correlated normal distribution and use the SAA method to approximate the solution of the two-stage stochastic optimization problem.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># sample size</span>
@@ -2371,7 +2360,7 @@ P = \left(
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/437b7444162a974d1a583e4506794c027d61403604ab57271ef398854952b7fc.png" src="../../_images/437b7444162a974d1a583e4506794c027d61403604ab57271ef398854952b7fc.png" />
+</div></div><img alt="../../_images/133ae3d32ff19c43e68cb11078dd7c96753e835aecc3877520692c5b12a62e12.png" src="../../_images/133ae3d32ff19c43e68cb11078dd7c96753e835aecc3877520692c5b12a62e12.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -2457,8 +2446,8 @@ dtype: float64
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Expected Revenue (in units of economy ticket price): 211.38
 </pre></div>
 </div>
-<img alt="../../_images/fc110611071b72285906da3ec4a42e55e2f7d5260a9381de7ed9f90468c462ac.png" src="../../_images/fc110611071b72285906da3ec4a42e55e2f7d5260a9381de7ed9f90468c462ac.png" />
-<img alt="../../_images/41a31e286aa0620fde88f4016e3e0917cf2e3cb689e6eade7648d1d03d3510ce.png" src="../../_images/41a31e286aa0620fde88f4016e3e0917cf2e3cb689e6eade7648d1d03d3510ce.png" />
+<img alt="../../_images/ef992eaadb2a2e6a9e2ff1a45bfc363a8537ac01c74b81c6d0cee8f668e7369f.png" src="../../_images/ef992eaadb2a2e6a9e2ff1a45bfc363a8537ac01c74b81c6d0cee8f668e7369f.png" />
+<img alt="../../_images/2ba8784408ac99124215a4d8aab3c24e66745d422b3ac6b5c9a2b6b8a1792825.png" src="../../_images/2ba8784408ac99124215a4d8aab3c24e66745d422b3ac6b5c9a2b6b8a1792825.png" />
 </div>
 </div>
 </section>
@@ -2629,8 +2618,8 @@ dtype: float64
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Expected Revenue (in units of economy ticket price): 177.05
 </pre></div>
 </div>
-<img alt="../../_images/0a8edf540217e6addd2f969c4caf43fcd1c86e2a00e4ae7cc38cc8442c5cf3ef.png" src="../../_images/0a8edf540217e6addd2f969c4caf43fcd1c86e2a00e4ae7cc38cc8442c5cf3ef.png" />
-<img alt="../../_images/67517dfa6bf3a114ebb4f5b4a8e92ff024c4cadd94816bc7ae03192f40f436bf.png" src="../../_images/67517dfa6bf3a114ebb4f5b4a8e92ff024c4cadd94816bc7ae03192f40f436bf.png" />
+<img alt="../../_images/72ede3091c5ccf0068d1e972481950c647421ec90304ad32a9e55558da186dd8.png" src="../../_images/72ede3091c5ccf0068d1e972481950c647421ec90304ad32a9e55558da186dd8.png" />
+<img alt="../../_images/1813465705cf13f818ee5ff8163f581473ce9828629f186e89c43cc0171c96fb.png" src="../../_images/1813465705cf13f818ee5ff8163f581473ce9828629f186e89c43cc0171c96fb.png" />
 </div>
 </div>
 <p><strong>Exercise</strong></p>
@@ -2705,7 +2694,7 @@ dtype: float64
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-data">Problem data</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#analytics">Analytics</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-1-deterministic-solution-for-the-average-demand-scenario">Model 1. Deterministic solution for the average demand scenario</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-2-two-stage-stochastic-program-and-its-extensive-form">Model 2. Two-stage stochastic program and its extensive form</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-2-two-stage-stochastic-optimization-and-its-extensive-form">Model 2. Two-stage stochastic optimization and its extensive form</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-3-adding-chance-constraints">Model 3. Adding chance constraints</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-4-solving-the-case-of-continuous-demand-distributions-using-the-saa-method">Model 4. Solving the case of continuous demand distributions using the SAA method</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scenario-generation-uncorrelated-case">Scenario generation (uncorrelated case)</a></li>
