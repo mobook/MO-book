@@ -214,7 +214,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../05/ols-regression.html">Ordinary Least Squares (OLS) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/markowitz_portfolio.html">Markowitz portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/svm.html">Support Vector Machines for Binary Classification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing with CVXPY</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="06.00.html">6. Conic Optimization</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-6"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
@@ -486,10 +486,10 @@ document.write(`
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-log-growth">Optimal Log Growth</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling-a-game-with-binary-outcomes">Modeling a Game with Binary Outcomes</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#conic-program">Conic program</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#conic-optimization">Conic Optimization</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#risk-constrainted-version-of-the-kelly-s-problem">Risk-constrainted version of the Kelly’s problem</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#risk-constrained-version-of-the-kelly-s-problem">Risk-constrained version of the Kelly’s problem</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#simulation">Simulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bibliographic-notes">Bibliographic Notes</a></li>
 </ul>
@@ -516,14 +516,14 @@ document.write(`
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install -q idaes-pse &gt;/dev/null <span class="m">2</span>&gt;/dev/null
-    <span class="o">!</span>idaes -q get-extensions
-    <span class="kn">import</span> <span class="nn">idaes</span>
-    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;/root/.idaes/bin/ipopt&quot;</span>
+<span class="n">SOLVER_CONIC</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 
-<span class="k">else</span><span class="p">:</span>
-    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install idaes-pse --pre &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>idaes get-extensions --to ./bin 
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
+    
+    <span class="n">SOLVER_CONIC</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -587,9 +587,9 @@ p - \frac{1-p}{b} &amp; p(b+1) &gt; 1, \\
 0 &amp; p(b+1)\leq 1.
 \end{cases}
 \end{split}\]</div>
-<p>We can use this analytical solution to validate the solution of this problem that we will now obtain using conic programming.</p>
-<section id="conic-program">
-<h3>Conic program<a class="headerlink" href="#conic-program" title="Permalink to this heading">#</a></h3>
+<p>We can use this analytical solution to validate the solution of this problem that we will now obtain using conic optimization.</p>
+<section id="conic-optimization">
+<h3>Conic Optimization<a class="headerlink" href="#conic-optimization" title="Permalink to this heading">#</a></h3>
 <p>Recall that an <a class="reference external" href="https://docs.mosek.com/modeling-cookbook/expo.html">exponential cone</a> is a convex set <span class="math notranslate nohighlight">\(\mathbf{K}_{\mathrm{exp}} \)</span> of <span class="math notranslate nohighlight">\(\mathbb{R}^3\)</span> whose points <span class="math notranslate nohighlight">\((r, x, y)\)</span> satisfy the inequality</p>
 <div class="math notranslate nohighlight">
 \[r \geq x \exp{\frac{y}{x}} \quad \text{ if } \quad x \geq 0,\]</div>
@@ -611,7 +611,7 @@ p - \frac{1-p}{b} &amp; p(b+1) &gt; 1, \\
 &amp; q_1, q_2 \in \mathbb{R}.
 \end{align}
 \end{split}\]</div>
-<p>The following code shows how to obtain the optimal solution using the conic programming functions of the Pyomo kernel library and the Mosek solver.</p>
+<p>The following code shows how to obtain the optimal solution using the conic optimization functions of the Pyomo kernel library and the Mosek solver.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
@@ -620,7 +620,7 @@ p - \frac{1-p}{b} &amp; p(b+1) &gt; 1, \\
 <span class="n">b</span> <span class="o">=</span> <span class="mf">1.25</span>
 <span class="n">p</span> <span class="o">=</span> <span class="mf">0.51</span>
 
-<span class="c1"># conic programming solution to Kelly&#39;s problem </span>
+<span class="c1"># conic optimization solution to Kelly&#39;s problem </span>
 <span class="k">def</span> <span class="nf">kelly</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
 
     <span class="n">m</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">block</span><span class="p">()</span>
@@ -638,12 +638,12 @@ p - \frac{1-p}{b} &amp; p(b+1) &gt; 1, \\
     <span class="n">m</span><span class="o">.</span><span class="n">t2</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">primal_exponential</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">q2</span><span class="p">)</span>
 
     <span class="c1"># solve</span>
-    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_CONIC</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">()</span>
 
 <span class="n">w_conic</span> <span class="o">=</span> <span class="n">kelly</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Conic programming solution for w: </span><span class="si">{</span><span class="n">w_conic</span><span class="si">:</span><span class="s2"> 0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Conic optimization solution for w: </span><span class="si">{</span><span class="n">w_conic</span><span class="si">:</span><span class="s2"> 0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="c1"># analytical solution to Kelly&#39;s problem</span>
 <span class="n">w_analytical</span> <span class="o">=</span> <span class="n">p</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span><span class="o">/</span><span class="n">b</span> <span class="k">if</span> <span class="n">p</span><span class="o">*</span><span class="p">(</span><span class="n">b</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span>
@@ -652,7 +652,7 @@ p - \frac{1-p}{b} &amp; p(b+1) &gt; 1, \\
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Conic programming solution for w:  0.1180
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Conic optimization solution for w:  0.1180
 Analytical solution for w:  0.1180
 </pre></div>
 </div>
@@ -660,8 +660,8 @@ Analytical solution for w:  0.1180
 </div>
 </section>
 </section>
-<section id="risk-constrainted-version-of-the-kelly-s-problem">
-<h2>Risk-constrainted version of the Kelly’s problem<a class="headerlink" href="#risk-constrainted-version-of-the-kelly-s-problem" title="Permalink to this heading">#</a></h2>
+<section id="risk-constrained-version-of-the-kelly-s-problem">
+<h2>Risk-constrained version of the Kelly’s problem<a class="headerlink" href="#risk-constrained-version-of-the-kelly-s-problem" title="Permalink to this heading">#</a></h2>
 <p>Following Busseti, Ryu, and Boyd (2016), we consider the risk-constrained version of the Kelly’s problem, in which we add the constraint</p>
 <div class="math notranslate nohighlight">
 \[\mathbb{E}[R^{-\lambda}] \leq 1,\]</div>
@@ -675,7 +675,7 @@ Analytical solution for w:  0.1180
 <p>We previously introduced two auxiliary real variables <span class="math notranslate nohighlight">\(q_1,q_2 \in \mathbb{R}\)</span> such that <span class="math notranslate nohighlight">\(q_i \leq \log(R_i)\)</span>, using which we can reformulate the risk constraint as</p>
 <div class="math notranslate nohighlight">
 \[e^{\log(p_1) - \lambda q_1}  + e^{\log(p_2) - \lambda q_2} \leq 1.\]</div>
-<p>Introducing two more nonnegative auxiliary variables <span class="math notranslate nohighlight">\(u_1,u_2 \geq 0\)</span> such that <span class="math notranslate nohighlight">\(u_i \geq e^{\log(p_i) - \lambda q_i}\)</span>, the risk constraint is given by</p>
+<p>Introducing two more non-negative auxiliary variables <span class="math notranslate nohighlight">\(u_1,u_2 \geq 0\)</span> such that <span class="math notranslate nohighlight">\(u_i \geq e^{\log(p_i) - \lambda q_i}\)</span>, the risk constraint is given by</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
@@ -684,7 +684,7 @@ u_1 + u_2 &amp; \leq 1 \\
 (u_2, 1, \log(p_2) - \lambda q_2) &amp; \in \mathbf{K}_{\mathrm{exp}}.
 \end{align}
 \end{split}\]</div>
-<p>For fixed probabilities <span class="math notranslate nohighlight">\(p_1=p\)</span> and <span class="math notranslate nohighlight">\(p_2=1-p\)</span>, odds <span class="math notranslate nohighlight">\(b\)</span>, and risk-aversion parameter <span class="math notranslate nohighlight">\(\lambda \geq 0\)</span>, the risk-constrained Kelly bet is a solution to the conic program rewrites as</p>
+<p>For fixed probabilities <span class="math notranslate nohighlight">\(p_1=p\)</span> and <span class="math notranslate nohighlight">\(p_2=1-p\)</span>, odds <span class="math notranslate nohighlight">\(b\)</span>, and risk-aversion parameter <span class="math notranslate nohighlight">\(\lambda \geq 0\)</span>, the risk-constrained Kelly bet is a solution to the conic optimization problem rewrites as</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
@@ -710,7 +710,7 @@ u_1 + u_2 &amp; \leq 1 \\
 <span class="n">p</span> <span class="o">=</span> <span class="mf">0.51</span>
 <span class="n">lambd</span> <span class="o">=</span> <span class="mi">3</span>
 
-<span class="c1"># conic programming solution to Kelly&#39;s problem </span>
+<span class="c1"># conic optimization solution to Kelly&#39;s problem </span>
 <span class="k">def</span> <span class="nf">kelly_rc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">lambd</span><span class="p">):</span>
 
     <span class="n">m</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">block</span><span class="p">()</span>
@@ -735,7 +735,7 @@ u_1 + u_2 &amp; \leq 1 \\
     <span class="n">m</span><span class="o">.</span><span class="n">r2</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">primal_exponential</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">u2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">-</span> <span class="n">lambd</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">q2</span><span class="p">)</span>
 
     <span class="c1"># solve</span>
-    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_CONIC</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">()</span>
 
@@ -797,7 +797,7 @@ Analytical solution for w:  0.1180
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/d34f34ce01395f05d4cfcbd375f982007547ed92ea0438d65db792f744ed4459.png" src="../../_images/d34f34ce01395f05d4cfcbd375f982007547ed92ea0438d65db792f744ed4459.png" />
+<img alt="../../_images/d564b6b050aeec5e95727d9bb1b35f6d3f939be6513d69d1007f35b3d9112e89.png" src="../../_images/d564b6b050aeec5e95727d9bb1b35f6d3f939be6513d69d1007f35b3d9112e89.png" />
 </div>
 </div>
 </section>
@@ -816,7 +816,7 @@ Analytical solution for w:  0.1180
 <blockquote>
 <div><p><a class="reference external" href="https://en.wikipedia.org/wiki/Kelly_criterion">https://en.wikipedia.org/wiki/Kelly_criterion</a></p>
 </div></blockquote>
-<p>The utility of conic programming to solve problems involving log growth is more recent. Here are some representative papers.</p>
+<p>The utility of conic optimization to solve problems involving log growth is more recent. Here are some representative papers.</p>
 <blockquote>
 <div><p>Busseti, E., Ryu, E. K., &amp; Boyd, S. (2016). Risk-constrained Kelly gambling. The Journal of Investing, 25(3), 118-134. <a class="reference external" href="https://arxiv.org/pdf/1603.06183.pdf">https://arxiv.org/pdf/1603.06183.pdf</a></p>
 </div></blockquote>
@@ -889,10 +889,10 @@ Analytical solution for w:  0.1180
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-log-growth">Optimal Log Growth</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling-a-game-with-binary-outcomes">Modeling a Game with Binary Outcomes</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#conic-program">Conic program</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#conic-optimization">Conic Optimization</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#risk-constrainted-version-of-the-kelly-s-problem">Risk-constrainted version of the Kelly’s problem</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#risk-constrained-version-of-the-kelly-s-problem">Risk-constrained version of the Kelly’s problem</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#simulation">Simulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bibliographic-notes">Bibliographic Notes</a></li>
 </ul>

@@ -214,7 +214,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../05/ols-regression.html">Ordinary Least Squares (OLS) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/markowitz_portfolio.html">Markowitz portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/svm.html">Support Vector Machines for Binary Classification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing with CVXPY</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="06.00.html">6. Conic Optimization</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-6"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
@@ -509,14 +509,14 @@ document.write(`
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install -q idaes-pse &gt;/dev/null <span class="m">2</span>&gt;/dev/null
-    <span class="o">!</span>idaes -q get-extensions
-    <span class="kn">import</span> <span class="nn">idaes</span>
-    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;/root/.idaes/bin/ipopt&quot;</span>
+<span class="n">SOLVER_CONIC</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 
-<span class="k">else</span><span class="p">:</span>
-    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install idaes-pse --pre &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>idaes get-extensions --to ./bin 
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
+    
+    <span class="n">SOLVER_CONIC</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -611,8 +611,8 @@ document.write(`
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/f3cc61a17327477fc1d3b940d6a546f8cb9d4855024a77d8132d12b53c4b613c.png" src="../../_images/f3cc61a17327477fc1d3b940d6a546f8cb9d4855024a77d8132d12b53c4b613c.png" />
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d14db46751c8401a8c31340642f24f92", "version_major": 2, "version_minor": 0}</script></div>
+<img alt="../../_images/487eb2bae4dbe213bfde3290f05a1741525a957eda54dd99d881aa4445374c02.png" src="../../_images/487eb2bae4dbe213bfde3290f05a1741525a957eda54dd99d881aa4445374c02.png" />
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "fd66a9bbd5f945088b2b42bf90397f3e", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 </section>
 <section id="modeling">
@@ -673,7 +673,7 @@ document.write(`
 &amp; R_n = 1 + b_n w_n - \sum_{n\in N} w_n &amp; \forall n\in N \\
 \end{align}
 \end{split}\]</div>
-<p>The objective function can be reformulated exponential cones to a conic program.</p>
+<p>The objective function can be reformulated exponential cones to a conic optimization problem.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
@@ -684,7 +684,7 @@ document.write(`
 &amp; (R_n, 1, q_n) \in K_{exp} &amp; \forall n \in N \\
 \end{align}
 \end{split}\]</div>
-<p>The solution of this program is shown below.</p>
+<p>The solution of this optimization problem is shown below.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
@@ -710,7 +710,7 @@ document.write(`
     <span class="n">m</span><span class="o">.</span><span class="n">conic</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">block_dict</span><span class="p">({</span><span class="n">s</span><span class="p">:</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">primal_exponential</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">q</span><span class="p">[</span><span class="n">s</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">})</span>
 
     <span class="c1"># solve</span>
-    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_CONIC</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
         
@@ -733,7 +733,7 @@ Sector B:  p = 0.333   b = 2.00   w = 0.218
 Sector C:  p = 0.167   b = 6.00   w = 0.128
 </pre></div>
 </div>
-<img alt="../../_images/48cdae8e5fe5717c4fe465ef3eb7804ebd5a8c36accc6d846e4df15e95baa62a.png" src="../../_images/48cdae8e5fe5717c4fe465ef3eb7804ebd5a8c36accc6d846e4df15e95baa62a.png" />
+<img alt="../../_images/066a7cb2a5c0815ead97186c89fb3a8cc75d4bfd1978a69f8bc9d23d937e6ba5.png" src="../../_images/066a7cb2a5c0815ead97186c89fb3a8cc75d4bfd1978a69f8bc9d23d937e6ba5.png" />
 </div>
 </div>
 </section>
@@ -804,7 +804,7 @@ Sector C:  p = 0.167   b = 6.00   w = 0.128
     <span class="p">)</span>
 
     <span class="c1"># solve</span>
-    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_CONIC</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
     
@@ -833,7 +833,7 @@ Sector C:  p = 0.1667   b = 6.00   w = 0.12575
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={&#39;center&#39;: &#39;E[log(R)] = 0.06025&#39;}, xlabel=&#39;Stages&#39;, ylabel=&#39;Wealth&#39;&gt;
 </pre></div>
 </div>
-<img alt="../../_images/207e247163b14a98ef4bf139139fb3d00b9a5ae2b84ab481bfa46d5630f666b1.png" src="../../_images/207e247163b14a98ef4bf139139fb3d00b9a5ae2b84ab481bfa46d5630f666b1.png" />
+<img alt="../../_images/19d01d56d22ff06612153816e58d4730f86f98419c7cf17fc2bac406963e282d.png" src="../../_images/19d01d56d22ff06612153816e58d4730f86f98419c7cf17fc2bac406963e282d.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -849,7 +849,7 @@ Sector C:  p = 0.1667   b = 6.00   w = 0.12575
 </div>
 </div>
 <div class="cell_output docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0ac7d620bbe843798e2de6fa72599bf2", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "1d9ba67c89b445c4bfdc2767fad51db1", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 </section>
 <section id="how-does-risk-aversion-change-the-solution">
@@ -919,7 +919,7 @@ Sector C:  p = 0.1667   b = 6.00   w = 0.12575
 <blockquote>
 <div><p>Luenberger, D. (2009). Investment science: International edition. OUP Catalogue.  <a class="reference external" href="https://global.oup.com/ushe/product/investment-science-9780199740086">https://global.oup.com/ushe/product/investment-science-9780199740086</a></p>
 </div></blockquote>
-<p>The utility of conic programming to solve problems involving log growth is more recent. Here are some representative papers.</p>
+<p>The utility of conic optimization to solve problems involving log growth is more recent. Here are some representative papers.</p>
 <blockquote>
 <div><p>Cajas, D. (2021). Kelly Portfolio Optimization: A Disciplined Convex Programming Framework. Available at SSRN 3833617. <a class="reference external" href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3833617">https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3833617</a></p>
 </div></blockquote>

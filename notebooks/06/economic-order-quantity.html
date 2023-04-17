@@ -214,7 +214,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../05/ols-regression.html">Ordinary Least Squares (OLS) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/markowitz_portfolio.html">Markowitz portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/svm.html">Support Vector Machines for Binary Classification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing with CVXPY</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="06.00.html">6. Conic Optimization</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-6"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
@@ -497,7 +497,7 @@ document.write(`
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#extending-the-eoq-model-multiple-items-with-a-shared-resource">Extending the EOQ model multiple items with a shared resource</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#testing-the-model-on-larger-problems">Testing the model on larger problems</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bibliographic-notes">Bibliographic notes</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#appendix-formulation-with-socp-constraints">Appendix: Formulation with SOCP constraints</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#appendix-formulation-with-soco-constraints">Appendix: Formulation with SOCO constraints</a></li>
 </ul>
             </nav>
         </div>
@@ -511,7 +511,7 @@ document.write(`
                   
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><section class="tex2jax_ignore mathjax_ignore" id="economic-order-quantity">
 <span id="index-4"></span><h1>Economic Order Quantity<a class="headerlink" href="#economic-order-quantity" title="Permalink to this heading">#</a></h1>
-<p>This notebooks demonstrates the reformulation of hyperbolic constraints as SOCP with implementation with <code class="docutils literal notranslate"><span class="pre">pyomo.kernel.conic.quadratic</span></code> and also the direct modeling of the hyperbolic constraint with <code class="docutils literal notranslate"><span class="pre">pyomo.kernel.conic.rotated_quadratic</span></code>. The example is familiar to any MBA/business student, and has a significant range of applications including warehouse operations.</p>
+<p>This notebooks demonstrates the reformulation of hyperbolic constraints as SOCO with implementation with <code class="docutils literal notranslate"><span class="pre">pyomo.kernel.conic.quadratic</span></code> and also the direct modeling of the hyperbolic constraint with <code class="docutils literal notranslate"><span class="pre">pyomo.kernel.conic.rotated_quadratic</span></code>. The example is familiar to any MBA/business student, and has a significant range of applications including warehouse operations.</p>
 <section id="usage-notes">
 <h2>Usage notes<a class="headerlink" href="#usage-notes" title="Permalink to this heading">#</a></h2>
 <ul class="simple">
@@ -524,14 +524,14 @@ document.write(`
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install -q idaes-pse &gt;/dev/null <span class="m">2</span>&gt;/dev/null
-    <span class="o">!</span>idaes -q get-extensions
-    <span class="kn">import</span> <span class="nn">idaes</span>
-    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;/root/.idaes/bin/ipopt&quot;</span>
+<span class="n">SOLVER_CONIC</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 
-<span class="k">else</span><span class="p">:</span>
-    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install idaes-pse --pre &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>idaes get-extensions --to ./bin 
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
+    
+    <span class="n">SOLVER_CONIC</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -578,7 +578,7 @@ f^{opt} &amp; = \sqrt{2 c d h}
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
 <span class="n">f</span> <span class="o">=</span> <span class="n">h</span><span class="o">*</span><span class="n">x</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">c</span><span class="o">*</span><span class="n">d</span><span class="o">/</span><span class="n">x</span>
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;total cost&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="o">*</span><span class="n">x</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;holding costs&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>  <span class="n">c</span><span class="o">*</span><span class="n">d</span><span class="o">/</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;ordering costs&quot;</span><span class="p">)</span>
@@ -598,7 +598,7 @@ f^{opt} &amp; = \sqrt{2 c d h}
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Optimal order size = 3651.5 items with cost 2738.61
 </pre></div>
 </div>
-<img alt="../../_images/14a45b13aab5d1d22ceef47065be096d2a1fe092d84614fe613746b9f563ca10.png" src="../../_images/14a45b13aab5d1d22ceef47065be096d2a1fe092d84614fe613746b9f563ca10.png" />
+<img alt="../../_images/e3ef62388cc46b1f61fd532bdc6ff79c3ad48c1691ce6811a42d554de2854ec3.png" src="../../_images/e3ef62388cc46b1f61fd532bdc6ff79c3ad48c1691ce6811a42d554de2854ec3.png" />
 </div>
 </div>
 </section>
@@ -633,7 +633,7 @@ f^{opt} &amp; = \sqrt{2 c d h}
 <span class="n">fopt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">d</span><span class="o">*</span><span class="n">h</span><span class="p">)</span>
 <span class="n">yopt</span> <span class="o">=</span> <span class="p">(</span><span class="n">fopt</span> <span class="o">-</span> <span class="n">h</span><span class="o">*</span><span class="n">eoq</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">c</span><span class="o">*</span><span class="n">d</span><span class="p">)</span>
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="n">x</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;x y = 1&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">fopt</span> <span class="o">-</span> <span class="n">h</span><span class="o">*</span><span class="n">x</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">c</span><span class="o">*</span><span class="n">d</span><span class="p">),</span> <span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fopt</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">):</span>
@@ -657,7 +657,7 @@ f^{opt} &amp; = \sqrt{2 c d h}
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/34067680b6237a08a2542611e1033bbb00318e98234ad92851571356f844489c.png" src="../../_images/34067680b6237a08a2542611e1033bbb00318e98234ad92851571356f844489c.png" />
+<img alt="../../_images/7a7686c9314c7f9a12017dd6b0b560c833f2f961cbe74567f588517e2cd89653.png" src="../../_images/7a7686c9314c7f9a12017dd6b0b560c833f2f961cbe74567f588517e2cd89653.png" />
 </div>
 </div>
 </section>
@@ -682,13 +682,13 @@ u &amp; \sim 2 w \\
 v &amp; \sim x - y \\
 t &amp; \sim x + y
 \end{align*}\end{split}\]</div>
-<p>The Python code belows draws a hyperbola precisely as the intersection of a plane with Lorenz cone.</p>
-<p>Let us know rewrite the nonlinear constraint of the EOQ problem. Using the same geomtric idea as above and leveraging the nonnegativity of both variables, the constraint <span class="math notranslate nohighlight">\(xy \geq 1\)</span> can be reformulated using the following trick:</p>
+<p>The Python code below draws a hyperbola precisely as the intersection of a plane with Lorenz cone.</p>
+<p>Let us know rewrite the nonlinear constraint of the EOQ problem. Using the same geometric idea as above and leveraging the non-negativity of both variables, the constraint <span class="math notranslate nohighlight">\(xy \geq 1\)</span> can be reformulated using the following trick:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
     xy \geq 1 \quad \Longleftrightarrow \quad 4xy \geq 4 \quad \Longleftrightarrow \quad (x + y)^2 - (x - y)^2 \geq 4  \quad \Longleftrightarrow \quad \left \|\begin{bmatrix} 2 \\ x-y \end{bmatrix} \right \|_2 \leq x + y,
 \end{split}\]</div>
-<p>where we rely on the fact that <span class="math notranslate nohighlight">\(x + y \geq 0\)</span>. The final constraint is known as a second-order conic optimization constraint (SOCP constraint). The result is a reformulation of the EOQ problem as a second order conic program (SOCP).</p>
+<p>where we rely on the fact that <span class="math notranslate nohighlight">\(x + y \geq 0\)</span>. The final constraint is known as a second-order conic optimization constraint (SOCO constraint). The result is a reformulation of the EOQ problem as a second order conic optimization (SOCO).</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\begin{align*}
 \min_{x, y}\quad &amp; f(x, y) = \frac{h x}{2} + c d y \\
@@ -764,7 +764,7 @@ t &amp; \sim x + y
 </section>
 <section id="pyomo-modeling-with-conic-quadratic">
 <h2>Pyomo modeling with <code class="docutils literal notranslate"><span class="pre">conic.quadratic</span></code><a class="headerlink" href="#pyomo-modeling-with-conic-quadratic" title="Permalink to this heading">#</a></h2>
-<p>The SOCP formation given above needs to be reformulated one more time to use with the Pyomo <code class="docutils literal notranslate"><span class="pre">conic.quadratic</span></code> constraint. The first step is to introduce rotated coordinates <span class="math notranslate nohighlight">\(t = x+ y\)</span> and <span class="math notranslate nohighlight">\(v = x - y\)</span>, and introduce a new variable with fixed value <span class="math notranslate nohighlight">\(u = 2\)</span>, to fit the Pyomo model for quadratic constraints,</p>
+<p>The SOCO formation given above needs to be reformulated one more time to use with the Pyomo <code class="docutils literal notranslate"><span class="pre">conic.quadratic</span></code> constraint. The first step is to introduce rotated coordinates <span class="math notranslate nohighlight">\(t = x+ y\)</span> and <span class="math notranslate nohighlight">\(v = x - y\)</span>, and introduce a new variable with fixed value <span class="math notranslate nohighlight">\(u = 2\)</span>, to fit the Pyomo model for quadratic constraints,</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\begin{align*}
 \min_{x, y}\quad &amp; f(x, y) = \frac{h x}{2} + c d y \\
@@ -784,11 +784,11 @@ t &amp; \sim x + y
 &amp; u^2 + v^2 \leq t^2 \\
 &amp; t, u, v \geq 0
 \end{align*}\end{split}\]</div>
-<p>The EOQ model is now ready to implement with Pyomo and specifically using the <a class="reference external" href="https://pyomo.readthedocs.io/en/stable/library_reference/kernel/index.html#">Pyomo kernel library</a>. The Pyomo kernel library provides an experimental modeling interface for advanced application development with Pyomo. In particular, the kernel library provides direct support for conic constraints with the Mosek or Gurobi commercial solvers (note that academic licenses are available at no cost, a demo version of Gurobi is available on Google Colab).</p>
+<p>The EOQ model is now ready to implement with Pyomo and specifically using the <a class="reference external" href="https://pyomo.readthedocs.io/en/stable/library_reference/kernel/index.html#">Pyomo kernel library</a>. The Pyomo kernel library provides an experimental modeling interface for advanced application development with Pyomo. In particular, the kernel library provides direct support for conic constraints with the Mosek or Gurobi commercial solvers (note that academic licenses are available at no cost).</p>
 <p>The Pyomo interface to conic solvers includes six forms for conic constraints. The <code class="docutils literal notranslate"><span class="pre">conic.quadratic</span></code> constraint is expressed in the form</p>
 <div class="math notranslate nohighlight">
 \[\sum_{i} x_i^2 \leq r^2, \ r \geq 0\]</div>
-<p>where the <span class="math notranslate nohighlight">\(x_i\)</span> and <span class="math notranslate nohighlight">\(r\)</span> terms are pyomo.kernel variables. Note the slighly different syntax of the Pyomo kernel commands.</p>
+<p>where the <span class="math notranslate nohighlight">\(x_i\)</span> and <span class="math notranslate nohighlight">\(r\)</span> terms are pyomo.kernel variables. Note the slightly different syntax of the Pyomo kernel commands.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
@@ -812,7 +812,7 @@ t &amp; \sim x + y
 <span class="n">m</span><span class="o">.</span><span class="n">eoq</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">objective</span><span class="p">(((</span><span class="n">h</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">d</span><span class="p">)</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">t</span> <span class="o">+</span> <span class="p">(</span><span class="n">h</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">d</span><span class="p">)</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">v</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span><span class="p">)</span>
 
 <span class="c1"># solve</span>
-<span class="n">solver</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span>
+<span class="n">solver</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_CONIC</span><span class="p">)</span>
 <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="c1"># solution</span>
@@ -829,7 +829,7 @@ t &amp; \sim x + y
 </section>
 <section id="the-as-domain-method-simplifie-the-pyomo-model">
 <h2>The <code class="docutils literal notranslate"><span class="pre">.as_domain()</span></code> method simplifie the Pyomo model<a class="headerlink" href="#the-as-domain-method-simplifie-the-pyomo-model" title="Permalink to this heading">#</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">pyomo.kernel</span></code> provides additional support for conic solvers with the <code class="docutils literal notranslate"><span class="pre">.as_domain()</span></code> method that be applied to the conic solver interfaces. Adding <code class="docutils literal notranslate"><span class="pre">.as_domain</span></code> allows use of constants, linear expressions, or <code class="docutils literal notranslate"><span class="pre">None</span></code> in place of pyomo variables. For this application, this means <code class="docutils literal notranslate"><span class="pre">u</span></code> does not have to be included as a pyomo variable and constrained to a fixed value. The required value can simply be inserted directly into constraint specification as demonstrated below.</p>
+<p><code class="docutils literal notranslate"><span class="pre">pyomo.kernel</span></code> provides additional support for conic solvers with the <code class="docutils literal notranslate"><span class="pre">.as_domain()</span></code> method that be applied to the conic solver interfaces. Adding <code class="docutils literal notranslate"><span class="pre">.as_domain</span></code> allows use of constants, linear expressions, or <code class="docutils literal notranslate"><span class="pre">None</span></code> in place of Pyomo variables. For this application, this means <code class="docutils literal notranslate"><span class="pre">u</span></code> does not have to be included as a Pyomo variable and constrained to a fixed value. The required value can simply be inserted directly into constraint specification as demonstrated below.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
@@ -851,7 +851,7 @@ t &amp; \sim x + y
 <span class="n">m</span><span class="o">.</span><span class="n">eoq</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">objective</span><span class="p">(((</span><span class="n">h</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">d</span><span class="p">)</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">t</span> <span class="o">+</span> <span class="p">(</span><span class="n">h</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">d</span><span class="p">)</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">v</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span><span class="p">)</span>
 
 <span class="c1"># solve</span>
-<span class="n">solver</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span>
+<span class="n">solver</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_CONIC</span><span class="p">)</span>
 <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="c1"># solution</span>
@@ -908,7 +908,7 @@ t &amp; \sim x + y
 <span class="n">m</span><span class="o">.</span><span class="n">eoq</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">objective</span><span class="p">(</span><span class="n">h</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">c</span><span class="o">*</span><span class="n">d</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
 
 <span class="c1"># solve</span>
-<span class="n">solver</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span>
+<span class="n">solver</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_CONIC</span><span class="p">)</span>
 <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="c1"># solution</span>
@@ -925,7 +925,7 @@ t &amp; \sim x + y
 </section>
 <section id="extending-the-eoq-model-multiple-items-with-a-shared-resource">
 <h2>Extending the EOQ model multiple items with a shared resource<a class="headerlink" href="#extending-the-eoq-model-multiple-items-with-a-shared-resource" title="Permalink to this heading">#</a></h2>
-<p>Solving for the EOQ for a single item using SOCP programming is using a sledgehammer to swat a fly. However, the problem becomes more interesting for determining economic order quantities when the inventories for multiple items compete for a shared resource in a common warehouse. The shared resource could he financing available to hold inventory, space in a warehouse, or specialized facilities to hold a perishable</p>
+<p>Solving for the EOQ for a single item using SOCO optimization is using a sledgehammer to swat a fly. However, the problem becomes more interesting for determining economic order quantities when the inventories for multiple items compete for a shared resource in a common warehouse. The shared resource could he financing available to hold inventory, space in a warehouse, or specialized facilities to hold a perishable</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -1071,7 +1071,7 @@ t &amp; \sim x + y
     <span class="n">m</span><span class="o">.</span><span class="n">eoq</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">objective</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">))</span>
 
     <span class="c1"># solve with Mosek</span>
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_CONIC</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     
     <span class="k">return</span> <span class="n">m</span>
@@ -1254,157 +1254,157 @@ t &amp; \sim x + y
   <tbody>
     <tr>
       <th>product 000</th>
-      <td>109.6</td>
-      <td>1491.8</td>
+      <td>65.0</td>
+      <td>2407.7</td>
     </tr>
     <tr>
       <th>product 001</th>
-      <td>339.3</td>
-      <td>4617.3</td>
+      <td>96.4</td>
+      <td>3568.2</td>
     </tr>
     <tr>
       <th>product 002</th>
-      <td>326.4</td>
-      <td>4442.4</td>
+      <td>117.2</td>
+      <td>4340.8</td>
     </tr>
     <tr>
       <th>product 003</th>
-      <td>299.4</td>
-      <td>4074.1</td>
+      <td>64.9</td>
+      <td>2404.9</td>
     </tr>
     <tr>
       <th>product 004</th>
-      <td>238.7</td>
-      <td>3248.3</td>
+      <td>118.6</td>
+      <td>4391.0</td>
     </tr>
     <tr>
       <th>product 005</th>
-      <td>273.9</td>
-      <td>3727.2</td>
+      <td>115.8</td>
+      <td>4286.5</td>
     </tr>
     <tr>
       <th>product 006</th>
-      <td>193.4</td>
-      <td>2631.5</td>
+      <td>70.9</td>
+      <td>2626.0</td>
     </tr>
     <tr>
       <th>product 007</th>
-      <td>307.7</td>
-      <td>4187.7</td>
+      <td>86.6</td>
+      <td>3208.2</td>
     </tr>
     <tr>
       <th>product 008</th>
-      <td>177.7</td>
-      <td>2418.1</td>
+      <td>106.3</td>
+      <td>3937.0</td>
     </tr>
     <tr>
       <th>product 009</th>
-      <td>191.7</td>
-      <td>2608.7</td>
+      <td>92.2</td>
+      <td>3413.7</td>
     </tr>
     <tr>
       <th>product 010</th>
-      <td>368.1</td>
-      <td>5009.9</td>
+      <td>64.7</td>
+      <td>2394.8</td>
     </tr>
     <tr>
       <th>product 011</th>
-      <td>309.1</td>
-      <td>4207.0</td>
+      <td>97.9</td>
+      <td>3625.2</td>
     </tr>
     <tr>
       <th>product 012</th>
-      <td>124.1</td>
-      <td>1689.2</td>
+      <td>58.8</td>
+      <td>2177.3</td>
     </tr>
     <tr>
       <th>product 013</th>
-      <td>190.4</td>
-      <td>2591.4</td>
+      <td>84.6</td>
+      <td>3132.6</td>
     </tr>
     <tr>
       <th>product 014</th>
-      <td>258.1</td>
-      <td>3512.2</td>
+      <td>81.6</td>
+      <td>3019.8</td>
     </tr>
     <tr>
       <th>product 015</th>
-      <td>227.3</td>
-      <td>3093.0</td>
+      <td>81.7</td>
+      <td>3025.1</td>
     </tr>
     <tr>
       <th>product 016</th>
-      <td>115.9</td>
-      <td>1577.4</td>
+      <td>99.7</td>
+      <td>3690.9</td>
     </tr>
     <tr>
       <th>product 017</th>
-      <td>309.7</td>
-      <td>4215.0</td>
+      <td>98.6</td>
+      <td>3650.8</td>
     </tr>
     <tr>
       <th>product 018</th>
-      <td>400.2</td>
-      <td>5446.2</td>
+      <td>76.7</td>
+      <td>2838.4</td>
     </tr>
     <tr>
       <th>product 019</th>
-      <td>148.8</td>
-      <td>2025.2</td>
+      <td>130.4</td>
+      <td>4829.7</td>
     </tr>
     <tr>
       <th>product 020</th>
-      <td>92.9</td>
-      <td>1263.9</td>
+      <td>80.1</td>
+      <td>2967.4</td>
     </tr>
     <tr>
       <th>product 021</th>
-      <td>260.4</td>
-      <td>3543.7</td>
+      <td>85.9</td>
+      <td>3182.5</td>
     </tr>
     <tr>
       <th>product 022</th>
-      <td>232.5</td>
-      <td>3163.6</td>
+      <td>143.7</td>
+      <td>5320.9</td>
     </tr>
     <tr>
       <th>product 023</th>
-      <td>352.7</td>
-      <td>4799.8</td>
+      <td>102.7</td>
+      <td>3802.4</td>
     </tr>
     <tr>
       <th>product 024</th>
-      <td>135.1</td>
-      <td>1838.2</td>
+      <td>127.1</td>
+      <td>4706.0</td>
     </tr>
     <tr>
       <th>product 025</th>
-      <td>369.7</td>
-      <td>5031.1</td>
+      <td>91.1</td>
+      <td>3374.2</td>
     </tr>
     <tr>
       <th>product 026</th>
-      <td>300.0</td>
-      <td>4083.0</td>
+      <td>60.3</td>
+      <td>2233.2</td>
     </tr>
     <tr>
       <th>product 027</th>
-      <td>174.5</td>
-      <td>2374.5</td>
+      <td>57.0</td>
+      <td>2109.1</td>
     </tr>
     <tr>
       <th>product 028</th>
-      <td>264.9</td>
-      <td>3604.9</td>
+      <td>31.1</td>
+      <td>1152.0</td>
     </tr>
     <tr>
       <th>product 029</th>
-      <td>256.0</td>
-      <td>3483.8</td>
+      <td>113.0</td>
+      <td>4183.5</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/2d9eac64332dcf0eb456a63970457466a35420a89a41fbf24096d08a634b9358.png" src="../../_images/2d9eac64332dcf0eb456a63970457466a35420a89a41fbf24096d08a634b9358.png" />
+</div></div><img alt="../../_images/7e13678bd880882a558daca2a7d33e0f78e24a952bc307a5d4a8009abcd30aee.png" src="../../_images/7e13678bd880882a558daca2a7d33e0f78e24a952bc307a5d4a8009abcd30aee.png" />
 </div>
 </div>
 </section>
@@ -1421,7 +1421,7 @@ t &amp; \sim x + y
 <blockquote>
 <div><p>Bretthauer, K. M., &amp; Shetty, B. (1995). The nonlinear resource allocation problem. Operations research, 43(4), 670-683. <a class="reference external" href="https://www.jstor.org/stable/171693?seq=1">https://www.jstor.org/stable/171693?seq=1</a></p>
 </div></blockquote>
-<p>Reformulation of the multi-item EOQ model as a conic program is attributed to Kuo and Mittleman (2004) using techniques described by Lobo, et al. (1998):</p>
+<p>Reformulation of the multi-item EOQ model as a conic optimization problem is attributed to Kuo and Mittleman (2004) using techniques described by Lobo, et al. (1998):</p>
 <blockquote>
 <div><p>Kuo, Y. J., &amp; Mittelmann, H. D. (2004). Interior point methods for second-order cone programming and OR applications. Computational Optimization and Applications, 28(3), 255-285. <a class="reference external" href="https://link.springer.com/content/pdf/10.1023/B:COAP.0000033964.95511.23.pdf">https://link.springer.com/content/pdf/10.1023/B:COAP.0000033964.95511.23.pdf</a></p>
 </div></blockquote>
@@ -1439,9 +1439,9 @@ t &amp; \sim x + y
 <div><p>Mosek Modeling Cookbook, section 3.3.5.  <a class="reference external" href="https://docs.mosek.com/modeling-cookbook/cqo.html">https://docs.mosek.com/modeling-cookbook/cqo.html</a>.</p>
 </div></blockquote>
 </section>
-<section id="appendix-formulation-with-socp-constraints">
-<h2>Appendix: Formulation with SOCP constraints<a class="headerlink" href="#appendix-formulation-with-socp-constraints" title="Permalink to this heading">#</a></h2>
-<p>Pyomo’s facility for directly handling hyperbolic constraints bypasses the need to formulate SOCP constraints for the multi-item model. For completeness, however, that development is included here.</p>
+<section id="appendix-formulation-with-soco-constraints">
+<h2>Appendix: Formulation with SOCO constraints<a class="headerlink" href="#appendix-formulation-with-soco-constraints" title="Permalink to this heading">#</a></h2>
+<p>Pyomo’s facility for directly handling hyperbolic constraints bypasses the need to formulate SOCO constraints for the multi-item model. For completeness, however, that development is included here.</p>
 <p>As a short cut to reformulating the model with conic constraints, note that a “completion of square” gives the needed substitutions</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -1556,7 +1556,7 @@ t &amp; \sim x + y
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#extending-the-eoq-model-multiple-items-with-a-shared-resource">Extending the EOQ model multiple items with a shared resource</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#testing-the-model-on-larger-problems">Testing the model on larger problems</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bibliographic-notes">Bibliographic notes</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#appendix-formulation-with-socp-constraints">Appendix: Formulation with SOCP constraints</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#appendix-formulation-with-soco-constraints">Appendix: Formulation with SOCO constraints</a></li>
 </ul>
   </nav></div>
 

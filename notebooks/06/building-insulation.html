@@ -214,7 +214,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../05/ols-regression.html">Ordinary Least Squares (OLS) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/markowitz_portfolio.html">Markowitz portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../05/svm.html">Support Vector Machines for Binary Classification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../05/refinery-production.html">Extra material: Refinery production and shadow pricing with CVXPY</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="06.00.html">6. Conic Optimization</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-6"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
@@ -487,7 +487,7 @@ document.write(`
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-model-for-multi-layered-insulation">A Model for Multi-Layered Insulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#analytic-solution-for-n-1">Analytic solution for <span class="math notranslate nohighlight">\(N=1\)</span></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model-for-n-1">Pyomo Model for <span class="math notranslate nohighlight">\(N=1\)</span></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-program-miqcp">Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Program (MIQCP)</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-optimization-miqco">Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Optimization (MIQCO)</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#case-1-single-layer-solution">Case 1. Single Layer Solution</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#case-2-multiple-layer-solution">Case 2. Multiple Layer Solution</a></li>
 </ul>
@@ -506,20 +506,20 @@ document.write(`
                   
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><section class="tex2jax_ignore mathjax_ignore" id="optimal-design-of-multilayered-building-insulation">
 <span id="index-4"></span><h1>Optimal Design of Multilayered Building Insulation<a class="headerlink" href="#optimal-design-of-multilayered-building-insulation" title="Permalink to this heading">#</a></h1>
-<p>Thermal insulation is installed in buildings to reduce annual energy costs. However, the installation costs money, so the decision of how much insulation to install is a trade-off between the annualized capital costs of insulation and the annual operating costs for heating and air conditioning. This notebook shows the formulation and solution of an optimization problem using conic programming.</p>
+<p>Thermal insulation is installed in buildings to reduce annual energy costs. However, the installation costs money, so the decision of how much insulation to install is a trade-off between the annualized capital costs of insulation and the annual operating costs for heating and air conditioning. This notebook shows the formulation and solution of an optimization problem using conic optimization.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># install Pyomo and solvers</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install -q idaes-pse &gt;/dev/null <span class="m">2</span>&gt;/dev/null
-    <span class="o">!</span>idaes -q get-extensions
-    <span class="kn">import</span> <span class="nn">idaes</span>
-    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;/root/.idaes/bin/ipopt&quot;</span>
+<span class="n">SOLVER_CONIC</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 
-<span class="k">else</span><span class="p">:</span>
-    <span class="n">CONIC_SOLVER</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install idaes-pse --pre &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>idaes get-extensions --to ./bin 
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
+    
+    <span class="n">SOLVER_CONIC</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -639,7 +639,7 @@ The optimal thickness is 0.28641 meters
 &amp; x, R, U \geq 0.
 \end{align}
 \end{split}\]</div>
-<p>This model can be translated directly into into a Pyomo conic program using the Pyomo Kernel Library.</p>
+<p>This model can be translated directly into into a Pyomo conic optimization problem using the Pyomo Kernel Library.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
@@ -662,7 +662,7 @@ The optimal thickness is 0.28641 meters
 <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">rotated_quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)])</span>
 
 <span class="c1"># solve</span>
-<span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_CONIC</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal thickness is xopt = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> meters&quot;</span><span class="p">)</span>
@@ -677,8 +677,8 @@ The optimal thickness is xopt = 0.28640 meters
 </div>
 </div>
 </section>
-<section id="multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-program-miqcp">
-<h2>Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Program (MIQCP)<a class="headerlink" href="#multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-program-miqcp" title="Permalink to this heading">#</a></h2>
+<section id="multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-optimization-miqco">
+<h2>Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Optimization (MIQCO)<a class="headerlink" href="#multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-optimization-miqco" title="Permalink to this heading">#</a></h2>
 <p>For multiple layers, we cannot easily find an analytical optimal layer composition and we shall resort to conic optimization. Let <span class="math notranslate nohighlight">\(y_n\)</span> be the binary variable that indicates whether layer <span class="math notranslate nohighlight">\(n\)</span> is included in the insulation package or not, and <span class="math notranslate nohighlight">\(x_n\)</span> be the continuous variable describing the thickness of layer <span class="math notranslate nohighlight">\(n\)</span>, which is zero if layer <span class="math notranslate nohighlight">\(n\)</span> is not included.</p>
 <p>In the general case with <span class="math notranslate nohighlight">\(N\)</span> layers, the objective function is given by</p>
 <div class="math notranslate nohighlight">
@@ -771,7 +771,7 @@ z = 2
     <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">rotated_quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)])</span>
 
     <span class="c1"># solve</span>
-    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">CONIC_SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_CONIC</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     
     <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
         <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;x opt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]()</span> 
@@ -1063,7 +1063,7 @@ z = 2
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-model-for-multi-layered-insulation">A Model for Multi-Layered Insulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#analytic-solution-for-n-1">Analytic solution for <span class="math notranslate nohighlight">\(N=1\)</span></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model-for-n-1">Pyomo Model for <span class="math notranslate nohighlight">\(N=1\)</span></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-program-miqcp">Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Program (MIQCP)</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-optimization-miqco">Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Optimization (MIQCO)</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#case-1-single-layer-solution">Case 1. Single Layer Solution</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#case-2-multiple-layer-solution">Case 2. Multiple Layer Solution</a></li>
 </ul>

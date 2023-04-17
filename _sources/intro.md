@@ -2,9 +2,9 @@
 
 Welcome to this repository of companion notebooks for *Data-Driven Mathematical Optimization in Python*, a project currently under development with completion expected by Spring, 2023. These notebooks introduce the concepts and tools of mathematical optimization with examples from a range of disciplines. The goals of these notebooks are to:
 
-* provide a foundation for learning mathematical optimization hands-on,
+* provide a foundation for hands-on learning of mathematical optimization,
 * demonstrate the tools and concepts of optimization with practical examples,
-* help others get started with building models and solving problems using a state-of-the-art modeling language and solvers.
+* help readers to develop the practical skills needed to build models and solving problem using state-of-the-art modeling languages and solvers.
 
 ## Getting started
 
