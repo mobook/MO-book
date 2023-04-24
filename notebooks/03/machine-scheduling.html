@@ -486,11 +486,16 @@ document.write(`
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#job-data">Job data</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#a-default-schedule-first-in-first-out">A default schedule - first-in, first-out</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#schedule-data">Schedule data</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gantt-chart">Gantt chart</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling">Modeling</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#empirical-scheduling">Empirical Scheduling</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#first-in-first-out-fifo">First-in, first-out (FIFO)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#earliest-due-date-edd">Earliest due date (EDD)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-scheduling">Optimal Scheduling</a></li>
 </ul>
             </nav>
         </div>
@@ -615,24 +620,24 @@ document.write(`
 </div></div></div>
 </div>
 </section>
-<section id="a-default-schedule-first-in-first-out">
-<h3>A default schedule - first-in, first-out<a class="headerlink" href="#a-default-schedule-first-in-first-out" title="Permalink to this heading">#</a></h3>
-<p>A convenient basis for comparing schedule alternatives is to consider doing the jobs in the order they are released for processing, in other words “first-in, first-out” (FIFO). The following cell creates a Pandas dataframe  is indexed by job names. The start time, finish time, and, if past due, the amount by which the job is past due.</p>
+<section id="schedule-data">
+<h3>Schedule data<a class="headerlink" href="#schedule-data" title="Permalink to this heading">#</a></h3>
+<p>A schedule is also represented here by a Pandas dataframe indexed by job names. The columns indicate the start, finish, and the amount by each job is past due. The following cell creates a schedule when the jobs are executed in the order given by the <code class="docutils literal notranslate"><span class="pre">jobs</span></code> dataframe.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># perform the jobs in the given order</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">schedule_jobs</span><span class="p">(</span><span class="n">seq</span><span class="p">):</span>
+    <span class="n">schedule</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">jobs</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">jobs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">][</span><span class="s2">&quot;release&quot;</span><span class="p">])</span>
+        <span class="n">schedule</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+        <span class="n">t</span> <span class="o">+=</span> <span class="n">jobs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;duration&quot;</span><span class="p">]</span>
+        <span class="n">schedule</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;finish&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+        <span class="n">schedule</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;past&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">t</span> <span class="o">-</span> <span class="n">jobs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;due&quot;</span><span class="p">])</span>  
+    <span class="k">return</span> <span class="n">schedule</span>
 
-<span class="n">fifo</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">jobs</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
-
-<span class="n">t</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">&quot;release&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">jobs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">][</span><span class="s2">&quot;release&quot;</span><span class="p">])</span>
-    <span class="n">fifo</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
-    <span class="n">t</span> <span class="o">+=</span> <span class="n">jobs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;duration&quot;</span><span class="p">]</span>
-    <span class="n">fifo</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;finish&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
-    <span class="n">fifo</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;past&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">t</span> <span class="o">-</span> <span class="n">jobs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;due&quot;</span><span class="p">])</span>  
-
-<span class="n">display</span><span class="p">(</span><span class="n">fifo</span><span class="p">)</span>
+<span class="n">schedule</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<span class="n">schedule</span>
 </pre></div>
 </div>
 </div>
@@ -663,45 +668,45 @@ document.write(`
   <tbody>
     <tr>
       <th>A</th>
-      <td>6.0</td>
-      <td>11.0</td>
-      <td>1.0</td>
+      <td>2.0</td>
+      <td>7.0</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>B</th>
-      <td>19.0</td>
-      <td>25.0</td>
-      <td>4.0</td>
+      <td>7.0</td>
+      <td>13.0</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>C</th>
-      <td>11.0</td>
-      <td>19.0</td>
-      <td>4.0</td>
+      <td>13.0</td>
+      <td>21.0</td>
+      <td>6.0</td>
     </tr>
     <tr>
       <th>D</th>
-      <td>0.0</td>
-      <td>4.0</td>
-      <td>0.0</td>
+      <td>21.0</td>
+      <td>25.0</td>
+      <td>15.0</td>
     </tr>
     <tr>
       <th>E</th>
-      <td>4.0</td>
-      <td>6.0</td>
-      <td>1.0</td>
+      <td>25.0</td>
+      <td>27.0</td>
+      <td>22.0</td>
     </tr>
     <tr>
       <th>F</th>
-      <td>25.0</td>
-      <td>28.0</td>
-      <td>13.0</td>
+      <td>27.0</td>
+      <td>30.0</td>
+      <td>15.0</td>
     </tr>
     <tr>
       <th>G</th>
-      <td>28.0</td>
       <td>30.0</td>
-      <td>8.0</td>
+      <td>32.0</td>
+      <td>10.0</td>
     </tr>
   </tbody>
 </table>
@@ -767,18 +772,56 @@ document.write(`
                              <span class="s1">&#39;Completed on time&#39;</span><span class="p">,</span> 
                              <span class="s1">&#39;Completed past due&#39;</span><span class="p">])</span>
         
-<span class="n">gantt</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">fifo</span><span class="p">,</span> <span class="s2">&quot;FIFO Schedule&quot;</span><span class="p">)</span>
+<span class="n">gantt</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">schedule</span><span class="p">,</span> <span class="s2">&quot;Execute Jobs in Order&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/dd11578392e50fb080103bc926ea0a2381b86a78b650162824baf8960683bc85.png" src="../../_images/dd11578392e50fb080103bc926ea0a2381b86a78b650162824baf8960683bc85.png" />
+<img alt="../../_images/c8c775f224e5f485b417b5e8b08b07913340051ef849b9aeb2795628e83111c0.png" src="../../_images/c8c775f224e5f485b417b5e8b08b07913340051ef849b9aeb2795628e83111c0.png" />
 </div>
 </div>
 </section>
 </section>
-<section id="modeling">
-<h2>Modeling<a class="headerlink" href="#modeling" title="Permalink to this heading">#</a></h2>
+<section id="empirical-scheduling">
+<h2>Empirical Scheduling<a class="headerlink" href="#empirical-scheduling" title="Permalink to this heading">#</a></h2>
+<p>To provide a comparison to scheduling with optimization models, the following cells implement two well known and accepted empirical rules for scheduling jobs on a single machine:</p>
+<ul class="simple">
+<li><p>First in, first out (FIFO)</p></li>
+<li><p>Earliest due data (EDD)</p></li>
+</ul>
+<section id="first-in-first-out-fifo">
+<h3>First-in, first-out (FIFO)<a class="headerlink" href="#first-in-first-out-fifo" title="Permalink to this heading">#</a></h3>
+<p>One of the most common scheduling rules is to execute jobs in the order they are released for processing, in other words “first-in, first-out” (FIFO). The following cell creates a Pandas dataframe  is indexed by job names. The start time, finish time, and, if past due, the amount by which the job is past due.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fifo</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">&quot;release&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<span class="n">gantt</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">fifo</span><span class="p">,</span> <span class="s2">&quot;First in, First out&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../../_images/296ca2e36a5f7a73215c5fce4daed4429747ec8a44b1c7c0be7d5c1529c9c6be.png" src="../../_images/296ca2e36a5f7a73215c5fce4daed4429747ec8a44b1c7c0be7d5c1529c9c6be.png" />
+</div>
+</div>
+</section>
+<section id="earliest-due-date-edd">
+<h3>Earliest due date (EDD)<a class="headerlink" href="#earliest-due-date-edd" title="Permalink to this heading">#</a></h3>
+<p>When due dates are known, a common scheduling rule is to prioritize jobs by due date. This strategy will be familiar to any student deciding which homework assignment should to work on next.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">edd</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">&quot;due&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<span class="n">gantt</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">edd</span><span class="p">,</span> <span class="s2">&quot;First in, First out&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../../_images/7ba9013716cf80e3fbdc0a484657c1ec201343a1f04ad77c9d2a71b1f6131cb6.png" src="../../_images/7ba9013716cf80e3fbdc0a484657c1ec201343a1f04ad77c9d2a71b1f6131cb6.png" />
+</div>
+</div>
+</section>
+</section>
+<section id="optimal-scheduling">
+<h2>Optimal Scheduling<a class="headerlink" href="#optimal-scheduling" title="Permalink to this heading">#</a></h2>
 <p>The modeling starts by defining the problem data.</p>
 <table class="table">
 <thead>
@@ -906,81 +949,12 @@ document.write(`
 <span class="n">model</span> <span class="o">=</span> <span class="n">build_model</span><span class="p">(</span><span class="n">jobs</span><span class="p">)</span>
 <span class="n">schedule</span> <span class="o">=</span> <span class="n">solve_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
-<span class="n">display</span><span class="p">(</span><span class="n">jobs</span><span class="p">)</span>
 <span class="n">display</span><span class="p">(</span><span class="n">schedule</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output text_html"><div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>release</th>
-      <th>duration</th>
-      <th>due</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>A</th>
-      <td>2</td>
-      <td>5</td>
-      <td>10</td>
-    </tr>
-    <tr>
-      <th>B</th>
-      <td>5</td>
-      <td>6</td>
-      <td>21</td>
-    </tr>
-    <tr>
-      <th>C</th>
-      <td>4</td>
-      <td>8</td>
-      <td>15</td>
-    </tr>
-    <tr>
-      <th>D</th>
-      <td>0</td>
-      <td>4</td>
-      <td>10</td>
-    </tr>
-    <tr>
-      <th>E</th>
-      <td>0</td>
-      <td>2</td>
-      <td>5</td>
-    </tr>
-    <tr>
-      <th>F</th>
-      <td>8</td>
-      <td>3</td>
-      <td>15</td>
-    </tr>
-    <tr>
-      <th>G</th>
-      <td>9</td>
-      <td>2</td>
-      <td>22</td>
-    </tr>
-  </tbody>
-</table>
-</div></div><div class="output text_html"><div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1126,11 +1100,16 @@ document.write(`
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#job-data">Job data</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#a-default-schedule-first-in-first-out">A default schedule - first-in, first-out</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#schedule-data">Schedule data</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gantt-chart">Gantt chart</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling">Modeling</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#empirical-scheduling">Empirical Scheduling</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#first-in-first-out-fifo">First-in, first-out (FIFO)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#earliest-due-date-edd">Earliest due date (EDD)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-scheduling">Optimal Scheduling</a></li>
 </ul>
   </nav></div>
 
