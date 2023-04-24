@@ -625,7 +625,17 @@ document.write(`
 <p>A schedule is also represented here by a Pandas dataframe indexed by job names. The columns indicate the start, finish, and the amount by each job is past due. The following cell creates a schedule when the jobs are executed in the order given by the <code class="docutils literal notranslate"><span class="pre">jobs</span></code> dataframe.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">schedule_jobs</span><span class="p">(</span><span class="n">seq</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Schedule a sequence of jobs based on their release times, durations, and due times.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        jobs (DataFrame): Job information with columns &quot;release&quot;, &quot;duration&quot;, and &quot;due&quot;.</span>
+<span class="sd">        seq (DataFrame): A list of job indices representing the sequence in which the jobs will be scheduled.</span>
+<span class="sd">        </span>
+<span class="sd">    Return:</span>
+<span class="sd">        A DataFrame containing schedule information, including &quot;start&quot;, &quot;finish&quot;, and &quot;past&quot; due times.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">schedule</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">jobs</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
     <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">:</span>
@@ -633,10 +643,11 @@ document.write(`
         <span class="n">schedule</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
         <span class="n">t</span> <span class="o">+=</span> <span class="n">jobs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;duration&quot;</span><span class="p">]</span>
         <span class="n">schedule</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;finish&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
-        <span class="n">schedule</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;past&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">t</span> <span class="o">-</span> <span class="n">jobs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;due&quot;</span><span class="p">])</span>  
+        <span class="n">schedule</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;past&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">t</span> <span class="o">-</span> <span class="n">jobs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">job</span><span class="p">,</span> <span class="s2">&quot;due&quot;</span><span class="p">])</span>
+
     <span class="k">return</span> <span class="n">schedule</span>
 
-<span class="n">schedule</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<span class="n">schedule</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">jobs</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 <span class="n">schedule</span>
 </pre></div>
 </div>
@@ -794,7 +805,7 @@ document.write(`
 <p>One of the most common scheduling rules is to execute jobs in the order they are released for processing, in other words “first-in, first-out” (FIFO). The following cell creates a Pandas dataframe  is indexed by job names. The start time, finish time, and, if past due, the amount by which the job is past due.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fifo</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">&quot;release&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fifo</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">&quot;release&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 <span class="n">gantt</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">fifo</span><span class="p">,</span> <span class="s2">&quot;First in, First out&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -809,7 +820,7 @@ document.write(`
 <p>When due dates are known, a common scheduling rule is to prioritize jobs by due date. This strategy will be familiar to any student deciding which homework assignment should to work on next.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">edd</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">&quot;due&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">edd</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">&quot;due&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 <span class="n">gantt</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">edd</span><span class="p">,</span> <span class="s2">&quot;First in, First out&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
