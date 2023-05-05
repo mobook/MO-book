@@ -12,7 +12,7 @@ A typical development workflow for Pyomo applications comprises:
 * Post-processing and analysis of solution data
 * Model testing and validation
 
-Subsequent deployment of Pyomo model will omit the development and validation steps, but may integrate the remaining elements into existing application workflows. This style guide supports development and deployment workflows by emphasizing modularity and clean interfaces between successive steps. 
+Subsequent deployment of Pyomo model will omit the development and validation steps, but may integrate the remaining elements into existing application workflows. This style guide supports development and deployment workflows by emphasizing modularity and clean interfaces between successive stages in the standard Pyomo workflow. 
 
 ## Coding Conventions
 
@@ -66,7 +66,7 @@ the following
 
 ```python
 m = pyo.ConcreteModel()
-m.B = pyo.Set(initialize=bounds.keys())
+m.B = pyo.Set(initialize=list(bounds.keys()))
 m.x = pyo.Var(m.B)
 ```
 
@@ -79,13 +79,30 @@ m.x = pyo.Var(bounds.keys())
 
 ### Parameters
 
-Consistent with good programming practice, non-constant global parameters should be avoided in Pyomo models. Non-constant global parameters lead to inconsistent state in the code, and complicate understanding of models when parameters can be defined, and redefined, in remote places in the code.
+[Pyomo parameters](https://pyomo.readthedocs.io/en/stable/pyomo_modeling_components/Parameters.html)  are created with the `pyo.Param()` class. They are used to localize parameter values to a specific model or block. Parameters can be indexed by set, initialized, restricted to specific domains, and include callbacks for validation.
 
-Pyomo modelers may prefer to use native Python data structures rather declare and use instances of parameters created with the `pyo.Param()` class. In these cases, best practice is to limit the scope of parameters by constructing the model within a Python function, using the arguments of the function to provide a clear interface to the global scope.
+Given a sets `model.I` and `model.J`, parameters indexed as `model.a[i, j]` can be defined by
 
-Pyomo parameters created with `pyo.Param()` localize parameter values to a specific model or block. By default, Pyomo parameters are immutable which assures their values will be consistent throughout the model construction and transformations. Parameters determining the size of index sets, or fixed upper and lower bounds on decision variables, are examples where using an immutable Pyomo parameter is good practice.
+```python
+import pyomo.environ as pyo
 
-Pyomo parameters created with `mutable=True` are used to build models that can be re-solved for parametric or sensitivity analysis.
+model = pyo.ConcreteModel()
+
+model.I = pyo.RangeSet(5)
+model.J = pyo.RangeSet(3)
+
+@model.Param(model.I, model.J, domain=pyo.NonNegativeReals)
+def a(model, i, j):
+    return i**2 + j**2
+```
+
+where the function `a` returns a non-negative numeric value.
+
+By default, Pyomo parameters are immutable which assures their values will be consistent throughout the model construction and transformations. Parameters determining the size of index sets, or fixed upper and lower bounds on decision variables, are examples where using an immutable Pyomo parameter is good practice. Pyomo parameters created with `mutable=True` are used to build models that can be re-solved for parametric or sensitivity analysis. The use of mutable parameters should be limited and intentional.
+
+Pyomo modelers often prefer to use native Python data structures. In these cases, best practice is to limit the scope of the parameters by constructing the model within a Python function, and using function arguments of the function to provide a clear interface to the global scope.
+
+Consistent with good programming practice, global non-constant parameters should be avoided. Non-constant global parameters lead to inconsistent state in the code and complicate understanding of models when changed or redefined elsewhere in the code.
 
 ### Variables
 
