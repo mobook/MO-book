@@ -511,7 +511,7 @@ document.write(`
 <li><p>Post-processing and analysis of solution data</p></li>
 <li><p>Model testing and validation</p></li>
 </ul>
-<p>Subsequent deployment of Pyomo model will omit the development and validation steps, but may integrate the remaining elements into existing application workflows. This style guide supports development and deployment workflows by emphasizing modularity and clean interfaces between successive steps.</p>
+<p>Subsequent deployment of Pyomo model will omit the development and validation steps, but may integrate the remaining elements into existing application workflows. This style guide supports development and deployment workflows by emphasizing modularity and clean interfaces between successive stages in the standard Pyomo workflow.</p>
 </section>
 <section id="coding-conventions">
 <h2>Coding Conventions<a class="headerlink" href="#coding-conventions" title="Permalink to this heading">#</a></h2>
@@ -554,7 +554,7 @@ document.write(`
 </div>
 <p>the following</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
-<span class="n">m</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">bounds</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="n">m</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">bounds</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">B</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -566,10 +566,24 @@ document.write(`
 </section>
 <section id="parameters">
 <h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this heading">#</a></h3>
-<p>Consistent with good programming practice, non-constant global parameters should be avoided in Pyomo models. Non-constant global parameters lead to inconsistent state in the code, and complicate understanding of models when parameters can be defined, and redefined, in remote places in the code.</p>
-<p>Pyomo modelers may prefer to use native Python data structures rather declare and use instances of parameters created with the <code class="docutils literal notranslate"><span class="pre">pyo.Param()</span></code> class. In these cases, best practice is to limit the scope of parameters by constructing the model within a Python function, using the arguments of the function to provide a clear interface to the global scope.</p>
-<p>Pyomo parameters created with <code class="docutils literal notranslate"><span class="pre">pyo.Param()</span></code> localize parameter values to a specific model or block. By default, Pyomo parameters are immutable which assures their values will be consistent throughout the model construction and transformations. Parameters determining the size of index sets, or fixed upper and lower bounds on decision variables, are examples where using an immutable Pyomo parameter is good practice.</p>
-<p>Pyomo parameters created with <code class="docutils literal notranslate"><span class="pre">mutable=True</span></code> are used to build models that can be re-solved for parametric or sensitivity analysis.</p>
+<p><a class="reference external" href="https://pyomo.readthedocs.io/en/stable/pyomo_modeling_components/Parameters.html">Pyomo parameters</a>  are created with the <code class="docutils literal notranslate"><span class="pre">pyo.Param()</span></code> class. They are used to localize parameter values to a specific model or block. Parameters can be indexed by set, initialized, restricted to specific domains, and include callbacks for validation.</p>
+<p>Given a sets <code class="docutils literal notranslate"><span class="pre">model.I</span></code> and <code class="docutils literal notranslate"><span class="pre">model.J</span></code>, parameters indexed as <code class="docutils literal notranslate"><span class="pre">model.a[i,</span> <span class="pre">j]</span></code> can be defined by</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">I</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">J</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">a</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">i</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">j</span><span class="o">**</span><span class="mi">2</span>
+</pre></div>
+</div>
+<p>where the function <code class="docutils literal notranslate"><span class="pre">a</span></code> returns a non-negative numeric value.</p>
+<p>By default, Pyomo parameters are immutable which assures their values will be consistent throughout the model construction and transformations. Parameters determining the size of index sets, or fixed upper and lower bounds on decision variables, are examples where using an immutable Pyomo parameter is good practice. Pyomo parameters created with <code class="docutils literal notranslate"><span class="pre">mutable=True</span></code> are used to build models that can be re-solved for parametric or sensitivity analysis. The use of mutable parameters should be limited and intentional.</p>
+<p>Pyomo modelers often prefer to use native Python data structures. In these cases, best practice is to limit the scope of the parameters by constructing the model within a Python function, and using function arguments of the function to provide a clear interface to the global scope.</p>
+<p>Consistent with good programming practice, global non-constant parameters should be avoided. Non-constant global parameters lead to inconsistent state in the code and complicate understanding of models when changed or redefined elsewhere in the code.</p>
 </section>
 <section id="variables">
 <h3>Variables<a class="headerlink" href="#variables" title="Permalink to this heading">#</a></h3>
