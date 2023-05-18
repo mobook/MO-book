@@ -495,9 +495,9 @@ document.write(`
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-from-jump-documentation-for-column-generation">Example from JuMP documentation for column generation</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-from-wikipedia">Example from Wikipedia</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#woodworking-problem-data-from-google-sheets">Woodworking: Problem data from Google sheets</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#read-problem-data-from-google-sheets">Read problem data from Google sheets</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
 </ul>
             </nav>
@@ -512,7 +512,7 @@ document.write(`
                   
   <section class="tex2jax_ignore mathjax_ignore" id="extra-material-cutting-stock">
 <h1>Extra Material: Cutting Stock<a class="headerlink" href="#extra-material-cutting-stock" title="Permalink to this heading">#</a></h1>
-<p>The cutting stock problem is familiar to anyone who has cut parts out of stock materials. In the one-dimensional case, the stock materials are available in predetermined lengths and prices. The task is to cut a specific parts from the stocks materials. The question is then: how should one determine which parts to cut from each piece of stock material to minimize cost? This problem applies broadly to commercial applications, including the allocation of non-physical resources like capital budgeting or resource allocation.</p>
+<p>The cutting stock problem is familiar to anyone who has cut parts out of stock materials. In the one-dimensional case, the stock materials are available in predetermined lengths and prices. The task is to cut a specific list of parts from the stock materials. The problem is to determine which parts to cut from each piece of stock material to minimize cost. This problem applies broadly to commercial applications, including the allocation of non-physical resources like capital budgeting or resource allocation.</p>
 <p>This notebook presents several models and solution algorithms for the cutting stock problem.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -533,8 +533,8 @@ document.write(`
 </div>
 <section id="problem-formulation">
 <h2>Problem formulation<a class="headerlink" href="#problem-formulation" title="Permalink to this heading">#</a></h2>
-<p>Consider a set <span class="math notranslate nohighlight">\({S}\)</span> of available stock materials that can be cut to size to produce a set of finished parts. Each stock <span class="math notranslate nohighlight">\(s\in S\)</span> is characterized by a length <span class="math notranslate nohighlight">\(l^S_s\)</span>, costs <span class="math notranslate nohighlight">\(c_s\)</span> per piece, and is available in unlimited quantity. A customer order is received to product a set of finished products <span class="math notranslate nohighlight">\(F\)</span>. Each finished product <span class="math notranslate nohighlight">\(f\in F\)</span> is specified by a required number <span class="math notranslate nohighlight">\(d_f\)</span> and length <span class="math notranslate nohighlight">\(l^F_f\)</span>. The <strong>cutting stock problem</strong> find a minimum cost solution to fulfilling the customer order by cutting finished products from the available stocks.</p>
-<p>This problem is illustrated is by the following tables of data for the example given by Gilmore and Gamory (1961).</p>
+<p>Consider a set <span class="math notranslate nohighlight">\({S}\)</span> of available stock materials that can be cut to size to produce a set of finished parts. Each stock <span class="math notranslate nohighlight">\(s\in S\)</span> is characterized by a length <span class="math notranslate nohighlight">\(l^S_s\)</span>, a cost <span class="math notranslate nohighlight">\(c_s\)</span> per piece, and is available in unlimited quantity. A customer order is received to product a set of finished products <span class="math notranslate nohighlight">\(F\)</span>. Each finished product <span class="math notranslate nohighlight">\(f\in F\)</span> is specified by a required number <span class="math notranslate nohighlight">\(d_f\)</span> and length <span class="math notranslate nohighlight">\(l^F_f\)</span>.</p>
+<p>The <strong>cutting stock problem</strong> is to find a minimum cost solution to fulfill the customer order from the stock materials. The problem is illustrated is by data for an example given in the original paper by Gilmore and Gamory (1961).</p>
 <p><strong>Stocks</strong></p>
 <table class="table">
 <thead>
@@ -581,7 +581,7 @@ document.write(`
 </tr>
 </tbody>
 </table>
-<p>This information is represented in Python as nested dictionaries indexed by names for stocks and finished parts.</p>
+<p>This information is represented in Python as nested dictionaries where the names for stocks and finished parts are used as indices.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">stocks</span> <span class="o">=</span> <span class="p">{</span>
@@ -602,19 +602,19 @@ document.write(`
 </section>
 <section id="patterns">
 <h2>Patterns<a class="headerlink" href="#patterns" title="Permalink to this heading">#</a></h2>
-<p>One approach to solving this problem is to create a list of all finished parts, a list of stocks for each length, then use a set of binary decision variables to assign each finished product to a particular piece of stock. This approach may work well for a  small problem, but the computational complexity would scale too rapidly with the size of the problem to be practical for business applications.</p>
-<p>To address the issue of computational complexity, in 1961 Gilmore and Gamory introduced an additional data structure for the problem that are now referred to as “patterns” in contemporary treatments. A pattern is a recipe for cutting a stock item into one or more finished parts. A pattern <span class="math notranslate nohighlight">\(p\)</span> is specified by the stock <span class="math notranslate nohighlight">\(s_p\)</span> assigned for the pattern, and integers <span class="math notranslate nohighlight">\(a_{pf}\)</span> that specify how many finished parts of type <span class="math notranslate nohighlight">\(f\)</span> are cut from stock <span class="math notranslate nohighlight">\(s_p\)</span>.</p>
-<p>A pattern <span class="math notranslate nohighlight">\(p\in P\)</span> is feasible if</p>
+<p>One approach to solving this problem is to create a list of all finished parts, a list of stocks for each length, and then use a set of binary decision variables to assign each finished product to a particular piece of stock. This approach will work well for a small problems, but the computational complexity scales much too rapidly with the size of the problem to be practical for business applications.</p>
+<p>To address the issue of computational complexity, in 1961 Gilmore and Gamory introduced an additional data structure for the problem that is now referred to as “patterns”. A pattern is a list of finished parts that can be cut from a particular stock item.</p>
+<p>A pattern <span class="math notranslate nohighlight">\(p\)</span> is specified by the stock <span class="math notranslate nohighlight">\(s_p\)</span> assigned to the pattern and integers <span class="math notranslate nohighlight">\(a_{pf}\)</span> that specify how many finished parts of type <span class="math notranslate nohighlight">\(f\)</span> are cut from stock <span class="math notranslate nohighlight">\(s_p\)</span>. A pattern <span class="math notranslate nohighlight">\(p\in P\)</span> is feasible if</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align}
 \sum_{f\in F}a_{pf}l^F_f  &amp; \leq   l^S_{s_p}
 \end{align}
 \]</div>
-<p>The function <code class="docutils literal notranslate"><span class="pre">make_patterns</span></code> defined in the following cell produces a list of feasible patterns for given sets of stocks and finished parts. Each pattern is represented as dictionary that specifies an associated stock item, and a dictionary of cuts that specify the finished parts cut from the stock.</p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">make_patterns</span></code> defined below produces a partial list of feasible patterns for given sets of stocks and finished parts. Each pattern is represented as dictionary that specifies an associated stock item, and a dictionary of cuts that specify the finished parts cut from the stock. The algorithm is simple, it just considers every finished parts and stock items, then reports the number of parts <span class="math notranslate nohighlight">\(f\)</span> that can be cut from stock item <span class="math notranslate nohighlight">\(s\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">find_many</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generates patterns of feasible cuts from stock lengths to meet specified finish lengths.</span>
 
@@ -624,11 +624,6 @@ document.write(`
 
 <span class="sd">    finish (dict): A dictionary where keys are finish identifiers and values are dictionaries</span>
 <span class="sd">                   with key &#39;length&#39; representing the required finish lengths.</span>
-
-<span class="sd">    find_many (bool, optional): If True, the function will continue to find additional patterns </span>
-<span class="sd">                   even after finding a feasible one for a given finish length. If False </span>
-<span class="sd">                   (default), the function will stop searching after finding the first feasible</span>
-<span class="sd">                   pattern for each finish length.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">    patterns (list): A list of dictionaries, where each dictionary represents a pattern of cuts. </span>
@@ -641,21 +636,25 @@ document.write(`
     <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">finish</span><span class="p">:</span>
         <span class="n">feasible</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stocks</span><span class="p">:</span>
+            
+            <span class="c1"># max number of f that fit on s</span>
             <span class="n">num_cuts</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">])</span>
+            
+            <span class="c1"># make pattern and add to list of patterns</span>
             <span class="k">if</span> <span class="n">num_cuts</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">feasible</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="n">cuts_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">finish</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
                 <span class="n">cuts_dict</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_cuts</span>
                 <span class="n">patterns</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;stock&#39;</span><span class="p">:</span> <span class="n">s</span><span class="p">,</span> <span class="s1">&#39;cuts&#39;</span><span class="p">:</span> <span class="n">cuts_dict</span><span class="p">})</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">find_many</span><span class="p">:</span>
-                    <span class="k">break</span>
+                    
         <span class="k">if</span> <span class="ow">not</span> <span class="n">feasible</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No feasible pattern was found for </span><span class="si">{</span><span class="n">f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        
     <span class="k">return</span> <span class="n">patterns</span>
 
-
-<span class="n">patterns</span> <span class="o">=</span> <span class="n">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
-<span class="n">patterns</span>
+<span class="n">patterns</span> <span class="o">=</span> <span class="n">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">patterns</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -673,31 +672,28 @@ document.write(`
 </div>
 </div>
 </div>
-<p>The function <code class="docutils literal notranslate"><span class="pre">plot_patterns</span></code> presents a graphic depiction of the list of patterns.</p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">plot_patterns</span></code>, defined below, displays a graphical depiction of the list of patterns.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
-<span class="k">def</span> <span class="nf">plot_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">patterns</span><span class="p">),</span> <span class="n">cost</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">plot_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">):</span>
     
     <span class="c1"># set up figure parameters</span>
-    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mf">0.1</span> <span class="o">+</span> <span class="mf">0.4</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">patterns</span><span class="p">)))</span>
-    <span class="n">lw</span> <span class="o">=</span> <span class="mf">0.3</span>
-    
-    <span class="c1"># assign colors to finish parts</span>
+    <span class="n">lw</span> <span class="o">=</span> <span class="mf">0.6</span>
     <span class="n">cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s2">&quot;tab10&quot;</span><span class="p">)</span>
     <span class="n">colors</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="n">cmap</span><span class="p">(</span><span class="n">k</span> <span class="o">%</span> <span class="mi">10</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">finish</span><span class="o">.</span><span class="n">keys</span><span class="p">())}</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mf">0.05</span> <span class="o">+</span> <span class="mf">0.4</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">patterns</span><span class="p">)))</span>
     
     <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">patterns</span><span class="p">):</span>
-
-        <span class="c1"># label stock</span>
-        <span class="n">s</span> <span class="o">=</span> <span class="n">pattern</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">]</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="o">-</span><span class="n">k</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2"> &quot;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
         
-        <span class="c1"># plot stock as background</span>
-        <span class="n">y_lo</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">k</span> <span class="o">-</span> <span class="n">lw</span><span class="p">,</span> <span class="o">-</span><span class="n">k</span> <span class="o">-</span> <span class="n">lw</span><span class="p">)</span>
-        <span class="n">y_hi</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">k</span> <span class="o">+</span> <span class="n">lw</span><span class="p">,</span> <span class="o">-</span><span class="n">k</span> <span class="o">+</span> <span class="n">lw</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">]),</span><span class="n">y_lo</span><span class="p">,</span> <span class="n">y_hi</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">lw</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="c1"># get stock key/name</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">pattern</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">]</span>
+        
+        <span class="c1"># plot stock as a grey background</span>
+        <span class="n">y_lo</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">k</span> <span class="o">-</span> <span class="n">lw</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">k</span> <span class="o">-</span> <span class="n">lw</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">y_hi</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">k</span> <span class="o">+</span> <span class="n">lw</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">k</span> <span class="o">+</span> <span class="n">lw</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">]),</span> <span class="n">y_lo</span><span class="p">,</span> <span class="n">y_hi</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
         
         <span class="c1"># overlay finished parts</span>
         <span class="n">xa</span> <span class="o">=</span> <span class="mi">0</span>
@@ -708,38 +704,36 @@ document.write(`
                 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">((</span><span class="n">xb</span><span class="p">,</span> <span class="n">xb</span><span class="p">),</span> <span class="p">(</span><span class="n">y_lo</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y_hi</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">solid_capstyle</span><span class="o">=</span><span class="s2">&quot;butt&quot;</span><span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">((</span><span class="n">xa</span> <span class="o">+</span> <span class="n">xb</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">k</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">)</span>
                 <span class="n">xa</span> <span class="o">=</span> <span class="n">xb</span>
-                
-    <span class="c1"># fix axes</span>
+        
+    <span class="c1"># clean up axes</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[[</span><span class="s1">&#39;top&#39;</span><span class="p">,</span> <span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="s1">&#39;bottom&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(())</span>
-    <span class="k">if</span> <span class="n">cost</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cost = </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">patterns</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="p">[</span><span class="n">pattern</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
     
-    <span class="k">return</span>
+    <span class="k">return</span> <span class="n">ax</span>
 
 <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/3eda446fe2beae179e5449488bbb41983b54bd6668a9d3c26e02f6de01415369.png" src="../../_images/3eda446fe2beae179e5449488bbb41983b54bd6668a9d3c26e02f6de01415369.png" />
+<img alt="../../_images/eae75221b1f98f0b6642558e55d34090fba6c9b36c5c464c3b435ace93e43950.png" src="../../_images/eae75221b1f98f0b6642558e55d34090fba6c9b36c5c464c3b435ace93e43950.png" />
 </div>
 </div>
 </section>
 <section id="optimal-cutting-using-known-patterns">
 <h2>Optimal cutting using known patterns<a class="headerlink" href="#optimal-cutting-using-known-patterns" title="Permalink to this heading">#</a></h2>
-<p>Given a list of patterns, the optimization problem is to compute how many copies of each pattern to cut to meet the demand for finished parts at minimum cost. Let the index <span class="math notranslate nohighlight">\(s_p\)</span> denote the stock specified by pattern <span class="math notranslate nohighlight">\(p\)</span>, and let <span class="math notranslate nohighlight">\(x_{s_p}\)</span> denote the number pieces of stock <span class="math notranslate nohighlight">\(s_p\)</span> is used.</p>
-<p>For a given list of patterns, the minimum cost optimization problem is then a mixed integer linear optimization problem subject to meeting demand constraints for each finished item.</p>
+<p>Given a list of patterns, the optimization problem is to compute how many copies of each pattern should be cut to meet the demand for finished parts at minimum cost.</p>
+<p>Let the index <span class="math notranslate nohighlight">\(s_p\)</span> denote the stock specified by pattern <span class="math notranslate nohighlight">\(p\)</span>, and let <span class="math notranslate nohighlight">\(x_{s_p}\)</span> denote the number pieces of stock <span class="math notranslate nohighlight">\(s_p\)</span> is used. For a given list of patterns, the minimum cost optimization problem is a mixed integer linear optimization (MILO) subject to meeting demand constraints for each finished item.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
-\min &amp; \sum_{p\in P} c_{s_p} x_{s_p} \\
-\text{s.t.}\qquad
+\min\quad &amp; \sum_{p\in P} c_{s_p} x_{s_p} \\
+\text{s.t.}\quad
 &amp; \sum_{p\in P}a_{pf} x_{s_p} \geq d_f &amp;&amp; \forall f\in F\\
 &amp; x_{s_p}  \in \mathbb{Z}_+ &amp;&amp; \forall p\in P\\
 \end{align}
 \end{split}\]</div>
-<p>The next cell is a Pyomo implementation of this optimization model.</p>
+<p>The following cell is a Pyomo implementation of this optimization model.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
@@ -767,45 +761,45 @@ document.write(`
         <span class="n">a</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">patterns</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s1">&#39;cuts&#39;</span><span class="p">][</span><span class="n">f</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">}</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;demand&#39;</span><span class="p">]</span>
     
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_MILO</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span>
 
 <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
-<span class="n">plot_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<img alt="../../_images/f2025b7af0f1c0e50320045af6c936259a5f11f304ee73cf714d6f8933f6c123.png" src="../../_images/f2025b7af0f1c0e50320045af6c936259a5f11f304ee73cf714d6f8933f6c123.png" />
 </div>
-</div>
+<p>The following function <code class="docutils literal notranslate"><span class="pre">plot_nonzero_patterns</span></code> is wrapper for <code class="docutils literal notranslate"><span class="pre">plot_patterns</span></code> that removes unused patterns from graphic, shows the number of times each pattern is used, and adds cost to the title.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">):</span>
     <span class="n">k</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">_</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">plot_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="p">[</span><span class="n">patterns</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">k</span><span class="p">],</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">k</span><span class="p">],</span> <span class="n">cost</span><span class="p">)</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="p">[</span><span class="n">patterns</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">k</span><span class="p">])</span>
+    <span class="n">ticks</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="n">pattern</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">patterns</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">ticks</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cost = </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ax</span>
     
-    
-<span class="n">ax</span> <span class="o">=</span> <span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/782da3a5124d610e9b7aab49f304263c1cd14815e41b5b8d1c97cb4495523312.png" src="../../_images/782da3a5124d610e9b7aab49f304263c1cd14815e41b5b8d1c97cb4495523312.png" />
+<img alt="../../_images/1dedc38c27afa5d3d2a7df74d1c3c88c9616918bdb2b987391f9f6b30b4fc5bb.png" src="../../_images/1dedc38c27afa5d3d2a7df74d1c3c88c9616918bdb2b987391f9f6b30b4fc5bb.png" />
 </div>
 </div>
 </section>
 <section id="cutting-stock-problem-bilinear-reformulation">
 <h2>Cutting Stock Problem: Bilinear reformulation<a class="headerlink" href="#cutting-stock-problem-bilinear-reformulation" title="Permalink to this heading">#</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">cut_patterns</span></code> model requires a list cutting patterns, which may or may not include the patterns corresponding to an optimal solution cutting stock problem. To address this issue, we next create a model that simultaneously solves for an optimal patterns and cutting list.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">cut_patterns</span></code> model requires a known list of cutting patterns. This works well if the patterns comprising an optimal solution to the problem are known. But since they are not initially known, an optimization model is needed that simultaneously solves for an optimal patterns and the cutting list.</p>
 <p>Let binary variable <span class="math notranslate nohighlight">\(b_{sp}\in\mathbb{Z}_2\)</span> denote the assignment of stock <span class="math notranslate nohighlight">\(s\)</span> to pattern <span class="math notranslate nohighlight">\(p\)</span>, and let <span class="math notranslate nohighlight">\(P = 0, 1, \ldots, N_p-1\)</span> index a list of patterns. For sufficiently large <span class="math notranslate nohighlight">\(N_p\)</span>, an optimal solution to the stock cutting problem is given by the model</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
-\min &amp; \sum_{s\in S} \sum_{p\in P} c_{s} b_{sp} x_{p} \\
-\text{s.t.}\qquad
+\min\quad &amp; \sum_{s\in S} \sum_{p\in P} c_{s} b_{sp} x_{p} \\
+\text{s.t.}\quad
 &amp; \sum_{s\in S}b_{sp} =  1 &amp;&amp; \forall p\in P \\
 &amp; \sum_{f\in F}a_{fp}l^F_f  \leq \sum_{s\in S} b_{sp} l^S_s &amp;&amp; \forall p\in P \\
 &amp; \sum_{p\in P}a_{fp} x_{p} \geq d_f &amp;&amp; \forall f\in F\\
@@ -813,23 +807,36 @@ document.write(`
 &amp; b_{sp} \in \mathbb{Z}_2 &amp;&amp; \forall s\in S,  \forall p\in P \\
 \end{align}
 \end{split}\]</div>
-<p>This is a challenging optimization problem with a cost objective that is bilinear with respect to the the decision variables <span class="math notranslate nohighlight">\(b_{sp}\)</span> and <span class="math notranslate nohighlight">\(x_p\)</span>, and a set of constraints for the demand of finished parts that are bilinear in the decision variables <span class="math notranslate nohighlight">\(a_{fp}\)</span> and <span class="math notranslate nohighlight">\(x_p\)</span>.s Because the constraints are a lower bound on a positive sum of bilinear terms, a simple substitution to create rotated quadratic cones fails to produce a convex conic program.</p>
-<p>The following model is a direct translation of the bilinear optimization model into Pyomo.</p>
+<p>Since there is no ordering of the patterns, without loss of generality an additional constraint can be added to reduce the symmetries present in the problem.</p>
+<div class="math notranslate nohighlight">
+\[
+\begin{align}
+&amp; x_{p-1} \geq x_{p} &amp;&amp; \forall p\in P, p &gt; 0
+\end{align}
+\]</div>
+<p>This is a challenging optimization problem with a cost objective that is bilinear with respect to the the decision variables <span class="math notranslate nohighlight">\(b_{sp}\)</span> and <span class="math notranslate nohighlight">\(x_p\)</span>, and a set of constraints for the demand of finished parts that are bilinear in the decision variables <span class="math notranslate nohighlight">\(a_{fp}\)</span> and <span class="math notranslate nohighlight">\(x_p\)</span>. Because the constraints are a lower bound on a positive sum of bilinear terms, a simple substitution to create rotated quadratic cones fails to produce a convex program.</p>
+<p>The following model is a direct translation of the bilinear optimization model into Pyomo. A solution is attempted using a mixed-integer nonlinear optimization (MINLO) solver.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 
-<span class="k">def</span> <span class="nf">bilinear_cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">Np</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">bilinear_cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">Np</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">finish</span><span class="p">)):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">stocks</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">finish</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">P</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Np</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-    <span class="n">m</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
+    
+    <span class="c1"># sum of all finished parts</span>
+    <span class="n">f_total_demand</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;demand&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">])</span>
+    
+    <span class="c1"># define a with bounded values</span>
+    <span class="k">def</span> <span class="nf">a_bounds</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">]))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="n">a_bounds</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
-
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">f_total_demand</span><span class="p">))</span>
+    
     <span class="c1"># minimize cost</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">cost</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
@@ -850,8 +857,20 @@ document.write(`
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">demand</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">f</span><span class="p">,</span> <span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;demand&#39;</span><span class="p">]</span>
+    
+    <span class="c1"># order the patterns to reduce symmetries</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">order</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="o">.</span><span class="n">Skip</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="c1"># upper bound on sum of all patterns</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">max_patterns</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">f_total_demand</span>
 
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;couenne&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_MINLO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     
     <span class="n">cost</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span>
     <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">]</span>
@@ -864,23 +883,24 @@ document.write(`
 
 
 <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">bilinear_cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="n">plot_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
+<span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/4212de32c7cc1fa5f99f3ff18df622645645a8c980159176132608b8f4279453.png" src="../../_images/4212de32c7cc1fa5f99f3ff18df622645645a8c980159176132608b8f4279453.png" />
+<img alt="../../_images/2992a60cf0772a56a7a9d722dda1cfdb8f28a36442f44a80f1774f4641d83982.png" src="../../_images/2992a60cf0772a56a7a9d722dda1cfdb8f28a36442f44a80f1774f4641d83982.png" />
 </div>
 </div>
 </section>
 <section id="pattern-generation-bilinear-model">
 <h2>Pattern Generation: Bilinear Model<a class="headerlink" href="#pattern-generation-bilinear-model" title="Permalink to this heading">#</a></h2>
-<p>From limited testing, the bilinear model for the cutting stock problem appears to work well for small data sets, but does not scale well for larger problem instances, at least with the solvers included in the testing. This shouldn’t be surprising given the non-convex nature of the problem, the exclusive use of integer and binary decision variables, and a high degree of symmetry in the model equations.</p>
+<p>From limited testing, the bilinear model for the cutting stock problem appears to work well for small data sets, but does not scale well for larger problem instances, at least for the solvers included in the testing. This shouldn’t be surprising given the non-convex nature of the problem, the exclusive use of integer and binary decision variables, and a high degree of symmetry in the model equations.</p>
+<p>So rather than attempt to solve the full problem all at once, the following model assumes an initial list of patterns has been determined, perhaps using the <code class="docutils literal notranslate"><span class="pre">make_patterns</span></code> function defined above, then attempts to generate one more pattern that further reduces the objective function. The result remains a non-convex, bilinear optimization problem, but with fewer binary decision variables and at most one bilinear term in the objective and constraints.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
-\min &amp; \sum_{p\in P} c_{s_p} x_{s_p} + x' \sum_{s\in S} b_s c_s\\
-\text{s.t.}\qquad
+\min\quad &amp; \sum_{p\in P} c_{s_p} x_{s_p} + x' \sum_{s\in S} b_s c_s\\
+\text{s.t.}\quad
 &amp; \sum_{s\in S}b'_{s} =  1  \\
 &amp; \sum_{f\in F}a'_{f}l^F_f  \leq \sum_{s\in S} b'_{s} l^S_s  \\
 &amp; \sum_{p\in P}a_{fp} x_{s_p}  + a'_f x'\geq d_f &amp;&amp; \forall f\in F\\
@@ -888,6 +908,7 @@ document.write(`
 &amp; b'_{s} \in \mathbb{Z}_2 &amp;&amp; \forall s\in S \\
 \end{align}
 \end{split}\]</div>
+<p>The function <code class="docutils literal notranslate"><span class="pre">generate_pattern_bilinear</span></code> is a direct Pyomo implementation that uses a MINLO solver to create one additional feasible pattern that could be added to the list of known patterns.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">generate_pattern_bilinear</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">):</span>
@@ -897,10 +918,12 @@ document.write(`
     <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">finish</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">P</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">patterns</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
     
-    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">xp</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
     
-    <span class="n">m</span><span class="o">.</span><span class="n">ap</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">a_bounds</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">]))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">ap</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="n">a_bounds</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">bp</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
@@ -921,7 +944,7 @@ document.write(`
     <span class="k">def</span> <span class="nf">demand</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">patterns</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s1">&#39;cuts&#39;</span><span class="p">][</span><span class="n">f</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">ap</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">xp</span> <span class="o">&gt;=</span> <span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;demand&#39;</span><span class="p">]</span>
     
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;couenne&#39;</span><span class="p">)</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_MINLO</span><span class="p">)</span>
     <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     
     <span class="n">new_pattern</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;stock&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">bp</span><span class="p">[</span><span class="n">s</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> 
@@ -952,7 +975,7 @@ document.write(`
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{&#39;stock&#39;: &#39;C&#39;, &#39;cuts&#39;: {&#39;S&#39;: 1, &#39;M&#39;: 1, &#39;L&#39;: 1}}
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{&#39;stock&#39;: &#39;B&#39;, &#39;cuts&#39;: {&#39;S&#39;: 1, &#39;M&#39;: 0, &#39;L&#39;: 1}}
 </pre></div>
 </div>
 </div>
@@ -960,6 +983,27 @@ document.write(`
 </section>
 <section id="pattern-generation-linear-dual">
 <h2>Pattern Generation: Linear Dual<a class="headerlink" href="#pattern-generation-linear-dual" title="Permalink to this heading">#</a></h2>
+<p>A common approach to pattern generation for stock cutting begins by relaxing the MILO optimization problem with known patterns. The integer variables <span class="math notranslate nohighlight">\(x_{s_p}\)</span> are relaxed to non-negative reals.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align}
+\min\quad &amp; \sum_{p\in P} c_{s_p} x_{s_p} \\
+\text{s.t.}\quad
+&amp; \sum_{p\in P}a_{pf} x_{s_p} \geq d_f &amp;&amp; \forall f\in F\\
+&amp; x_{s_p}  \in \mathbb{R}_+ &amp;&amp; \forall p\in P\\
+\end{align}
+\end{split}\]</div>
+<p>Let <span class="math notranslate nohighlight">\(\pi_f \geq 0\)</span> be the dual variables associated with the demand constraints. A large positive value <span class="math notranslate nohighlight">\(\pi_f\)</span> suggests a high value for including finished part <span class="math notranslate nohighlight">\(f\)</span> in a new pattern. This motivates a set of dual optimization problems where the objective is to construct a new patterns that maximizes the the marginal value of each stock <span class="math notranslate nohighlight">\(s\in S\)</span>.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align}
+V_s = \max\quad &amp; \left(\sum_{f\in F} \pi_{f} a'_{sf}\right) - c_s \\
+\text{s.t.}\quad
+&amp; \sum_{f\in F}l^F_f a'_{sf} \leq l^S_s &amp;&amp; \\
+&amp; a'_{sf}  \in \mathbb{Z}_+ &amp;&amp; \forall f\in F\\
+\end{align}
+\end{split}\]</div>
+<p>The pattern demonstrating the largest return <span class="math notranslate nohighlight">\(V_s\)</span> is returned as a candidate to add the list of patterns.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
@@ -976,7 +1020,7 @@ document.write(`
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">cost</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="n">s</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">patterns</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s1">&#39;stock&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">}</span>
-        <span class="n">c</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span>  <span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">]][</span><span class="s1">&#39;cost&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">}</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">]][</span><span class="s1">&#39;cost&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">}</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
@@ -993,24 +1037,41 @@ document.write(`
     <span class="nd">@m</span><span class="o">.</span><span class="n">Block</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">subprob</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
         <span class="n">m</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">model</span><span class="p">()</span>
-        <span class="n">b</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
         
-        <span class="nd">@b</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
-        <span class="k">def</span> <span class="nf">reduced_cost</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;cost&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">demand</span><span class="p">[</span><span class="n">f</span><span class="p">]]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
+        <span class="nd">@b</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">marginal_value</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
+            <span class="k">return</span>  <span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">demand</span><span class="p">[</span><span class="n">f</span><span class="p">]]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
         
         <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
         <span class="k">def</span> <span class="nf">stock_length</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
-            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">*</span> <span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">]</span>
+            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">*</span> <span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;length&#39;</span><span class="p">]</span>
     
-        <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+        <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_MILO</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
         
         <span class="k">return</span> <span class="n">b</span>
         
-    <span class="n">reduced_costs</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">subprob</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">reduced_cost</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">]</span>
-    <span class="n">s</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)[</span><span class="n">reduced_costs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">reduced_costs</span><span class="p">))]</span>
+    <span class="n">reduced_value</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">subprob</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">marginal_value</span><span class="p">()</span> <span class="o">-</span> <span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;cost&#39;</span><span class="p">]</span>  <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">]</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)[</span><span class="n">reduced_value</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">reduced_value</span><span class="p">))]</span>
 
-    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;stock&#39;</span><span class="p">:</span> <span class="n">s</span><span class="p">,</span> <span class="s1">&#39;cuts&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">subprob</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">f</span><span class="p">]())</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">}}</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;stock&#39;</span><span class="p">:</span> <span class="n">s</span><span class="p">,</span> <span class="s1">&#39;cuts&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">subprob</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">f</span><span class="p">]())</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">}}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">stocks</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;A&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;cost&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">},</span>
+    <span class="s1">&#39;B&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="s1">&#39;cost&#39;</span><span class="p">:</span> <span class="mi">7</span><span class="p">},</span>
+    <span class="s1">&#39;C&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span> <span class="s1">&#39;cost&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">finish</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;S&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
+    <span class="s1">&#39;M&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">},</span>
+    <span class="s1">&#39;L&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
+<span class="p">}</span>
 
 <span class="n">patterns</span> <span class="o">=</span> <span class="n">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
 <span class="n">generate_pattern_dual</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
@@ -1018,7 +1079,54 @@ document.write(`
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{&#39;stock&#39;: &#39;C&#39;, &#39;cuts&#39;: {&#39;S&#39;: 0, &#39;M&#39;: 3, &#39;L&#39;: 0}}
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{&#39;stock&#39;: &#39;C&#39;, &#39;cuts&#39;: {&#39;S&#39;: 1, &#39;M&#39;: 1, &#39;L&#39;: 1}}
+</pre></div>
+</div>
+</div>
+</div>
+<p>The following cell compares the time required to generatuses a somewhat larger data set to determine the time required to produce one pattern. Note this test is</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">stocks</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;log&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;cost&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">finish</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="mi">1</span><span class="p">:</span>  <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">75.0</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">38</span><span class="p">},</span>
+    <span class="mi">2</span><span class="p">:</span>  <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">75.0</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">44</span><span class="p">},</span>
+    <span class="mi">3</span><span class="p">:</span>  <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">75.0</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">30</span><span class="p">},</span>
+    <span class="mi">4</span><span class="p">:</span>  <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">75.0</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">41</span><span class="p">},</span>
+    <span class="mi">5</span><span class="p">:</span>  <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">75.0</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">36</span><span class="p">},</span>
+    <span class="mi">6</span><span class="p">:</span>  <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">53.8</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">33</span><span class="p">},</span>
+    <span class="mi">7</span><span class="p">:</span>  <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">53.0</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">36</span><span class="p">},</span>
+    <span class="mi">8</span><span class="p">:</span>  <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">51.0</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">41</span><span class="p">},</span>
+    <span class="mi">9</span><span class="p">:</span>  <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">50.2</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">35</span><span class="p">},</span>
+    <span class="mi">10</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">32.2</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">37</span><span class="p">},</span>
+    <span class="mi">11</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">30.8</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">44</span><span class="p">},</span>
+    <span class="mi">12</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">29.8</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">49</span><span class="p">},</span>
+    <span class="mi">13</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">20.1</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">37</span><span class="p">},</span>
+    <span class="mi">14</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">16.2</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">36</span><span class="p">},</span>
+    <span class="mi">15</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">14.5</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">42</span><span class="p">},</span>
+    <span class="mi">16</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mf">11.0</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">33</span><span class="p">},</span>
+    <span class="mi">17</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span>  <span class="mf">8.6</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">47</span><span class="p">},</span>
+    <span class="mi">18</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span>  <span class="mf">8.2</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">35</span><span class="p">},</span>
+    <span class="mi">19</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span>  <span class="mf">6.6</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">49</span><span class="p">},</span>
+    <span class="mi">20</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span>  <span class="mf">5.1</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">42</span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">patterns</span> <span class="o">=</span> <span class="n">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Testing generate_patterns_bilinear: &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="o">%</span><span class="k">timeit</span> generate_pattern_bilinear(stocks, finish, patterns)
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Testing generate_patterns_dual: &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="o">%</span><span class="k">timeit</span> generate_pattern_dual(stocks, finish, patterns)
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Testing generate_patterns_bilinear: 1.46 s ± 10.7 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+Testing generate_patterns_dual: 155 ms ± 4.12 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
 </pre></div>
 </div>
 </div>
@@ -1026,18 +1134,16 @@ document.write(`
 </section>
 <section id="a-solution-algorithm">
 <h2>A Solution Algorithm<a class="headerlink" href="#a-solution-algorithm" title="Permalink to this heading">#</a></h2>
-<p>See also: <a class="reference external" href="https://or.stackexchange.com/questions/9245/adding-variable-to-constraint-in-pyomo">https://or.stackexchange.com/questions/9245/adding-variable-to-constraint-in-pyomo</a></p>
+<p>The following cell implements an algorithm to solve the cutting stock problem. The algorithm starts with</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="o">=</span><span class="p">[],</span> <span class="n">generate_pattern</span> <span class="o">=</span> <span class="n">generate_pattern_dual</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">pattern_generator</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
     
-    <span class="n">max_iter</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">finish</span><span class="p">))</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">patterns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">patterns</span> <span class="o">=</span> <span class="n">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">find_many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">patterns</span> <span class="o">=</span> <span class="n">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
     
     <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_iter</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Iteration </span><span class="si">{</span><span class="n">k</span><span class="si">:</span><span class="s2">2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">new_pattern</span> <span class="o">=</span> <span class="n">generate_pattern</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">new_pattern</span> <span class="o">=</span> <span class="n">pattern_generator</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">new_pattern</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
             <span class="k">break</span>
         <span class="n">patterns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_pattern</span><span class="p">)</span>
@@ -1047,25 +1153,24 @@ document.write(`
         <span class="k">return</span>
     
     <span class="c1"># return non-zero patterns</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Finished&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; Finished</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span> 
     <span class="n">k</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">_</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">patterns</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">k</span><span class="p">],</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">k</span><span class="p">],</span> <span class="n">cost</span>
        
-<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
-<span class="n">plot_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
+<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">generate_pattern_dual</span><span class="p">)</span>
+<span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Iteration  0
-Iteration  1
-Iteration  2
-
-Finished
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>... Finished
 </pre></div>
 </div>
-<img alt="../../_images/7e8c4bacab2f9f87decf18d34091047c76fef2b20eb7912721ff4f8ed6ebc1a0.png" src="../../_images/7e8c4bacab2f9f87decf18d34091047c76fef2b20eb7912721ff4f8ed6ebc1a0.png" />
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={&#39;center&#39;: &#39;Cost = 170.0&#39;}&gt;
+</pre></div>
+</div>
+<img alt="../../_images/a32cafa63d800a567dbf17d3babda1e451c8e5860d62eca0b7d016c630f47599.png" src="../../_images/a32cafa63d800a567dbf17d3babda1e451c8e5860d62eca0b7d016c630f47599.png" />
 </div>
 </div>
 </section>
@@ -1103,34 +1208,19 @@ Finished
     <span class="mi">20</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span>  <span class="mf">5.1</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">42</span><span class="p">},</span>
 <span class="p">}</span>
 
-<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
-<span class="n">plot_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
+<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">generate_pattern_bilinear</span><span class="p">)</span>
+<span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Iteration  0
-Iteration  1
-Iteration  2
-Iteration  3
-Iteration  4
-Iteration  5
-Iteration  6
-Iteration  7
-Iteration  8
-Iteration  9
-Iteration 10
-Iteration 11
-Iteration 12
-Iteration 13
-Iteration 14
-Iteration 15
-Iteration 16
-
-Finished
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>............ Finished
 </pre></div>
 </div>
-<img alt="../../_images/528d4a39c3adff177cc39f1da971d9cb6b77067d72f1c7ccab003e8da9a6ec27.png" src="../../_images/528d4a39c3adff177cc39f1da971d9cb6b77067d72f1c7ccab003e8da9a6ec27.png" />
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={&#39;center&#39;: &#39;Cost = 334.0&#39;}&gt;
+</pre></div>
+</div>
+<img alt="../../_images/5ac49359851c5aff7a055485ec307a072e51889fe75959ecaa167ed48a78c569.png" src="../../_images/5ac49359851c5aff7a055485ec307a072e51889fe75959ecaa167ed48a78c569.png" />
 </div>
 </div>
 </section>
@@ -1160,52 +1250,28 @@ Finished
     <span class="mi">2200</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">2200</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
 <span class="p">}</span>
 
-<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
-<span class="n">plot_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
+<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">generate_pattern_dual</span><span class="p">)</span>
+<span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Iteration  0
-Iteration  1
-Iteration  2
-Iteration  3
-Iteration  4
-Iteration  5
-Iteration  6
-Iteration  7
-Iteration  8
-Iteration  9
-Iteration 10
-Iteration 11
-Iteration 12
-Iteration 13
-Iteration 14
-Iteration 15
-Iteration 16
-Iteration 17
-Iteration 18
-Iteration 19
-Iteration 20
-Iteration 21
-Iteration 22
-Iteration 23
-Iteration 24
-Iteration 25
-
-Finished
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>.......................... Finished
 </pre></div>
 </div>
-<img alt="../../_images/b28a7bd123472661158fd49fc09a875d249272fceb67e22f7df3d47ce826a008.png" src="../../_images/b28a7bd123472661158fd49fc09a875d249272fceb67e22f7df3d47ce826a008.png" />
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={&#39;center&#39;: &#39;Cost = 73.0&#39;}&gt;
+</pre></div>
+</div>
+<img alt="../../_images/d919733bde982d3ea73d7928dba490f441bd2353c32759fe819cf059c05c3cc7.png" src="../../_images/d919733bde982d3ea73d7928dba490f441bd2353c32759fe819cf059c05c3cc7.png" />
 </div>
 </div>
 </section>
-</section>
-<section id="read-problem-data-from-google-sheets">
-<h2>Read problem data from Google sheets<a class="headerlink" href="#read-problem-data-from-google-sheets" title="Permalink to this heading">#</a></h2>
+<section id="woodworking-problem-data-from-google-sheets">
+<h3>Woodworking: Problem data from Google sheets<a class="headerlink" href="#woodworking-problem-data-from-google-sheets" title="Permalink to this heading">#</a></h3>
 <p>Find a minimum cost order of 2x4 lumber to build the <a class="reference external" href="https://www.ana-white.com/woodworking-projects/one-arm-2x4-outdoor-sofa-sectional-piece">“One Arm 2x4 Outdoor Sofa” described by Ana White</a>.</p>
-<p><img alt="" src="https://www.ana-white.com/sites/default/files/images/diy%202x4%20sectional%20single%20arm%20ana%20white%20dimensions.jpg" /></p>
-<p><a class="reference external" href="https://docs.google.com/spreadsheets/d/1ZX7KJ2kwTGgyqEv_a3LOG0nQSxsc38Ykk53A7vGWAFU/edit#gid=1104632299">https://docs.google.com/spreadsheets/d/1ZX7KJ2kwTGgyqEv_a3LOG0nQSxsc38Ykk53A7vGWAFU/edit#gid=1104632299</a></p>
+<p><img alt="" src="https://www.ana-white.com/sites/default/files/images/diy%202x4%20sectional%20single%20arm%20ana%20white%20dimensions.jpg" />
+Image source: <a class="reference external" href="http://www.ana-white.com">www.ana-white.com</a></p>
+<p>Data source: <a class="reference external" href="https://docs.google.com/spreadsheets/d/1ZX7KJ2kwTGgyqEv_a3LOG0nQSxsc38Ykk53A7vGWAFU/edit#gid=1104632299">https://docs.google.com/spreadsheets/d/1ZX7KJ2kwTGgyqEv_a3LOG0nQSxsc38Ykk53A7vGWAFU/edit#gid=1104632299</a></p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -1492,23 +1558,18 @@ Finished
         <span class="n">stocks</span><span class="p">[</span><span class="n">stocks_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;length&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="n">stocks_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">0</span><span class="o">*</span><span class="n">kerf</span><span class="p">,</span>
                                              <span class="s1">&#39;cost&#39;</span><span class="p">:</span> <span class="n">stocks_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;price&#39;</span><span class="p">]}</span>
     
-    <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
-    <span class="n">plot_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
+    <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">generate_pattern_dual</span><span class="p">)</span>
+    <span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
     
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Kind = 2x4
-Iteration  0
-Iteration  1
-Iteration  2
-Iteration  3
-
-Finished
+.... Finished
 </pre></div>
 </div>
-<img alt="../../_images/a84e7686e6d2b42855fc90845c348027257366bd3a599be00a80154711ff3a92.png" src="../../_images/a84e7686e6d2b42855fc90845c348027257366bd3a599be00a80154711ff3a92.png" />
+<img alt="../../_images/52a2b9fa66b239ffa76ccd3570740bdd1be1f0cae16dd03dc04678b9123f69c9.png" src="../../_images/52a2b9fa66b239ffa76ccd3570740bdd1be1f0cae16dd03dc04678b9123f69c9.png" />
 </div>
 </div>
 <p>Purchase List</p>
@@ -1568,6 +1629,7 @@ Finished
 </table>
 </div></div></div>
 </div>
+</section>
 </section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this heading">#</a></h2>
@@ -1677,9 +1739,9 @@ Finished
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-from-jump-documentation-for-column-generation">Example from JuMP documentation for column generation</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-from-wikipedia">Example from Wikipedia</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#woodworking-problem-data-from-google-sheets">Woodworking: Problem data from Google sheets</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#read-problem-data-from-google-sheets">Read problem data from Google sheets</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
 </ul>
   </nav></div>
