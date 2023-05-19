@@ -491,7 +491,7 @@ document.write(`
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cutting-stock-problem-bilinear-reformulation">Cutting Stock Problem: Bilinear reformulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pattern-generation-bilinear-model">Pattern Generation: Bilinear Model</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pattern-generation-linear-dual">Pattern Generation: Linear Dual</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-solution-algorithm">A Solution Algorithm</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-hybrid-solution-algorithm">A Hybrid Solution Algorithm</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-from-jump-documentation-for-column-generation">Example from JuMP documentation for column generation</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-from-wikipedia">Example from Wikipedia</a></li>
@@ -918,7 +918,7 @@ document.write(`
     <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">finish</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">P</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">patterns</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
     
-    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">xp</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
     
     <span class="k">def</span> <span class="nf">a_bounds</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
@@ -975,7 +975,7 @@ document.write(`
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{&#39;stock&#39;: &#39;B&#39;, &#39;cuts&#39;: {&#39;S&#39;: 1, &#39;M&#39;: 0, &#39;L&#39;: 1}}
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{&#39;stock&#39;: &#39;C&#39;, &#39;cuts&#39;: {&#39;S&#39;: 1, &#39;M&#39;: 1, &#39;L&#39;: 1}}
 </pre></div>
 </div>
 </div>
@@ -1084,7 +1084,7 @@ V_s = \max\quad &amp; \left(\sum_{f\in F} \pi_{f} a'_{sf}\right) - c_s \\
 </div>
 </div>
 </div>
-<p>The following cell compares the time required to generatuses a somewhat larger data set to determine the time required to produce one pattern. Note this test is</p>
+<p>The following cell compares the time required to generate a new pattern by the two methods for a somewhat larger data set.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">stocks</span> <span class="o">=</span> <span class="p">{</span>
@@ -1125,46 +1125,67 @@ V_s = \max\quad &amp; \left(\sum_{f\in F} \pi_{f} a'_{sf}\right) - c_s \\
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Testing generate_patterns_bilinear: 1.46 s ± 10.7 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
-Testing generate_patterns_dual: 155 ms ± 4.12 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Testing generate_patterns_bilinear: 1.4 s ± 42 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+Testing generate_patterns_dual: 138 ms ± 5.52 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
 </pre></div>
 </div>
 </div>
 </div>
 </section>
-<section id="a-solution-algorithm">
-<h2>A Solution Algorithm<a class="headerlink" href="#a-solution-algorithm" title="Permalink to this heading">#</a></h2>
-<p>The following cell implements an algorithm to solve the cutting stock problem. The algorithm starts with</p>
+<section id="a-hybrid-solution-algorithm">
+<h2>A Hybrid Solution Algorithm<a class="headerlink" href="#a-hybrid-solution-algorithm" title="Permalink to this heading">#</a></h2>
+<p>The following cell incorporates the pattern generation into an algorithm to solve the cutting stock problem. The algorithm starts with with <code class="docutils literal notranslate"><span class="pre">make_patterns</span></code> to create an initial list of patterns, then adds patterns until no new patterns are found. The algorithm begins using the the fast linear dual to add patterns, then finished with the bilinear method. There has been no exhaustive testing or attempt to compare this empirical method with others.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">pattern_generator</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">):</span>
     
     <span class="n">patterns</span> <span class="o">=</span> <span class="n">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
     
-    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_iter</span><span class="p">):</span>
+    <span class="c1"># Phase 1: dual pattern generation</span>
+    <span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-        <span class="n">new_pattern</span> <span class="o">=</span> <span class="n">pattern_generator</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
+        <span class="n">new_pattern</span> <span class="o">=</span> <span class="n">generate_pattern_dual</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">new_pattern</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
-            <span class="k">break</span>
-        <span class="n">patterns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_pattern</span><span class="p">)</span>
-        
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Didn&#39;t Converge in </span><span class="si">{</span><span class="n">max_iter</span><span class="si">}</span><span class="s2"> iterations&quot;</span><span class="p">)</span>
-        <span class="k">return</span>
+            <span class="n">done</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">patterns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_pattern</span><span class="p">)</span>
+
+    <span class="c1"># Phase 2: bilinear pattern generation</span>
+    <span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">new_pattern</span> <span class="o">=</span> <span class="n">generate_pattern_bilinear</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_pattern</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
+            <span class="n">done</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">patterns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_pattern</span><span class="p">)</span>
     
     <span class="c1"># return non-zero patterns</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; Finished</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span> 
     <span class="n">k</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">_</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">patterns</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">k</span><span class="p">],</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">k</span><span class="p">],</span> <span class="n">cost</span>
+
+<span class="n">stocks</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;A&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;cost&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">},</span>
+    <span class="s1">&#39;B&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="s1">&#39;cost&#39;</span><span class="p">:</span> <span class="mi">7</span><span class="p">},</span>
+    <span class="s1">&#39;C&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span> <span class="s1">&#39;cost&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">finish</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;S&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
+    <span class="s1">&#39;M&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">},</span>
+    <span class="s1">&#39;L&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
+<span class="p">}</span>
        
-<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">generate_pattern_dual</span><span class="p">)</span>
+<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
 <span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>... Finished
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>...* Finished
 </pre></div>
 </div>
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={&#39;center&#39;: &#39;Cost = 170.0&#39;}&gt;
@@ -1208,19 +1229,19 @@ Testing generate_patterns_dual: 155 ms ± 4.12 ms per loop (mean ± std. dev. of
     <span class="mi">20</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span>  <span class="mf">5.1</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">42</span><span class="p">},</span>
 <span class="p">}</span>
 
-<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">generate_pattern_bilinear</span><span class="p">)</span>
+<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
 <span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>............ Finished
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>.................** Finished
 </pre></div>
 </div>
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={&#39;center&#39;: &#39;Cost = 334.0&#39;}&gt;
 </pre></div>
 </div>
-<img alt="../../_images/5ac49359851c5aff7a055485ec307a072e51889fe75959ecaa167ed48a78c569.png" src="../../_images/5ac49359851c5aff7a055485ec307a072e51889fe75959ecaa167ed48a78c569.png" />
+<img alt="../../_images/20aba17b3f4b00a3ca2c9c880176413914cf52ad4beb274c91064d3d0807b3d9.png" src="../../_images/20aba17b3f4b00a3ca2c9c880176413914cf52ad4beb274c91064d3d0807b3d9.png" />
 </div>
 </div>
 </section>
@@ -1250,13 +1271,13 @@ Testing generate_patterns_dual: 155 ms ± 4.12 ms per loop (mean ± std. dev. of
     <span class="mi">2200</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="mi">2200</span><span class="p">,</span> <span class="s1">&#39;demand&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
 <span class="p">}</span>
 
-<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">generate_pattern_dual</span><span class="p">)</span>
+<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
 <span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>.......................... Finished
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>..........................*** Finished
 </pre></div>
 </div>
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={&#39;center&#39;: &#39;Cost = 73.0&#39;}&gt;
@@ -1558,7 +1579,7 @@ Image source: <a class="reference external" href="http://www.ana-white.com">www.
         <span class="n">stocks</span><span class="p">[</span><span class="n">stocks_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;length&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="n">stocks_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">0</span><span class="o">*</span><span class="n">kerf</span><span class="p">,</span>
                                              <span class="s1">&#39;cost&#39;</span><span class="p">:</span> <span class="n">stocks_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;price&#39;</span><span class="p">]}</span>
     
-    <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">generate_pattern_dual</span><span class="p">)</span>
+    <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
     <span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
     
 </pre></div>
@@ -1566,7 +1587,7 @@ Image source: <a class="reference external" href="http://www.ana-white.com">www.
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Kind = 2x4
-.... Finished
+....* Finished
 </pre></div>
 </div>
 <img alt="../../_images/52a2b9fa66b239ffa76ccd3570740bdd1be1f0cae16dd03dc04678b9123f69c9.png" src="../../_images/52a2b9fa66b239ffa76ccd3570740bdd1be1f0cae16dd03dc04678b9123f69c9.png" />
@@ -1735,7 +1756,7 @@ Image source: <a class="reference external" href="http://www.ana-white.com">www.
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cutting-stock-problem-bilinear-reformulation">Cutting Stock Problem: Bilinear reformulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pattern-generation-bilinear-model">Pattern Generation: Bilinear Model</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pattern-generation-linear-dual">Pattern Generation: Linear Dual</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-solution-algorithm">A Solution Algorithm</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-hybrid-solution-algorithm">A Hybrid Solution Algorithm</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-from-jump-documentation-for-column-generation">Example from JuMP documentation for column generation</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-from-wikipedia">Example from Wikipedia</a></li>
