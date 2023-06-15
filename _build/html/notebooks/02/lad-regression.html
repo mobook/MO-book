@@ -485,6 +485,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#generate-data">Generate data</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-visualization">Data Visualization</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model">Model</a></li>
@@ -504,20 +505,34 @@ document.write(`
 <span id="index-0"></span><h1>LAD Regression<a class="headerlink" href="#lad-regression" title="Permalink to this heading">#</a></h1>
 <p>Linear regression is a supervised machine learning technique that produces a linear model predicting values of a dependent variable from known values of one or more independent variables. Linear regression has a long history dating back to at least the 19th century and is a mainstay of modern data analysis.</p>
 <p>This notebook demonstrates a technique for linear regression based on LP that use the Least Absolute Deviation (LAD) as the metric to quantify the goodness of the model prediction. The sum of absolute values of errors is the <span class="math notranslate nohighlight">\(L_1\)</span> norm which is known to have favorable robustness characteristics in practical use. We follow closely this <a class="reference external" href="https://www.jstor.org/stable/1402501">paper</a>.</p>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
+<p>This cell selects and verifies a global SOLVER for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
+use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
+SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install pyomo &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip install highspy &gt;/dev/null <span class="m">2</span>&gt;/dev/null
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install highspy &gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
+</section>
 <section id="generate-data">
 <h2>Generate data<a class="headerlink" href="#generate-data" title="Permalink to this heading">#</a></h2>
 <p>The Python <a class="reference external" href="https://scikit-learn.org/stable/">scikit learn</a> library for machine learning provides a full-featured collection of tools for regression. The following cell uses <code class="docutils literal notranslate"><span class="pre">make_regression</span></code> from scikit learn to generate a synthetic data set for use in subsequent cells. The data consists of a numpy array <code class="docutils literal notranslate"><span class="pre">y</span></code> containing <code class="docutils literal notranslate"><span class="pre">n_samples</span></code> of one dependent variable <span class="math notranslate nohighlight">\(y\)</span>, and an array <code class="docutils literal notranslate"><span class="pre">X</span></code> containing <code class="docutils literal notranslate"><span class="pre">n_samples</span></code> observations of <code class="docutils literal notranslate"><span class="pre">n_features</span></code> independent explanatory variables.</p>
@@ -623,7 +638,7 @@ document.write(`
     <span class="k">def</span> <span class="nf">sum_of_abs_errors</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">ep</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">em</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
 
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     
     <span class="k">return</span> <span class="n">m</span>
 
@@ -669,7 +684,7 @@ b : Size=1, Index=None
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;matplotlib.legend.Legend at 0x7fdc6801c9d0&gt;
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;matplotlib.legend.Legend at 0x7fc43f1a8b80&gt;
 </pre></div>
 </div>
 <img alt="../../_images/36ff04b000d6b84a53afcc0bc6ef824745355a7a66980dba14c007a50058db1f.png" src="../../_images/36ff04b000d6b84a53afcc0bc6ef824745355a7a66980dba14c007a50058db1f.png" />
@@ -740,6 +755,7 @@ b : Size=1, Index=None
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#generate-data">Generate data</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-visualization">Data Visualization</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model">Model</a></li>

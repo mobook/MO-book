@@ -486,6 +486,7 @@ document.write(`
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Extra material: Energy dispatch problem</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#background-power-networks-and-power-flow-physics">Background: Power networks and power flow physics</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-power-flow">Optimal Power Flow</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a><ul class="nav section-nav flex-column">
@@ -518,20 +519,34 @@ document.write(`
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><section class="tex2jax_ignore mathjax_ignore" id="extra-material-energy-dispatch-problem">
 <span id="index-5"></span><h1>Extra material: Energy dispatch problem<a class="headerlink" href="#extra-material-energy-dispatch-problem" title="Permalink to this heading">#</a></h1>
 <p>To meet the energy demand, power plants run day and night across the country to produce electricity from a variety of sources such as fossil fuels and renewable energy. On the short-time scale, the best operating levels for electric power plants are derived every 15 minutes by solving the so-called <em>Optimal Power Flow (OPF)</em> model. The OPF model is an optimization problem with the objective of minimizing the total energy dispatching cost, while ensuring that the generation meets the total energy demand. Furthermore, the model takes into account many constraints, among which operational and physical constraints.</p>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
+<p>This cell selects and verifies a global SOLVER for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
+use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
+SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install pyomo &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip install highspy &gt;/dev/null <span class="m">2</span>&gt;/dev/null
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install highspy &gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
+</section>
 <section id="background-power-networks-and-power-flow-physics">
 <h2>Background: Power networks and power flow physics<a class="headerlink" href="#background-power-networks-and-power-flow-physics" title="Permalink to this heading">#</a></h2>
 <p>We model the nation-wide transmission power network as a directed graph <span class="math notranslate nohighlight">\(G=(V, E)\)</span>, where <span class="math notranslate nohighlight">\(V\)</span> represents the set of nodes (e.g., cities, industrial districts, power plants) and <span class="math notranslate nohighlight">\(E\)</span> denotes the set of directed edges (e.g., physical transmission lines).</p>
@@ -602,6 +617,26 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING: Failed to create solver with name
+    &#39;&lt;pyomo.solvers.plugins.solvers.CBCplugin.CBCSHELL object at
+    0x7f7a85e3d880&gt;&#39;: Failed to set executable for solver asl. File with
+    name=&lt;pyomo.solvers.plugins.solvers.CBCplugin.CBCSHELL object at
+    0x7f7a85e3d880&gt; either does not exist or it is not executable. To skip
+    this validation, call set_executable with validate=False.
+Traceback (most recent call last):
+  File &quot;/Users/jeff/opt/anaconda3/lib/python3.9/site-packages/pyomo/opt/base/solvers.py&quot;, line 166, in __call__
+    opt = self._cls[_implicit_solvers[mode]](**kwds)
+  File &quot;/Users/jeff/opt/anaconda3/lib/python3.9/site-packages/pyomo/solvers/plugins/solvers/ASL.py&quot;, line 45, in __init__
+    SystemCallSolver.__init__(self, **kwds)
+  File &quot;/Users/jeff/opt/anaconda3/lib/python3.9/site-packages/pyomo/opt/solver/shellcmd.py&quot;, line 66, in __init__
+    self.set_executable(name=executable, validate=validate)
+  File &quot;/Users/jeff/opt/anaconda3/lib/python3.9/site-packages/pyomo/opt/solver/shellcmd.py&quot;, line 114, in set_executable
+    raise ValueError(
+ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.solvers.plugins.solvers.CBCplugin.CBCSHELL object at 0x7f7a85e3d880&gt; either does not exist or it is not executable. To skip this validation, call set_executable with validate=False.
+</pre></div>
+</div>
+</div>
 </div>
 </section>
 <section id="data-import">
@@ -665,7 +700,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/10b0339f74ffd30f81a9f8bfbbc417f967fff8cc0a48ef26ace5bc694a09d2b7.png" src="../../_images/10b0339f74ffd30f81a9f8bfbbc417f967fff8cc0a48ef26ace5bc694a09d2b7.png" />
+<img alt="../../_images/f93897a96746e788ff558fe4d780aaec3f291f99000ef78ecee2d067e4f236d8.png" src="../../_images/f93897a96746e788ff558fe4d780aaec3f291f99000ef78ecee2d067e4f236d8.png" />
 </div>
 </div>
 <p>The IEEE-118 network has 18 generators, of which:</p>
@@ -1326,7 +1361,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
         <span class="k">return</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_min&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
     
     <span class="c1"># Solve</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span>
 </pre></div>
@@ -1440,7 +1475,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;coal&#39;</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
 
     <span class="c1"># Solve</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span>
 </pre></div>
@@ -1565,7 +1600,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;solar&#39;</span><span class="p">,</span> <span class="s1">&#39;wind&#39;</span><span class="p">,</span> <span class="s1">&#39;hydro&#39;</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">1000</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">M</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
     
     <span class="c1"># Solve</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
     <span class="k">return</span>  <span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span>
 </pre></div>
@@ -1611,7 +1646,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/258c50b38f5ecda52d5c51c47534d316df133b382c74b29385d7372c04e8a711.png" src="../../_images/258c50b38f5ecda52d5c51c47534d316df133b382c74b29385d7372c04e8a711.png" />
+<img alt="../../_images/703622920603465998e76e47a061edc99f9daa555973eb5683eca2c8e45e1f8f.png" src="../../_images/703622920603465998e76e47a061edc99f9daa555973eb5683eca2c8e45e1f8f.png" />
 </div>
 </div>
 <p>The goal of the OPF problem is to minimize the total costs of dispatching energy. OPF1 is the original OPF formulation, whereas OPF2 and OPF3 are restricted versions of OPF1. This means that the feasible region of OPF1 is at least as large as OPF2 and OPF3, where we may assume that <span class="math notranslate nohighlight">\(x_i = 1\)</span> for all the generators <span class="math notranslate nohighlight">\(i\)</span>.</p>
@@ -1686,6 +1721,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Extra material: Energy dispatch problem</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#background-power-networks-and-power-flow-physics">Background: Power networks and power flow physics</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-power-flow">Optimal Power Flow</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a><ul class="nav section-nav flex-column">

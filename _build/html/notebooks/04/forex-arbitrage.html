@@ -485,6 +485,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem">Problem</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#demonstration-of-triangular-arbitrage">Demonstration of Triangular Arbitrage</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling">Modeling</a></li>
@@ -508,16 +509,29 @@ document.write(`
 <li><p><a class="reference external" href="https://github.com/hzjken/crypto-arbitrage-framework">Crypto Arbitrage Framework</a></p></li>
 <li><p><a class="reference external" href="https://nbviewer.org/github/rcroessmann/sharing_public/blob/master/arbitrage_identification.ipynb">Crypto Trading and Arbitrage Identification Strategies</a></p></li>
 </ul>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
+<p>This cell selects and verifies a global SOLVER for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
+use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
+SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install pyomo &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip install highspy &gt;/dev/null <span class="m">2</span>&gt;/dev/null
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install highspy &gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -534,6 +548,7 @@ document.write(`
 </div>
 </div>
 </div>
+</section>
 <section id="problem">
 <h2>Problem<a class="headerlink" href="#problem" title="Permalink to this heading">#</a></h2>
 <p>Exchanging one currency for another is among the most common of all banking transactions. Currencies are normally priced relative to each other.</p>
@@ -744,8 +759,7 @@ document.write(`
     <span class="k">def</span> <span class="nf">wealth</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">R</span><span class="p">,</span> <span class="n">T</span><span class="p">]</span>
 
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
-    <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T0</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">t = </span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -839,7 +853,7 @@ w[JPY,3] =     -0.00
                 
     <span class="n">nodelist</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span>
     <span class="n">pos</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">spring_layout</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
-    <span class="n">nx</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">with_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">node_size</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">nodelist</span><span class="o">=</span><span class="n">nodelist</span><span class="p">,</span>
+    <span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">with_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">node_size</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">nodelist</span><span class="o">=</span><span class="n">nodelist</span><span class="p">,</span>
             <span class="n">node_color</span><span class="o">=</span><span class="s2">&quot;lightblue&quot;</span><span class="p">,</span> <span class="n">node_shape</span><span class="o">=</span><span class="s2">&quot;s&quot;</span><span class="p">,</span> <span class="n">arrowsize</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
     <span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx_edge_labels</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">edge_labels</span><span class="o">=</span><span class="n">edge_labels</span><span class="p">)</span>
     
@@ -851,7 +865,7 @@ w[JPY,3] =     -0.00
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span> 100.0 EUR -&gt; 200.0 USD -&gt; 20000.0 JPY -&gt; 150.0 EUR
 </pre></div>
 </div>
-<img alt="../../_images/26ca208b06a2be5d047c82c4fc6a2f3364e0bc2861892d170f5fbcf0c0c4978c.png" src="../../_images/26ca208b06a2be5d047c82c4fc6a2f3364e0bc2861892d170f5fbcf0c0c4978c.png" />
+<img alt="../../_images/9db164a2203ffd8df06aee727cd554773e10cb2d6f248b489fa647103756fd3b.png" src="../../_images/9db164a2203ffd8df06aee727cd554773e10cb2d6f248b489fa647103756fd3b.png" />
 </div>
 </div>
 </section>
@@ -1077,7 +1091,7 @@ w[HKD,3] =      0.00
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span> 100.0 USD -&gt; 11861.0 JPY -&gt; 126.9127 CAD -&gt; 100.4514 USD
 </pre></div>
 </div>
-<img alt="../../_images/843cac9fe2b5f56f5749c82c5b32771f525f4e46ee14893e9dcd152eb20d3de7.png" src="../../_images/843cac9fe2b5f56f5749c82c5b32771f525f4e46ee14893e9dcd152eb20d3de7.png" />
+<img alt="../../_images/3198c9a8b76f0d43f62a6e7c6a7f464325fbd4744630e52105f22e62fe7a7e83.png" src="../../_images/3198c9a8b76f0d43f62a6e7c6a7f464325fbd4744630e52105f22e62fe7a7e83.png" />
 </div>
 </div>
 </section>
@@ -1144,6 +1158,7 @@ w[HKD,3] =      0.00
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem">Problem</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#demonstration-of-triangular-arbitrage">Demonstration of Triangular Arbitrage</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling">Modeling</a></li>

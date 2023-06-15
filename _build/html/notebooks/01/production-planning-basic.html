@@ -483,7 +483,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preliminary-step-install-pyomo-and-solvers">Preliminary Step: Install Pyomo and solvers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-import-pyomo">Step 1. Import Pyomo</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-the-concretemodel-object">Step 2. The <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code> object</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-3-decision-variables">Step 3. Decision variables</a></li>
@@ -521,19 +521,35 @@ document.write(`
 </ul>
 <p>The Pyomo model shown below is a direct translation of the mathematical model into basic Pyomo components. In this approach, parameter values from the mathematical model are included directly in the Pyomo model for simplicity. This method works well for problems with a small number of decision variables and constraints, but it limits the reuse of the model. Another notebook will demonstrate Pyomo features for writing models for more generic, “data-driven” applications.</p>
 <p>This notebook also introduces the use of Python decorators to designate Pyomo expressions, objectives, and constraints. While decorators may be unfamiliar to some Python users, or even current Pyomo users, they offer a significant improvement in the readability of Pyomo model. This feature is relatively new and is available in recent versions of Pyomo.</p>
-<section id="preliminary-step-install-pyomo-and-solvers">
-<h2>Preliminary Step: Install Pyomo and solvers<a class="headerlink" href="#preliminary-step-install-pyomo-and-solvers" title="Permalink to this heading">#</a></h2>
-<p>We start by verifying the installation of Pyomo and any needed solvers. The following cell downloads a Python module that checks if Pyomo and designated solvers have been installed previously. If not, the <code class="docutils literal notranslate"><span class="pre">helper</span></code> functions perform the needed installations. These installations need to be done only once for each Python environment on a personal laptop. For Google Colab, however, a new installation must be done for each new Colab session.</p>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
+<p>This collection of notebooks is intended to be run in the cloud on <a class="reference external" href="https://colab.google/">Google Colab</a> or on a personal computer. To meet this goal, We start each notebook by verifying the installation of Pyomo and an appropriate solver. When run on Google Colab, an installation of Pyomo and a solver must be done for each new Colab session. The <a class="reference external" href="https://highs.dev/">HiGHS solver</a> is a high performance open source solver for linear and mixed integer optimization on Google Colab.  For a personal computer, we assume Python, Pyomo and the <a class="reference external" href="https://coin-or.github.io/Cbc/intro.html">Cbc solver</a> have been previously installed.</p>
+<p>The following cell checks if the notebook is running on Google Colab. If so, it does a quiet installations of Pyomo and a solver. A solver is then selected, a test performed to verify that the solver is available, and the solver interface is stored in a global object <code class="docutils literal notranslate"><span class="pre">SOLVER</span></code> for later use.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This cell sets and verifies a global SOLVER for the notebook.</span>
+
+<span class="sd">If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to use</span>
+<span class="sd">the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC</span>
+<span class="sd">have been previously installed and sets SOLVER to use the CBC solver via the Pyomo </span>
+<span class="sd">SolverFactory. For both cases, it then verifies that SOLVER is available.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
 <span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install pyomo &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip install highspy &gt;/dev/null <span class="m">2</span>&gt;/dev/null
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install highspy &gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -800,8 +816,7 @@ model.labor_B = pyo.Constraint(expr = 1 * model.y_U + 1 * model.y_V &lt;= model.
 <p>The optional keyword <code class="docutils literal notranslate"><span class="pre">tee=True</span></code> causes the solver to print its output to the output. This can be useful for debugging problems that arise when developing a new model.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -810,7 +825,7 @@ model.labor_B = pyo.Constraint(expr = 1 * model.y_U + 1 * model.y_V &lt;= model.
 Version: 2.10.8 
 Build Date: Mar 31 2023 
 
-command line - /Users/jeff/opt/anaconda3/bin/cbc -printingOptions all -import /var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/tmpe8rkv62h.pyomo.lp -stat=1 -solve -solu /var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/tmpe8rkv62h.pyomo.soln (default strategy 1)
+command line - /Users/jeff/opt/anaconda3/bin/cbc -printingOptions all -import /var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/tmpm0u2uxah.pyomo.lp -stat=1 -solve -solu /var/folders/cm/z3t28j296f98jdp1vqyplkz00000gn/T/tmpm0u2uxah.pyomo.soln (default strategy 1)
 Option for printingOptions changed from normal to all
  CoinLpIO::readLp(): Maximization problem reformulated as minimization
 Coin0009I Switching back to maximization to get correct duals etc
@@ -836,7 +851,7 @@ Presolve 3 (-1) rows, 5 (-1) columns and 9 (-1) elements
 Optimal - objective value 2400
 After Postsolve, objective 2400, infeasibilities - dual 0 (0), primal 0 (0)
 Optimal objective 2400 - 3 iterations time 0.002, Presolve 0.00
-Total time (CPU seconds):       0.00   (Wallclock seconds):       0.00
+Total time (CPU seconds):       0.00   (Wallclock seconds):       0.02
 </pre></div>
 </div>
 </div>
@@ -1085,7 +1100,7 @@ dtype: float64
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preliminary-step-install-pyomo-and-solvers">Preliminary Step: Install Pyomo and solvers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-import-pyomo">Step 1. Import Pyomo</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-the-concretemodel-object">Step 2. The <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code> object</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-3-decision-variables">Step 3. Decision variables</a></li>

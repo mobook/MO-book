@@ -485,6 +485,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
 </ul>
             </nav>
@@ -499,20 +500,34 @@ document.write(`
                   
   <span class="target" id="index-0"></span><section class="tex2jax_ignore mathjax_ignore" id="bim-production-with-perturbed-data">
 <span id="index-1"></span><h1>BIM production with perturbed data<a class="headerlink" href="#bim-production-with-perturbed-data" title="Permalink to this heading">#</a></h1>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
+<p>This cell selects and verifies a global SOLVER for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
+use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
+SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install pyomo &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip install highspy &gt;/dev/null <span class="m">2</span>&gt;/dev/null
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install highspy &gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
+</section>
 <section id="problem-description">
 <h2>Problem description<a class="headerlink" href="#problem-description" title="Permalink to this heading">#</a></h2>
 <p>The company BIM realizes that a <span class="math notranslate nohighlight">\(1\%\)</span> fraction of the copper always gets wasted while producing both types of microchips, more specifically <span class="math notranslate nohighlight">\(1\%\)</span> of the required amount. This means that it actually takes <span class="math notranslate nohighlight">\(4.04\)</span> gr of copper to produce a logic chip and <span class="math notranslate nohighlight">\(2.02\)</span> gr of copper to produce a memory chip. If we rewrite the linear problem of <a class="reference internal" href="../02/bim.html"><span class="doc std std-doc">the basic BIM problem</span></a> and modify accordingly the coefficients in the corresponding constraints, we obtain the following problem</p>
@@ -544,7 +559,7 @@ document.write(`
 <span class="n">m</span><span class="o">.</span><span class="n">plastic</span>   <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span>       <span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">+</span>      <span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">&lt;=</span> <span class="mi">1750</span><span class="p">)</span>
 <span class="n">m</span><span class="o">.</span><span class="n">copper</span>    <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span>  <span class="mf">4.04</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">+</span> <span class="mf">2.02</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">&lt;=</span> <span class="mi">4800</span><span class="p">)</span>
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;x = (</span><span class="si">{:.3f}</span><span class="s1">, </span><span class="si">{:.3f}</span><span class="s1">), optimal value = </span><span class="si">{:.3f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
     <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">),</span>
@@ -587,7 +602,7 @@ document.write(`
 <span class="n">m</span><span class="o">.</span><span class="n">plastic</span>   <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span>       <span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">+</span>      <span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">&lt;=</span> <span class="mi">1750</span><span class="p">)</span>
 <span class="n">m</span><span class="o">.</span><span class="n">copper</span>    <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span>  <span class="mf">4.04</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">+</span> <span class="mf">2.02</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">&lt;=</span> <span class="mi">4800</span><span class="p">)</span>
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;x = (</span><span class="si">{:.3f}</span><span class="s1">, </span><span class="si">{:.3f}</span><span class="s1">), optimal value = </span><span class="si">{:.3f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
     <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">),</span>
@@ -666,6 +681,7 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
 </ul>
   </nav></div>

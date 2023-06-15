@@ -486,7 +486,7 @@ document.write(`
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-statement">Problem statement</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#imports">Imports</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling-with-disjunctive-constraints">Modeling with disjunctive constraints</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#objective">Objective</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#constraints">Constraints</a></li>
@@ -518,18 +518,29 @@ document.write(`
 <p>A process unit is operating over a maintenance planning horizon from <span class="math notranslate nohighlight">\(1\)</span> to <span class="math notranslate nohighlight">\(T\)</span> days.  On day <span class="math notranslate nohighlight">\(t\)</span> the unit makes a profit <span class="math notranslate nohighlight">\(c[t]\)</span> which is known in advance. The unit needs to shut down for <span class="math notranslate nohighlight">\(P\)</span> maintenance periods during the planning period.  Once started, a maintenance period takes <span class="math notranslate nohighlight">\(M\)</span> days to finish.</p>
 <p>Find a maintenance schedule that allows the maximum profit to be produced.</p>
 </section>
-<section id="imports">
-<h2>Imports<a class="headerlink" href="#imports" title="Permalink to this heading">#</a></h2>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
+<p>This cell selects and verifies a global SOLVER for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
+use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
+SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install pyomo &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip install highspy &gt;/dev/null <span class="m">2</span>&gt;/dev/null
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install highspy &gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -662,13 +673,13 @@ document.write(`
     <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">maintenance_planning</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 <span class="n">plot_schedule</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/809b0b963949de344c7c63b796fc1dacd5c2b909b3f38a291c420408bb8e4e1d.png" src="../../_images/809b0b963949de344c7c63b796fc1dacd5c2b909b3f38a291c420408bb8e4e1d.png" />
+<img alt="../../_images/a4ddf89cd604fcd9142d5762d65c9e5aabdd56e8b9bda20a5d0ebf6599375606.png" src="../../_images/a4ddf89cd604fcd9142d5762d65c9e5aabdd56e8b9bda20a5d0ebf6599375606.png" />
 </div>
 </div>
 </section>
@@ -740,13 +751,13 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t
     <span class="k">return</span> <span class="n">m</span>
   
 <span class="n">m</span> <span class="o">=</span> <span class="n">maintenance_planning_ramp</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">P</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">plot_schedule</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/12194ed6dc101f1a5307f31e0db79697d721180bf9abf4514b5f164465c80407.png" src="../../_images/12194ed6dc101f1a5307f31e0db79697d721180bf9abf4514b5f164465c80407.png" />
+<img alt="../../_images/5b0601b422b62ba5d833f33a1281a9298521e4a24e04676e08d6101d164c87fc.png" src="../../_images/5b0601b422b62ba5d833f33a1281a9298521e4a24e04676e08d6101d164c87fc.png" />
 </div>
 </div>
 </section>
@@ -829,13 +840,13 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t
     <span class="k">return</span> <span class="n">m</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">maintenance_planning_ramp_operational</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">plot_schedule</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/7017dd109712ba0687ecf61506df656f89bc514a376b6eadd5aa880dcfc8f97e.png" src="../../_images/7017dd109712ba0687ecf61506df656f89bc514a376b6eadd5aa880dcfc8f97e.png" />
+<img alt="../../_images/736a1c529b9ced4e89aa07edbc6f08da4ba1a84d4bc915edcd05f57d93d8745a.png" src="../../_images/736a1c529b9ced4e89aa07edbc6f08da4ba1a84d4bc915edcd05f57d93d8745a.png" />
 </div>
 </div>
 </section>
@@ -910,7 +921,7 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-statement">Problem statement</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#imports">Imports</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling-with-disjunctive-constraints">Modeling with disjunctive constraints</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#objective">Objective</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#constraints">Constraints</a></li>

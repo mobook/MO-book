@@ -486,8 +486,11 @@ document.write(`
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Dinner seating arrangement</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#minimize-the-maximum-group-size">Minimize the maximum group size</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#minimize-number-of-tables">Minimize number of tables</a></li>
 </ul>
 </li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#reformulation-as-max-flow-problem">Reformulation as max flow problem</a></li>
@@ -503,26 +506,41 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><span class="target" id="index-5"></span><section class="tex2jax_ignore mathjax_ignore" id="dinner-seating-arrangement">
-<span id="index-6"></span><h1>Dinner seating arrangement<a class="headerlink" href="#dinner-seating-arrangement" title="Permalink to this heading">#</a></h1>
+  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><span class="target" id="index-5"></span><span class="target" id="index-6"></span><section class="tex2jax_ignore mathjax_ignore" id="dinner-seating-arrangement">
+<span id="index-7"></span><h1>Dinner seating arrangement<a class="headerlink" href="#dinner-seating-arrangement" title="Permalink to this heading">#</a></h1>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
+<p>This cell selects and verifies a global SOLVER for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
+use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
+SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install pyomo &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip install highspy &gt;/dev/null <span class="m">2</span>&gt;/dev/null
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install highspy &gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
+</section>
 <section id="problem-description">
 <h2>Problem description<a class="headerlink" href="#problem-description" title="Permalink to this heading">#</a></h2>
-<p>Consider organizing a wedding dinner at which your objective is that the guests from different families mingle with each other. One of the ways to do so is to seat people at the tables in such a way that no more people than a given threshold <span class="math notranslate nohighlight">\(k\)</span> from the same family take a seat at the same table. How could we solve a problem like this? First, we need the problem data – for each family <span class="math notranslate nohighlight">\(f\)</span> we need to know the number of its members <span class="math notranslate nohighlight">\(m_f\)</span>, and for each table <span class="math notranslate nohighlight">\(t\)</span> we need to know its capacity <span class="math notranslate nohighlight">\(c_t\)</span>. Using this data and the tools we learned so far, we can formulate this problem as a linear optimization (LO).</p>
-<p>If we do not care about the specific people, but only about the number of people from a given family, then we can use variable <span class="math notranslate nohighlight">\(x_{ft}\)</span>  for the number of persons from family <span class="math notranslate nohighlight">\(f\)</span> to be seated at table <span class="math notranslate nohighlight">\(t\)</span>. Since we were not provided with any objective function, we can focus on finding a feasible solution by setting the objective function to be constant, say <span class="math notranslate nohighlight">\(0\)</span>, which means that we do not differentiate between the various feasible solutions.</p>
+<p>Consider organizing a wedding dinner. Your objective is for guests from different families to mingle with each other. One way to encourage mingling is to seat people at the tables so that no more people than <span class="math notranslate nohighlight">\(k\)</span> members of the same family take a seat at the same table.</p>
+<p>How could we solve a problem like this? First, we need the problem data – for each family <span class="math notranslate nohighlight">\(f\)</span> we need to know the number of its members <span class="math notranslate nohighlight">\(m_f\)</span>, and for each table <span class="math notranslate nohighlight">\(t\)</span> we need to know its capacity <span class="math notranslate nohighlight">\(c_t\)</span>. Using this data and the tools we learned so far, we can formulate this problem as a linear optimization (LO).</p>
+<p>We can use variable <span class="math notranslate nohighlight">\(x_{ft}\)</span>  for the number of persons from family <span class="math notranslate nohighlight">\(f\)</span> to be seated at table <span class="math notranslate nohighlight">\(t\)</span>. Since we were not provided with any objective function, we can focus on finding a feasible solution by setting the objective function to be constant, say <span class="math notranslate nohighlight">\(0\)</span>, which means that we do not differentiate between feasible solutions.</p>
 <p>The mathematical formulation of this seating problem is:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -533,10 +551,11 @@ document.write(`
     &amp; 0 \leq x_{ft} \leq k.
 \end{align*}
 \end{split}\]</div>
-<p>The two constraints ensure that (i) for each table the seating capacity is not exceeded and that (ii) each family is fully seated and that the number of elements of each family at each table does not exceed <span class="math notranslate nohighlight">\(k\)</span>.</p>
+<p>The constraints ensure that the seating capacity for each table is not exceeded, that each family is fully seated, and that the number of elements of each family at each table does not exceed the threshold <span class="math notranslate nohighlight">\(k\)</span>.</p>
 </section>
 <section id="implementation">
 <h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading">#</a></h2>
+<p>The problem statement will be satisfied by finding a feasible solution, if one exists. Because no specific objective has been specified, the mathematical formulation uses a constant 0 as essentially a placeholder for the objective function. Some optimization solvers, however, issue warning messages if they detect a constant objective, and others will fail to execute at all. A simple work around for these cases is to replace the constant objective with a ‘dummy’ variable that doesn’t  appear elsewhere in the optimization problem.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
@@ -545,91 +564,73 @@ document.write(`
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
-<span class="k">def</span> <span class="nf">TableSeat</span><span class="p">(</span> <span class="n">members</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">):</span>
-    <span class="n">m</span>   <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Dina&#39;s seat plan&quot;</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">members</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">capacity</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">M</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">members</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">capacity</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">k</span><span class="p">),</span> <span class="n">domain</span><span class="o">=</span><span class="n">domain</span> <span class="p">)</span>
+<span class="k">def</span> <span class="nf">table_seat</span><span class="p">(</span><span class="n">members</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">):</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span> <span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Dina&#39;s seat plan&quot;</span><span class="p">)</span>
+    
+    <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">members</span><span class="p">)))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">capacity</span><span class="p">)))</span>
+    
+    <span class="n">m</span><span class="o">.</span><span class="n">M</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">members</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">capacity</span><span class="p">)</span>
+    
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">k</span><span class="p">),</span> <span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">dummy</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">initialize</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">goal</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">dummy</span>
 
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>    
-    <span class="k">def</span> <span class="nf">capacity</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span>  <span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>    
+    <span class="k">def</span> <span class="nf">capacity</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">seat</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">f</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">seat</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
         
     <span class="k">return</span> <span class="n">m</span>
 
-<span class="k">def</span> <span class="nf">TableSeatAsMaxFlow</span><span class="p">(</span> <span class="n">members</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">):</span>
-    <span class="n">m</span>   <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Dina&#39;s seat plan&quot;</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">members</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">capacity</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">M</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">members</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">capacity</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">k</span><span class="p">),</span> <span class="n">domain</span><span class="o">=</span><span class="n">domain</span> <span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_solution</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">f</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">idx</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">f</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">()</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;family&quot;</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;table </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">goal</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="p">)</span>
-
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>    
-    <span class="k">def</span> <span class="nf">capacity</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span>  <span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
-    
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">seat</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">f</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
-        
-    <span class="k">return</span> <span class="n">m</span>
-
-<span class="k">def</span> <span class="nf">Reset</span><span class="p">(</span> <span class="n">model</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">component_data_objects</span><span class="p">(</span><span class="n">ctype</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">,</span> <span class="n">descend_into</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="n">v</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
-        
-<span class="k">def</span> <span class="nf">GetSolution</span><span class="p">(</span> <span class="n">model</span> <span class="p">):</span>
-    <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-    <span class="n">sol</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">sol</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">=</span><span class="n">x</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">sol</span>
-    
-<span class="k">def</span> <span class="nf">Report</span><span class="p">(</span> <span class="n">model</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span> <span class="p">):</span>
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="p">)</span>
+<span class="k">def</span> <span class="nf">report</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Solver status: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Termination condition: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="o">==</span> <span class="s1">&#39;optimal&#39;</span><span class="p">:</span>
-        <span class="n">sol</span> <span class="o">=</span> <span class="n">GetSolution</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>
-        <span class="n">display</span><span class="p">(</span> <span class="n">sol</span> <span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;objective       &#39;</span><span class="p">,</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span> <span class="n">seatplan</span><span class="o">.</span><span class="n">goal</span> <span class="p">)</span> <span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;places at table &#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)))</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;members seated  &#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)))</span>
+        <span class="n">soln</span> <span class="o">=</span> <span class="n">get_solution</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>
+        <span class="n">display</span><span class="p">(</span><span class="n">soln</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;objective:       </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">seatplan</span><span class="o">.</span><span class="n">goal</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;places at table: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">soln</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;members seated:  </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">soln</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p>Let us now consider and solve a specific instance of this problem with family sizes <span class="math notranslate nohighlight">\(m = (6,8,2,9,13,1)\)</span>, table capacities <span class="math notranslate nohighlight">\(c = (8,8,10,4,9)\)</span>, and threshold <span class="math notranslate nohighlight">\(k=3\)</span>.</p>
+<p>Let us now consider and solve a specific instance of this problem with six families with sizes <span class="math notranslate nohighlight">\(m = (6, 8, 2, 9, 13, 1)\)</span>, five tables with capacities <span class="math notranslate nohighlight">\(c = (8, 8, 10, 4, 9)\)</span>, and a threshold <span class="math notranslate nohighlight">\(k=3\)</span> for the number of members of each family that can be seated at the same table.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">seatplan</span> <span class="o">=</span> <span class="n">TableSeat</span><span class="p">(</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">13</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">9</span><span class="p">],</span> <span class="mi">3</span> <span class="p">)</span>
-
-<span class="o">%</span><span class="k">time</span> results = pyo.SolverFactory(SOLVER).solve(seatplan)
-
-<span class="n">Report</span><span class="p">(</span> <span class="n">seatplan</span><span class="p">,</span> <span class="n">results</span> <span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">seatplan</span> <span class="o">=</span> <span class="n">table_seat</span><span class="p">(</span>
+    <span class="n">members</span><span class="o">=</span><span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> 
+    <span class="n">capacity</span><span class="o">=</span><span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span> 
+    <span class="n">k</span><span class="o">=</span><span class="mi">3</span>
+<span class="p">)</span>
+<span class="o">%</span><span class="k">time</span> results = SOLVER.solve(seatplan)
+<span class="n">report</span><span class="p">(</span><span class="n">seatplan</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING: Constant objective detected, replacing with a placeholder to prevent
-    solver failure.
-CPU times: user 11.9 ms, sys: 13.6 ms, total: 25.5 ms
-Wall time: 123 ms
-ok optimal
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 9.31 ms, sys: 11.9 ms, total: 21.2 ms
+Wall time: 68 ms
+Solver status: ok
+Termination condition: optimal
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -650,99 +651,114 @@ ok optimal
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>0</th>
-      <th>1</th>
-      <th>2</th>
-      <th>3</th>
-      <th>4</th>
+      <th>table 0</th>
+      <th>table 1</th>
+      <th>table 2</th>
+      <th>table 3</th>
+      <th>table 4</th>
+    </tr>
+    <tr>
+      <th>family</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>2</td>
-      <td>3</td>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
+      <td>2.0</td>
+      <td>3.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>2</td>
-      <td>0</td>
-      <td>3</td>
-      <td>0</td>
-      <td>3</td>
+      <td>2.0</td>
+      <td>0.0</td>
+      <td>3.0</td>
+      <td>0.0</td>
+      <td>3.0</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>2</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td>2.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>0</td>
-      <td>2</td>
-      <td>3</td>
-      <td>1</td>
-      <td>3</td>
+      <td>0.0</td>
+      <td>2.0</td>
+      <td>3.0</td>
+      <td>1.0</td>
+      <td>3.0</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>1</td>
-      <td>3</td>
-      <td>3</td>
-      <td>3</td>
-      <td>3</td>
+      <td>1.0</td>
+      <td>3.0</td>
+      <td>3.0</td>
+      <td>3.0</td>
+      <td>3.0</td>
     </tr>
     <tr>
       <th>5</th>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
     </tr>
   </tbody>
 </table>
-</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>objective        0.0
-places at table  [8, 8, 10, 4, 9]
-members seated   [6, 8, 2, 9, 13, 1]
+</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>objective:       0.0
+places at table: [8.0, 8.0, 10.0, 4.0, 9.0]
+members seated:  [6.0, 8.0, 2.0, 9.0, 13.0, 1.0]
 </pre></div>
 </div>
 </div>
 </div>
-<p>A peculiar fact is that although we did not explicitly require that all variables <span class="math notranslate nohighlight">\(x_{ft}\)</span> be integer, the optimal solution turned out to be integer anyway. This is no coincidence as it follows from a certain property of the problem we solve. This means that also for larger versions of this problem, we can solve them with LO instead of MILO solvers to find integer solutions, gaining a huge computational advantage.</p>
+<p>A peculiar fact is that although we did not explicitly require that all variables <span class="math notranslate nohighlight">\(x_{ft}\)</span> be integer, the optimal solution turned out to be integer anyway. This is no coincidence as it follows from a certain property of the problem we solve. This also means we can solve  larger versions of this problem with LO instead of MILO solvers to find integer solutions, gaining a large computational advantage.</p>
+</section>
+<section id="minimize-the-maximum-group-size">
+<h2>Minimize the maximum group size<a class="headerlink" href="#minimize-the-maximum-group-size" title="Permalink to this heading">#</a></h2>
 <p>Our objective was that we make members of different families mingle as much as possible. Is <span class="math notranslate nohighlight">\(k = 3\)</span> the lowest possible number for which a feasible table allocation exists or can we make the tables even more diverse by bringing this number down?</p>
 <p>In order to find out, we change the objective function and try to minimize <span class="math notranslate nohighlight">\(k\)</span>, obtaining the following problem:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">TableSeatMinimizeMaxGroupAtTable</span><span class="p">(</span> <span class="n">members</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">nature</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">):</span>
-    <span class="n">m</span>   <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Dina&#39;s seat plan&quot;</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">members</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">capacity</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">M</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">members</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">capacity</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">nature</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">domain</span><span class="o">=</span><span class="n">nature</span> <span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">table_seat_minimize_max_group_at_table</span><span class="p">(</span><span class="n">members</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">):</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span> <span class="p">)</span>
+    <span class="n">m</span>   <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Dina&#39;s seat plan&quot;</span><span class="p">)</span>
+    
+    <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">members</span><span class="p">)))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">capacity</span><span class="p">)))</span>
+    
+    <span class="n">m</span><span class="o">.</span><span class="n">M</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">members</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">capacity</span><span class="p">)</span>
+    
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">)</span>
+    
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">goal</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">k</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>    
-    <span class="k">def</span> <span class="nf">capacity</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span>  <span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>    
+    <span class="k">def</span> <span class="nf">capacity</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span>  <span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
     
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">seat</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">f</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">seat</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
 
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">bound</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">bound</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">k</span>
 
     <span class="k">return</span> <span class="n">m</span>
@@ -753,18 +769,21 @@ members seated   [6, 8, 2, 9, 13, 1]
 <p>We now solve the same instance as before.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">seatplan</span> <span class="o">=</span> <span class="n">TableSeatMinimizeMaxGroupAtTable</span><span class="p">(</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">13</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">9</span><span class="p">],</span> <span class="n">nature</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
-
-<span class="o">%</span><span class="k">time</span> results = pyo.SolverFactory(SOLVER).solve(seatplan)
-
-<span class="n">Report</span><span class="p">(</span> <span class="n">seatplan</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span> <span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">seatplan</span> <span class="o">=</span> <span class="n">table_seat_minimize_max_group_at_table</span><span class="p">(</span>
+    <span class="n">members</span><span class="o">=</span><span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> 
+    <span class="n">capacity</span><span class="o">=</span><span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span> 
+    <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> 
+<span class="p">)</span>
+<span class="o">%</span><span class="k">time</span> results = SOLVER.solve(seatplan)
+<span class="n">report</span><span class="p">(</span><span class="n">seatplan</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 9.47 ms, sys: 11.8 ms, total: 21.3 ms
-Wall time: 70.4 ms
-ok optimal
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 8.69 ms, sys: 7.65 ms, total: 16.3 ms
+Wall time: 43 ms
+Solver status: ok
+Termination condition: optimal
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -785,11 +804,19 @@ ok optimal
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>0</th>
-      <th>1</th>
-      <th>2</th>
-      <th>3</th>
-      <th>4</th>
+      <th>table 0</th>
+      <th>table 1</th>
+      <th>table 2</th>
+      <th>table 3</th>
+      <th>table 4</th>
+    </tr>
+    <tr>
+      <th>family</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
     </tr>
   </thead>
   <tbody>
@@ -843,57 +870,32 @@ ok optimal
     </tr>
   </tbody>
 </table>
-</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>objective        2.6
-places at table  [8.0, 8.0, 10.0, 4.0, 9.0]
-members seated   [6.000000000000001, 8.0, 2.0, 9.0, 13.0, 1.0]
+</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>objective:       2.6
+places at table: [8.0, 8.0, 10.0, 4.0, 9.0]
+members seated:  [6.000000000000001, 8.0, 2.0, 9.0, 13.0, 1.0]
 </pre></div>
 </div>
 </div>
 </div>
-<p>Unfortunately, this solution is no longer integer. Mathematically, this is due to the fact that the “structure” that previously ensured integrality of solutions at no extra cost, has been lost as a result of making <span class="math notranslate nohighlight">\(k\)</span> a decision variable. To find the solution to this problem we need to impose that the variables are integers.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">TableSeatMinimizeNumberOfTables</span><span class="p">(</span> <span class="n">members</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">nature</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">):</span>
-    <span class="n">m</span>   <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Dina&#39;s seat plan&quot;</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">members</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">capacity</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">M</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">members</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">capacity</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">k</span><span class="p">),</span> <span class="n">domain</span><span class="o">=</span><span class="n">nature</span> <span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span> <span class="p">)</span>
-    
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">goal</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-    
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>    
-    <span class="k">def</span> <span class="nf">capacity</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span>  <span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
-    
-    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">seat</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">f</span> <span class="p">):</span>
-        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
-
-    <span class="k">return</span> <span class="n">m</span>
-</pre></div>
-</div>
-</div>
-</div>
+<p>Unfortunately, this solution is no longer integer. Mathematically, this is because the “structure” that previously ensured integer solutions at no extra cost has been lost as a result of making <span class="math notranslate nohighlight">\(k\)</span> a decision variable. To find the solution to this problem we need to impose that the variables are integers.</p>
 <p>Using an MILO solver such as <code class="docutils literal notranslate"><span class="pre">cbc</span></code> or <code class="docutils literal notranslate"><span class="pre">highs</span></code>, we recover the original optimal value <span class="math notranslate nohighlight">\(k = 3\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">seatplan</span> <span class="o">=</span> <span class="n">TableSeatMinimizeNumberOfTables</span><span class="p">(</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">13</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">9</span><span class="p">],</span> <span class="mi">3</span><span class="p">,</span> <span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span> <span class="p">)</span>
-
-<span class="o">%</span><span class="k">time</span> results = pyo.SolverFactory(SOLVER).solve(seatplan)
-
-<span class="n">Report</span><span class="p">(</span> <span class="n">seatplan</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span> <span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">seatplan</span> <span class="o">=</span> <span class="n">table_seat_minimize_max_group_at_table</span><span class="p">(</span>
+    <span class="n">members</span><span class="o">=</span><span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> 
+    <span class="n">capacity</span><span class="o">=</span><span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span> 
+    <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span>
+<span class="p">)</span>
+<span class="o">%</span><span class="k">time</span> results = SOLVER.solve(seatplan)
+<span class="n">report</span><span class="p">(</span><span class="n">seatplan</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 8.98 ms, sys: 12.8 ms, total: 21.7 ms
-Wall time: 83.1 ms
-ok optimal
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 8.53 ms, sys: 7.81 ms, total: 16.3 ms
+Wall time: 48.2 ms
+Solver status: ok
+Termination condition: optimal
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -914,11 +916,161 @@ ok optimal
   <thead>
     <tr style="text-align: right;">
       <th></th>
+      <th>table 0</th>
+      <th>table 1</th>
+      <th>table 2</th>
+      <th>table 3</th>
+      <th>table 4</th>
+    </tr>
+    <tr>
+      <th>family</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
       <th>0</th>
+      <td>2</td>
+      <td>2</td>
+      <td>0</td>
+      <td>0</td>
+      <td>2</td>
+    </tr>
+    <tr>
       <th>1</th>
+      <td>1</td>
+      <td>3</td>
+      <td>2</td>
+      <td>0</td>
+      <td>2</td>
+    </tr>
+    <tr>
       <th>2</th>
+      <td>0</td>
+      <td>0</td>
+      <td>2</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
       <th>3</th>
+      <td>2</td>
+      <td>2</td>
+      <td>2</td>
+      <td>1</td>
+      <td>2</td>
+    </tr>
+    <tr>
       <th>4</th>
+      <td>3</td>
+      <td>1</td>
+      <td>3</td>
+      <td>3</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>objective:       3.0
+places at table: [8, 8, 10, 4, 9]
+members seated:  [6, 8, 2, 9, 13, 1]
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="minimize-number-of-tables">
+<h2>Minimize number of tables<a class="headerlink" href="#minimize-number-of-tables" title="Permalink to this heading">#</a></h2>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">table_seat_minimize_number_of_tables</span><span class="p">(</span><span class="n">members</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">):</span>
+    <span class="n">m</span>   <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Dina&#39;s seat plan&quot;</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">members</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">capacity</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">M</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">members</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">capacity</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">k</span><span class="p">),</span> <span class="n">domain</span><span class="o">=</span><span class="n">domain</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span> <span class="p">)</span>
+    
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">goal</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>    
+    <span class="k">def</span> <span class="nf">capacity</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">t</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span>  <span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">C</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+    
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">seat</span><span class="p">(</span> <span class="n">m</span><span class="p">,</span> <span class="n">f</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">m</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">seatplan</span> <span class="o">=</span> <span class="n">table_seat_minimize_number_of_tables</span><span class="p">(</span>
+    <span class="n">members</span><span class="o">=</span><span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> 
+    <span class="n">capacity</span><span class="o">=</span><span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span> 
+    <span class="n">k</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+    <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span>
+<span class="p">)</span>
+<span class="o">%</span><span class="k">time</span> results = SOLVER.solve(seatplan)
+<span class="n">report</span><span class="p">(</span><span class="n">seatplan</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 9.24 ms, sys: 8.94 ms, total: 18.2 ms
+Wall time: 47.4 ms
+Solver status: ok
+Termination condition: optimal
+</pre></div>
+</div>
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>table 0</th>
+      <th>table 1</th>
+      <th>table 2</th>
+      <th>table 3</th>
+      <th>table 4</th>
+    </tr>
+    <tr>
+      <th>family</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
     </tr>
   </thead>
   <tbody>
@@ -972,9 +1124,9 @@ ok optimal
     </tr>
   </tbody>
 </table>
-</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>objective        5.0
-places at table  [8, 8, 10, 4, 9]
-members seated   [6, 8, 2, 9, 13, 1]
+</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>objective:       5.0
+places at table: [8, 8, 10, 4, 9]
+members seated:  [6, 8, 2, 9, 13, 1]
 </pre></div>
 </div>
 </div>
@@ -983,7 +1135,7 @@ members seated   [6, 8, 2, 9, 13, 1]
 </section>
 <section class="tex2jax_ignore mathjax_ignore" id="reformulation-as-max-flow-problem">
 <h1>Reformulation as max flow problem<a class="headerlink" href="#reformulation-as-max-flow-problem" title="Permalink to this heading">#</a></h1>
-<p>However, using an MILO solver is not necessarily the best approach for problems like this. Many real-life situations (assigning people to work/course groups) require solving really large problems.  There exist algorithms that can leverage the special <strong>network structure</strong> of the problem at hand and which work better than LO solvers. To see this we can visualize the seating problem using a graph where:</p>
+<p>However, using an MILO solver is not necessarily the best approach for problems like this. Many real-life situations (assigning people to work/course groups) require solving really large problems.  There are existing algorithms that can leverage the special <strong>network structure</strong> of the problem at hand and scale better than LO solvers. To see this we can visualize the seating problem using a graph where:</p>
 <ul class="simple">
 <li><p>the nodes on the left-hand side stand for the families and the numbers next to them provide the family size</p></li>
 <li><p>the nodes on the left-hand side stand for the tables and the numbers next to them provide the table size</p></li>
@@ -995,23 +1147,20 @@ members seated   [6, 8, 2, 9, 13, 1]
 <p><img alt="" src="../../_images/dina_model.png" /></p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">ModelAsNetwork</span><span class="p">(</span> <span class="n">members</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">k</span> <span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">model_as_network</span><span class="p">(</span><span class="n">members</span><span class="p">,</span> <span class="n">capacity</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+    
+    <span class="c1"># create lists of families and tables</span>
     <span class="n">families</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;f</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">members</span><span class="p">))]</span>
     <span class="n">tables</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;t</span><span class="si">{</span><span class="n">j</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">capacity</span><span class="p">))]</span>
+    
+    <span class="c1"># create digraphy object</span>
     <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">()</span>
-    <span class="n">G</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s1">&#39;door&#39;</span><span class="p">,</span><span class="n">layer</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">families</span><span class="p">:</span>
-        <span class="n">G</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">layer</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tables</span><span class="p">:</span>
-        <span class="n">G</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">layer</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-    <span class="n">G</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s1">&#39;seat&#39;</span><span class="p">,</span><span class="n">layer</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">f</span><span class="p">,</span><span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">families</span><span class="p">,</span><span class="n">members</span><span class="p">):</span>
-        <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s1">&#39;door&#39;</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">families</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tables</span><span class="p">:</span>
-            <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">t</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">t</span><span class="p">,</span><span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tables</span><span class="p">,</span><span class="n">capacity</span><span class="p">):</span>
-        <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="s1">&#39;seat&#39;</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
+    
+    <span class="c1"># add edges</span>
+    <span class="n">G</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([</span><span class="s1">&#39;door&#39;</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;capacity&#39;</span><span class="p">:</span> <span class="n">n</span><span class="p">}]</span> <span class="k">for</span> <span class="n">f</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">families</span><span class="p">,</span> <span class="n">members</span><span class="p">))</span>
+    <span class="n">G</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([(</span><span class="n">f</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">families</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tables</span><span class="p">],</span> <span class="n">capacity</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+    <span class="n">G</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([</span><span class="n">t</span><span class="p">,</span> <span class="s1">&#39;seat&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;capacity&#39;</span><span class="p">:</span> <span class="n">n</span><span class="p">}]</span> <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tables</span><span class="p">,</span> <span class="n">capacity</span><span class="p">))</span>
+
     <span class="k">return</span> <span class="n">G</span>
 </pre></div>
 </div>
@@ -1019,8 +1168,12 @@ members seated   [6, 8, 2, 9, 13, 1]
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">G</span> <span class="o">=</span> <span class="n">ModelAsNetwork</span><span class="p">(</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">13</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">9</span><span class="p">],</span> <span class="mi">3</span> <span class="p">)</span>
-<span class="n">labels</span> <span class="o">=</span> <span class="p">{</span> <span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">G</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s1">&#39;capacity&#39;</span><span class="p">)</span> <span class="p">}</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">members</span> <span class="o">=</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">capacity</span> <span class="o">=</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
+
+<span class="n">G</span> <span class="o">=</span> <span class="n">model_as_network</span><span class="p">(</span><span class="n">members</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span> <span class="n">k</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="n">labels</span> <span class="o">=</span> <span class="p">{(</span><span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">G</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s1">&#39;capacity&#39;</span><span class="p">)}</span>
 </pre></div>
 </div>
 </div>
@@ -1032,18 +1185,18 @@ members seated   [6, 8, 2, 9, 13, 1]
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 1.1 ms, sys: 197 µs, total: 1.29 ms
-Wall time: 1.33 ms
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 1.41 ms, sys: 250 µs, total: 1.66 ms
+Wall time: 1.8 ms
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">members</span><span class="p">,</span> <span class="n">capacity</span> <span class="o">=</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">13</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">9</span><span class="p">]</span>
-<span class="n">families</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;f</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">members</span><span class="p">))]</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">families</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;f</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">members</span><span class="p">))]</span>
 <span class="n">tables</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;t</span><span class="si">{</span><span class="n">j</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">capacity</span><span class="p">))]</span>
-<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">flow_dict</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">tables</span><span class="p">,</span><span class="n">families</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">flow_dict</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">tables</span><span class="p">,</span> <span class="n">families</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1077,18 +1230,18 @@ Wall time: 1.33 ms
   <tbody>
     <tr>
       <th>t0</th>
-      <td>2</td>
+      <td>1</td>
       <td>0</td>
       <td>0</td>
-      <td>2</td>
+      <td>3</td>
       <td>3</td>
       <td>1</td>
     </tr>
     <tr>
       <th>t1</th>
       <td>0</td>
-      <td>1</td>
-      <td>1</td>
+      <td>2</td>
+      <td>0</td>
       <td>3</td>
       <td>3</td>
       <td>0</td>
@@ -1104,8 +1257,8 @@ Wall time: 1.33 ms
     </tr>
     <tr>
       <th>t3</th>
-      <td>0</td>
       <td>1</td>
+      <td>0</td>
       <td>0</td>
       <td>0</td>
       <td>3</td>
@@ -1115,8 +1268,8 @@ Wall time: 1.33 ms
       <th>t4</th>
       <td>3</td>
       <td>3</td>
-      <td>1</td>
-      <td>1</td>
+      <td>2</td>
+      <td>0</td>
       <td>1</td>
       <td>0</td>
     </tr>
@@ -1188,8 +1341,11 @@ Wall time: 1.33 ms
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Dinner seating arrangement</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#minimize-the-maximum-group-size">Minimize the maximum group size</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#minimize-number-of-tables">Minimize number of tables</a></li>
 </ul>
 </li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#reformulation-as-max-flow-problem">Reformulation as max flow problem</a></li>

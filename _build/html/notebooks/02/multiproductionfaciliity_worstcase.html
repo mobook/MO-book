@@ -485,6 +485,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#maximizing-the-profit-in-the-worst-case-for-a-multi-product-facility">Maximizing the profit in the worst case for a multi-product facility</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model">Pyomo Model</a></li>
@@ -504,20 +505,34 @@ document.write(`
                   
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><section class="tex2jax_ignore mathjax_ignore" id="extra-material-multi-product-facility-production">
 <span id="index-5"></span><h1>Extra material: Multi-product facility production<a class="headerlink" href="#extra-material-multi-product-facility-production" title="Permalink to this heading">#</a></h1>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
+<p>This cell selects and verifies a global SOLVER for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
+use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
+SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install pyomo &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip install highspy &gt;/dev/null <span class="m">2</span>&gt;/dev/null
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install highspy &gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
+</section>
 <section id="maximizing-the-profit-in-the-worst-case-for-a-multi-product-facility">
 <h2>Maximizing the profit in the worst case for a multi-product facility<a class="headerlink" href="#maximizing-the-profit-in-the-worst-case-for-a-multi-product-facility" title="Permalink to this heading">#</a></h2>
 <p>A common formulation for the problem of maximizing profit of a multi-product facility in a resource constrained environment is given by the following LP</p>
@@ -733,7 +748,7 @@ x_j &amp; \geq 0 &amp; \forall \, j\in J
     <span class="k">return</span> <span class="n">model</span>
 
 <span class="n">BIM</span> <span class="o">=</span> <span class="n">maxmin</span><span class="p">(</span><span class="n">BIM_scenarios</span><span class="p">,</span> <span class="n">BIM_resources</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">BIM</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">BIM</span><span class="p">)</span>
 
 <span class="n">worst_case_plan</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="n">j</span><span class="p">:</span> <span class="n">BIM</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]()</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">BIM</span><span class="o">.</span><span class="n">J</span><span class="p">},</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;worst case&quot;</span><span class="p">)</span>
 <span class="n">worst_case_profit</span> <span class="o">=</span> <span class="n">BIM</span><span class="o">.</span><span class="n">profit</span><span class="p">()</span>
@@ -802,7 +817,7 @@ Name: worst case, dtype: float64
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create mean scenario</span>
 <span class="n">mean_case</span> <span class="o">=</span> <span class="n">max_profit</span><span class="p">(</span><span class="n">BIM_scenarios</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">BIM_resources</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">mean_case</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">mean_case</span><span class="p">)</span>
 
 <span class="n">mean_case_profit</span> <span class="o">=</span> <span class="n">mean_case</span><span class="o">.</span><span class="n">profit</span><span class="p">()</span>
 <span class="n">mean_case_plan</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="n">j</span><span class="p">:</span> <span class="n">mean_case</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]()</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">mean_case</span><span class="o">.</span><span class="n">J</span><span class="p">},</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;mean case&quot;</span><span class="p">)</span>
@@ -928,6 +943,7 @@ Name: mean case, dtype: float64
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#maximizing-the-profit-in-the-worst-case-for-a-multi-product-facility">Maximizing the profit in the worst case for a multi-product facility</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model">Pyomo Model</a></li>
