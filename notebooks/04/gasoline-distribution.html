@@ -485,6 +485,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-distributing-gasoline-to-franchise-operators">Problem: Distributing gasoline to franchise operators</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-1-minimize-total-delivery-cost">Model 1: Minimize total delivery cost</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-entry">Data Entry</a></li>
@@ -525,20 +526,34 @@ document.write(`
 </ul>
 </li>
 </ul>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
+<p>This cell selects and verifies a global SOLVER for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
+use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
+SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install pyomo &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip install highspy &gt;/dev/null <span class="m">2</span>&gt;/dev/null
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install highspy &gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
+</section>
 <section id="problem-distributing-gasoline-to-franchise-operators">
 <h2>Problem: Distributing gasoline to franchise operators<a class="headerlink" href="#problem-distributing-gasoline-to-franchise-operators" title="Permalink to this heading">#</a></h2>
 <p>YaYa Gas-n-Grub is franchiser and operator for a network of regional convenience stores selling gasoline and convenience items in the United States. Each store is individually owned by a YaYa Gas-n-Grub franchisee who pays a fee to the franchiser for services.
@@ -898,7 +913,7 @@ Given the cost rate <span class="math notranslate nohighlight">\(r_{d, s}\)</spa
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">shipped_to_destination</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span> <span class="o">==</span> <span class="n">demand</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">dual</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="o">.</span><span class="n">IMPORT</span><span class="p">)</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 
@@ -1052,7 +1067,7 @@ New Delivery Costs = 26113.50€
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/cffc48027d05b6d88cf86e61678900ecf960e5d871e6a8b823fc6a0ce3b21b6f.png" src="../../_images/cffc48027d05b6d88cf86e61678900ecf960e5d871e6a8b823fc6a0ce3b21b6f.png" />
+</div></div><img alt="../../_images/df69d323662a3f300a3b2b6a1bad82dc8b71938ab78f89ec600d3d225109f8de.png" src="../../_images/df69d323662a3f300a3b2b6a1bad82dc8b71938ab78f89ec600d3d225109f8de.png" />
 </div>
 </div>
 </section>
@@ -1120,7 +1135,7 @@ New Delivery Costs = 26113.50€
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">shipped_to_destination</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span> <span class="o">==</span> <span class="n">demand</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">dual</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="o">.</span><span class="n">IMPORT</span><span class="p">)</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 
@@ -1278,7 +1293,7 @@ New Delivery Costs = $ 27387.49999
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/8ca5eebcccf585a3cfe782424924bfe4ac2aacc6f6dc5c837387f248da4e1ab7.png" src="../../_images/8ca5eebcccf585a3cfe782424924bfe4ac2aacc6f6dc5c837387f248da4e1ab7.png" />
+</div></div><img alt="../../_images/92dd3c75b6470b3594ef89e39a98e0e1854792398ec0ff2899b31056e56cc519.png" src="../../_images/92dd3c75b6470b3594ef89e39a98e0e1854792398ec0ff2899b31056e56cc519.png" />
 </div>
 </div>
 </section>
@@ -1345,7 +1360,7 @@ New Delivery Costs = $ 27387.49999
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">shipped_to_destination</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span> <span class="o">==</span> <span class="n">demand</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">dual</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="o">.</span><span class="n">IMPORT</span><span class="p">)</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 
@@ -1503,7 +1518,7 @@ New Delivery Costs = 26113.50€
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/7a94735efd52d91b29a627fdafbd58d0e16da99a0fe34e3a675bf586432a52d7.png" src="../../_images/7a94735efd52d91b29a627fdafbd58d0e16da99a0fe34e3a675bf586432a52d7.png" />
+</div></div><img alt="../../_images/b7cf18e448ef42aa288998b9fc6fb8513e528772d8cb4c281456ce4a9d944af1.png" src="../../_images/b7cf18e448ef42aa288998b9fc6fb8513e528772d8cb4c281456ce4a9d944af1.png" />
 </div>
 </div>
 </section>
@@ -1538,7 +1553,7 @@ New Delivery Costs = 26113.50€
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/3e4c6137628591a7c3d315644ef319f098e60cf9ffce6101d74fc7f184d8ec27.png" src="../../_images/3e4c6137628591a7c3d315644ef319f098e60cf9ffce6101d74fc7f184d8ec27.png" />
+<img alt="../../_images/389430d536e5ac77bdea65dd50aa87e6a0f5d1fd141193ac623b0c4b552f39ab.png" src="../../_images/389430d536e5ac77bdea65dd50aa87e6a0f5d1fd141193ac623b0c4b552f39ab.png" />
 </div>
 </div>
 </section>
@@ -2041,7 +2056,7 @@ Current Supplier -&gt; Helen             0.00
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/a27c3b21d4a1c5a0ef4aa99c48c090348fc2df9c848ec9823ed2293695c8241c.png" src="../../_images/a27c3b21d4a1c5a0ef4aa99c48c090348fc2df9c848ec9823ed2293695c8241c.png" />
+</div></div><img alt="../../_images/3b2327d53bb3b60571b2b9ef5752107607ce6477043c6d88d4b24d99edb81d67.png" src="../../_images/3b2327d53bb3b60571b2b9ef5752107607ce6477043c6d88d4b24d99edb81d67.png" />
 </div>
 </div>
 </section>
@@ -2160,6 +2175,7 @@ Current Supplier -&gt; Helen             0.00
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-distributing-gasoline-to-franchise-operators">Problem: Distributing gasoline to franchise operators</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-1-minimize-total-delivery-cost">Model 1: Minimize total delivery cost</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-entry">Data Entry</a></li>

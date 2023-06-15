@@ -486,7 +486,7 @@ document.write(`
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installations-and-imports">Installations and Imports</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-and-solvers">Pyomo and Solvers</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#install-pyomo-and-a-solver">Install Pyomo and a solver</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#networkx">NetworkX</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ccxt">CCXT</a></li>
 </ul>
@@ -518,19 +518,29 @@ document.write(`
 <p>In this example, we explore the efficiency of cryptocurrency exchanges by testing for arbitrage opportunities. An arbitrage exists if a customer can realize a net profit through a sequence of risk-free trades. The efficient market hypothesis assumes arbitrage opportunities are quickly identified and exploited by investors. As a result of their trading, prices reach a new equilibrium so that any arbitrage opportunities would be small and fleeting in an efficient market. The question here is whether it is possible, with real-time data and rapid execution, for a trader to profit from these fleeting arbitrage opportunities.</p>
 <section id="installations-and-imports">
 <h2>Installations and Imports<a class="headerlink" href="#installations-and-imports" title="Permalink to this heading">#</a></h2>
-<section id="pyomo-and-solvers">
-<h3>Pyomo and Solvers<a class="headerlink" href="#pyomo-and-solvers" title="Permalink to this heading">#</a></h3>
-<p>First we import Pyomo and necessary solvers.</p>
+<section id="install-pyomo-and-a-solver">
+<h3>Install Pyomo and a solver<a class="headerlink" href="#install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h3>
+<p>This cell selects and verifies a global SOLVER for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
+use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
+SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip install pyomo &gt;/dev/null <span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip install highspy &gt;/dev/null <span class="m">2</span>&gt;/dev/null
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip install highspy &gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -571,20 +581,20 @@ document.write(`
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Requirement already satisfied: ccxt in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (2.9.13)
-Requirement already satisfied: yarl&gt;=1.7.2 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (1.8.2)
 Requirement already satisfied: aiodns&gt;=1.1.1 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (3.0.0)
-Requirement already satisfied: cryptography&gt;=2.6.1 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (39.0.1)
 Requirement already satisfied: aiohttp&gt;=3.8 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (3.8.4)
-Requirement already satisfied: certifi&gt;=2018.1.18 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (2022.12.7)
 Requirement already satisfied: setuptools&gt;=60.9.0 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (65.6.3)
+Requirement already satisfied: certifi&gt;=2018.1.18 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (2022.12.7)
 Requirement already satisfied: requests&gt;=2.18.4 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (2.28.1)
+Requirement already satisfied: yarl&gt;=1.7.2 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (1.8.2)
+Requirement already satisfied: cryptography&gt;=2.6.1 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (39.0.1)
 Requirement already satisfied: pycares&gt;=4.0.0 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiodns&gt;=1.1.1-&gt;ccxt) (4.3.0)
-Requirement already satisfied: async-timeout&lt;5.0,&gt;=4.0.0a3 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (4.0.2)
 Requirement already satisfied: aiosignal&gt;=1.1.2 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (1.3.1)
 Requirement already satisfied: frozenlist&gt;=1.1.1 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (1.3.3)
-Requirement already satisfied: multidict&lt;7.0,&gt;=4.5 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (6.0.4)
-Requirement already satisfied: attrs&gt;=17.3.0 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (22.1.0)
 Requirement already satisfied: charset-normalizer&lt;4.0,&gt;=2.0 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (2.0.4)
+Requirement already satisfied: multidict&lt;7.0,&gt;=4.5 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (6.0.4)
+Requirement already satisfied: async-timeout&lt;5.0,&gt;=4.0.0a3 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (4.0.2)
+Requirement already satisfied: attrs&gt;=17.3.0 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (22.1.0)
 Requirement already satisfied: cffi&gt;=1.12 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from cryptography&gt;=2.6.1-&gt;ccxt) (1.15.1)
 Requirement already satisfied: urllib3&lt;1.27,&gt;=1.21.1 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from requests&gt;=2.18.4-&gt;ccxt) (1.26.14)
 Requirement already satisfied: idna&lt;4,&gt;=2.5 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from requests&gt;=2.18.4-&gt;ccxt) (3.4)
@@ -704,7 +714,7 @@ Requirement already satisfied: pycparser in /Users/jeff/opt/anaconda3/lib/python
     <span class="n">size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">2.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">))</span>
     <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">size</span><span class="p">))</span>
     <span class="n">pos</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">circular_layout</span><span class="p">(</span><span class="n">dg</span><span class="p">)</span>
-    <span class="n">nx</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span>
+    <span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx</span><span class="p">(</span>
         <span class="n">dg</span><span class="p">,</span> 
         <span class="n">pos</span><span class="p">,</span>
         <span class="n">with_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -731,11 +741,11 @@ Requirement already satisfied: pycparser in /Users/jeff/opt/anaconda3/lib/python
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of nodes = 164
-Number of edges = 508
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of nodes = 170
+Number of edges = 522
 </pre></div>
 </div>
-<img alt="../../_images/33d283b8ec86b80a4bb673a0857435cc284c38d90a8748aa55953582c6d4756e.png" src="../../_images/33d283b8ec86b80a4bb673a0857435cc284c38d90a8748aa55953582c6d4756e.png" />
+<img alt="../../_images/4098ef1f09bdec6310a168a1dbd5ca43ca6f7f6f5d0e516530252e6180446f0c.png" src="../../_images/4098ef1f09bdec6310a168a1dbd5ca43ca6f7f6f5d0e516530252e6180446f0c.png" />
 </div>
 </div>
 </section>
@@ -1514,7 +1524,7 @@ USD   --&gt; TRX     ask       14.409222     15562.637700
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/60c8ec4f4b1df66455e6742a9489e284fb28b591fe524a3218113c9790c60c15.png" src="../../_images/60c8ec4f4b1df66455e6742a9489e284fb28b591fe524a3218113c9790c60c15.png" />
+<img alt="../../_images/48113fec426bb92a5359ca669da7fc4554dede241934be0de110d2ad76e339f1.png" src="../../_images/48113fec426bb92a5359ca669da7fc4554dede241934be0de110d2ad76e339f1.png" />
 </div>
 </div>
 </section>
@@ -1582,7 +1592,7 @@ USD   --&gt; TRX     ask       14.409222     15562.637700
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/e838fc3dfb704b5ff796fade5c89d85846d8f964bf2aceba4396678ba4a2c14e.png" src="../../_images/e838fc3dfb704b5ff796fade5c89d85846d8f964bf2aceba4396678ba4a2c14e.png" />
+<img alt="../../_images/2cd8b45e011df5a83acd22d4db14608070817cd58bef4c4ef6551166475cc0e7.png" src="../../_images/2cd8b45e011df5a83acd22d4db14608070817cd58bef4c4ef6551166475cc0e7.png" />
 </div>
 </div>
 <p>Note this may or may not be the trading cycle with maximum return. There may be other cycles with higher or lower returns, and that allow higher or lower trading volumes.</p>
@@ -1626,7 +1636,7 @@ USD   --&gt; TRX     ask       14.409222     15562.637700
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>There are 203147 distinct simple cycles in the order book, 974 of which have positive return.
 </pre></div>
 </div>
-<img alt="../../_images/28777f6d1e03ab58ee480b0e866a5ccf94c44c787eb0fad0e3d01df9f55a12da.png" src="../../_images/28777f6d1e03ab58ee480b0e866a5ccf94c44c787eb0fad0e3d01df9f55a12da.png" />
+<img alt="../../_images/a04f92aa4af9d489c8d8458835ef335a26fc576ed97f4155324cccbf276ac0d6.png" src="../../_images/a04f92aa4af9d489c8d8458835ef335a26fc576ed97f4155324cccbf276ac0d6.png" />
 </div>
 </div>
 <p>Next, we sort out the negative cycles from this list and present them along with their basis-points (1% is 100 basis points) return.</p>
@@ -1687,7 +1697,7 @@ Basis Points             Arbitrage Cycle
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/a50cc81fd3477b631ba72ffbbcc41f0e3ca2457a6f0b8d513f6b1328eef6b6f2.png" src="../../_images/a50cc81fd3477b631ba72ffbbcc41f0e3ca2457a6f0b8d513f6b1328eef6b6f2.png" />
+<img alt="../../_images/1a8259de0f1f658aef13ff89ec73a05849a141645d4343f5285c3ef2ff01e0fa.png" src="../../_images/1a8259de0f1f658aef13ff89ec73a05849a141645d4343f5285c3ef2ff01e0fa.png" />
 </div>
 </div>
 </section>
@@ -1793,8 +1803,7 @@ Basis Points             Arbitrage Cycle
         <span class="n">out_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="n">dst</span> <span class="k">for</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">EDGES</span> <span class="k">if</span> <span class="n">src</span> <span class="o">==</span> <span class="n">node</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">node</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">node</span><span class="p">,</span> <span class="n">t</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">src</span><span class="p">,</span> <span class="n">node</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">src</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">in_nodes</span><span class="p">)</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">node</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">out_nodes</span><span class="p">)</span> 
 
-    <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
-    <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     
     <span class="k">return</span> <span class="n">m</span>
 </pre></div>
@@ -1927,7 +1936,7 @@ t = 8
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: &gt;
 </pre></div>
 </div>
-<img alt="../../_images/127e7476ea4ec8cfb1f970f0eb838481b3a0f23a189f6e3e48f0246defd9f6c1.png" src="../../_images/127e7476ea4ec8cfb1f970f0eb838481b3a0f23a189f6e3e48f0246defd9f6c1.png" />
+<img alt="../../_images/9e95d7b389c18e84e01f32758bbaf8e4bd113f30c8c8cc4e50074871f96970e9.png" src="../../_images/9e95d7b389c18e84e01f32758bbaf8e4bd113f30c8c8cc4e50074871f96970e9.png" />
 </div>
 </div>
 <p>If we want to be even more precise about the execution of the trading strategy, we can formulate a printout of the list of orders that we, as the counter party to the orders stated in the order book, should issue for our strategy to take place.</p>
@@ -1996,7 +2005,7 @@ t = 8
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/76648486ac21a53c9becfb59ec696ffaadf43c0d2d0bc4da0aba7d8ac118f774.png" src="../../_images/76648486ac21a53c9becfb59ec696ffaadf43c0d2d0bc4da0aba7d8ac118f774.png" />
+<img alt="../../_images/af9664cc37d8e1f73f48a67d7598b9f07ae3a9f6de7e37554b6e2792dbf8189d.png" src="../../_images/af9664cc37d8e1f73f48a67d7598b9f07ae3a9f6de7e37554b6e2792dbf8189d.png" />
 </div>
 </div>
 </section>
@@ -2060,7 +2069,7 @@ t = 8
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Potential Return = 0.408 basis points
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Potential Return = 0.101 basis points
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -2095,57 +2104,57 @@ t = 8
     <tr>
       <th>0</th>
       <td>ETH/BTC</td>
-      <td>2023-04-16 21:46:54.674</td>
+      <td>2023-06-15 00:27:22.888</td>
       <td>ETH</td>
       <td>BTC</td>
-      <td>0.069954</td>
-      <td>1.300000e+00</td>
-      <td>0.069984</td>
-      <td>1.504500e+00</td>
+      <td>0.065550</td>
+      <td>9.900000e-03</td>
+      <td>0.065834</td>
+      <td>7.900000e-03</td>
     </tr>
     <tr>
       <th>1</th>
       <td>BNB/BTC</td>
-      <td>2023-04-16 21:46:54.775</td>
+      <td>2023-06-15 00:27:23.035</td>
       <td>BNB</td>
       <td>BTC</td>
-      <td>0.011503</td>
-      <td>1.800000e+01</td>
-      <td>0.011508</td>
-      <td>3.000000e+00</td>
+      <td>0.009385</td>
+      <td>3.400000e-02</td>
+      <td>0.009415</td>
+      <td>1.029000e+00</td>
     </tr>
     <tr>
       <th>2</th>
       <td>LTC/BTC</td>
-      <td>2023-04-16 21:46:54.826</td>
+      <td>2023-06-15 00:27:23.111</td>
       <td>LTC</td>
       <td>BTC</td>
-      <td>0.003340</td>
-      <td>2.000900e+01</td>
-      <td>0.003351</td>
-      <td>3.984000e+00</td>
+      <td>0.002904</td>
+      <td>1.270000e-01</td>
+      <td>0.002925</td>
+      <td>5.000000e-01</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>BCH/BTC</td>
-      <td>2023-04-16 21:46:54.877</td>
-      <td>BCH</td>
+      <td>ADA/BTC</td>
+      <td>2023-06-15 00:27:23.328</td>
+      <td>ADA</td>
       <td>BTC</td>
-      <td>0.004440</td>
-      <td>3.991000e+00</td>
-      <td>0.004470</td>
-      <td>3.566000e+00</td>
+      <td>0.000010</td>
+      <td>4.002000e+02</td>
+      <td>0.000010</td>
+      <td>5.120000e+01</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>XTZ/BTC</td>
-      <td>2023-04-16 21:46:54.929</td>
-      <td>XTZ</td>
+      <td>LINK/BTC</td>
+      <td>2023-06-15 00:27:23.401</td>
+      <td>LINK</td>
       <td>BTC</td>
-      <td>0.000039</td>
-      <td>3.173000e+02</td>
-      <td>0.000039</td>
-      <td>3.981000e+02</td>
+      <td>0.000208</td>
+      <td>6.705000e+01</td>
+      <td>0.000210</td>
+      <td>4.710000e+00</td>
     </tr>
     <tr>
       <th>...</th>
@@ -2159,63 +2168,63 @@ t = 8
       <td>...</td>
     </tr>
     <tr>
-      <th>314</th>
-      <td>DIA/USD</td>
-      <td>2023-04-16 21:47:13.104</td>
-      <td>DIA</td>
+      <th>311</th>
+      <td>IOST/USD</td>
+      <td>2023-06-15 00:27:48.713</td>
+      <td>IOST</td>
       <td>USD</td>
-      <td>0.411000</td>
-      <td>9.953000e+02</td>
-      <td>0.414000</td>
-      <td>1.003300e+03</td>
+      <td>0.006830</td>
+      <td>1.652040e+05</td>
+      <td>0.007860</td>
+      <td>3.254300e+04</td>
+    </tr>
+    <tr>
+      <th>312</th>
+      <td>ARB/USD</td>
+      <td>2023-06-15 00:27:48.855</td>
+      <td>ARB</td>
+      <td>USD</td>
+      <td>0.961000</td>
+      <td>7.520000e+01</td>
+      <td>1.079900</td>
+      <td>1.474000e+02</td>
+    </tr>
+    <tr>
+      <th>313</th>
+      <td>FLOKI/USD</td>
+      <td>2023-06-15 00:27:48.927</td>
+      <td>FLOKI</td>
+      <td>USD</td>
+      <td>0.000022</td>
+      <td>1.834030e+05</td>
+      <td>0.000022</td>
+      <td>4.502476e+06</td>
+    </tr>
+    <tr>
+      <th>314</th>
+      <td>XEC/USD</td>
+      <td>2023-06-15 00:27:49.001</td>
+      <td>XEC</td>
+      <td>USD</td>
+      <td>0.000016</td>
+      <td>1.356363e+07</td>
+      <td>0.000021</td>
+      <td>5.642790e+05</td>
     </tr>
     <tr>
       <th>315</th>
-      <td>LOOM/USD</td>
-      <td>2023-04-16 21:47:13.157</td>
-      <td>LOOM</td>
+      <td>BLUR/USD</td>
+      <td>2023-06-15 00:27:49.067</td>
+      <td>BLUR</td>
       <td>USD</td>
-      <td>0.066880</td>
-      <td>5.980000e+03</td>
-      <td>0.067230</td>
-      <td>6.029000e+03</td>
-    </tr>
-    <tr>
-      <th>316</th>
-      <td>STMX/USD</td>
-      <td>2023-04-16 21:47:13.211</td>
-      <td>STMX</td>
-      <td>USD</td>
-      <td>0.006209</td>
-      <td>1.197370e+05</td>
-      <td>0.006223</td>
-      <td>2.042000e+03</td>
-    </tr>
-    <tr>
-      <th>317</th>
-      <td>SHIB/USD</td>
-      <td>2023-04-16 21:47:13.264</td>
-      <td>SHIB</td>
-      <td>USD</td>
-      <td>0.000012</td>
-      <td>1.214307e+08</td>
-      <td>0.000012</td>
-      <td>1.764825e+08</td>
-    </tr>
-    <tr>
-      <th>318</th>
-      <td>TRAC/USD</td>
-      <td>2023-04-16 21:47:13.317</td>
-      <td>TRAC</td>
-      <td>USD</td>
-      <td>0.419600</td>
-      <td>1.190000e+02</td>
-      <td>0.424900</td>
-      <td>1.170000e+02</td>
+      <td>0.283000</td>
+      <td>2.990000e+01</td>
+      <td>0.305000</td>
+      <td>2.910000e+01</td>
     </tr>
   </tbody>
 </table>
-<p>319 rows × 8 columns</p>
+<p>316 rows × 8 columns</p>
 </div></div></div>
 </div>
 <p>The following cell can be used to download additional order book data sets for testing.</p>
@@ -2262,9 +2271,7 @@ t = 8
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Search for 20 seconds.
-bp = 1.333
-arbitrage found!
-order book saved to: Binance_US_orderbook_20230416_214743.csv
+bp = 0.068
 Search complete.
 </pre></div>
 </div>
@@ -2371,7 +2378,7 @@ In addition to the analysis of arbitrage opportunities, convex optimization may 
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installations-and-imports">Installations and Imports</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-and-solvers">Pyomo and Solvers</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#install-pyomo-and-a-solver">Install Pyomo and a solver</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#networkx">NetworkX</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ccxt">CCXT</a></li>
 </ul>
