@@ -21,7 +21,7 @@
 # have been previously installed and sets SOLVER to use the CBC solver via the Pyomo 
 # SolverFactory. It then verifies that SOLVER is available.
 
-# In[2]:
+# In[56]:
 
 
 import sys
@@ -48,7 +48,7 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # 
 # The next code cell downloads the red wine data directly from this repository.
 
-# In[3]:
+# In[57]:
 
 
 import pandas as pd
@@ -66,7 +66,7 @@ display(wines)
 # $$\text{MAD}\,(y) = \frac{1}{n} \sum_{i=1}^n | y_i - \bar{y}|$$
 # 
 
-# In[16]:
+# In[58]:
 
 
 def MAD(df):
@@ -94,7 +94,7 @@ plt.show()
 # 
 # The data consists of 1,599 measurements of eleven physical and chemical characteristics plus an integer measure of sensory quality recorded on a scale from 3 to 8. Histograms provides insight into the values and variability of the data set.
 
-# In[18]:
+# In[59]:
 
 
 plt.rcParams['font.size'] = 13
@@ -113,14 +113,14 @@ plt.tight_layout()
 # 
 # The art of regression is to identify the features that have explanatory value for a response of interest. This is where a person with deep knowledge of an application area, in this case an experienced onenologist will have a head start compared to the naive data scientist. In the absence of the experience, we proceed by examining the correlation among the variables in the data set.
 
-# In[22]:
+# In[60]:
 
 
 _ = wines.corr()["quality"].plot(kind="bar", grid=True, color=colors(0.0), alpha=0.7)
 plt.tight_layout()
 
 
-# In[6]:
+# In[61]:
 
 
 wines[["volatile acidity", "density", "alcohol", "quality"]].corr()
@@ -140,7 +140,7 @@ wines[["volatile acidity", "density", "alcohol", "quality"]].corr()
 # 
 # This computation has been presented in a prior notebook.
 
-# In[42]:
+# In[62]:
 
 
 import pyomo.environ as pyo
@@ -184,7 +184,7 @@ print(f'The mean absolute deviation for a single-feature regression is {m.mean_a
 
 # This calculation is performed for all variables to determine which variables are the best candidates to explain deviations in wine quality.
 
-# In[43]:
+# In[63]:
 
 
 mad = (wines["alcohol"] - wines["alcohol"].mean()).abs().mean()
@@ -198,19 +198,19 @@ plt.tight_layout()
 plt.show()
 
 
-# In[51]:
+# In[64]:
 
 
 wines["prediction"] = [m.prediction[i]() for i in m.I]
 
-fig1, ax1 = plt.subplots(figsize=(7,7))
+fig1, ax1 = plt.subplots(figsize=(6,5))
 wines["quality"].hist(label="data", alpha=0.7, color=plt.get_cmap('tab20c')(0))
 ax1.set_xlabel("Quality")
 ax1.set_ylabel("Counts")
 plt.tight_layout()
 plt.show()
 
-fig2, ax2 = plt.subplots(figsize=(7,7))
+fig2, ax2 = plt.subplots(figsize=(6,6))
 wines.plot(x="quality", y="prediction", kind="scatter", alpha=0.7, color=plt.get_cmap('tab20c')(0), ax=ax2)
 ax2.set_xlabel("Quality")
 ax2.set_ylabel("Prediction")
@@ -237,7 +237,7 @@ plt.show()
 # 
 # where $x_{i, j}$ are values of 'explanatory' variables, i.e., the 11 physical and chemical characteristics of the wines. By taking care of the absolute value appearing in the objective function, this can be implemented in Pyomo as an LP as follows:
 
-# In[52]:
+# In[65]:
 
 
 def l1_fit(df, y_col, x_cols):
