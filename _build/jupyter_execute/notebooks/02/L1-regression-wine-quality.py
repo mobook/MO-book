@@ -10,7 +10,7 @@
 # ```{index} single: solver; cbc
 # ```
 # 
-# # Wine quality prediction with L1 regression
+# # Wine quality prediction with $L_1$ regression
 
 # ## Preamble: Install Pyomo and a solver
 # 
@@ -21,7 +21,7 @@
 # have been previously installed and sets SOLVER to use the CBC solver via the Pyomo 
 # SolverFactory. It then verifies that SOLVER is available.
 
-# In[1]:
+# In[2]:
 
 
 import sys
@@ -42,15 +42,13 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 
 # ## Problem description
 # 
-# Regression is the task of fitting a model to data. If things go well, the model might provide useful predictions in response to new data. This notebook shows how linear programming and least absolute deviation (LAD) regression can be used to create a linear model for predicting wine quality based on physical and chemical properties. The example uses a well known data set from the machine learning community.
+# Regression analysis aims to fit a predictive model to a dataset, and when executed successfully, this model can generate valuable forecasts for new data points. This notebook demonstrates how linear programming techniques coupled with Least Absolute Deviation (LAD) regression can construct a linear model to predict wine quality based on its physicochemical attributes. The example uses a well known data set from the machine learning community.
 # 
-# Physical, chemical, and sensory quality properties were collected for a large number of red and white wines produced in the Portugal then donated to the UCI machine learning repository (Cortez, Paulo, Cerdeira, A., Almeida, F., Matos, T. & Reis, J.. (2009). Wine Quality. UCI Machine Learning Repository.) The following cell reads the data for red wines directly from the UCI machine learning repository.
+# In [this 2009 article](https://doi.org/10.1016/j.dss.2009.05.016) by Cortez et al. comprehensive set of physical, chemical, and sensory quality metrics was gathered for an extensive range of red and white wines produced in Portugal. This dataset was subsequently contributed to the [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv). 
 # 
-# Cortez, P., Cerdeira, A., Almeida, F., Matos, T., & Reis, J. (2009). Modeling wine preferences by data mining from physicochemical properties. Decision support systems, 47(4), 547-553. https://doi.org/10.1016/j.dss.2009.05.016
-# 
-# Let us first download the data
+# The next code cell downloads the red wine data directly from this repository.
 
-# In[2]:
+# In[3]:
 
 
 import pandas as pd
@@ -61,31 +59,34 @@ wines = pd.read_csv("https://archive.ics.uci.edu/ml/machine-learning-databases/w
 display(wines)
 
 
-# ## Model objective: Mean Absolute Deviation (MAD)
+# ## Mean Absolute Deviation (MAD)
 # 
-# Given $n$ repeated observations of a response variable $y_i$ (in this wine quality), the **mean absolute deviation** (MAD) of $y_i$ from the mean value $\bar{y}$ is
+# Given $n$ repeated observations of a response variable $y_i$ (in this case, the wine quality), the **mean absolute deviation** (MAD) of $y_i$ from the mean value $\bar{y}$ is
 # 
 # $$\text{MAD}\,(y) = \frac{1}{n} \sum_{i=1}^n | y_i - \bar{y}|$$
 # 
 
-# In[3]:
+# In[16]:
 
 
 def MAD(df):
     return (df - df.mean()).abs().mean()
 
-print("MAD = ", MAD(wines["quality"]))
-      
-fig, ax = plt.subplots(figsize=(12, 4))
-ax = wines["quality"].plot(alpha=0.6, title="wine quality")
-ax.axhline(wines["quality"].mean(), color='r', ls='--', lw=3)
+print(f'MAD = {MAD(wines["quality"]):.5f}')
+
+plt.rcParams['font.size'] = 14
+colors = plt.get_cmap('tab20c')
+fig, ax = plt.subplots(figsize=(12, 7))
+ax = wines["quality"].plot(alpha=0.7, color=colors(0.0))
+ax.axhline(wines["quality"].mean(), color=colors(0.2), ls='--', lw=3)
   
 mad = MAD(wines["quality"])
-ax.axhline(wines["quality"].mean() + mad, color='g', lw=3)
-ax.axhline(wines["quality"].mean() - mad, color='g', lw=3)
-ax.legend(["y", "mean", "mad"])
-ax.set_xlabel("observation")
-
+ax.axhline(wines["quality"].mean() + mad, color=colors(0.4), lw=3)
+ax.axhline(wines["quality"].mean() - mad, color=colors(0.4), lw=3)
+ax.legend(["data", "mean", "MAD"])
+ax.set_xlabel("Observations")
+ax.set_ylabel("Quality")
+plt.tight_layout()
 plt.show()
 
 
@@ -93,14 +94,15 @@ plt.show()
 # 
 # The data consists of 1,599 measurements of eleven physical and chemical characteristics plus an integer measure of sensory quality recorded on a scale from 3 to 8. Histograms provides insight into the values and variability of the data set.
 
-# In[4]:
+# In[18]:
 
 
+plt.rcParams['font.size'] = 13
+colors = plt.get_cmap('tab20c')
 fig, axes = plt.subplots(3, 4, figsize=(12, 8), sharey=True)
-
 for ax, column in zip(axes.flatten(), wines.columns):
-    wines[column].hist(ax=ax, bins=30)
-    ax.axvline(wines[column].mean(), color='r', label="mean")
+    wines[column].hist(ax=ax, bins=30, color=colors(0.0), alpha=0.7)
+    ax.axvline(wines[column].mean(), color=colors(0.2), label="mean")
     ax.set_title(column)
     ax.legend()
     
@@ -111,10 +113,11 @@ plt.tight_layout()
 # 
 # The art of regression is to identify the features that have explanatory value for a response of interest. This is where a person with deep knowledge of an application area, in this case an experienced onenologist will have a head start compared to the naive data scientist. In the absence of the experience, we proceed by examining the correlation among the variables in the data set.
 
-# In[5]:
+# In[22]:
 
 
-_ = wines.corr()["quality"].plot(kind="bar", grid=True)
+_ = wines.corr()["quality"].plot(kind="bar", grid=True, color=colors(0.0), alpha=0.7)
+plt.tight_layout()
 
 
 # In[6]:
@@ -137,7 +140,7 @@ wines[["volatile acidity", "density", "alcohol", "quality"]].corr()
 # 
 # This computation has been presented in a prior notebook.
 
-# In[7]:
+# In[42]:
 
 
 import pyomo.environ as pyo
@@ -145,9 +148,10 @@ import pyomo.environ as pyo
 def lad_fit_1(df, y_col, x_col):
 
     m = pyo.ConcreteModel("LAD Regression Model")
-
-    m.I = pyo.RangeSet(len(df))
-
+    
+    N = len(df)
+    m.I = pyo.RangeSet(N)
+    
     @m.Param(m.I)
     def y(m, i):
         return df.loc[i-1, y_col]
@@ -156,13 +160,9 @@ def lad_fit_1(df, y_col, x_col):
     def X(m, i):
         return df.loc[i-1, x_col]
 
-    # regression
-    m.a = pyo.Var()
-    m.b = pyo.Var(domain=pyo.Reals)
-
-    m.e_pos = pyo.Var(m.I, domain=pyo.NonNegativeReals)
-    m.e_neg = pyo.Var(m.I, domain=pyo.NonNegativeReals)
-                            
+    m.a, m.b = pyo.Var(), pyo.Var(domain=pyo.Reals)
+    m.e_pos, m.e_neg = pyo.Var(m.I, domain=pyo.NonNegativeReals), pyo.Var(m.I, domain=pyo.NonNegativeReals)
+    
     @m.Expression(m.I)
     def prediction(m, i):
         return m.a * m.X[i] + m.b
@@ -173,39 +173,53 @@ def lad_fit_1(df, y_col, x_col):
 
     @m.Objective(sense=pyo.minimize)
     def mean_absolute_deviation(m):
-        return sum(m.e_pos[i] + m.e_neg[i] for i in m.I)/len(m.I)
+        return sum(m.e_pos[i] + m.e_neg[i] for i in m.I)/N
 
     SOLVER.solve(m)
-    
     return m
 
 m = lad_fit_1(wines, "quality", "alcohol")
-
 print(f'The mean absolute deviation for a single-feature regression is {m.mean_absolute_deviation():0.5f}')
 
 
 # This calculation is performed for all variables to determine which variables are the best candidates to explain deviations in wine quality.
 
-# In[8]:
+# In[43]:
 
 
 mad = (wines["alcohol"] - wines["alcohol"].mean()).abs().mean()
 vars = {i: lad_fit_1(wines, "quality", i).mean_absolute_deviation() for i in wines.columns}
-
+colors = plt.get_cmap('tab20c')
 fig, ax = plt.subplots()
-pd.Series(vars).plot(kind="bar", ax=ax, grid=True)
-ax.axhline(mad, color='r', lw=3)
+pd.Series(vars).plot(kind="bar", ax=ax, grid=True, alpha=0.7, color=colors(0.0))
+ax.axhline(mad, color=colors(0.4), lw=3)
 ax.set_title('MADs for single-feature regressions')
+plt.tight_layout()
 plt.show()
 
 
-# In[9]:
+# In[51]:
 
 
 wines["prediction"] = [m.prediction[i]() for i in m.I]
-wines["quality"].hist(label="data")
 
-wines.plot(x="quality", y="prediction", kind="scatter")
+fig1, ax1 = plt.subplots(figsize=(7,7))
+wines["quality"].hist(label="data", alpha=0.7, color=plt.get_cmap('tab20c')(0))
+ax1.set_xlabel("Quality")
+ax1.set_ylabel("Counts")
+plt.tight_layout()
+plt.show()
+
+fig2, ax2 = plt.subplots(figsize=(7,7))
+wines.plot(x="quality", y="prediction", kind="scatter", alpha=0.7, color=plt.get_cmap('tab20c')(0), ax=ax2)
+ax2.set_xlabel("Quality")
+ax2.set_ylabel("Prediction")
+ax2.set_aspect('equal', 'box')
+min_val = min(ax2.get_xlim()[0], ax2.get_ylim()[0])
+max_val = max(ax2.get_xlim()[1], ax2.get_ylim()[1])
+ax2.set_xlim(min_val, max_val)
+ax2.set_ylim(min_val, max_val)
+plt.tight_layout()
 plt.show()
 
 
@@ -223,16 +237,15 @@ plt.show()
 # 
 # where $x_{i, j}$ are values of 'explanatory' variables, i.e., the 11 physical and chemical characteristics of the wines. By taking care of the absolute value appearing in the objective function, this can be implemented in Pyomo as an LP as follows:
 
-# In[10]:
+# In[52]:
 
-
-import pyomo.environ as pyo
 
 def l1_fit(df, y_col, x_cols):
 
     m = pyo.ConcreteModel("L1 Regression Model")
 
-    m.I = pyo.RangeSet(len(df))
+    N = len(df)
+    m.I = pyo.RangeSet(N)
     m.J = pyo.Set(initialize=x_cols)
 
     @m.Param(m.I)
@@ -243,7 +256,6 @@ def l1_fit(df, y_col, x_cols):
     def X(m, i, j):
         return df.loc[i-1, j]
 
-    # regression
     m.a = pyo.Var(m.J)
     m.b = pyo.Var(domain=pyo.Reals)
 
@@ -260,7 +272,7 @@ def l1_fit(df, y_col, x_cols):
 
     @m.Objective(sense=pyo.minimize)
     def mean_absolute_deviation(m):
-        return sum(m.e_pos[i] + m.e_neg[i] for i in m.I)/len(m.I)
+        return sum(m.e_pos[i] + m.e_neg[i] for i in m.I)/N
 
     SOLVER.solve(m)
     
@@ -272,12 +284,26 @@ print(f"MAD = {m.mean_absolute_deviation():0.5f}\n")
 
 for j in m.J:
     print(f"{j}  {m.a[j]()}")
-print("\n")
 
 wines["prediction"] = [m.prediction[i]() for i in m.I]
-wines["quality"].hist(label="data")
 
-wines.plot(x="quality", y="prediction", kind="scatter")
+fig1, ax1 = plt.subplots(figsize=(7,7))
+wines["quality"].hist(label="data", alpha=0.7, color=plt.get_cmap('tab20c')(0))
+ax1.set_xlabel("Quality")
+ax1.set_ylabel("Counts")
+plt.tight_layout()
+plt.show()
+
+fig2, ax2 = plt.subplots(figsize=(7,7))
+wines.plot(x="quality", y="prediction", kind="scatter", alpha=0.7, color=plt.get_cmap('tab20c')(0), ax=ax2)
+ax2.set_xlabel("Quality")
+ax2.set_ylabel("Prediction")
+ax2.set_aspect('equal', 'box')
+min_val = min(ax2.get_xlim()[0], ax2.get_ylim()[0])
+max_val = max(ax2.get_xlim()[1], ax2.get_ylim()[1])
+ax2.set_xlim(min_val, max_val)
+ax2.set_ylim(min_val, max_val)
+plt.tight_layout()
 plt.show()
 
 

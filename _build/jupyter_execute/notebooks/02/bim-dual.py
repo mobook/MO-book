@@ -41,6 +41,7 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # ## Derivation of the dual problem
 # 
 # In a [previous notebook](bim.ipynb), we introduce the BIM production problem and showed that it can be modeled as the following LO problem:
+# 
 # $$
 # \begin{align*}
 # \max  \quad  & 12 x_1 + 9 x_2 \\
@@ -52,6 +53,7 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 #     &   x_1, x_2 \geq 0.
 # \end{align*}
 # $$
+# 
 # In this notebook, we will derive step by step its **dual problem**. 
 # 
 # One can construct bounds for the value of objective function of the original problem by multiplying the constraints by non-negative numbers and adding them to each other so that the left-hand side looks like the objective function, while the right-hand side is the corresponding bound.
@@ -77,7 +79,8 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # 
 # $$
 # \begin{align*}
-# 12 x_1 + 9 x_2 \leq (\lambda_1+\lambda_3+4\lambda_4) x_1 + (\lambda_2+\lambda_3+2 \lambda_4) x_2 \leq 1000 \lambda_1 + 1500 \lambda_2 + 1750 \lambda_3 + 4800 \lambda_4,
+# 12 x_1 + 9 x_2 & \leq (\lambda_1+\lambda_3+4\lambda_4) x_1 + (\lambda_2+\lambda_3+2 \lambda_4) x_2 \\
+# & \leq 1000 \lambda_1 + 1500 \lambda_2 + 1750 \lambda_3 + 4800 \lambda_4,
 # \end{align*}
 # $$
 # 

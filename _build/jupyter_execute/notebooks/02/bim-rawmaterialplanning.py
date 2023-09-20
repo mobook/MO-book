@@ -242,8 +242,11 @@ def BIMProductAcquisitionAndInventory(demand, acquisition_price, existing, desir
 
 # We now can create an instance of the model using the provided data and solve it.
 
-# In[5]:
+# In[19]:
 
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 budget = 5000
 m = BIMProductAcquisitionAndInventory(demand, price, 
@@ -265,15 +268,24 @@ def report_pyomo_solution(m):
     display(stock)
 
     print('\nThe stock levels can be visualized as follows')
-    ax = stock.T.plot(drawstyle='steps-mid', grid=True, figsize=(10, 3))
-    ax.set_xticks(ticks=range(len(stock.columns)), labels=stock.columns)
+    plt.rcParams['font.size'] = 14
+    colors = plt.get_cmap('tab20c')
+    equidistant_colors = [colors(0.0), colors(0.2), colors(0.6), colors(0.4)]
+    ax = stock.T.plot(drawstyle='steps-mid', lw=2, grid=True, figsize=(10, 5), color=equidistant_colors)
+    ax.legend(loc='upper right')
+    ax.set_xticks(ticks=range(len(stock.columns)))
+    ax.set_xticklabels(stock.columns)
+    ax.set_xlabel('Month')
+    ax.set_ylabel('Stock level')
+    plt.tight_layout()
+    plt.show()
     
 report_pyomo_solution(m)
 
 
 # Here is a different solution corresponding to the situation where the budget is much lower, namely 2000.
 
-# In[6]:
+# In[20]:
 
 
 budget = 2000
@@ -297,7 +309,7 @@ report_pyomo_solution(m)
 # 
 # We can create a more parsimonious model with fewer variabels by getting rid of the auxiliary variables $s_{pt}$. Here is the corresponding implementation in Pyomo:
 
-# In[7]:
+# In[21]:
 
 
 def BIMProductAcquisitionAndInventory_v2(demand, acquisition_price, existing, desired, stock_limit, month_budget):
@@ -365,7 +377,7 @@ def BIMProductAcquisitionAndInventory_v2(demand, acquisition_price, existing, de
     return m
 
 
-# In[8]:
+# In[22]:
 
 
 m = BIMProductAcquisitionAndInventory_v2( demand, price, 
@@ -376,10 +388,4 @@ m = BIMProductAcquisitionAndInventory_v2( demand, price,
 SOLVER.solve(m)
 
 report_pyomo_solution(m)
-
-
-# In[ ]:
-
-
-
 

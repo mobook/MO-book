@@ -42,7 +42,7 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # 
 # The Python [scikit learn](https://scikit-learn.org/stable/) library for machine learning provides a full-featured collection of tools for regression. The following cell uses `make_regression` from scikit learn to generate a synthetic data set for use in subsequent cells. The data consists of a numpy array `y` containing `n_samples` of one dependent variable $y$, and an array `X` containing `n_samples` observations of `n_features` independent explanatory variables.
 
-# In[21]:
+# In[2]:
 
 
 from sklearn.datasets import make_regression
@@ -58,22 +58,31 @@ X, y = make_regression(n_samples=n_samples, n_features=n_features, noise=noise)
 
 # Before going further, it is generally useful to prepare an initial visualization of the data. The following cell presents a scatter plot of $y$ versus $x$ for the special case of one explanatory variable, and a histogram of the difference between $y$ and the mean value $\bar{y}$. This histogram will provide a reference against which to compare the residual error in $y$ after regression.
 
-# In[20]:
+# In[18]:
 
 
 import matplotlib.pyplot as plt
 
+plt.rcParams['font.size'] = 14
+
 if n_features == 1:
-    plt.scatter(X, y, alpha=0.3)
-    plt.xlabel("X")
-    plt.ylabel("y")
-    plt.grid(True)
-    
-plt.figure()
-plt.hist(y - np.mean(y), bins=int(np.sqrt(len(y))))
-plt.title('Histogram y-mean(y)')
-plt.ylabel('counts')
+    fig, ax = plt.subplots()
+    ax.scatter(X, y, alpha=0.7, color=plt.get_cmap('coolwarm')(0))
+    ax.set_xlabel("X")
+    ax.set_ylabel("y")
+    ax.grid(True)
+    plt.tight_layout()
+    plt.show()
+    fig.savefig('LAD_data1.svg', format='svg', dpi=300, bbox_inches='tight')
+
+fig2, ax2 = plt.subplots()
+ax2.hist(y - np.mean(y), bins=int(np.sqrt(len(y))), color=plt.get_cmap('coolwarm')(0), alpha=0.7, edgecolor="black")
+ax2.set_ylabel('Counts')
+ax2.set_xlabel('y - mean(y)')
+ax2.grid(True)
+plt.tight_layout()
 plt.show()
+fig2.savefig('LAD_data2.svg', format='svg', dpi=300, bbox_inches='tight')
 
 
 # ## Model
@@ -111,7 +120,7 @@ plt.show()
 # 
 # The following cell provides a direct implementation of LAD regression.
 
-# In[13]:
+# In[14]:
 
 
 import pyomo.environ as pyo
@@ -160,24 +169,31 @@ print(f"Objective value: {pyo.value(model.sum_of_abs_errors):.2f}")
 # 
 # In a second plot is generated that displays a histogram of residuals, calculated as the difference between the actual values `y` and the fitted values `y_fit`. The histogram provides insights into the distribution of errors, which is important for model evaluation.
 
-# In[14]:
+# In[17]:
 
 
 y_fit = np.array([sum(x[j]*model.m[j]() for j in model.J) + model.b() for x in X])
 
+plt.rcParams['font.size'] = 14
+
 if n_features == 1:
-    plt.scatter(X, y, alpha=0.3, label="data")
-    plt.title('LAD regression model')
-    plt.plot(X, y_fit, 'r', label="y_fit")
-    plt.xlabel("X")
-    plt.ylabel("y")
-    plt.grid(True)
+    fig, ax = plt.subplots()
+    ax.scatter(X, y, alpha=0.7, color=plt.get_cmap('coolwarm')(0), label="data")
+    ax.plot(X, y_fit, color=plt.get_cmap('coolwarm')(1.0), label="LAD linear fit")
+    ax.set_xlabel("X")
+    ax.set_ylabel("y")
+    ax.grid(True)
     plt.legend()
-    
-plt.figure()
-plt.hist(y - y_fit, bins=int(np.sqrt(len(y))), color='r', alpha=0.8)
-plt.title('Histogram of the residuals y - y_fit')
-plt.xlabel("residual value")
-plt.ylabel('counts')
+    plt.tight_layout()
+    plt.show()
+    fig.savefig('LAD_result1.svg', format='svg', dpi=300, bbox_inches='tight')
+
+fig2, ax2 = plt.subplots()
+ax2.hist(y - y_fit, bins=int(np.sqrt(len(y))), color=plt.get_cmap('coolwarm')(1.0), alpha=0.7, edgecolor="black")
+ax2.set_ylabel('Counts')
+ax2.set_xlabel('y - mean(y)')
+ax2.grid(True)
+plt.tight_layout()
 plt.show()
+fig2.savefig('LAD_result2.svg', format='svg', dpi=300, bbox_inches='tight')
 
