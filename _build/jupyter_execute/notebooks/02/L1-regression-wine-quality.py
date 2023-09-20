@@ -10,7 +10,7 @@
 # ```{index} single: solver; cbc
 # ```
 # 
-# # Wine quality prediction with $L_1$ regression
+# # Extra material: Wine quality prediction with $L_1$ regression
 
 # ## Preamble: Install Pyomo and a solver
 # 
