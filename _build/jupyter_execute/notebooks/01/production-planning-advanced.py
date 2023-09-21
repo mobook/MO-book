@@ -34,7 +34,7 @@
 # have been previously installed and sets SOLVER to use the CBC solver via the Pyomo 
 # SolverFactory. It then verifies that SOLVER is available.
 
-# In[12]:
+# In[1]:
 
 
 import sys
@@ -99,7 +99,7 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # 
 # The first table of these describes the products. The product names will serve as keys for outermost dictionary, and attribute names as keys for the inner dictionaries. The attribute values will be interpreted as floating point numbers. `None` is used when a value is not present.
 
-# In[13]:
+# In[2]:
 
 
 products = {
@@ -110,12 +110,12 @@ products = {
 # print data
 for product, attributes in products.items():
     for attribute, value in attributes.items():
-        print(f"{product} {attribute:10s} {product}")
+        print(f"{product} {attribute:10s} {value}")
 
 
 # The second table is the nested dictionary listing attributes and values for resources consumed. 
 
-# In[24]:
+# In[3]:
 
 
 resources = {
@@ -131,7 +131,7 @@ for resource, attributes in resources.items():
 
 # The third table data shows the amount of each resource needed to produce one unit of each product. The rows are labeled by product, and the columns labeled by by resource. 
 
-# In[25]:
+# In[4]:
 
 
 processes = {
@@ -205,7 +205,7 @@ for product, process in processes.items():
 # 
 # As before, we begin the construction of a Pyomo model by creating a `ConcreteModel`.
 
-# In[26]:
+# In[5]:
 
 
 import pyomo.environ as pyo
@@ -217,7 +217,7 @@ model = pyo.ConcreteModel()
 # 
 # We use the Pyomo `Set()` to construct sets corresponding to the products and resources. Each set is initialized with the dictionary keys for the relevant attribute tables. These will later become indices for parameters, decision variables, and constraints.
 
-# In[27]:
+# In[6]:
 
 
 model.PRODUCTS = pyo.Set(initialize=products.keys())
@@ -230,7 +230,7 @@ model.RESOURCES = pyo.Set(initialize=resources.keys())
 # 
 # Note: The domain for the bounds is set to `Any` because some of them will take value `None`. Pyomo will omit a lower or upper bounds that has a value of `None`, so this is a way to keep the logic simple.
 
-# In[28]:
+# In[7]:
 
 
 # parameter for bounds
@@ -259,7 +259,7 @@ def a(model, resource, product):
 
 # The decision variables, $x$ and $y$, are indexed by the set of resources and products, respectively. The indexing is specified by passing the relevant sets as the first argumentns to Pyomo `Var()`. In addition to indexing, it always good practice to specify any known and fixed bounds on the variables. This is done by specifying a function (in Pyomo parlance sometimes called a rule) that returns the bound for a given index. Here we use a Python lambda function with two arguments, model and an index referring to a member of a set, to return a tuple with the lower and upper bound.
 
-# In[29]:
+# In[8]:
 
 
 model.x = pyo.Var(model.RESOURCES, bounds=lambda model, resource: (0,  model.available[resource]))
@@ -268,7 +268,7 @@ model.y = pyo.Var(model.PRODUCTS, bounds=lambda model, product: (0, model.demand
 
 # The objective is expressed with Pyomo `quicksum` which accepts a Python generator to successive terms in the sum. Here we use the parameters $c_p$ and $c_r$ that appear in the mathematical version of the model, and which were declared above in the Pyomo version of the model.
 
-# In[30]:
+# In[9]:
 
 
 model.revenue = pyo.quicksum(model.cp[product] * model.y[product] for product in model.PRODUCTS)
@@ -282,7 +282,7 @@ def profit(model):
 
 # The Pyomo `Constraint` decorator accepts one or more sets as arguments. Then, for every member of every set, the decorated function creates an associated constraint. Creating indexed constraints indexed in this manner are an essential building block for more complex models.
 
-# In[31]:
+# In[10]:
 
 
 # create indexed constraint
@@ -293,7 +293,7 @@ def materials_used(model, resource):
 
 # The final step is to solve the model and report the solution. Here we create a simple report using `pyo.value()` to access values of the decision variables, and using the model sets to construct iterators to report the value of indexed variables.
 
-# In[32]:
+# In[11]:
 
 
 model.pprint()
@@ -317,7 +317,7 @@ for resource in model.RESOURCES:
 # 
 # Some readers of these notebooks may be more experienced Python developers who wish to apply Pyomo in more specialized, data driven applications. The following cell shows how the Pyomo `ConcreteModel()` class can be extended by subclassing to create specialized model classes. Here we create a subclass called `ProductionModel` that accepts a particular representation of the problem data to produce a production model object. The production model object inherits all of the methods associated with any `ConcreteModel`, such as `.display()`, `.solve()`, and `.pprint()`, but can be extended with additional methods. 
 
-# In[33]:
+# In[12]:
 
 
 import pyomo.environ as pyo
