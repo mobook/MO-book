@@ -101,7 +101,7 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # 
 # The Pyomo code that implements and solves the dual problem is given below. 
 
-# In[3]:
+# In[24]:
 
 
 import pyomo.environ as pyo
@@ -124,8 +124,48 @@ model.x2 = pyo.Constraint(expr=model.y2 + model.y3 + 2*model.y4 >= 9)
 
 # Solve and print solution
 SOLVER.solve(model)
-print(f'y = ({model.y1.value:.1f}, {model.y2.value:.1f}, {model.y3.value:.1f}, {model.y4.value:.1f})')
-print(f"optimal value = {pyo.value(model.obj):.1f}")
+print(f'y = ({model.y1.value:.2f}, {model.y2.value:.2f}, {model.y3.value:.2f}, {model.y4.value:.2f})')
+print(f"optimal value = {pyo.value(model.obj):.2f}")
 
 
 # Note that since the original LO is feasible and bounded, strong duality holds and the optimal value of the primal problem coincides with the optimal value of the dual problem.
+
+# If we are interested only in the optimal value of the dual variables, we can solve the original problem and ask Pyomo to return us the optimal values of the dual variables.
+
+# In[28]:
+
+
+model = pyo.ConcreteModel('BIM with decorators')
+
+# Decision variables and their domains
+model.x1 = pyo.Var(domain=pyo.NonNegativeReals)
+model.x2 = pyo.Var(domain=pyo.NonNegativeReals)
+
+# Objective function defined using a decorator
+@model.Objective(sense=pyo.maximize)
+def profit(m):
+    return 12 * m.x1 + 9 * m.x2
+
+# Constraints defined using decorators
+@model.Constraint()
+def silicon(m):
+    return m.x1 <= 1000
+
+@model.Constraint()
+def germanium(m):
+    return m.x2 <= 1500
+
+@model.Constraint()
+def plastic(m):
+    return m.x1 + m.x2 <= 1750
+
+@model.Constraint()
+def copper(m):
+    return 4 * m.x1 + 2 * m.x2 <= 4800
+
+model.dual = pyo.Suffix(direction=pyo.Suffix.IMPORT)
+SOLVER.solve(model)
+
+for i, c in enumerate(model.component_objects(pyo.Constraint)):
+    print(f"Constraint name: {c}\nOptimal value corresponding dual variable: y_{i+1} = {model.dual[c]:0.2f}\n")
+
