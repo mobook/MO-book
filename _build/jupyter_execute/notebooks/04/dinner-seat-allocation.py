@@ -54,13 +54,13 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # 
 # First, we need the problem data -- for each family $f$ we need to know the number of its members $m_f$, and for each table $t$ we need to know its capacity $c_t$. Using these data and the tools we have learned so far, we can formulate this problem as a LO problem.
 # 
-# We can use variable $x_{ft}$  for the number of persons from family $f$ to be seated at table $t$. Since we were not provided with any objective function, we can focus on finding a feasible solution by setting the objective function to be constant, say $0$, which means that we do not differentiate between feasible solutions. 
+# If we do not care about the specific people, but only about the number of people in a given family, then we can use variable $x_{ft}$ to determine the number of people in family $f$ who will sit at table $t$. In the problem formulation, we were not given any objective function, since our goal is to find a feasible seating arrangement. For this reason, we can set the objective function to a constant value, say $0$, and, in this way, do not differentiate between the various feasible solutions. 
 # 
 # The mathematical formulation of this seating problem is:
 # 
 # $$
 # \begin{align*}
-#     \min_{x_{ft}} \quad & 0\\
+#     \min \quad & 0\\
 #     \text{s.t.} \quad & \sum\limits_{f} x_{ft} \leq c_t & \forall \, t \in T \\
 #     & \sum\limits_{t} x_{ft} = m_f & \forall \, f \in F \\
 #     & 0 \leq x_{ft} \leq k.

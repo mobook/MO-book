@@ -13,9 +13,9 @@
 # ```
 # 
 
-# # A Production Planning Problem
+# # A first production planning problem
 
-# ## Problem Statement
+# ## Problem statement
 # 
 # A company produces two versions of a product. Each version is made from the same raw material that costs 10€ per gram, and each version requires two different types of specialized labor to finish. $U$ is the higher priced version of the product. $U$ sells for 270€ per unit and requires 10 grams of raw material, one hour of labor type $A$, two hours of labor type $B$. Due to the higher price, the market demand for $U$ is limited to 40 units per week. $V$ is the lower priced version of the product with unlimited demand that sells for 210€ per unit and requires 9 grams of raw material, 1 hour of labor type $A$ and 1 hour of labor type $B$. This data is summarized in the following table:
 # 
@@ -45,7 +45,7 @@
 # 1. How much raw material should be ordered in advance for each week? 
 # 2. How many units of $U$ and $V$ should the company produce each week? 
 
-# ## Mathematical Model
+# ## Mathematical model
 # 
 # The problem statement above describes an optimization problem. Reformulating the problem statement as a mathematical model involves a few crucial elements:
 # 
@@ -129,4 +129,4 @@
 # 
 # For a practitioner, mathematical optimization often boils down to formulating the problem as a model above, then passing it over to one of the open-source or commercial software packages that can solve such a model regardless of what was the original *story* behind the model. To do so, we need an interface of communication between the models and the algorithms. In this website, we adopt a Python-based interface which is the ```Pyomo``` modeling package.
 # 
-# The next step is to create the corresponding Pyomo model, which we will carry out in the next [notebook](production-planning-basics.ipynb).
+# The next step is to create the corresponding Pyomo model, which we will carry out in the next [notebook](production-planning-basic.ipynb).

@@ -12,7 +12,7 @@
 # ```{index} single: solver; cbc
 # ```
 # 
-# # A Data-Driven Pyomo Model
+# # A data-driven Pyomo Model
 # 
 # In this notebook, we'll revisit the production planning example. However, this time we'll demonstrate how Python's data structures, combined with Pyomo's capabilities, can create an optimization model scales with problem data. This enables the model to adjust to new products, varying prices, or changing demand. We refer to this as "data-driven" modeling.
 # 

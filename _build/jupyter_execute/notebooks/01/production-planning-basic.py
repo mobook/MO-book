@@ -307,3 +307,5 @@ for i, (data, title, color_set) in enumerate(zip(datasets, titles, color_sets)):
 plt.tight_layout()
 plt.show()
 
+
+# To discover more advanced Pyomo features, see the [next notebook](production-planning-advanced.ipynb).
