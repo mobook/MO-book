@@ -45,18 +45,18 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 
 # ## Problem Statement
 # 
-# Given the current location $x$, battery charge $c$, and planning horizon $D$, a driver needs to plan ahead when to rest and when to charge his electric vehicle. Data is provided for the location and the charging rate available at each charging stations. The objective is to drive from location $x$ to location $x + D$ in as little time as possible subject to the following constraints:
+# Given the current location $x$, battery charge $c$, and planning horizon $D$, a driver needs to plan ahead when to rest and when to charge his electric vehicle. Data are provided for the location and charging rate available at each charging station. The distances to the charging stations are measured relative to an arbitrary location. The objective is to drive from location $x$ to location $x + D$ in as little time as possible, subject to the following constraints:
 # 
-# * To allow for unforeseen events, the state of charge should never drop below 20% of the maximum capacity.
-# * The maximum charge is $c_{max} = 80$ kWh.
-# * For comfort, no more than 4 hours should pass between stops, and that a rest stop should last at least $t^{rest}$.
-# * Any stop includes a $t^{lost} = 10$ minutes of "lost time".
+# * The maximum charge is $c_{\max} = 150$ kW.
+# * To allow for unforeseen events, the state of charge should never drop below $20\%$ of the maximum battery capacity, so $c_{\min}= 30$ kW.
+# * For comfort, no more than $r_{max}= 3$ hours should pass between stops, and that a rest stop should last at least $t_{rest}=20$ minutes.
+# * Any stop includes a $t_{lost} = 10$ minutes of "lost time".
 # 
 # For the first model we make several simplifying assumptions that can be relaxed as a later time.
 # 
-# * Travel is at a constant speed $v = 100$ km per hour and a constant discharge rate $R = 0.24$ kWh/km
-# * The batteries recharge at a constant rate determined by the charging station.
-# * Only consider stops at the recharging stations.
+# * Travel is carried out at a constant speed $v = 100$ km per hour and a constant discharge rate $R = 0.24$ kWh/km
+# * Batteries recharge at a constant rate determined by the charging station.
+# * Only consider stopping at the recharging stations and always recharging while resting.
 
 # ## Modeling
 # 
@@ -67,7 +67,7 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # * $t$ elapsed time since the start of the trip
 # * $x$ the current location
 # 
-# The charging stations are located at positions $d_i$ for $i\in I$ with capacity $C_i$. The arrival time at charging station $i$ is given by
+# The charging stations are located at positions $d_i$ for $i\in I$ and have charging rates per time unit $C_i$. The arrival time at charging station $i$ is given by
 # 
 # $$
 # \begin{align*}
@@ -77,7 +77,7 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # \end{align*}
 # $$
 # 
-# where the script $t_{i-1}^{dep}$ refers to departure from the prior location. At each charging location there is a decision to make of whether to stop, rest, and recharge. If the decision is positive, then
+# where the script $t_{i-1}^{dep}$ refers to departure from the prior location. At each charging location there is a decision to make about whether to stop, rest, and recharge. If the decision is positive, then
 # 
 # $$
 # \begin{align*}
@@ -88,13 +88,13 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # \end{align*}
 # $$
 # 
-# which account for the battery charge, the lost time and time required for battery charging, and allows for a minimum rest time. On the other hand, if a decision is make to skip the charging and rest opportunity,
+# which account for the battery charge, the lost time and time required for battery charging, and allows for a minimum rest time. On the other hand, if a decision is made to skip the charging and rest opportunity, then
 # 
 # $$
 # \begin{align*}
 # c_i^{dep} & = c_i^{arr} \\
 # r_i^{dep} & = r_i^{arr} \\
-# t_i^{dep} & = t_i^{arr}
+# t_i^{dep} & = t_i^{arr}.
 # \end{align*}
 # $$
 # 
@@ -127,9 +127,9 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 
 # ## Charging Station Information
 
-# The following code cell generates 20 random charging station with heterogeneous location and charging capacities.
+# The following code cell generates 20 random charging station with heterogeneous location and charging rates.
 
-# In[2]:
+# In[7]:
 
 
 import numpy as np
@@ -143,7 +143,7 @@ n_charging_stations = 20
 np.random.seed(2023)
 d = np.round(np.cumsum(np.random.triangular(20, 150, 223, n_charging_stations)), 1)
 
-# randomly assign changing capacities
+# randomly assign changing rates to the charging stations
 c = np.random.choice([50, 100, 150, 250], n_charging_stations, p=[0.2, 0.4, 0.3, 0.1])
 
 # assign names to the charging stations
@@ -156,7 +156,7 @@ display(stations)
 
 # ## Route Information
 
-# In[3]:
+# In[8]:
 
 
 # current location (km)
@@ -185,8 +185,8 @@ def plot_stations(stations, x, D, ax):
 
     ax.set_ylim(-50, 275)
     ax.set_xlabel('Distance (km)')
-    ax.set_ylabel('Capacity (kW)')
-    ax.set_title("Charging stations location and capacity")
+    ax.set_ylabel('Charging rate (kW)')
+    ax.set_title("Charging stations location and charging rates")
     ax.legend()
     
 plot_stations(stations, x, D, ax)
@@ -198,7 +198,7 @@ plt.show()
 # 
 # We now specify the car information as described in the problem statement. Note that we specify them as global variables so that they can be used in the model.
 
-# In[4]:
+# In[13]:
 
 
 # charge limits (kWh)
@@ -214,6 +214,7 @@ R = 0.24
 
 # lost time
 t_lost = 10/60
+t_rest = 20/60
 
 # rest time
 r_max = 3
@@ -223,7 +224,7 @@ r_max = 3
 # 
 # We can implement the problem described above as a Pyomo model and solve it. The solution is presented in a table that shows the location, the arrival time, the departure time, the battery charge at arrival and at departure, and the length of the stop.
 
-# In[5]:
+# In[14]:
 
 
 import pyomo.environ as pyo
@@ -312,7 +313,7 @@ def ev_plan(stations, x, D):
 
         # list of constraints that apply if there is a stop at station i
         disjunct_2 = [m.t_dep[i] == t_lost + m.t_arr[i] + (m.c_dep[i] - m.c_arr[i])/m.C[i],
-                      m.c_dep[i] >= m.c_arr[i],
+                      m.c_dep[i] >= m.c_arr[i]+t_rest,
                       m.r_dep[i] == 0]
 
         # return a list disjuncts
@@ -341,7 +342,7 @@ display(results)
 
 # The following code visualizes the optimal EV charging plan, showing when to stop and how much to recharge the battery.
 
-# In[7]:
+# In[16]:
 
 
 def visualizeEVplan(m):
@@ -395,6 +396,7 @@ def visualizeEVplan(m):
     ax[1].grid(True, axis='y', linestyle='--', linewidth=0.5, color='gray')
 
     plt.tight_layout()
+    plt.savefig("ev_results.svg", dpi=300, bbox_inches='tight')
     plt.show()
     
 visualizeEVplan(ev_plan(stations, 0, 2000))
