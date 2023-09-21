@@ -14,11 +14,11 @@
 # ```{index} single: solver; cbc
 # ```
 # 
-# # A Basic Pyomo Model
+# # A basic Pyomo model
 # 
 # Pyomo is an algebraic modeling language for mathematical optimization that is integrated within the Python programming environment. It enables users to create optimization models consisting of decision variables, expressions, objective functions, and constraints. Pyomo provides tools to transform models, and then solve them using a variety of open-source and commercial solvers. As an open-source project, Pyomo is not tied to any specific vendor, solver, or class of mathematical optimization problems, and is constantly evolving through contributions from third-party developers.
 # 
-# This notebook introduces basic elements of Pyomo common to most applications for the small [production planning problem](https://mobook.github.io/MO-book/notebooks/01/production-planning.html) introduced in a companion notebook:
+# This notebook introduces basic elements of Pyomo common to most applications for the small production planning problem introduced earlier in [this notebook](production-planning.ipynb) introduced in a companion notebook:
 # 
 # * [Variables](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Variables.html)
 # * [Expressions](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Expressions.html)
@@ -26,17 +26,17 @@
 # * [Constraints](https://pyomo.readthedocs.io/en/latest/pyomo_modeling_components/Constraints.html)
 # * [SolverFactory](https://pyomo.readthedocs.io/en/stable/solving_pyomo_models.html)
 # 
-# The Pyomo model shown below is a direct translation of the mathematical model into basic Pyomo components. In this approach, parameter values from the mathematical model are included directly in the Pyomo model for simplicity. This method works well for problems with a small number of decision variables and constraints, but it limits the reuse of the model. Another notebook will demonstrate Pyomo features for writing models for more generic, "data-driven" applications.
+# The Pyomo model shown below is a direct translation of the mathematical model into basic Pyomo components. In this approach, parameter values from the mathematical model are included directly in the Pyomo model for simplicity. This method works well for problems with a few decision variables and constraints, but it limits the reuse of the model. Another notebook will demonstrate Pyomo features for writing models for more generic, "data-driven" applications.
 # 
 # This notebook also introduces the use of Python decorators to designate Pyomo expressions, objectives, and constraints. While decorators may be unfamiliar to some Python users, or even current Pyomo users, they offer a significant improvement in the readability of Pyomo model. This feature is relatively new and is available in recent versions of Pyomo.
 
 # ## Preamble: Install Pyomo and a solver
 # 
-# This collection of notebooks is intended to be run in the cloud on [Google Colab](https://colab.google/) or on a personal computer. To meet this goal, We start each notebook by verifying the installation of Pyomo and an appropriate solver. When run on Google Colab, an installation of Pyomo and a solver must be done for each new Colab session. The [HiGHS solver](https://highs.dev/) is a high performance open source solver for linear and mixed integer optimization on Google Colab.  For a personal computer, we assume Python, Pyomo and the [Cbc solver](https://coin-or.github.io/Cbc/intro.html) have been previously installed. 
+# This collection of notebooks is intended to be run in the cloud on [Google Colab](https://colab.google/) or on a personal computer. To meet this goal, we start each notebook by verifying the installation of Pyomo and an appropriate solver. When run on Google Colab, an installation of Pyomo and a solver must be done for each new Colab session. The [HiGHS solver](https://highs.dev/) is a high performance open source solver for linear and mixed integer optimization on Google Colab.  For a personal computer, we assume Python, Pyomo and the [COIN-OR Cbc solver](https://coin-or.github.io/Cbc/intro.html) ("COIN-OR branch and cut") have been previously installed. Note that there are other suitable solvers, both open-source, such as GLPK, and commercial, such as CPLEX, Gurobi, and Mosek.
 # 
-# The following cell checks if the notebook is running on Google Colab. If so, it does a quiet installations of Pyomo and a solver. A solver is then selected, a test performed to verify that the solver is available, and the solver interface is stored in a global object `SOLVER` for later use.
+# The following cell checks if the notebook is running on Google Colab. If so, it does a quiet installation of Pyomo and a solver. A solver is then selected, a test performed to verify that the solver is available, and the solver interface is stored in a global object `SOLVER` for later use.
 
-# In[1]:
+# In[2]:
 
 
 """
@@ -66,9 +66,9 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 
 # ## Step 1. Import Pyomo
 # 
-# The first step for a new Pyomo model is to import the needed components into the Python environment. The module `pyomo.environ` provides the most commonly used components for Pyomo model building. This collection of notebooks uses a consistent convention of importing `pyomo.environ` with the  `pyo` prefix.
+# The first step for a new Pyomo model is to import the needed components into the Python environment. The module `pyomo.environ` provides the components most commonly used for building Pyomo models. This collection of notebooks uses a consistent convention of importing `pyomo.environ` with the `pyo` prefix.
 
-# In[2]:
+# In[3]:
 
 
 import pyomo.environ as pyo
@@ -81,16 +81,16 @@ import pyomo.environ as pyo
 # `pyo.ConcreteModel()` is used to create a model object when the problem data is known at the time of construction. Alternatively, pyo.AbstractModel() can create models where the problem data will be provided later to create specific model instances. But this is normally not needed when using the "data-driven" approach demonstrated in this collection of notebooks.
 # 
 
-# In[3]:
+# In[4]:
 
 
 # create model with optional problem title
 model = pyo.ConcreteModel("Production Planning: Version 1")
 
 
-# The `.display()` method displays the current content of a Pyomo model. When developing new models, this is a useful tool for verifying the model is being constructed as intended. At this stage the major components of the model are empty.
+# The `.display()` method displays the current content of a Pyomo model. When developing new models, this is a useful tool to verify that the model is being constructed as intended. At this stage, the major components of the model are empty.
 
-# In[4]:
+# In[5]:
 
 
 #display model
@@ -99,7 +99,7 @@ model.display()
 
 # ## Step 3. Decision variables
 # 
-# Decision variables are created with `pyo.Var()`. The decision variables can be assigned to any valid Python identifier. Here we assign decision variables to the model instance using the Python 'dot' notation. The variable names are chosen to reflect their names in the mathematical model. 
+# Decision variables are created with `pyo.Var()`. Decision variables can be assigned to any valid Python identifier. Here, we assign decision variables to the model instance using the Python 'dot' notation. The variable names are chosen to reflect their names in the mathematical model. 
 # 
 # `pyo.Var()` accepts optional keyword arguments. The most commonly used keyword arguments are:
 # 
@@ -107,9 +107,9 @@ model.display()
 # 
 # * `bounds` is an optional keyword argument to specify a tuple containing values for the lower and upper bounds. It is good modeling practice to specify any known and fixed bounds on the decision variables. `None` can be used as a placeholder if one of the two bounds is unknown. Specifying the bounds as `(0, None)` is equivalent to specifying the domain as `pyo.NonNegativeReals`.
 # 
-# The use of the optional keywords is shown in the following cell. Displaying the model shows the value of the decision variables is not yet known.
+# The use of the optional keywords is shown in the following cell. Displaying the model shows that the value of the decision variables is not yet known.
 
-# In[5]:
+# In[6]:
 
 
 # create decision variables
@@ -126,9 +126,9 @@ model.display()
 
 # ## Step 4. Expressions
 # 
-# Pyomo expressions are mathematical formulas involving the decision variables. The following cell creates expressions for revenue and cost that are assigned to `model.revenue` and `model.cost`, respectively.
+# Pyomo expressions are mathematical formulas that involve decision variables. The following cell creates expressions for revenue and cost that are assigned to `model.revenue` and `model.cost`, respectively.
 
-# In[6]:
+# In[7]:
 
 
 # create expressions
@@ -151,19 +151,19 @@ print(model.cost)
 # Recent releases of Pyomo provide a second method that uses Python [decorators](https://peps.python.org/pep-0318/) to specify an objective. With a decorator, the same objective is written as
 # 
 #     @model.Objective(sense = pyo.maximize)
-#     def profit(model):
-#         return model.revenue - model.cost
+#     def profit(m):
+#         return m.revenue - m.cost
 # 
 # Python decorators modify the behavior of the function defined in the next line.  In this case, the decorator `@model.Objective()` modifies the behavior of `profit()` so that it returns an expression for the profit to Pyomo. The keyword `sense` sets the type of objective, which can either be to maximize or minimize the value returned by the objective function. The function `profit()`, after being decorated, takes the Pyomo model as its first argument and adds its name to the model attributes.
 # 
 # In effect, Pyomo decorators are tags that insert functions into a Pyomo model to serve as expressions, objectives, or constraints. Decorators can improve the readability and maintainability of more complex models. They also simplify the syntax for creating other Pyomo objects expressions, constraints, and other optimization-related elements.
 
-# In[7]:
+# In[8]:
 
 
 @model.Objective(sense=pyo.maximize)
-def profit(model):
-    return model.revenue - model.cost
+def profit(m):
+    return m.revenue - m.cost
 
 model.display()
 
@@ -180,31 +180,29 @@ model.display()
 #     
 # Alternatively, the `@model.Constraint()` decorator 'tags' the output of the following function as a constraint. For the present example, the constraints are expressed with decorators below. This collection of notebooks uses decorators whenever possible to improve the readability and maintainability of Pyomo models.
 
-# In[8]:
+# In[9]:
 
 
 @model.Constraint()
-def raw_materials(model):
-    return 10 * model.y_U + 9 * model.y_V <= model.x_M
+def raw_materials(m):
+    return 10 * m.y_U + 9 * m.y_V <= m.x_M
 
 @model.Constraint()
-def labor_A(model):
-    return 1 * model.y_U + 1 * model.y_V <= model.x_A
+def labor_A(m):
+    return 1 * m.y_U + 1 * m.y_V <= m.x_A
 
 @model.Constraint()
-def labor_B(model):
-    return 2 * model.y_U + 1 * model.y_V <= model.x_B
+def labor_B(m):
+    return 2 * m.y_U + 1 * m.y_V <= m.x_B
 
 model.pprint()
 
 
 # ## Step 7. Solve the model
 # 
-# With the model now fully specified, the next step is to compute a solution. A solver object is created with `SolverFactory` then applied to the model as shown in the following cell. Here we have chosen to use the open source [COIN-OR Cbc](https://github.com/coin-or/Cbc)  ("COIN-OR branch and cut") solver for mixed integer linear programming. There are other suitable solvers such as the open-source [HiGHS](https://highs.dev/), or commercial solvers such as CPLEX, Gurobi, and Mosek.
-# 
-# The optional keyword `tee=True` causes the solver to print its output to the output. This can be useful for debugging problems that arise when developing a new model.
+# With the model now fully specified, the next step is to compute a solution. A solver object is created with `SolverFactory` then applied to the model as shown in the following cell. The optional keyword `tee=True` causes the solver to print its output to the output. This can be useful for debugging problems that arise when developing a new model.
 
-# In[9]:
+# In[10]:
 
 
 results = SOLVER.solve(model, tee=True)
@@ -212,20 +210,20 @@ results = SOLVER.solve(model, tee=True)
 
 # ## Step 8. Reporting the solution
 # 
-# The final step in most applications is to report the solution in a suitable format. For this example, we demonstrate simple tabular and graphic reports using the Pandas library. For an overview of other ways to report and visualize the solutions, see also the appendix of [this notebook](../04/gasoline-distribution.ipynb).
+# The final step in most applications is to report the solution in a suitable format. For this example, we demonstrate simple tabular and graphic reports using the Pandas library. For an overview of other ways to report and visualize the solutions, see also the appendix of [this notebook](../04/gasoline-distribution.ipynb) from Chapter 4.
 
 # ### Pyomo `pprint()`
 # 
 # Pyomo provides several functions for creating model reports that contain solution values. The `pprint()` method can be applied to the entire model, or to individual components of the model, as shown in the following cells.
 
-# In[10]:
+# In[11]:
 
 
 # display the whole model
 model.pprint()
 
 
-# In[11]:
+# In[12]:
 
 
 # display a component of the model
@@ -236,7 +234,7 @@ model.profit.pprint()
 # 
 # After a solution to a Pyomo model has been successfully computed, values for the objective, expressions, and decisions variables can be accessed with `pyo.value()`.
 
-# In[12]:
+# In[13]:
 
 
 pyo.value(model.profit)
@@ -244,7 +242,7 @@ pyo.value(model.profit)
 
 # When combined with [Python f strings](https://docs.python.org/3/tutorial/inputoutput.html), `pyo.value()` provides a convenient means of creating formatted reports.
 
-# In[13]:
+# In[14]:
 
 
 print(f" Profit = {pyo.value(model.profit): 9.2f}")
@@ -254,7 +252,7 @@ print(f"   Cost = {pyo.value(model.cost): 9.2f}")
 
 # Pyomo provides a shortcut notation for accessing solution. After a solution has been computed, a function with the same name as decision variable is created that will report the solution value. 
 
-# In[14]:
+# In[15]:
 
 
 print("x_A =", model.x_A())
@@ -264,9 +262,9 @@ print("x_M =", model.x_M())
 
 # ### Creating reports with Pandas
 # 
-# Pandas is an open-source library for working with data in Python and is widely used in the data science community. Here we use a Pandas `Series()` object to hold and display solution data. We can then visualize them using the matplotlib library, for instance with a bar chart.
+# Pandas is an open-source library for working with data in Python and is widely used in the data science community. Here we use a Pandas `Series()` object to hold and display solution data. We can then visualize them using the Matplotlib library, for instance with a bar chart.
 
-# In[15]:
+# In[31]:
 
 
 import pandas as pd
@@ -288,25 +286,24 @@ display(production)
 display(raw_materials)
 
 
-# In[16]:
+# In[47]:
 
 
 import matplotlib.pyplot as plt
 
-# create grid of subplots
-fig, ax = plt.subplots(1, 2, figsize=(8, 2))
+# Create a 1x2 grid of subplots and configure global settings
+fig, ax = plt.subplots(1, 2, figsize=(8, 3.5))
+plt.rcParams["font.size"] = 12
+colors = plt.cm.tab20c.colors
+color_sets = [[colors[0], colors[4]], [colors[16], colors[8], colors[12]]]
+datasets = [production, raw_materials]
+titles = ["Production", "Raw Materials"]
 
-# show pandas series as horizontal bar plots
-production.plot(ax=ax[0], kind="barh", title="Production")
-raw_materials.plot(ax=ax[1], kind="barh", title="Raw Materials")
-
-# show vertical axis in descending order
-ax[0].invert_yaxis()
-ax[1].invert_yaxis()
-
-
-# In[ ]:
-
-
-
+# Plot data on subplots
+for i, (data, title, color_set) in enumerate(zip(datasets, titles, color_sets)):
+    data.plot(ax=ax[i], kind="barh", title=title, alpha=0.7, color=color_set)
+    ax[i].set_xlabel("Units")
+    ax[i].invert_yaxis()
+plt.tight_layout()
+plt.show()
 

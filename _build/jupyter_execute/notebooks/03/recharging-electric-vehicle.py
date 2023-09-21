@@ -45,14 +45,14 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 
 # ## Problem Statement
 # 
-# Given the current location $x$, battery charge $c$, and planning horizon $D$, the task is to plan a series of recharging and rest stops. Data is provided for the location and the charging rate available at each charging stations. The objective is to drive from location $x$ to location $x + D$ in as little time as possible subject to the following constraints:
+# Given the current location $x$, battery charge $c$, and planning horizon $D$, a driver needs to plan ahead when to rest and when to charge his electric vehicle. Data is provided for the location and the charging rate available at each charging stations. The objective is to drive from location $x$ to location $x + D$ in as little time as possible subject to the following constraints:
 # 
 # * To allow for unforeseen events, the state of charge should never drop below 20% of the maximum capacity.
-# * The the maximum charge is $c_{max} = 80$ kWh.
+# * The maximum charge is $c_{max} = 80$ kWh.
 # * For comfort, no more than 4 hours should pass between stops, and that a rest stop should last at least $t^{rest}$.
 # * Any stop includes a $t^{lost} = 10$ minutes of "lost time".
 # 
-# For this first model we make several simplifying assumptions that can be relaxed as a later time.
+# For the first model we make several simplifying assumptions that can be relaxed as a later time.
 # 
 # * Travel is at a constant speed $v = 100$ km per hour and a constant discharge rate $R = 0.24$ kWh/km
 # * The batteries recharge at a constant rate determined by the charging station.
@@ -127,6 +127,8 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 
 # ## Charging Station Information
 
+# The following code cell generates 20 random charging station with heterogeneous location and charging capacities.
+
 # In[2]:
 
 
@@ -138,17 +140,17 @@ import pandas as pd
 n_charging_stations = 20
 
 # randomly distribute charging stations along a fixed route
-np.random.seed(1842)
+np.random.seed(2023)
 d = np.round(np.cumsum(np.random.triangular(20, 150, 223, n_charging_stations)), 1)
 
 # randomly assign changing capacities
 c = np.random.choice([50, 100, 150, 250], n_charging_stations, p=[0.2, 0.4, 0.3, 0.1])
 
 # assign names to the charging stations
-s = [f"S_{i:02d}" for i in range(n_charging_stations)]
+s = [f"S{i:02d}" for i in range(n_charging_stations)]
 
 stations = pd.DataFrame([s, d, c]).T
-stations.columns=["name", "location", "kw"]
+stations.columns=["name", "location", "kW"]
 display(stations)
 
 
@@ -157,59 +159,69 @@ display(stations)
 # In[3]:
 
 
-# current location (km) and charge (kw)
+# current location (km)
 x = 0
 
 # planning horizon
 D = 2000
 
-# visualize
-fig, ax = plt.subplots(1, 1, figsize=(15, 3))
+plt.rcParams.update({'font.size': 14})
+fig, ax = plt.subplots(1, 1, figsize=(14, 4))
 
-def plot_stations(stations, x, D, ax=ax):
+tab20 = plt.get_cmap('tab20', 20)
+colors = [tab20(i) for i in [0, 2, 4, 6]]
+
+def plot_stations(stations, x, D, ax):
     
     for station in stations.index:
         xs = stations.loc[station, "location"]
-        ys = stations.loc[station, "kw"]
-        ax.plot([xs, xs], [0, ys], 'b', lw=10, solid_capstyle="butt")
-        ax.text(xs, 0-30, stations.loc[station, "name"], ha="center")
+        ys = stations.loc[station, "kW"]
+        ax.plot([xs, xs], [0, ys], color=colors[0], lw=10, solid_capstyle="butt", alpha=0.8)
+        ax.text(xs, 0-30, stations.loc[station, "name"], ha="center", fontsize=10)
 
-    ax.plot([x, x+D], [0, 0], 'r', lw=5, solid_capstyle="butt", label="plan horizon")
-    ax.plot([x, x+D], [0, 0], 'r.', ms=20)
+    ax.axhline(0, color='k')
+    ax.plot([x, x+D], [0, 0], color=colors[3], lw=3.5, solid_capstyle="butt", label="plan horizon")
+    ax.plot([x, x+D], [0, 0], '.', color=colors[3], ms=20)
 
-    ax.axhline(0)
-    ax.set_ylim(-50, 300)
-    ax.set_xlabel('Distance')
-    ax.set_ylabel('kw')
-    ax.set_title("charging stations")
+    ax.set_ylim(-50, 275)
+    ax.set_xlabel('Distance (km)')
+    ax.set_ylabel('Capacity (kW)')
+    ax.set_title("Charging stations location and capacity")
     ax.legend()
-
-plot_stations(stations, x, D)
+    
+plot_stations(stations, x, D, ax)
+plt.tight_layout()
+plt.show()
 
 
 # ## Car Information
+# 
+# We now specify the car information as described in the problem statement. Note that we specify them as global variables so that they can be used in the model.
 
 # In[4]:
 
 
-# charge limits (kw)
+# charge limits (kWh)
 c_max = 150
 c_min = 0.2 * c_max
+
+# starting battery level (full charge)
 c = c_max
 
-# velocity km/hr and discharge rate kwh/km
+# velocity km/hr and discharge rate kWh/km
 v = 100.0
 R = 0.24
 
 # lost time
 t_lost = 10/60
-t_rest = 10/60
 
 # rest time
 r_max = 3
 
 
 # ## Pyomo Model
+# 
+# We can implement the problem described above as a Pyomo model and solve it. The solution is presented in a table that shows the location, the arrival time, the departure time, the battery charge at arrival and at departure, and the length of the stop.
 
 # In[5]:
 
@@ -222,7 +234,7 @@ def ev_plan(stations, x, D):
     # find stations between x and x + D
     on_route = stations[(stations["location"] >= x) & (stations["location"] <= x + D)]
 
-    m = pyo.ConcreteModel()
+    m = pyo.ConcreteModel("Recharging EV strategy")
 
     m.n = pyo.Param(default=len(on_route))
 
@@ -256,7 +268,7 @@ def ev_plan(stations, x, D):
 
     @m.Param(m.STATIONS)
     def C(m, i):
-        return on_route.loc[i-1, "kw"]
+        return on_route.loc[i-1, "kW"]
 
     @m.Param(m.LOCATIONS)
     def location(m, i):
@@ -327,12 +339,12 @@ results["t_stop"] = results["t_dep"] - results["t_arr"]
 display(results)
 
 
-# In[6]:
+# The following code visualizes the optimal EV charging plan, showing when to stop and how much to recharge the battery.
+
+# In[7]:
 
 
-# visualize
-
-def visualize(m):
+def visualizeEVplan(m):
     
     D = m.D
 
@@ -349,52 +361,41 @@ def visualize(m):
 
     fig, ax = plt.subplots(2, 1, figsize=(15, 8), sharex=True)
 
-    # plot stations
-    for station in stations.index:
-        xs = stations.loc[station, "location"]
-        ys = stations.loc[station, "kw"]
-        ax[0].plot([xs, xs], [0, ys], 'b', lw=10, solid_capstyle="butt")
-        ax[0].text(xs, 0-30, stations.loc[station, "name"], ha="center")
-
-    # plot planning horizon
-    ax[0].plot([x, x+D], [0, 0], 'r', lw=5, solid_capstyle="butt", label="plan horizon")
-    ax[0].plot([x, x+D], [0, 0], 'r.', ms=20)
-
-    # annotations
-    ax[0].axhline(0)
-    ax[0].set_ylim(-50, 300)
-    ax[0].set_ylabel('kw')
-    ax[0].set_title("charging stations")
-    ax[0].legend()
+    plot_stations(stations, x, D, ax[0])
 
     # plot battery charge
     for i in m.SEGMENTS:
         xv = [results.loc[i-1, "location"], results.loc[i, "location"]]
         cv = [results.loc[i-1, "c_dep"], results.loc[i, "c_arr"]]
-        ax[1].plot(xv, cv, 'g')
+        if i == 1:
+            ax[1].plot(xv, cv, color=colors[1], lw=3, label="EV battery level")
+        else:
+            ax[1].plot(xv, cv, color=colors[1], lw=3)
 
     # plot charge at stations
     for i in m.STATIONS:
         xv = [results.loc[i, "location"]]*2
         cv = [results.loc[i, "c_arr"], results.loc[i, "c_dep"]]
-        ax[1].plot(xv, cv, 'g')
+        ax[1].plot(xv, cv, color=colors[1], lw=3)
         
     # mark stop locations
     for i in m.STATIONS:
         if results.loc[i, "t_stop"] > 0:
-            ax[1].axvline(results.loc[i, "location"], color='r', ls='--')
+            ax[1].axvline(results.loc[i, "location"], color='k', ls='--',lw=2)
 
     # show constraints on battery charge
-    ax[1].axhline(c_max, c='g')
-    ax[1].axhline(c_min, c='g')
-    ax[1].set_ylim(0, 1.1*c_max)
-    ax[1].set_ylabel('Charge (kw)')
+    ax[1].axhline(c_min, c=colors[2], lw=3, label="minimum charge")
+    ax[1].axhline(c_max, c=colors[3], lw=3, label="maximum charge")
+    ax[1].set_ylim(-10, 1.25*c_max)
+    ax[1].set_xlabel('Distance (km)')
+    ax[1].set_ylabel('Charge (kWh)')
+    ax[1].set_title("Optimal EV charging plan")
+    ax[1].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax[1].legend() 
+    ax[1].grid(True, axis='y', linestyle='--', linewidth=0.5, color='gray')
+
+    plt.tight_layout()
+    plt.show()
     
-visualize(ev_plan(stations, 0, 2000))
+visualizeEVplan(ev_plan(stations, 0, 2000))
 
-
-# ## Suggested Exercises
-# 
-# 1. Does increasing the battery capacity $c^{max}$ significantly reduce the time required to travel 2000 km? Explain what you observe.
-# 
-# 2. "The best-laid schemes of mice and men go oft awry" (Robert Burns, "To a Mouse"). Modify this model so that it can be used to update a plans in response to real-time measurements. How does the charging strategy change as a function of planning horizon $D$?

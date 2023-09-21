@@ -51,7 +51,7 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # \end{align*}
 # $$
 # 
-# If we solve it, we obtain a different optimal solution than the original one, namely $(x_1,x_2) \approx (626.238,1123.762)$ and an optimal value of roughly $17628.713$. Note, in particular, that this new optimal solution is not integer, but on the other hand in the linear optimization problem above there is no constraint requiring $x_1$ and $x_2$ to be such.
+# If we solve it, we obtain a different optimal solution than the original one, namely $(x_1,x_2) \approx (626.238,1123.762)$ and an optimal value of roughly $17628.713$. The new optimal solution is not integral but, in fact, there is no constraint requiring $x_1$ and $x_2$ to be integers.
 
 # In[2]:
 
@@ -78,9 +78,9 @@ print('x = ({:.3f}, {:.3f}), optimal value = {:.3f}'.format(
     pyo.value(m.profit)))
 
 
-# In terms of production, of course, we would simply produce entire chips but it is not clear how to implement the fractional solution $(x_1,x_2) \approx (626.238,1123.762)$. Rounding down to $(x_1,x_2) = (626,1123)$ will intuitively yield a feasible solution, but we might be giving away some profit and/or not using efficiently the available material. Rounding up to $(x_1,x_2) = (627,1124)$ could possibly lead to an unfeasible solution for which the available material is not enough. We can of course manually inspect by hand all these candidate integer solutions, but if the problem involved many more decision variables or had a more complex structure, this would become much harder and possibly not lead to the true optimal solution.
+# In terms of production, we want to manufacture an integer number of microchips, but it is not clear how to implement the fractional optimal solution $(x_1,x_2) \approx (626.238,1123.762)$. Rounding down to $(x_1,x_2) = (626,1123)$ will intuitively yield a feasible solution, but this could lead to a minor loss of profit and/or an inefficient use of the available material. Rounding up to $(x_1,x_2) = (627,1124)$ could possibly lead to an unfeasible solution for which the available material is not enough. We could, of course, examine all the potential integer solutions by hand. However, if the problem had a more intricate structure or a greater number of decision variables, this would be much more difficult and may not lead to the true optimal solution.
 # 
-# A much safer approach is to explicitly require the two decision variables to be non-negative integers, thus transforming the original into the following mixed-integer linear optimization (MILO) problem:
+# A safer approach is to explicitly require the two decision variables to be non-negative integers, thus transforming the original LO problem into the following mixed-integer linear optimization (MILO) problem:
 # 
 # $$
 # \begin{align*}
@@ -93,7 +93,7 @@ print('x = ({:.3f}, {:.3f}), optimal value = {:.3f}'.format(
 # \end{align*}
 # $$
 # 
-# The optimal solution is $(x_1,x_2) = (626,1124)$ with a profit of $17628$. Note that for this specific problem both the naive rounding strategies outlined above would have not yielded the true optimal solution. The Python code for obtaining the optimal solution using MILO solvers is given below.
+# The optimal solution of this new MILO problem is $(x_1,x_2) = (626,1124)$ with a profit of $17628$. Note that for this specific problem both the naive rounding strategies outlined above would not have yielded the true optimal solution. The Python code for obtaining the optimal solution using MILO solvers is given below.
 
 # In[3]:
 

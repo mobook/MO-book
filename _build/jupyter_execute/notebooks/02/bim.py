@@ -49,23 +49,29 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # Let $x \geq 0$ denote the number of logic chips to be produced and $y \geq 0$ the number of memory chips. In the problem described above, the goal is to maximize the total profit. Since for each logic chip the profit is 12 euro, and for each memory chip it is 9 euro, the total profit to maximize is equal to 
 # 
 # $$
-# 12x + 9y.
+#     12x + 9y.
 # $$
 # 
-# In maximizing this quantity, we have to respect some constraints. We know that we cannot use more raw materials than those are available in stock. For silicon, this means that the joint usage for logic chips is equal to $4x$g (4g per chip, which gives $4x$g for $x$ chips) and for memory chips equal to (1g per chip, which gives $y$g for $y$ chips) cannot exceed the maximum availability of 1000g of silicon:
+# In maximizing this quantity, we have to respect some constraints. We know that we cannot use more raw materials than those are available in stock. 
+# 
+# For silicon, this means that the joint usage for logic chips, which is equal to $4x$ g (4g per chip for each of the $x$ chips), and for memory chips, which is equal to $y$ g (1g per chip for each of the $y$ chips), cannot exceed the maximum availability of 1000g of silicon:
 # 
 # $$
 #     4x + y \leq 1000.
 # $$
 # 
-# Similarly, we can deduce the condition for germanium where only the memory chip plays a role (logic chips don't require this element),
+# Similarly, we can deduce the condition for germanium where only the memory chip plays a role (logic chips don not require this element),
+# 
 # $$
 #     y \leq 1500,
 # $$
+# 
 # for plastic,
+# 
 # $$
 #     x + y \leq 1750,
 # $$
+# 
 # and for copper,
 # $$
 #     4x + 2y \leq 4800.
@@ -85,13 +91,23 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # \end{align*}
 # $$
 
-# This problem is relatively small, featuring only $n=2$ decision variables and $m=4$ constraints. However, it is easy to imagine that adding more products and constraints would significantly complicate matters. In such cases, explicitly listing each constraint and fully expanding all expressions could obfuscate the overall structure, making it challenging to discern the key aspects of the problem.
+# Leveraging the fact that we have a two-dimensional problem, we can then visualize the entire feasible region.
+#  
+# <div align="center">
 # 
-# In fact, it is much more common to formulate, analyze, and compare linear optimization problems using vectors and matrices. This format not only aligns more closely with computational implementation, but also greatly facilitates the identification of the similarities between various LO problems, regardless of whether they are about chip production or food manufacturing.
+# ![svg image](../../media/BIM_feasibleregion.svg)
+# 
+# </div>
+# 
+# The feasible region is displayed in gray, enclosed by the linear constraints (solid lines). The isolines corresponding to the objective function are displayed as parallel dashed blue lines with increasing color intensity when the objective function value is larger. We can intuitively already guess the optimal solution, which is marked with a red dot.
 
 # ### Matrix reformulation of the BIM problem
 # 
-# If you are new or need to refresh on how equations and inequalities can be formulated using vectors and matrices, we refer you to \cref{appendix:lap}. As a first step towards building a vector-matrix formulation of our problem, we rename the decision variables $x$ and $y$ as $x_1$ and $x_2$, obtaining
+# This problem is relatively small, featuring only $n=2$ decision variables and $m=4$ constraints. However, it is easy to imagine that adding more products and constraints would significantly complicate matters. In such cases, explicitly listing each constraint and fully expanding all expressions could obfuscate the overall structure, making it challenging to discern the key aspects of the problem. In fact, it is much more common to formulate, analyze, and compare linear optimization problems using vectors and matrices. This format not only aligns more closely with computational implementation, but also greatly facilitates the identification of the similarities between various LO problems, regardless of whether they are about chip production or food manufacturing.
+# 
+# If you are new or need to refresh on how equations and inequalities can be formulated using vectors and matrices, we refer you to the [book](../../intro.md). 
+# 
+# As a first step towards building a vector-matrix formulation of our problem, we rename the decision variables $x$ and $y$ as $x_1$ and $x_2$, obtaining
 # 
 # $$
 # \begin{align*}

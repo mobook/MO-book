@@ -74,7 +74,7 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # |-----:|------:|--------:|------:|
 # |   200|   500 |      500|  1000 |
 # 
-# Each raw material can be acquired at each month, but the unit prices vary as follows:
+# Each raw material can be acquired at each month, but the unit prices vary month by month as follows:
 # 
 # | product  | Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Sep | Oct | Nov | Dec |
 # |:---------|----:|----:|----:|----:|----:|----:|----:|----:|----:|----:|----:|----:|
@@ -242,7 +242,7 @@ def BIMProductAcquisitionAndInventory(demand, acquisition_price, existing, desir
 
 # We now can create an instance of the model using the provided data and solve it.
 
-# In[19]:
+# In[5]:
 
 
 import matplotlib.pyplot as plt
@@ -285,7 +285,7 @@ report_pyomo_solution(m)
 
 # Here is a different solution corresponding to the situation where the budget is much lower, namely 2000.
 
-# In[20]:
+# In[6]:
 
 
 budget = 2000
@@ -309,7 +309,7 @@ report_pyomo_solution(m)
 # 
 # We can create a more parsimonious model with fewer variabels by getting rid of the auxiliary variables $s_{pt}$. Here is the corresponding implementation in Pyomo:
 
-# In[21]:
+# In[7]:
 
 
 def BIMProductAcquisitionAndInventory_v2(demand, acquisition_price, existing, desired, stock_limit, month_budget):
@@ -377,7 +377,7 @@ def BIMProductAcquisitionAndInventory_v2(demand, acquisition_price, existing, de
     return m
 
 
-# In[22]:
+# In[8]:
 
 
 m = BIMProductAcquisitionAndInventory_v2( demand, price, 

@@ -43,7 +43,7 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 
 # ## Problem Statement
 # 
-# An article entitled ["Modeling and optimization of a weekly workforce with Python and Pyomo"](https://towardsdatascience.com/modeling-and-optimization-of-a-weekly-workforce-with-python-and-pyomo-29484ba065bb) by [Christian Carballo Lozano](https://medium.com/@ccarballolozano) posted on the [Towards Data Science](https://towardsdatascience.com/) blog showed how to build a Pyomo model to schedule weekly shifts for a small campus food store. The article was primarily intended as a tutorial introduction to Pyomo (see the [github](https://github.com/ccarballolozano/blog-post-codes/blob/master/Modeling-and-optimization-of-a-weekly-workforce-with-Python-and-Pyomo/Modeling%20and%20optimization%20of%20a%20weekly%20workforce%20with%20Python%20and%20Pyomo.ipynb) repository for the code). 
+# An article entitled ["Modeling and optimization of a weekly workforce with Python and Pyomo"](https://towardsdatascience.com/modeling-and-optimization-of-a-weekly-workforce-with-python-and-pyomo-29484ba065bb) by [Christian Carballo Lozano](https://medium.com/@ccarballolozano) posted on [Towards Data Science](https://towardsdatascience.com/) showed how to build a Pyomo model to schedule weekly shifts for a small campus food store. The article was primarily intended as a tutorial introduction to Pyomo (see the [github](https://github.com/ccarballolozano/blog-post-codes/blob/master/Modeling-and-optimization-of-a-weekly-workforce-with-Python-and-Pyomo/Modeling%20and%20optimization%20of%20a%20weekly%20workforce%20with%20Python%20and%20Pyomo.ipynb) repository for the code). 
 # 
 # From the original article:
 # 
@@ -58,32 +58,34 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 
 # ### Model sets
 # 
-# This problem requires assignment of an unspecified number of workers to a predetermined set of shifts. There are three shifts per day, seven days per week. These observations suggest the need for three ordered sets:
+# Assuming that we have $N$ available workers, the problem requires the assignment of these available workers to a predetermined set of shifts with specific staffing requirements. Let $\textup{R}_{d, s}$ describe the minimum number of workers required for the day-shift pair $(d, s)$.
 # 
-# * `WORKERS` with $N$ elements representing workers. $N$ is as input to a function creating an instance of the model.
+# There are three shifts per day, seven days per week. These observations suggest the need for three ordered sets:
 # 
-# * `DAYS` with labeling the days of the week.
+# * `W` is a set with $N$ elements representing workers. 
 # 
-# * `SHIFTS` labeling the shifts each day.
+# * `D` is the set with the 7 days of the week.
 # 
-# The problem describes additional considerations that suggest the utility of several additional sets.
+# * `S` is the set with the three daily shifts.
 # 
-# * `SLOTS` is an ordered set of (day, shift) pairs describing all of the available shifts during the week. 
+# It is convenient to add the following additional sets to improve the readability of the model:
 # 
-# * `BLOCKS` is an ordered set of all overlapping 24 hour periods in the week. An element of the set contains the (day, shift) period in the corresponding period. This set will be used to limit worker assignments to no more than one for each 24 hour period.
+# * `T` is the set of the ordered (day, shift) pairs describing all the available shifts during the week. 
 # 
-# * `WEEKENDS` is a the set of all (day, shift) pairs on a weekend. This set will be used to implement worker preferences on weekend scheduling.
+# * `B` is the ordered set of all overlapping 24-hour periods in the week. An element of the set contains the (day, shift) period in the corresponding period. This set will be used to limit worker assignments to no more than one for each 24-hour period.
 # 
-# These additional sets improve the readability of the model.
+# * `E` is the set of all (day, shift) pairs on a weekend. This set will be used to implement worker preferences on weekend scheduling.
+# 
+# To recap, the sets that we will be using are defined as follows:
 # 
 # $$
 # \begin{align*}
-# \text{WORKERS} & = \{w_1, w_2, \ldots, w_1\} \text{ set of all workers} \\
-# \text{DAYS} & = \{\text{Mon}, \text{Tues}, \ldots, \text{Sun}\} \text{ days of the week} \\
-# \text{SHIFTS} & = \{\text{morning}, \text{evening}, \text{night}\} \text{ 8 hour daily shifts} \\
-# \text{SLOTS} & = \text{DAYS} \times \text{SHIFTS} \text{ ordered set of all (day, shift) pairs}\\
-# \text{BLOCKS} & \subset \text{SLOTS} \times \text{SLOTS} \times \text{SLOTS}  \text{ all 24 blocks of consecutive slots} \\
-# \text{WEEKENDS} & \subset \text{SLOTS} \text{ subset of slots corresponding to weekends} \\
+# \text{W} & = \{w_1, w_2, \ldots, w_N\} \text{ set of all workers} \\
+# \text{D} & = \{\text{Mon}, \text{Tues}, \ldots, \text{Sun}\} \text{ days of the week} \\
+# \text{S} & = \{\text{morning}, \text{evening}, \text{night}\} \text{ 8 hour daily shifts} \\
+# \text{T} & = \text{D} \times \text{S} \text{ ordered set of all (day, shift) pairs}\\
+# \text{B} & \subset \text{T} \times \text{T} \times \text{T}  \text{ all 24 blocks of consecutive slots} \\
+# \text{E} & \subset \text{T} \text{ subset of slots corresponding to weekends} \\
 # \end{align*}
 # $$
 
@@ -91,8 +93,8 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # 
 # $$
 # \begin{align*}
-# N & = \text{ number of workers} \\
-# \text{WorkersRequired}_{d, s} & = \text{ number of workers required for each day, shift pair } (d, s) \\
+# N & = \text{ number of available workers} \\
+# \text{R}_{d, s} & = \text{ number of workers required for each day, shift pair } (d, s) \\
 # \end{align*}
 # $$
 
@@ -100,62 +102,69 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 # 
 # $$
 # \begin{align*}
-# \text{assign}_{w, d, s} & = \begin{cases}1\quad\text{if worker } w \text{ is assigned to day, shift pair } (d,s)\in \text{SLOTS} \\ 0\quad \text{otherwise} \end{cases} \\
-# \text{weekend}_{w} & = \begin{cases}1\quad\text{if worker } w \text{ is assigned to a weekend day, shift pair } (d,s)\in\text{WEEKENDS} \\ 0\quad \text{otherwise} \end{cases} \\
-# \text{needed}_{w} & = \begin{cases}1\quad\text{if worker } w \text{ is needed during the week} \\ 0\quad \text{otherwise} \end{cases} \\
+# a_{w, d, s} & = \begin{cases}1\quad\text{if worker } w \text{ is assigned to day, shift pair } (d,s)\in \text{T} \\ 0\quad \text{otherwise} \end{cases} \\
+# e_{w} & = \begin{cases}1\quad\text{if worker } w \text{ is assigned to a weekend day, shift pair } (d,s)\in\text{E} \\ 0\quad \text{otherwise} \end{cases} \\
+# n_{w} & = \begin{cases}1\quad\text{if worker } w \text{ is needed during the week} \\ 0\quad \text{otherwise} \end{cases} \\
 # \end{align*}
 # $$
+# 
+# Note, in particular, that we have only binary decision variables.
 
 # ### Model constraints
 # 
-# Assign workers to each shift to meet staffing requirement.
+# Let us now formulate all the constraints using the variables we have created. 
+# 
+# - Assign workers to each shift to meet staffing requirement.
 # 
 # $$\begin{align*}
 # \\
-# \sum_{w\in\text{ WORKERS}} \text{assign}_{w, d, s} & \geq \text{WorkersRequired}_{d, s} & \forall (d, s) \in \text{SLOTS} \\
+# \sum_{w\in\text{ W}} a_{w, d, s} & \geq \text{R}_{d, s} & \forall (d, s) \in \text{T} \\
 # \end{align*}$$
 # 
-# Assign no more than 40 hours per week to each worker.
+# - Assign no more than 40 hours per week to each worker.
 # 
 # $$\begin{align*}
 # \\
-# 8\sum_{d,s\in\text{ SLOTS}} \text{assign}_{w, d, s} & \leq 40 & \forall w \in \text{WORKERS} \\
-# \\
-# \end{align*}$$
-# 
-# Assign no more than one shift in each 24 hour period.
-# 
-# $$\begin{align*}
-# \\
-# \text{assign}_{w, d_1,s_1} + \text{assign}_{w, d_2, s_2} + \text{assign}_{w, d_3, s_3} & \leq 1 & \forall w \in \text{WORKERS} \\ & & \forall ((d_1, s_1), (d_2, s_2), (d_3, s_3))\in \text{BLOCKS} \\
+# 8\sum_{d,s\in\text{ T}} a_{w, d, s} & \leq 40 & \forall w \in \text{W} \\
 # \\
 # \end{align*}$$
 # 
-# Do not assign any shift to a worker that is not needed during the week.
+# - Assign no more than one shift in each 24-hour period.
 # 
 # $$\begin{align*}
 # \\
-# \sum_{d,s\in\text{ SLOTS}} \text{assign}_{w,d,s} & \leq M_{\text{SLOTS}}\cdot\text{needed}_w & \forall w\in \text{WORKERS} \\
+# a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad & \forall w \in \text{W} \\
+# & \forall \, ((d_1, s_1), (d_2, s_2), (d_3, s_3))\in \text{B} \\
 # \\
 # \end{align*}$$
 # 
-# Do not assign any weekend shift to a worker that is not needed during the weekend.
+# - Do not assign any shift to a worker that is not needed during the week.
 # 
 # $$\begin{align*}
 # \\
-# \sum_{d,s\in\text{ WEEKENDS}} \text{assign}_{w,d,s} & \leq M_{\text{WEEKENDS}}\cdot\text{weekend}_w & \forall w\in \text{WORKERS} \\
+# \sum_{d,s\in\text{ T}} a_{w,d,s} & \leq M_{\text{T}}\cdot n_w & \forall w\in \text{W} \\
+# \\
+# \end{align*}$$
+# 
+# - Do not assign any weekend shift to a worker that is not needed during the weekend.
+# 
+# $$\begin{align*}
+# \\
+# \sum_{d,s\in\text{ E}} a_{w,d,s} & \leq M_{\text{E}}\cdot e_w & \forall w\in \text{W} \\
 # \\
 # \end{align*}$$
 
 # ### Model objective
 # 
-# The model objective is to minimize the overall number of workers needed to fill the shift and work requirements while also attempting to meet worker preferences regarding weekend shift assignments. This is formulated here as an objective for minimizing a weighted sum of the number of workers needed to meet all shift requirements and the number of workers assigned to weekend shifts. The positive weight $\gamma$ determines the relative importance of these two measures of a desirable shift schedule.
+# The model objective is to minimize the overall number of workers needed to fill the shift and work requirements while also trying to meet worker preferences regarding weekend shift assignments. This is achieved here by minimizing a weighted sum of the number of workers needed to meet all shift requirements and the number of workers assigned to weekend shifts. The resulting objective function is
 # 
 # $$
 # \begin{align*}
-# \min \left(\sum_{w\in\text{ WORKERS}} \text{needed}_w + \gamma\sum_{w\in\text{ WORKERS}} \text{weekend}_w)
-# \right)\end{align*}
+# \min \left(\sum_{w\in\text{ W}} n_w + \gamma\sum_{w\in\text{ W}} e_w \right),
+# \end{align*}
 # $$
+# 
+# where $\gamma$ is a fixed positive parameter that determines the relative importance of these two measures in a desirable shift schedule.
 
 # ## Pyomo implementation
 
@@ -165,75 +174,74 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 import pyomo.environ as pyo
 
 def shift_schedule(N=10, hours=40):
-    """return a solved model assigning N workers to shifts"""
 
     m = pyo.ConcreteModel('Workforce Shift Scheduling')
 
     # ordered set of avaiable workers
-    m.WORKERS = pyo.Set(initialize=[f"W{i:02d}" for i in range(1, N+1)])
+    m.W = pyo.Set(initialize=[f"W{i:02d}" for i in range(1, N+1)])
 
     # ordered sets of days and shifts
-    m.DAYS = pyo.Set(initialize=['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
-    m.SHIFTS = pyo.Set(initialize=['morning', 'evening', 'night'])
+    m.D = pyo.Set(initialize=['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
+    m.S = pyo.Set(initialize=['morning', 'evening', 'night'])
 
     # ordered set of day, shift time slots 
-    m.SLOTS = pyo.Set(initialize = m.DAYS * m.SHIFTS)
+    m.T = pyo.Set(initialize = m.D * m.S)
 
-    # ordered set of 24 hour time blocks 
-    m.BLOCKS = pyo.Set(initialize = [[m.SLOTS.at(i), m.SLOTS.at(i+1), m.SLOTS.at(i+2)] 
-                                     for i in range(1, len(m.SLOTS)-1)])
+    # ordered set of 24-hour time blocks 
+    m.B = pyo.Set(initialize = [[m.T.at(i), m.T.at(i+1), m.T.at(i+2)] 
+                                     for i in range(1, len(m.T)-1)])
     
     # ordered set of weekend shifts
-    m.WEEKENDS = pyo.Set(initialize = m.SLOTS, filter = lambda m, day, shift: day in ['Sat', 'Sun'])
+    m.E = pyo.Set(initialize = m.T, filter = lambda m, day, shift: day in ['Sat', 'Sun'])
 
     # parameter of worker requirements
-    @m.Param(m.SLOTS)
-    def WorkersRequired(m, day, shift):
+    @m.Param(m.T)
+    def R(m, day, shift):
         if shift in ['night'] or day in ['Sun']:
             return 1
         return 2
     
     # max hours per week per worker
-    m.Hours = pyo.Param(mutable=True, default=hours)
+    m.H = pyo.Param(mutable=True, default=hours)
 
-    # decision variable: assign[worker, day, shift] = 1 assigns worker to a time slot
-    m.assign = pyo.Var(m.WORKERS, m.SLOTS, domain=pyo.Binary)
+    # decision variable: a[worker, day, shift] = 1 assigns worker to a time slot
+    m.a = pyo.Var(m.W, m.T, domain=pyo.Binary)
 
-    # decision variables: weekend[worker] = 1 worker is assigned weekend shift
-    m.weekend = pyo.Var(m.WORKERS, domain=pyo.Binary)
+    # decision variables: e[worker] = 1 worker is assigned weekend shift
+    m.e = pyo.Var(m.W, domain=pyo.Binary)
 
-    # decision variable: needed[worker] = 1 
-    m.needed = pyo.Var(m.WORKERS, domain=pyo.Binary)
+    # decision variable: n[worker] = 1 
+    m.n = pyo.Var(m.W, domain=pyo.Binary)
                 
     # assign a sufficient number of workers for each time slot
-    @m.Constraint(m.SLOTS)
+    @m.Constraint(m.T)
     def required_workers(m, day, shift):
-        return m.WorkersRequired[day, shift] == sum(m.assign[worker, day, shift] for worker in m.WORKERS)
+        return m.R[day, shift] == sum(m.a[worker, day, shift] for worker in m.W)
 
     # workers limited to forty hours per week assuming 8 hours per shift
-    @m.Constraint(m.WORKERS)
+    @m.Constraint(m.W)
     def forty_hour_limit(m, worker):
-        return 8*sum(m.assign[worker, day, shift] for day, shift in m.SLOTS) <= m.Hours
+        return 8*sum(m.a[worker, day, shift] for day, shift in m.T) <= m.H
 
     # workers are assigned no more than one time slot per 24 time block
-    @m.Constraint(m.WORKERS, m.BLOCKS)
+    @m.Constraint(m.W, m.B)
     def required_rest(m, worker, d1, s1, d2, s2, d3, s3):
-        return m.assign[worker, d1, s1] + m.assign[worker, d2, s2] + m.assign[worker, d3, s3] <= 1
+        return m.a[worker, d1, s1] + m.a[worker, d2, s2] + m.a[worker, d3, s3] <= 1
     
     # determine if a worker is assigned to any shift
-    @m.Constraint(m.WORKERS)
+    @m.Constraint(m.W)
     def is_needed(m, worker):
-        return sum(m.assign[worker, day, shift] for day, shift in m.SLOTS) <= len(m.SLOTS)*m.needed[worker]
+        return sum(m.a[worker, day, shift] for day, shift in m.T) <= len(m.T)*m.n[worker]
 
     # determine if a worker is assigned to a weekend shift
-    @m.Constraint(m.WORKERS)
+    @m.Constraint(m.W)
     def is__weekend(m, worker):
-        return 6*m.weekend[worker] >= sum(m.assign[worker, day, shift] for day, shift in m.WEEKENDS)
+        return 6*m.e[worker] >= sum(m.a[worker, day, shift] for day, shift in m.E)
 
     # minimize a blended objective of needed workers and needed weekend workers
     @m.Objective(sense=pyo.minimize)
     def minimize_workers(m):
-        return sum(i*m.needed[worker] + 0.1*i*m.weekend[worker] for i, worker in enumerate(m.WORKERS))
+        return sum(i*m.n[worker] + 0.1*i*m.e[worker] for i, worker in enumerate(m.W))
 
     SOLVER.solve(m)
 
@@ -255,76 +263,76 @@ from matplotlib.patches import Rectangle
 def visualize(m):
     
     bw = 1.0
-    workers = [worker for worker in m.WORKERS]
-    fig, ax = plt.subplots(1, 1, figsize=(12, 1 + 0.3*len(m.WORKERS)))
-    ax.set_title('Shift Schedule')
+    workers = [worker for worker in m.W]
+    plt.rcParams["font.size"] = 14
+    fig, ax = plt.subplots(1, 1, figsize=(12, 2 + 0.3*len(m.W)))
     
-    # x axis styling
-    ax.set_xlim(0, len(m.SLOTS))
-    colors = ['teal', 'gold', 'magenta']
-    for i in range(len(m.SLOTS) + 1):
+    colormap = plt.cm.tab20c.colors
+    colors = [colormap[7], colormap[11], colormap[15]]
+    for i in range(len(m.T) + 1):
         ax.axvline(i, lw=0.3)
-        ax.fill_between([i, i+1], [0]*2, [len(m.WORKERS)]*2, alpha=0.1, color=colors[i%3])
-    for i in range(len(m.DAYS) + 1):
+        ax.fill_between([i, i+1], [0]*2, [len(m.W)]*2, alpha=0.8, color=colors[i%3])
+    for i in range(len(m.D) + 1):
         ax.axvline(3*i, lw=1)
-    ax.set_xticks([3*i + 1.5 for i in range(len(m.DAYS))])
-    ax.set_xticklabels(m.DAYS)
+        
+    ax.set_xlim(0, len(m.T))
+    ax.set_xticks([3*i + 1.5 for i in range(len(m.D))])
+    ax.set_xticklabels(m.D)
     ax.set_xlabel('Shift')
 
-    # y axis styling
-    ax.set_ylim(0, len(m.WORKERS))
-    for j in range(len(m.WORKERS) + 1):
+    ax.set_ylim(0, len(m.W))
+    for j in range(len(m.W) + 1):
         ax.axhline(j, lw=0.3) 
-    ax.set_yticks([j + 0.5 for j in range(len(m.WORKERS))])
+    ax.set_yticks([j + 0.5 for j in range(len(m.W))])
     ax.set_yticklabels(workers)
     ax.set_ylabel('Worker')
     
     # show shift assignments
-    for i, slot in enumerate(m.SLOTS):
+    for i, slot in enumerate(m.T):
         day, shift = slot
-        for j, worker in enumerate(m.WORKERS):
-            if round(m.assign[worker, day, shift]()):
-                ax.add_patch(Rectangle((i, j + (1-bw)/2), 1, bw, edgecolor='b'))
+        for j, worker in enumerate(m.W):
+            if round(m.a[worker, day, shift]()):
+                ax.add_patch(Rectangle((i, j + (1-bw)/2), 1, bw, edgecolor=colors[0]))
                 ax.text(i + 1/2, j + 1/2, worker, ha='center', va='center', color='w')
     
     # display needed and weekend data
-    for j, worker in enumerate(m.WORKERS):
-        if not m.needed[worker]():
-            ax.fill_between([0, len(m.SLOTS)], [j, j], [j+1, j+1], color='k', alpha=0.3)
-        if m.needed[worker]() and not m.weekend[worker]():
-            ax.fill_between([15, len(m.SLOTS)], [j, j], [j+1, j+1], color='k', alpha=0.3)
-        
+    for j, worker in enumerate(m.W):
+        if not m.n[worker]():
+            ax.fill_between([0, len(m.T)], [j, j], [j+1, j+1], color='k', alpha=0.4)
+        if m.n[worker]() and not m.e[worker]():
+            ax.fill_between([15, len(m.T)], [j, j], [j+1, j+1], color='k', alpha=0.4)
+    plt.tight_layout()
+    plt.show()
+
 visualize(m)
 
 
-# ## Implementing the Schedule with Reports
+# ## Implementing the schedule with reports
 # 
 # Optimal planning models can generate large amounts of data that need to be summarized and communicated to individuals for implementation. 
 # 
 # ### Creating a master schedule with categorical data
 # 
-# The following cell creates a pandas DataFrame comprising all active assignments from the solved model. The data consists of all (worker, day, shift) tuples for which the binary decision variable m.assign equals one.    
-# 
-# The data is categorical consisting of a unique id for each worker, a day of the week, or the name of a shift. Each of the categories has a natural ordering that should be used in creating reports. This is implemented using the `CategoricalDtype` class.
+# The following cell creates a pandas DataFrame comprising all active assignments from the solved model. The data consists of all (worker, day, shift) tuples for which the binary decision variable `m.a` equals one. The data is categorical consisting of a unique id for each worker, a day of the week, or the name of a shift. Each of the categories has a natural ordering that should be used in creating reports. This is implemented using the `CategoricalDtype` class.
 
 # In[4]:
 
 
 import pandas as pd
 
-schedule = pd.DataFrame([[w, d, s] for w in m.WORKERS for d, s in m.SLOTS if m.assign[w, d, s]()], 
+schedule = pd.DataFrame([[w, d, s] for w in m.W for d, s in m.T if m.a[w, d, s]()], 
                         columns=["worker", "day", "shift"])
 
 # create and assign a worker category type
-worker_type = pd.CategoricalDtype(categories=m.WORKERS, ordered=True)
+worker_type = pd.CategoricalDtype(categories=m.W, ordered=True)
 schedule["worker"] = schedule["worker"].astype(worker_type)
 
 # create and assign a day category type
-day_type = pd.CategoricalDtype(categories=m.DAYS, ordered=True)
+day_type = pd.CategoricalDtype(categories=m.D, ordered=True)
 schedule["day"] = schedule["day"].astype(day_type)
 
 # create and assign a shift category type
-shift_type = pd.CategoricalDtype(categories=m.SHIFTS, ordered=True)
+shift_type = pd.CategoricalDtype(categories=m.S, ordered=True)
 schedule["shift"] = schedule["shift"].astype(shift_type)
 
 # demonstrate sorting and display of the master schedule
@@ -343,7 +351,7 @@ schedule = schedule.sort_values(by=["worker", "day", "shift"])
 
 # print worker schedules
 for worker, worker_schedule in schedule.groupby('worker'):
-    print(f"\n Work schedule for {worker}")
+    print(f"\nWork schedule for {worker}")
     if len(worker_schedule) > 0:   
         for s in worker_schedule.to_string(index=False).split('\n'):
             print(s)
@@ -366,23 +374,4 @@ for day, day_schedule in schedule.groupby("day"):
     for shift, shift_schedule in day_schedule.groupby("shift"):
         print(f"   {shift} shift: ", end="")
         print(', '.join([worker for worker in shift_schedule["worker"].values]))
-
-
-# ## Suggested Exercises
-# 
-# 1. How many workers will be required to operate the food store if all workers are limited to four shifts per week, i.e., 32 hours?  How about 3 shifts or 24 hours per week?
-# 
-# 2. Add a second class of workers called "manager".  There needs to be one manager on duty for every shift, that morning shifts require 3 staff on duty, evening shifts 2,
-# and night shifts 1.
-# 
-# 3. Add a third class of workers called "part_time". Part time workers are limited to no more than 30 hours per week.
-# 
-# 4. Modify the problem formulation and objective to spread the shifts out amongst all workers, attempting to equalize the total number of assigned shifts, and similar numbers of day, evening, night, and weekend shifts.
-# 
-# 5. Find the minimum cost staffing plan assuming managers cost 30 euros per hour + 100 euros per week in fixed benefits, regular workers cost 20 euros per hour plus 80 euros per week in fixed benefits, and part time workers cost 15 euros per week with no benefits.
-
-# In[ ]:
-
-
-
 

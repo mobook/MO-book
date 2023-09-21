@@ -55,7 +55,7 @@ assert SOLVER.available(), f"Solver {SOLVER} is not available."
 
 # ## Data representations
 # 
-# We begin by revisiting the data sets and mathematical model developed for the basic production planning problem presented in the previous notebook. The original data sets were given as:
+# We begin by revisiting the data sets and mathematical model developed for the basic production planning problem presented in the [previous notebook](production-planning-basic.ipynb). The original data sets were given as:
 # 
 # | Product | Material <br> required | Labor A <br> required | Labor B <br> required | Market <br> Demand | Price |
 # | :-: | :-: | :-: | :-: | :-: | :-: | 

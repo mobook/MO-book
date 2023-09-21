@@ -452,7 +452,7 @@ ax[1].set_title("Contract rates by franchise")
 plt.show()
 
 
-# ## Didactics: Reporting solutions
+# ## Appendix: Reporting solutions
 # 
 # Pyomo models can produce considerable amounts of data that must be summarized and presented for analysis and decision making. In this application, for example, the individual franchise owners receive differing amounts of savings which is certain to result in considerable discussion and possibly negotiation with the franchiser. 
 # 
