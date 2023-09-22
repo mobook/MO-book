@@ -760,6 +760,16 @@ title="Print to PDF"
     <nav id="bd-toc-nav" aria-label="Page">
         <ul class="visible nav section-nav flex-column">
  <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">
+   Preamble: Install Pyomo and a solver
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#problem-description">
+   Problem description
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#actual-performance-of-the-robust-solution">
    Actual performance of the robust solution
   </a>
@@ -784,6 +794,16 @@ title="Print to PDF"
                         <nav aria-label="Page">
                             <ul class="visible nav section-nav flex-column">
  <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">
+   Preamble: Install Pyomo and a solver
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#problem-description">
+   Problem description
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#actual-performance-of-the-robust-solution">
    Actual performance of the robust solution
   </a>
@@ -800,6 +820,36 @@ title="Print to PDF"
                 
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><span class="target" id="index-5"></span><span class="target" id="index-6"></span><section class="tex2jax_ignore mathjax_ignore" id="robustness-analysis-of-bim-production-plan-via-simulations">
 <span id="index-7"></span><h1>Robustness analysis of BIM production plan via simulations<a class="headerlink" href="#robustness-analysis-of-bim-production-plan-via-simulations" title="Permalink to this headline">#</a></h1>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this headline">#</a></h2>
+<p>This cell selects and verifies a global SOLVER for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
+use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
+SolverFactory. It then verifies that SOLVER is available.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>pyomo<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+
+    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="problem-description">
+<h2>Problem description<a class="headerlink" href="#problem-description" title="Permalink to this headline">#</a></h2>
 <p>This example is a continuation of the BIM chip production problem illustrated <a class="reference internal" href="../02/bim.html"><span class="doc std std-doc">here</span></a>. Recall hat BIM produces logic and memory chips using copper, silicon, germanium, and plastic and that each chip requires the following quantities of raw materials:</p>
 <table class="colwidths-auto table">
 <thead>
@@ -990,26 +1040,10 @@ title="Print to PDF"
 <p>Let us model the material acquisition planning and solve it optimally based on the forecasted chip demand above.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
-
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;font.size&#39;</span><span class="p">:</span> <span class="mi">14</span><span class="p">})</span>
-
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 
 <span class="n">demand_data</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
@@ -1278,8 +1312,8 @@ title="Print to PDF"
     <span class="n">m</span><span class="o">.</span><span class="n">P</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="n">products</span> <span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">PT</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="c1"># to avoid internal set bloat</span>
     
-    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">s</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">s</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
     
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">pi</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">t</span><span class="p">):</span>
@@ -1328,7 +1362,7 @@ title="Print to PDF"
 
 <span class="n">problem_data</span> <span class="o">=</span> <span class="n">initialize_problem_data</span><span class="p">()</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">BIMProductAcquisitionAndInventory</span><span class="p">(</span><span class="n">problem_data</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The optimal solution yields a total cost of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">total_cost</span><span class="p">)</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
 
@@ -1536,6 +1570,7 @@ title="Print to PDF"
 </table>
 </div></div></div>
 </div>
+</section>
 <section id="actual-performance-of-the-robust-solution">
 <h2>Actual performance of the robust solution<a class="headerlink" href="#actual-performance-of-the-robust-solution" title="Permalink to this headline">#</a></h2>
 <p>We now perform a stochastic simulation to assess the performance of the robust solutions that we found earlier.</p>
@@ -1554,10 +1589,10 @@ title="Print to PDF"
     <span class="n">m</span><span class="o">.</span><span class="n">M</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span> <span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">use</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="p">)</span>
     
     <span class="c1"># Decision variable: nb of chips to produce &gt;= 0</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
     
     <span class="c1"># Decision variable: missed demand</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">s</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">s</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span> <span class="p">)</span>
     
     <span class="c1"># Constraint: per resource we cannot use more than there is</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
@@ -1575,7 +1610,7 @@ title="Print to PDF"
         <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span>
     
     <span class="c1"># solve</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     
     <span class="c1"># update inventory</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">:</span>
@@ -1626,13 +1661,20 @@ title="Print to PDF"
     <span class="c1"># list to store DFs with per-group computed quantiles at various levels</span>
     <span class="n">average_missed_demand</span> <span class="o">=</span> <span class="n">MissingDemand</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
 
+    <span class="c1"># figure settings</span>
+    <span class="n">colors</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">tab20c</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;font.size&#39;</span><span class="p">:</span> <span class="mi">14</span><span class="p">})</span>
+
     <span class="c1"># build a plot with as many subplots as there are chip types</span>
-    <span class="n">fig</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
-    <span class="n">average_missed_demand</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">axis</span><span class="p">,</span> <span class="n">drawstyle</span><span class="o">=</span><span class="s1">&#39;steps-mid&#39;</span><span class="p">,</span><span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="n">average_missed_demand</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">axis</span><span class="p">,</span> <span class="n">drawstyle</span><span class="o">=</span><span class="s1">&#39;steps-mid&#39;</span><span class="p">,</span><span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="n">colors</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="n">colors</span><span class="p">(</span><span class="mi">4</span><span class="p">)],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">ticks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">average_missed_demand</span><span class="o">.</span><span class="n">index</span><span class="p">)),</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">average_missed_demand</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
     <span class="c1"># axis.set_title(&quot;Missed demand of chips under &quot; + str(rho * 100) + &quot;% uncertainty&quot;)</span>
-    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">pad</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;bim_robust_missed_demand.pdf&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Month&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Average missed demand&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s2">&quot;Logic chips&quot;</span><span class="p">,</span> <span class="s2">&quot;Memory chips&quot;</span><span class="p">],</span> <span class="n">loc</span> <span class="o">=</span> <span class="s2">&quot;upper left&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;bim_robust_missed_demand.svg&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;svg&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
     
     <span class="n">realized_inv_cost</span> <span class="o">=</span> <span class="n">InventoryEvolution</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">*</span> <span class="n">problem_data</span><span class="p">[</span><span class="s2">&quot;inventory_cost&quot;</span><span class="p">]</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Purchasing cost: </span><span class="si">{</span><span class="p">(</span><span class="n">problem_data</span><span class="p">[</span><span class="s2">&quot;price&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">problem_data</span><span class="p">[</span><span class="s2">&quot;purchases&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
@@ -1653,7 +1695,7 @@ title="Print to PDF"
 
 <span class="n">problem_data</span><span class="p">[</span><span class="s2">&quot;demand_chips_ref&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">demand_chips</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">BIMProductAcquisitionAndInventory</span><span class="p">(</span><span class="n">problem_data</span><span class="p">)</span>
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="n">problem_data</span><span class="p">[</span><span class="s2">&quot;purchases&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ShowTableOfPyomoVariables</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
 <span class="n">problem_data</span><span class="p">[</span><span class="s2">&quot;stock&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ShowTableOfPyomoVariables</span><span class="p">(</span> <span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
@@ -1680,7 +1722,7 @@ Simulated average missed demand for logic chips is 4.543 and for memory chips is
 Plot of missed chips demand over time under 8.0% uncertainty
 </pre></div>
 </div>
-<img alt="../../_images/bim-robustness-analysis_9_1.png" src="../../_images/bim-robustness-analysis_9_1.png" />
+<img alt="../../_images/bim-robustness-analysis_11_1.png" src="../../_images/bim-robustness-analysis_11_1.png" />
 </div>
 </div>
 </section>
