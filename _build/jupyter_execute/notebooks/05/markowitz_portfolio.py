@@ -10,27 +10,41 @@
 # 
 # # Markowitz portfolio optimization
 
-# In[10]:
+# ## Preamble: Install Pyomo and a solver
+# 
+# This cell selects and verifies a global SOLVER for the notebook.
+# 
+# If run on Google Colab, the cell installs Pyomo and ipopt, then sets SOLVER to 
+# use the ipopt solver. If run elsewhere, it assumes Pyomo and the Mosek solver
+# have been previously installed and sets SOLVER to use the Mosek solver via the Pyomo 
+# SolverFactory. It then verifies that SOLVER is available.
+
+# In[14]:
 
 
-# install Pyomo and solvers
 import sys
 import os
-
-SOLVER_QO = "ipopt"
 
 if 'google.colab' in sys.modules:
     get_ipython().system('pip install idaes-pse --pre >/dev/null 2>/dev/null')
     get_ipython().system('idaes get-extensions --to ./bin')
     os.environ['PATH'] += ':bin'
+    SOLVER = "ipopt"
+    
+else:
+    SOLVER = "mosek_direct"
+
+import pyomo.environ as pyo
+if not pyo.SolverFactory(SOLVER).available():
+    print(f"Solver {SOLVER} is not available")
 
 
-# In[11]:
+# In[15]:
 
 
 from IPython.display import Markdown, HTML
 import numpy as np
-import pyomo.environ as pyo
+import matplotlib.pyplot as plt
 
 
 # ## Problem description and model formulation
@@ -62,17 +76,17 @@ import pyomo.environ as pyo
 #     \max \quad  & R \tilde{x} + \mu^\top x \\
 #     \text{s.t.}\quad
 #     & \sum_{i=1}^n x_i + \tilde{x}  = C  \\
-#     & x^\top \Sigma x \leq \gamma^2 \\
+#     & x^\top \Sigma x \leq \gamma \\
 #     & \tilde{x} \geq 0 \\
 #     & x_i \geq 0 & \forall \, i=1,\dots,n.
 # \end{align*}
 # $$
 # 
-# The first constraint describes the fact that the total amount invested must be equal to the initial capital. The second constraint ensures that the variance of the chosen portfolio is upper bounded by a parameter $\gamma^2$, which captures the risk the investor is willing to undertake. The last nonnegativity constraint excludes the possibility of short-selling.
+# The first constraint describes the fact that the total amount invested must be equal to the initial capital. The second constraint ensures that the variance of the chosen portfolio is upper bounded by a parameter $\gamma$, which captures the risk the investor is willing to undertake. The last nonnegativity constraint excludes the possibility of short-selling.
 # 
-# One can easily show that the quadratic constraint $x^\top \Sigma x \leq \gamma^2$ is convex thanks to the fact that $\Sigma$ is positive semidefinite, being a covariance matrix. The Markowitz optimization problem is thus convex. Let us implement it in Pyomo.
+# One can easily show that the quadratic constraint $x^\top \Sigma x \leq \gamma$ is convex in $x$ due to the fact that $\Sigma$ is positive semidefinite, being a covariance matrix. Therefore, the optimization problem is convex. Let us implement it in Pyomo and solve it.
 
-# In[12]:
+# In[18]:
 
 
 # Specify the initial capital, the risk threshold, and the guaranteed return rate. 
@@ -84,6 +98,9 @@ R = 1.01
 n = 3
 mu = np.array([1.2, 1.1, 1.3])
 Sigma = np.array([[1.5, 0.5, 2], [0.5, 2, 0], [2, 0, 5]])
+
+# Check that Sigma is semi-definite positive
+assert np.all(np.linalg.eigvals(Sigma) >= 0)
 
 # If you want to change the covariance matrix Sigma, ensure you input a semi-definite positive one.
 # The easiest way to generate a random covariance matrix is first generating a random m x m matrix A 
@@ -105,21 +122,41 @@ def markowitz(gamma, mu, Sigma):
 
     @model.Constraint()
     def bounded_variance(m):
-        return (m.x @ (Sigma @ m.x)) <= gamma**2
+        return (m.x @ (Sigma @ m.x)) <= gamma
 
     @model.Constraint()
     def total_assets(m):
         return sum(m.x[i] for i in range(n)) + m.xtilde == C
 
-    result = pyo.SolverFactory(SOLVER_QO).solve(model)
-    display(Markdown(f"**Solver status:** *{result.solver.status}, {result.solver.termination_condition}*"))
+    result = pyo.SolverFactory(SOLVER).solve(model)
     
-    return model
+    return result, model
 
-model = markowitz(gamma, mu, Sigma)
+result, model = markowitz(gamma, mu, Sigma)
 
+display(Markdown(f"**Solver status:** *{result.solver.status}, {result.solver.termination_condition}*"))
 display(Markdown(f"**Solution:** $\\tilde x = {model.xtilde.value:.3f}$, $x_1 = {model.x[0].value:.3f}$,  $x_2 = {model.x[1].value:.3f}$,  $x_3 = {model.x[2].value:.3f}$"))
 display(Markdown(f"**Maximizes objective value to:** ${model.objective():.2f}$"))
+
+
+# The next plot shows how the objective function changes as the risk threshold parameter $\gamma$ varies.
+
+# In[31]:
+
+
+gamma_values = [0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 4.75, 5, 5.25, 5.5]
+objective = []
+
+plt.rcParams.update({'font.size': 14})
+for gamma in gamma_values:
+    _, model = markowitz(gamma, mu, Sigma)
+    objective.append(round(model.objective(),3))
+
+plt.plot(gamma_values, objective, color=plt.cm.tab20c(0))
+plt.xlabel(r'Risk threshold $\gamma$')
+plt.ylabel('Optimal objective value')
+plt.tight_layout()
+plt.show()
 
 
 # In[ ]:
