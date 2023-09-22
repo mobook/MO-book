@@ -3,30 +3,48 @@
 
 # # Robust BIM microchip production problem
 
-# In[23]:
+# ## Preamble: Install Pyomo and a solver
+# 
+# This cell selects and verifies various global solvers for the notebook.
+# 
+# If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+# have been previously installed and sets SOLVER to use the CBC solver via the Pyomo SolverFactory. It then verifies that SOLVER is available.
+# 
+# The cell also selects a SOLVER_NLO (ipopt) and a SOLVER_MINLO (bonmin) to deal with nonlinear optimization problems. Both these solvers are installed from the IDEAS repository.
+
+# In[ ]:
 
 
-# install Pyomo and solvers
 import sys
 import os
 
-SOLVER = "cbc"
+get_ipython().system('pip install idaes-pse --pre >/dev/null 2>/dev/null')
+get_ipython().system('idaes get-extensions --to ./bin')
+os.environ['PATH'] += ':bin'
+
+if "google.colab" in sys.modules:
+    get_ipython().system('pip install pyomo >/dev/null 2>/dev/null')
+    get_ipython().system('pip install highspy >/dev/null 2>/dev/null')
+    SOLVER = "appsi_highs"
+else:
+    SOLVER = "cbc"
+
 SOLVER_NLO = "ipopt"
 SOLVER_MINLO = "bonmin"
 
-if 'google.colab' in sys.modules:
-    get_ipython().system('pip install idaes-pse --pre >/dev/null 2>/dev/null')
-    get_ipython().system('idaes get-extensions --to ./bin')
-    os.environ['PATH'] += ':bin'
 
-
-# In[24]:
+# In[2]:
 
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import pyomo.environ as pyo
+
+# Check that all solvers have been installed correctly and are available
+assert pyo.SolverFactory(SOLVER).available(), f"Solver {SOLVER} is not available."
+assert pyo.SolverFactory(SOLVER_NLO).available(), f"Solver NLO {SOLVER_NLO} is not available."
+assert pyo.SolverFactory(SOLVER_MINLO).available(), f"Solver NLO {SOLVER_MINLO} is not available."
 
 
 # ## Original BIM production planning model
@@ -44,7 +62,7 @@ import pyomo.environ as pyo
 # \end{array}
 # $$
 
-# In[3]:
+# In[32]:
 
 
 chips = ["logic", "memory"]
@@ -74,22 +92,16 @@ print(
 )
 
 
-# In[4]:
+# In[33]:
 
 
 def ShowDuals(model):
     import fractions
-
-    # display all duals
-    print("The dual variable corresponding to:\n")
+    print("The dual variable corresponding to:")
     for c in model.component_objects(pyo.Constraint, active=True):
-        print("- the constraint on", c, "is equal to ", end="")
-        for index in c:
-            print(str(fractions.Fraction(model.dual[c[index]])))
-
+        print(f"- the constraint on {c} is equal to {str(fractions.Fraction(model.dual[c]))}")
 
 m.dual = pyo.Suffix(direction=pyo.Suffix.IMPORT)
-
 pyo.SolverFactory(SOLVER).solve(m)
 ShowDuals(m)
 
@@ -100,7 +112,7 @@ ShowDuals(m)
 
 # To get a feeling for what happens, let us first perform some simulations and data analysis on them. We start by simulating a sample of $n=2000$ observed copper consumption pairs for the production of `f` logic chips and `g` memory chips. The amounts vary around the original values, 4 gr and 2 gr, respectively, according to two independent lognormal distributions.
 
-# In[5]:
+# In[34]:
 
 
 plt.rcParams.update({"font.size": 12})
@@ -123,7 +135,7 @@ plt.show()
 # 
 # A very simple and somehow naive uncertainty set can be the minimal box that contains all the simulated data.
 
-# In[6]:
+# In[35]:
 
 
 plt.figure()
@@ -207,7 +219,7 @@ print("Upper bounds", upper)
 # 
 # The only thing we need to do is add the new auxiliary variables and constraints to the original model and implement them in Pyomo.
 
-# In[7]:
+# In[36]:
 
 
 def BIMWithBoxUncertainty(lower, upper, domain=pyo.NonNegativeReals):
@@ -249,7 +261,7 @@ print(
 
 # We may want to impose the box uncertainty set to be symmetric with respect to the nominal values and just choose its width $\delta$. This leads to a different optimal robust solution.
 
-# In[8]:
+# In[37]:
 
 
 # The parameter delta allows you to tune the amount of uncertainty.
@@ -275,7 +287,7 @@ print(
 # 
 # The original BIM model gave integer solutions, but not the robust version. If we need integer solutions then we should impose that to the nature of the variables, which in this case of _box uncertainty_ is easy to do since the model remains linear, although it will be mixed integer. 
 
-# In[9]:
+# In[38]:
 
 
 m = BIMWithBoxUncertainty(lower, upper, domain=pyo.NonNegativeIntegers)
@@ -288,7 +300,7 @@ print(
 
 # Let us see how the optimal solution behave as we vary the width of the box uncertainty set $\delta$ from 0 to 0.5. 
 
-# In[10]:
+# In[39]:
 
 
 import pandas as pd
@@ -306,7 +318,7 @@ df
 
 # We can visualize how these quantities change as a function of $\delta$:
 
-# In[11]:
+# In[40]:
 
 
 df[["profit"]].plot()
@@ -353,7 +365,7 @@ plt.show()
 # \end{array}
 # $$
 
-# In[12]:
+# In[41]:
 
 
 def BIMWithBudgetUncertainty(delta, gamma, domain=pyo.NonNegativeReals):
@@ -403,7 +415,7 @@ print(
 # 
 # Instead of adopting the approach of robust counterparts, we could also use the adversarial approach where we initially solve the problem for the nominal value of the data. Then, we iteratively search for scenarios that make the current solution violate the copper constraint, and pre-solve the problem to take this scenario into account. To do so, we need to slightly modify our problem formulation function to allow for many scenarios for the parameter $z$.
 
-# In[13]:
+# In[42]:
 
 
 def BIMWithSetOfScenarios(
@@ -444,14 +456,18 @@ def BIMWithSetOfScenarios(
 
 
 # We also need a function that for a given solution finds the worst-possible realization of the uncertainty restricted by the parameters $\Gamma$ and $\delta$. In other words, its role is to solve the following maximization problem for a given solution $(\bar{x}_1, \bar{x}_2)$:
+# 
+# $$
 # \begin{align*}
 # \max \ & (\bar{z}_1 + \delta y_1) \bar{x}_1 + (\bar{z}_2 + \delta y_2) \bar{x}_2 - 4800 \\
 # \text{s.t.} \ & |y_1| + |y_2| \leq \Gamma \\
 # & -1 \leq y_i \leq 1 && i = 1, 2.
 # \end{align*}
+# $$
+# 
 # Such a function is implemented below and takes as argument also the maximum magnitude of the individual deviations $\delta$ and the total budget $\Gamma$.
 
-# In[14]:
+# In[43]:
 
 
 def BIMPessimization(x, delta, gamma):
@@ -494,7 +510,7 @@ def BIMPessimization(x, delta, gamma):
 
 # We wrap the two functions above into a loop of the adversarial approach, which begins with a non-perturbation assumption and gradually generates violating scenarios, reoptimizing until the maximum constraint violation is below a tolerable threshold.
 
-# In[15]:
+# In[44]:
 
 
 # Parameters
@@ -563,11 +579,10 @@ while (not adversarial_converged) and (adversarial_iterations < max_iterations):
 
 # We now need to add this newly obtained conic constraint to the original BIM model. The [Pyomo documentation](https://pyomo.readthedocs.io/en/stable/library_reference/kernel/conic.html) says a conic constraint is expressed in 'pyomo' in simple variables and this [table](https://pyomo.readthedocs.io/en/stable/library_reference/kernel/syntax_comparison.html) reports the syntax.
 
-# In[16]:
+# In[45]:
 
 
 import pyomo.kernel as pyk
-
 
 def BIMWithBallUncertainty(radius, domain_type=pyk.RealSet):
     idxChips = range(len(chips))
@@ -576,7 +591,7 @@ def BIMWithBallUncertainty(radius, domain_type=pyk.RealSet):
 
     m.x = pyk.variable_list()
     for i in idxChips:
-        m.x.append(pyk.variable(lb=0, domain_type=domain_type))
+        m.x.append(pyk.variable(lb=0, domain=domain_type))
 
     m.profit = pyk.objective(
         expr=sum(profits[chips[i]] * m.x[i] for i in idxChips),
@@ -609,7 +624,7 @@ def BIMWithBallUncertainty(radius, domain_type=pyk.RealSet):
 
 # Now the optimization problem is nonlinear, but dedicated solvers can leverage the fact that is conic and solve it efficiently. Specifically, `cplex`, `gurobi` and `xpress` support second-order cones. On the other hand, `ipopt` is a generic solver for nonlinear optimization problems.
 
-# In[17]:
+# In[46]:
 
 
 radius = 0.05
@@ -633,7 +648,7 @@ print(
 
 # The solvers `bonmin`, `cplex`, `gurobi` and `xpress` are capable of solving the mixed integer version of the same model: 
 
-# In[18]:
+# In[47]:
 
 
 m = BIMWithBallUncertainty(radius, domain_type=pyk.IntegerSet)
@@ -658,7 +673,7 @@ print(
 # 
 # Noting that $\| x \| \leq t$ is for $t \geq 0$ equivalent to $\| x \|^2 \leq t^2$ and knowing that the commercial solvers (`gurobi`, `cplex` and `express`) support convex quadratic inequalities, we can model this variant in `pyomo.environ` as follows. Note that the essential part to make the model convex is having the right hand side nonnegative.
 
-# In[19]:
+# In[48]:
 
 
 def BIMWithBallUncertaintyAsSquaredSecondOrderCone(
@@ -689,7 +704,7 @@ def BIMWithBallUncertaintyAsSquaredSecondOrderCone(
     return m
 
 
-# In[20]:
+# In[49]:
 
 
 m = BIMWithBallUncertaintyAsSquaredSecondOrderCone(radius)
@@ -723,10 +738,4 @@ print(
 print(
     f"The optimal solution is x={[round(pyo.value(m.x[c]),3) for c in m.chips]} and yields a profit of {pyo.value(m.profit):.2f}\n"
 )
-
-
-# In[ ]:
-
-
-
 

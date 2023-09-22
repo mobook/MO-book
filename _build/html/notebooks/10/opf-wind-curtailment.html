@@ -763,6 +763,13 @@ title="Print to PDF"
   <a class="reference internal nav-link" href="#">
    Extra: Two-stage energy dispatch optimization with wind curtailment
   </a>
+  <ul class="visible nav section-nav flex-column">
+   <li class="toc-h2 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">
+     Preamble: Install Pyomo and a solver
+    </a>
+   </li>
+  </ul>
  </li>
  <li class="toc-h1 nav-item toc-entry">
   <a class="reference internal nav-link" href="#preliminaries">
@@ -816,6 +823,13 @@ title="Print to PDF"
   <a class="reference internal nav-link" href="#">
    Extra: Two-stage energy dispatch optimization with wind curtailment
   </a>
+  <ul class="visible nav section-nav flex-column">
+   <li class="toc-h2 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">
+     Preamble: Install Pyomo and a solver
+    </a>
+   </li>
+  </ul>
  </li>
  <li class="toc-h1 nav-item toc-entry">
   <a class="reference internal nav-link" href="#preliminaries">
@@ -858,31 +872,38 @@ title="Print to PDF"
                 
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><section class="tex2jax_ignore mathjax_ignore" id="extra-two-stage-energy-dispatch-optimization-with-wind-curtailment">
 <span id="index-5"></span><h1>Extra: Two-stage energy dispatch optimization with wind curtailment<a class="headerlink" href="#extra-two-stage-energy-dispatch-optimization-with-wind-curtailment" title="Permalink to this headline">#</a></h1>
-<p>This notebook illustrates a two-stage stochastic optimization problem in the context of energy systems where there are recourse actions that depends on the realization of the uncertain parameters.</p>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this headline">#</a></h2>
+<p>This cell selects and verifies a global SOLVER for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
+use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
+SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">os</span>
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
-
-<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>idaes-pse<span class="w"> </span>--pre<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
-    <span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin<span class="w"> </span>
-    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>pyomo<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
 </section>
+</section>
 <section class="tex2jax_ignore mathjax_ignore" id="preliminaries">
 <h1>Preliminaries<a class="headerlink" href="#preliminaries" title="Permalink to this headline">#</a></h1>
-<p>The equilibrium point for the European power network, which operates on alternating current, is at a frequency of 50 Hertz with a tolerance threshold of +- 0.05 Hertz. Power network operators are responsible for maintaining a constant frequency on the network. The way that operators do this is mainly by perfectly balancing power supply and demand.</p>
-<p>But what happens if power supply does not meet demand? When <em>supply exceeds demand</em>, then the electrical frequency increases. If <em>demand exceeds supply</em>, then the frequency drops. Since power plants are designed to operate within a certain frequency range, there is a risk that they will disconnect from the grid after a period of time. If the frequency deviates too much from the 50 Hertz, then there is a risk that the power plants switch off one after another,potentially leading to a complete power blackout.</p>
-<p>Using conventional power generators such as coal and gas, power supply and demand are often matched by increasing/decreasing the production rate of their power plants and taking generating units on or off line. With the advent of renewable energy sources, it has become increasingly more difficult to match supply and demand. Besides not being controllable power sources, network operators rely on forecasting models to predict the power generated by renewable sources. In practice, this prediction is fairly accurate for solar energy, but wind energy is particularly difficult to predict correctly.</p>
+<p>This notebook illustrates a two-stage stochastic optimization problem in the context of energy systems where there are recourse actions that depend on the realization of the uncertain parameters.</p>
+<p>The equilibrium point for the European power network, which operates on alternating current, is at a frequency of 50 Hertz with a tolerance threshold of <span class="math notranslate nohighlight">\(\pm 0.05\)</span> Hertz. Power network operators are responsible for maintaining a constant frequency on the network. The way that operators do this is mainly by perfectly balancing power supply and demand.</p>
+<p>But what happens if power supply does not meet demand? When <em>supply exceeds demand</em>, then the electrical frequency increases. If <em>demand exceeds supply</em>, then the frequency drops. Since power plants are designed to operate within a certain frequency range, there is a risk that they will disconnect from the grid after a period of time. If the frequency deviates too much from the 50 Hertz, then there is a risk that the power plants switch off one after another, potentially leading to a complete power blackout.</p>
+<p>Using conventional power generators such as coal and gas, power supply and demand are often matched by increasing/decreasing the production rate of their power plants and taking generating units online or offline. With the advent of renewable energy sources, it has become increasingly more difficult to match supply and demand. Besides not being controllable power sources, network operators rely on forecasting models to predict the power generated by renewable sources. In practice, this prediction is fairly accurate for solar energy, but wind energy is particularly difficult to predict correctly.</p>
 <img src="https://www.mdpi.com/energies/energies-13-05595/article_deploy/html/images/energies-13-05595-g018.png" width="600"/>
-<p>The goal of this notebook is to ensure that power demand meets supply while taking into account wind fluctuations. We will introduce two optimization problems and solve them as stochastic optimization problems. <strong>Read first the <a class="reference internal" href="../04/power-network.html"><span class="doc std std-doc">energy dispatch problem</span></a> from the Chapter 4 for the preliminaries on power networks and the Optimal Power Flow (OPF) problem</strong>. An important difference from the setting there, is that here we <em>will not assume that the wind generation is a decision variable</em>. Instead, wind generation is a random variable, as will be explained later on. We do assume that solar and hydro power are decision variables, since the former is accurately predicated whereas the latter is controllable.</p>
+<p>The goal of this notebook is to ensure that power demand meets supply while taking into account wind fluctuations. We will introduce two optimization problems and solve them as stochastic optimization problems. <strong>Read first the <a class="reference internal" href="../04/power-network.html"><span class="doc std std-doc">energy dispatch problem</span></a> from the Chapter 4 for the preliminaries on power networks and the Optimal Power Flow (OPF) problem</strong>. An important difference from the setting there, is that here we <em>will not assume that the wind generation is a decision variable</em>. Instead, wind generation is a random variable, as will be explained later on. We do assume that solar and hydropower are decision variables, since the former is accurately predicated whereas the latter is controllable.</p>
 <p><a name="uc"></a></p>
 <section id="unit-commitment">
 <h2>Unit Commitment<a class="headerlink" href="#unit-commitment" title="Permalink to this headline">#</a></h2>
@@ -956,10 +977,6 @@ Q(x,v) := &amp;\min        &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mat
 <span class="kn">from</span> <span class="nn">ast</span> <span class="kn">import</span> <span class="n">literal_eval</span> <span class="k">as</span> <span class="n">make_tuple</span>
 <span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
 <span class="kn">import</span> <span class="nn">time</span>
-
-<span class="c1"># Load solver</span>
-<span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
-<span class="n">gsolver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;gurobi&quot;</span><span class="p">)</span>
 
 <span class="c1"># Download the data</span>
 <span class="n">base_url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/notebooks/10/&quot;</span>
@@ -1523,7 +1540,7 @@ Q(x,v) := &amp;\min        &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mat
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Text(0, 0.5, &#39;Power Output&#39;)
 </pre></div>
 </div>
-<img alt="../../_images/opf-wind-curtailment_13_1.png" src="../../_images/opf-wind-curtailment_13_1.png" />
+<img alt="../../_images/opf-wind-curtailment_14_1.png" src="../../_images/opf-wind-curtailment_14_1.png" />
 </div>
 </div>
 <div class="cell docutils container">

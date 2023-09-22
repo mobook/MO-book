@@ -16,17 +16,32 @@
 # 
 # # Stock optimization for seafood distribution center
 
+# ## Preamble: Install Pyomo and a solver
+# 
+# This cell selects and verifies a global SOLVER for the notebook.
+# 
+# If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to 
+# use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+# have been previously installed and sets SOLVER to use the CBC solver via the Pyomo 
+# SolverFactory. It then verifies that SOLVER is available.
+
 # In[1]:
 
 
-# install pyomo and select solver
 import sys
 
-SOLVER = "cbc"
+if 'google.colab' in sys.modules:
+    get_ipython().system('pip install pyomo >/dev/null 2>/dev/null')
+    get_ipython().system('pip install highspy >/dev/null 2>/dev/null')
 
-if "google.colab" in sys.modules:
-    get_ipython().system('pip install highspy >/dev/null')
-    SOLVER = "appsi_highs"
+    from pyomo.contrib import appsi
+    SOLVER = appsi.solvers.Highs(only_child_vars=False)
+    
+else:
+    from pyomo.environ import SolverFactory
+    SOLVER = SolverFactory('cbc')
+
+assert SOLVER.available(), f"Solver {SOLVER} is not available."
 
 
 # In[2]:
@@ -221,8 +236,8 @@ def NaiveSeafoodStockSAA(N, sample, distributiontype):
     model.first_stage_profit = pyo.Expression(rule=first_stage_profit)
 
     # second stage variables: y (sold) and z (unsold)
-    model.y = pyo.Var(model.indices, within=pyo.NonNegativeReals)
-    model.z = pyo.Var(model.indices, within=pyo.NonNegativeReals)
+    model.y = pyo.Var(model.indices, domain=pyo.NonNegativeReals)
+    model.z = pyo.Var(model.indices, domain=pyo.NonNegativeReals)
 
     # second stage constraints
     model.cantsoldthingsfishdonthave = pyo.ConstraintList()
@@ -294,7 +309,7 @@ def SeafoodStockSAA(N, sample, distributiontype, printflag=True):
     model.xi = pyo.Param(model.indices, initialize=dict(enumerate(sample)))
 
     # first stage variable: x (amount of fish bought)
-    model.x = pyo.Var(within=pyo.NonNegativeReals)
+    model.x = pyo.Var(domain=pyo.NonNegativeReals)
 
     def first_stage_profit(model):
         return -c * model.x
@@ -302,9 +317,9 @@ def SeafoodStockSAA(N, sample, distributiontype, printflag=True):
     model.first_stage_profit = pyo.Expression(rule=first_stage_profit)
 
     # second stage variables: y (sold) and z (unsold)
-    model.y = pyo.Var(model.indices, within=pyo.NonNegativeReals)  # sold
+    model.y = pyo.Var(model.indices, domain=pyo.NonNegativeReals)  # sold
     model.z = pyo.Var(
-        model.indices, within=pyo.NonNegativeReals
+        model.indices, domain=pyo.NonNegativeReals
     )  # unsold to be returned
 
     # second stage constraints

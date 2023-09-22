@@ -192,8 +192,8 @@ def BIMProductAcquisitionAndInventory(demand, acquisition_price, existing, desir
     m.P = pyo.Set(initialize=products)
     m.PT = m.P * m.T # to avoid internal set bloat
     
-    m.x = pyo.Var(m.PT, within=pyo.NonNegativeReals)
-    m.s = pyo.Var(m.PT, within=pyo.NonNegativeReals)
+    m.x = pyo.Var(m.PT, domain=pyo.NonNegativeReals)
+    m.s = pyo.Var(m.PT, domain=pyo.NonNegativeReals)
     
     @m.Param(m.PT)
     def pi(m, p, t):
@@ -326,7 +326,7 @@ def BIMProductAcquisitionAndInventory_v2(demand, acquisition_price, existing, de
     m.P = pyo.Set(initialize=products)
     m.PT = m.P * m.T # to avoid internal set bloat
     
-    m.x = pyo.Var(m.PT, within=pyo.NonNegativeReals)
+    m.x = pyo.Var(m.PT, domain=pyo.NonNegativeReals)
     
     @m.Param(m.PT)
     def pi(m, p, t):

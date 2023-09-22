@@ -228,7 +228,7 @@ def table_seat_minimize_number_of_tables(members, capacity, k, domain=pyo.NonNeg
     m.M = pyo.Param(m.F, initialize=members)
     m.C = pyo.Param(m.T, initialize=capacity)
     m.x = pyo.Var(m.F, m.T, bounds=(0,k), domain=domain)
-    m.y = pyo.Var(m.T, within=pyo.Binary)
+    m.y = pyo.Var(m.T, domain=pyo.Binary)
     
     @m.Objective(sense=pyo.minimize)
     def goal(m):

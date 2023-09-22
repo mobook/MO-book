@@ -181,13 +181,13 @@ def BIMproduction_v1(demand, existing, desired, stock_limit,
     def Omega(m, p):
         return desired[p]
     
-    m.y = pyo.Var(periods, supplying_copper, within=pyo.NonNegativeIntegers )
-    m.x = pyo.Var(unitary_products, periods, supplying_batches, within=pyo.NonNegativeReals )
-    m.s = pyo.Var(products, periods, within=pyo.NonNegativeReals )
-    m.u = pyo.Var(products, periods, within=pyo.NonNegativeReals )
-    m.b = pyo.Var(periods, supplying_batches, within=pyo.NonNegativeIntegers )
-    m.p = pyo.Var(periods, within=pyo.NonNegativeIntegers )
-    m.r = pyo.Var(periods, within=pyo.NonNegativeIntegers )
+    m.y = pyo.Var(periods, supplying_copper, domain=pyo.NonNegativeIntegers )
+    m.x = pyo.Var(unitary_products, periods, supplying_batches, domain=pyo.NonNegativeReals )
+    m.s = pyo.Var(products, periods, domain=pyo.NonNegativeReals )
+    m.u = pyo.Var(products, periods, domain=pyo.NonNegativeReals )
+    m.b = pyo.Var(periods, supplying_batches, domain=pyo.NonNegativeIntegers )
+    m.p = pyo.Var(periods, domain=pyo.NonNegativeIntegers )
+    m.r = pyo.Var(periods, domain=pyo.NonNegativeIntegers )
 
     @m.Constraint(periods, supplying_batches )
     def units_in_batches(m, t, s ):
@@ -347,10 +347,10 @@ def BIMproduction_v2(demand, existing, desired,
     
     @m.Block(m.T )
     def A(b):
-        b.x = pyo.Var(supplying_batches, products, within=pyo.NonNegativeReals )
-        b.b = pyo.Var(supplying_batches, within=pyo.NonNegativeIntegers )
-        b.y = pyo.Var(supplying_copper, within=pyo.NonNegativeIntegers )
-        b.p = pyo.Var(within=pyo.NonNegativeIntegers )
+        b.x = pyo.Var(supplying_batches, products, domain=pyo.NonNegativeReals )
+        b.b = pyo.Var(supplying_batches, domain=pyo.NonNegativeIntegers )
+        b.y = pyo.Var(supplying_copper, domain=pyo.NonNegativeIntegers )
+        b.p = pyo.Var(domain=pyo.NonNegativeIntegers )
 
         @b.Constraint(supplying_batches)
         def in_batches(b, s):
@@ -379,8 +379,8 @@ def BIMproduction_v2(demand, existing, desired,
     
     @m.Block(m.T )
     def I(b ):
-        b.s = pyo.Var(products, within=pyo.NonNegativeReals )
-        b.r = pyo.Var(within=pyo.NonNegativeIntegers )
+        b.s = pyo.Var(products, domain=pyo.NonNegativeReals )
+        b.r = pyo.Var(domain=pyo.NonNegativeIntegers )
         
         @b.Constraint()
         def copper_in_buckets(b):
@@ -481,14 +481,14 @@ def BIMproduction_v3( demand, existing, desired,
     
     m.PT = m.P * m.T # to avoid internal set bloat
     
-    m.x = pyo.Var( m.PT, within=pyo.NonNegativeReals )
+    m.x = pyo.Var( m.PT, domain=pyo.NonNegativeReals )
     
     @m.Block( m.T )
     def A( b ):
-        b.x = pyo.Var( supplying_batches, products, within=pyo.NonNegativeReals )
-        b.b = pyo.Var( supplying_batches, within=pyo.NonNegativeIntegers )
-        b.y = pyo.Var( supplying_copper, within=pyo.NonNegativeIntegers )
-        b.p = pyo.Var( within=pyo.NonNegativeIntegers )
+        b.x = pyo.Var( supplying_batches, products, domain=pyo.NonNegativeReals )
+        b.b = pyo.Var( supplying_batches, domain=pyo.NonNegativeIntegers )
+        b.y = pyo.Var( supplying_copper, domain=pyo.NonNegativeIntegers )
+        b.p = pyo.Var( domain=pyo.NonNegativeIntegers )
 
         @b.Constraint( supplying_batches )
         def in_batches( b, s ):
@@ -517,8 +517,8 @@ def BIMproduction_v3( demand, existing, desired,
     
     @m.Block( m.T )
     def I( b ):
-        b.s = pyo.Var( products, within=pyo.NonNegativeReals )
-        b.r = pyo.Var( within=pyo.NonNegativeIntegers )
+        b.s = pyo.Var( products, domain=pyo.NonNegativeReals )
+        b.r = pyo.Var( domain=pyo.NonNegativeIntegers )
         
         @b.Constraint()
         def copper_in_buckets(b):

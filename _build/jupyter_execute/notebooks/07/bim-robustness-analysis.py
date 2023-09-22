@@ -19,6 +19,36 @@
 # ```
 # 
 # # Robustness analysis of BIM production plan via simulations
+
+# ## Preamble: Install Pyomo and a solver
+# 
+# This cell selects and verifies a global SOLVER for the notebook.
+# 
+# If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to 
+# use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+# have been previously installed and sets SOLVER to use the CBC solver via the Pyomo 
+# SolverFactory. It then verifies that SOLVER is available.
+
+# In[1]:
+
+
+import sys
+
+if 'google.colab' in sys.modules:
+    get_ipython().system('pip install pyomo >/dev/null 2>/dev/null')
+    get_ipython().system('pip install highspy >/dev/null 2>/dev/null')
+
+    from pyomo.contrib import appsi
+    SOLVER = appsi.solvers.Highs(only_child_vars=False)
+    
+else:
+    from pyomo.environ import SolverFactory
+    SOLVER = SolverFactory('cbc')
+
+assert SOLVER.available(), f"Solver {SOLVER} is not available."
+
+
+# ## Problem description
 # 
 # This example is a continuation of the BIM chip production problem illustrated [here](../02/bim.ipynb). Recall hat BIM produces logic and memory chips using copper, silicon, germanium, and plastic and that each chip requires the following quantities of raw materials:
 # 
@@ -61,19 +91,6 @@
 # 
 # Let us model the material acquisition planning and solve it optimally based on the forecasted chip demand above.
 
-# In[1]:
-
-
-# install pyomo and select solver
-import sys
-
-SOLVER = "cbc"
-
-if "google.colab" in sys.modules:
-    get_ipython().system('pip install highspy >/dev/null')
-    SOLVER = "appsi_highs"
-
-
 # In[2]:
 
 
@@ -81,8 +98,6 @@ from io import StringIO
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-plt.rcParams.update({'font.size': 14})
-
 import pyomo.environ as pyo
 
 demand_data = '''
@@ -158,8 +173,8 @@ def BIMProductAcquisitionAndInventory(problem_data):
     m.P = pyo.Set( initialize=products )
     m.PT = m.P * m.T # to avoid internal set bloat
     
-    m.x = pyo.Var(m.PT, within=pyo.NonNegativeReals)
-    m.s = pyo.Var(m.PT, within=pyo.NonNegativeReals)
+    m.x = pyo.Var(m.PT, domain=pyo.NonNegativeReals)
+    m.s = pyo.Var(m.PT, domain=pyo.NonNegativeReals)
     
     @m.Param(m.PT)
     def pi(m,p,t):
@@ -208,7 +223,7 @@ def BIMProductAcquisitionAndInventory(problem_data):
 
 problem_data = initialize_problem_data()
 m = BIMProductAcquisitionAndInventory(problem_data)
-pyo.SolverFactory(SOLVER).solve(m)
+SOLVER.solve(m)
 
 print(f'The optimal solution yields a total cost of {pyo.value(m.total_cost):.2f}\n')
 
@@ -223,7 +238,7 @@ display(problem_data["stock"])
 # 
 # We now perform a stochastic simulation to assess the performance of the robust solutions that we found earlier.
 
-# In[4]:
+# In[21]:
 
 
 def minimize_missed_demand_in_period(inventory, missed_demand, purchases, existing, demand_chips, use, period = None):
@@ -239,10 +254,10 @@ def minimize_missed_demand_in_period(inventory, missed_demand, purchases, existi
     m.M = pyo.Set( initialize=list(use.index) )
     
     # Decision variable: nb of chips to produce >= 0
-    m.x = pyo.Var( m.P, within=pyo.NonNegativeReals )
+    m.x = pyo.Var( m.P, domain=pyo.NonNegativeReals )
     
     # Decision variable: missed demand
-    m.s = pyo.Var( m.P, within=pyo.NonNegativeReals )
+    m.s = pyo.Var( m.P, domain=pyo.NonNegativeReals )
     
     # Constraint: per resource we cannot use more than there is
     @m.Constraint(m.M)
@@ -260,7 +275,7 @@ def minimize_missed_demand_in_period(inventory, missed_demand, purchases, existi
         return pyo.quicksum(m.s[p] for p in m.P)
     
     # solve
-    pyo.SolverFactory(SOLVER).solve(m)
+    SOLVER.solve(m)
     
     # update inventory
     for i in m.M:
@@ -311,13 +326,20 @@ def report(MissingDemand, InventoryEvolution, problem_data):
     # list to store DFs with per-group computed quantiles at various levels
     average_missed_demand = MissingDemand.groupby(level = 0).mean().transpose()
 
+    # figure settings
+    colors = plt.cm.tab20c
+    plt.rcParams.update({'font.size': 14})
+
     # build a plot with as many subplots as there are chip types
-    fig, axis = plt.subplots(figsize = (11, 4))
-    average_missed_demand.plot(ax = axis, drawstyle='steps-mid',grid=True)
+    fig, axis = plt.subplots(figsize = (10, 5))
+    average_missed_demand.plot(ax = axis, drawstyle='steps-mid',grid=True, lw=2, color=[colors(0),colors(4)], alpha=0.9)
     plt.xticks(ticks = np.arange(len(average_missed_demand.index)), labels = average_missed_demand.index)
     # axis.set_title("Missed demand of chips under " + str(rho * 100) + "% uncertainty")
-    fig.tight_layout(pad=3.0)
-    plt.savefig("bim_robust_missed_demand.pdf")
+    axis.set_xlabel("Month")
+    axis.set_ylabel("Average missed demand")
+    axis.legend(["Logic chips", "Memory chips"], loc = "upper left")
+    plt.tight_layout()
+    plt.savefig("bim_robust_missed_demand.svg", format="svg", dpi=300, bbox_inches='tight')
     
     realized_inv_cost = InventoryEvolution.groupby(level = 0).mean().sum(axis = 1).sum() * problem_data["inventory_cost"]
     print(f'Purchasing cost: {(problem_data["price"] * problem_data["purchases"]).sum().sum():.2f}')
@@ -338,7 +360,7 @@ N_sim = 50
 
 problem_data["demand_chips_ref"] = demand_chips
 m = BIMProductAcquisitionAndInventory(problem_data)
-pyo.SolverFactory(SOLVER).solve(m)
+SOLVER.solve(m)
 
 problem_data["purchases"] = ShowTableOfPyomoVariables( m.x, m.P, m.T )
 problem_data["stock"] = ShowTableOfPyomoVariables( m.s, m.P, m.T )
@@ -348,14 +370,8 @@ SimResults = simulate_performance(problem_data, N_sim, rho)
 
 # The simulation results report a sllighly higher inventory cost and a nonzero amount of missed chip demand.
 
-# In[6]:
+# In[22]:
 
 
 report(SimResults["MissingDemand"], SimResults["InventoryEvolution"], problem_data)
-
-
-# In[ ]:
-
-
-
 

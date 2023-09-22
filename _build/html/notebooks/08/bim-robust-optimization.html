@@ -760,6 +760,11 @@ title="Print to PDF"
     <nav id="bd-toc-nav" aria-label="Page">
         <ul class="visible nav section-nav flex-column">
  <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">
+   Preamble: Install Pyomo and a solver
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#original-bim-production-planning-model">
    Original BIM production planning model
   </a>
@@ -845,6 +850,11 @@ title="Print to PDF"
                         <nav aria-label="Page">
                             <ul class="visible nav section-nav flex-column">
  <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">
+   Preamble: Install Pyomo and a solver
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#original-bim-production-planning-model">
    Original BIM production planning model
   </a>
@@ -922,20 +932,30 @@ title="Print to PDF"
                 
   <section class="tex2jax_ignore mathjax_ignore" id="robust-bim-microchip-production-problem">
 <h1>Robust BIM microchip production problem<a class="headerlink" href="#robust-bim-microchip-production-problem" title="Permalink to this headline">#</a></h1>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this headline">#</a></h2>
+<p>This cell selects and verifies various global solvers for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
+have been previously installed and sets SOLVER to use the CBC solver via the Pyomo SolverFactory. It then verifies that SOLVER is available.</p>
+<p>The cell also selects a SOLVER_NLO (ipopt) and a SOLVER_MINLO (bonmin) to deal with nonlinear optimization problems. Both these solvers are installed from the IDEAS repository.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install Pyomo and solvers</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">os</span>
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>idaes-pse<span class="w"> </span>--pre<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+<span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin<span class="w"> </span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
+
+<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>pyomo<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+
 <span class="n">SOLVER_NLO</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
 <span class="n">SOLVER_MINLO</span> <span class="o">=</span> <span class="s2">&quot;bonmin&quot;</span>
-
-<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>idaes-pse<span class="w"> </span>--pre<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
-    <span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin<span class="w"> </span>
-    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
 </pre></div>
 </div>
 </div>
@@ -946,10 +966,16 @@ title="Print to PDF"
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="nn">patches</span>
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+
+<span class="c1"># Check that all solvers have been installed correctly and are available</span>
+<span class="k">assert</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
+<span class="k">assert</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_NLO</span><span class="p">)</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver NLO </span><span class="si">{</span><span class="n">SOLVER_NLO</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
+<span class="k">assert</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_MINLO</span><span class="p">)</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver NLO </span><span class="si">{</span><span class="n">SOLVER_MINLO</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
+</section>
 <section id="original-bim-production-planning-model">
 <h2>Original BIM production planning model<a class="headerlink" href="#original-bim-production-planning-model" title="Permalink to this headline">#</a></h2>
 <p>The full description of the BIM production problem, can be found here <a class="reference internal" href="../02/bim.html"><span class="doc std std-doc">here</span></a>. The resulting optimization problem was the following LP:</p>
@@ -1004,17 +1030,11 @@ title="Print to PDF"
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">ShowDuals</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
     <span class="kn">import</span> <span class="nn">fractions</span>
-
-    <span class="c1"># display all duals</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The dual variable corresponding to:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The dual variable corresponding to:&quot;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">component_objects</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">,</span> <span class="n">active</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;- the constraint on&quot;</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="s2">&quot;is equal to &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">c</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">fractions</span><span class="o">.</span><span class="n">Fraction</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="n">index</span><span class="p">]])))</span>
-
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- the constraint on </span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2"> is equal to </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">fractions</span><span class="o">.</span><span class="n">Fraction</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">c</span><span class="p">]))</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="n">m</span><span class="o">.</span><span class="n">dual</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="o">.</span><span class="n">IMPORT</span><span class="p">)</span>
-
 <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">ShowDuals</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
@@ -1022,7 +1042,6 @@ title="Print to PDF"
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The dual variable corresponding to:
-
 - the constraint on silicon is equal to 0
 - the constraint on gemanium is equal to 0
 - the constraint on plastic is equal to 6
@@ -1056,7 +1075,7 @@ title="Print to PDF"
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/bim-robust-optimization_8_0.png" src="../../_images/bim-robust-optimization_8_0.png" />
+<img alt="../../_images/bim-robust-optimization_9_0.png" src="../../_images/bim-robust-optimization_9_0.png" />
 </div>
 </div>
 <section id="box-uncertainty-for-copper-consumption">
@@ -1089,7 +1108,7 @@ title="Print to PDF"
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/bim-robust-optimization_10_0.png" src="../../_images/bim-robust-optimization_10_0.png" />
+<img alt="../../_images/bim-robust-optimization_11_0.png" src="../../_images/bim-robust-optimization_11_0.png" />
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Lower bounds {&#39;logic&#39;: 3.922766922829344, &#39;memory&#39;: 1.9701110863753781}
 Upper bounds {&#39;logic&#39;: 4.061793174956137, &#39;memory&#39;: 2.0328386701386703}
 </pre></div>
@@ -1432,8 +1451,8 @@ Upper bounds {&#39;logic&#39;: 4.061793174956137, &#39;memory&#39;: 2.0328386701
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/bim-robust-optimization_21_0.png" src="../../_images/bim-robust-optimization_21_0.png" />
-<img alt="../../_images/bim-robust-optimization_21_1.png" src="../../_images/bim-robust-optimization_21_1.png" />
+<img alt="../../_images/bim-robust-optimization_22_0.png" src="../../_images/bim-robust-optimization_22_0.png" />
+<img alt="../../_images/bim-robust-optimization_22_1.png" src="../../_images/bim-robust-optimization_22_1.png" />
 </div>
 </div>
 </section>
@@ -1567,13 +1586,16 @@ Upper bounds {&#39;logic&#39;: 4.061793174956137, &#39;memory&#39;: 2.0328386701
 </div>
 </div>
 </div>
-<p>We also need a function that for a given solution finds the worst-possible realization of the uncertainty restricted by the parameters <span class="math notranslate nohighlight">\(\Gamma\)</span> and <span class="math notranslate nohighlight">\(\delta\)</span>. In other words, its role is to solve the following maximization problem for a given solution <span class="math notranslate nohighlight">\((\bar{x}_1, \bar{x}_2)\)</span>:
+<p>We also need a function that for a given solution finds the worst-possible realization of the uncertainty restricted by the parameters <span class="math notranslate nohighlight">\(\Gamma\)</span> and <span class="math notranslate nohighlight">\(\delta\)</span>. In other words, its role is to solve the following maximization problem for a given solution <span class="math notranslate nohighlight">\((\bar{x}_1, \bar{x}_2)\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
 \begin{align*}
-\max \ &amp; (\bar{z}_1 + \delta y_1) \bar{x}_1 + (\bar{z}_2 + \delta y_2) \bar{x}_2 - 4800 \
-\text{s.t.} \ &amp; |y_1| + |y_2| \leq \Gamma \
+\max \ &amp; (\bar{z}_1 + \delta y_1) \bar{x}_1 + (\bar{z}_2 + \delta y_2) \bar{x}_2 - 4800 \\
+\text{s.t.} \ &amp; |y_1| + |y_2| \leq \Gamma \\
 &amp; -1 \leq y_i \leq 1 &amp;&amp; i = 1, 2.
 \end{align*}
-Such a function is implemented below and takes as argument also the maximum magnitude of the individual deviations <span class="math notranslate nohighlight">\(\delta\)</span> and the total budget <span class="math notranslate nohighlight">\(\Gamma\)</span>.</p>
+\end{split}\]</div>
+<p>Such a function is implemented below and takes as argument also the maximum magnitude of the individual deviations <span class="math notranslate nohighlight">\(\delta\)</span> and the total budget <span class="math notranslate nohighlight">\(\Gamma\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">BIMPessimization</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">gamma</span><span class="p">):</span>
@@ -1702,7 +1724,6 @@ No violation found. Stopping the procedure.
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pyk</span>
 
-
 <span class="k">def</span> <span class="nf">BIMWithBallUncertainty</span><span class="p">(</span><span class="n">radius</span><span class="p">,</span> <span class="n">domain_type</span><span class="o">=</span><span class="n">pyk</span><span class="o">.</span><span class="n">RealSet</span><span class="p">):</span>
     <span class="n">idxChips</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chips</span><span class="p">))</span>
 
@@ -1710,7 +1731,7 @@ No violation found. Stopping the procedure.
 
     <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyk</span><span class="o">.</span><span class="n">variable_list</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">idxChips</span><span class="p">:</span>
-        <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">domain_type</span><span class="o">=</span><span class="n">domain_type</span><span class="p">))</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pyk</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">domain_type</span><span class="p">))</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">profit</span> <span class="o">=</span> <span class="n">pyk</span><span class="o">.</span><span class="n">objective</span><span class="p">(</span>
         <span class="n">expr</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">profits</span><span class="p">[</span><span class="n">chips</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">idxChips</span><span class="p">),</span>

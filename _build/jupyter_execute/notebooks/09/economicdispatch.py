@@ -16,10 +16,18 @@
 # 
 # # Economic dispatch in energy systems
 
+# ## Preamble: Install Pyomo and a solver
+# 
+# This cell selects and verifies a global SOLVER for the notebook.
+# 
+# If run on Google Colab, the cell installs Pyomo and the ipopt solver via the IDEAS repository, then sets SOLVER to 
+# use the ipopt solver. If run elsewhere, it assumes Pyomo and the Mosek solver
+# have been previously installed and sets SOLVER to use the Mosek solver via the Pyomo 
+# SolverFactory. It then verifies that SOLVER is available.
+
 # In[1]:
 
 
-# install Pyomo and solvers
 import sys
 import os
 
@@ -31,6 +39,9 @@ if 'google.colab' in sys.modules:
     os.environ['PATH'] += ':bin'
     
     SOLVER = "ipopt"
+
+from pyomo.environ import SolverFactory
+assert SolverFactory(SOLVER).available(), f"Solver {SOLVER} is not available."
 
 
 # # Chance-constrained economic energy dispatch problem
