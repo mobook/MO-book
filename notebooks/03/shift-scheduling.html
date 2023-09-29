@@ -637,19 +637,20 @@ n_{w} &amp; = \begin{cases}1\quad\text{if worker } w \text{ is needed during the
 <li><p>At each day-shift we need to have enough workers to meet staffing requirements:</p></li>
 </ul>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align*}
-\\
-\sum_{w\in\text{ W}} a_{w, d, s} &amp; \geq \text{R}_{d, s} &amp; \forall (d, s) \in \text{T} \\
-\end{align*}\end{split}\]</div>
+\[
+\begin{align*}
+\sum_{w\in\text{ W}} a_{w, d, s} &amp; \geq \text{R}_{d, s} &amp; \forall (d, s) \in \text{T}
+\end{align*}
+\]</div>
 <ul class="simple">
 <li><p>No worker can be assigned more than 40 hours per week, which means that the total number of day-shifts times 8 hours per each cannot be greater than 40:</p></li>
 </ul>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align*}
-\\
-8\sum_{d,s\in\text{ T}} a_{w, d, s} &amp; \leq 40 &amp; \forall w \in \text{W} \\
-\\
-\end{align*}\end{split}\]</div>
+\[
+\begin{align*}
+8\sum_{d,s\in\text{ T}} a_{w, d, s} &amp; \leq 40 &amp; \forall w \in \text{W}
+\end{align*}
+\]</div>
 <ul class="simple">
 <li><p>No worker can be assigned more than one shift in each 24-hour period, to enforce which we need to loop over all 24h-long periods of three consecutive work-shifts and make sure that per each worker the total number of assignments is less than or equal to one:</p></li>
 </ul>
@@ -661,24 +662,21 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
 \end{align*}
 \end{split}\]</div>
 <ul class="simple">
-<li><p>The variable <span class="math notranslate nohighlight">\(n_w\)</span> needs to correctly be equal to 1 if a given worker is assigned to any of the day-shifts during the week, and 0 otherwise. Keeping in mind that <span class="math notranslate nohighlight">\(|T| = 21\)</span> is the total number of day-shifts during the week, we can implement this relationship as follows:</p></li>
+<li><p>The variable <span class="math notranslate nohighlight">\(n_w\)</span> needs to correctly be equal to 1 if a given worker is assigned to any of the day-shifts during the week, and 0 otherwise. Keeping in mind that <span class="math notranslate nohighlight">\(|T| = 21\)</span> is the total number of day-shifts during the week, we can implement this relationship as follows:
+$<span class="math notranslate nohighlight">\(
+  \begin{align*}
+  \sum_{d,s\in\text{ T}} a_{w,d,s} &amp; \leq 21 \cdot n_w &amp; \forall w\in \text{W}
+  \end{align*}
+  \)</span><span class="math notranslate nohighlight">\(
+  Indeed, whenever any of the variables \)</span>a_{w,d,s}<span class="math notranslate nohighlight">\( is equal to 1, \)</span>n_w<span class="math notranslate nohighlight">\( has to become equal to 1, while at the same time, the number 21 is big enough for the right-hand side not to be a restriction (beyond what the other constraints do) on the total number of shifts assigned to a worked in this constraint. At the same time, because in our objective function we minimize, the variable \)</span>n_w<span class="math notranslate nohighlight">\( will naturally become equal to \)</span>0$ in an optimal solution where the left-hand side would be equal to 0, so the constraint correctly enforces tracking the number of employed workers during the week.</p></li>
+<li><p>The variable <span class="math notranslate nohighlight">\(e_w\)</span> needs to be equal to 1 when worker <span class="math notranslate nohighlight">\(w\)</span> is assigned to any of the weekend day-shifts. We can formulate a constraint that will enforce this relationship correctly in the context of our problem as follows:
+$<span class="math notranslate nohighlight">\(
+  \begin{align*}
+  \sum_{d,s\in\text{ E}} a_{w,d,s} &amp; \leq 6 \cdot e_w &amp; \forall w\in \text{W}
+  \end{align*}
+  \)</span><span class="math notranslate nohighlight">\(
+  Indeed, variable \)</span>e_w<span class="math notranslate nohighlight">\( is forced to be equal to 1 if any day-shift on the weekend is assigned to worker \)</span>w<span class="math notranslate nohighlight">\( and since there are 6 day-shifts on the weekend, if that happens, this constraint does not impose extra limitations (beyond what the other constraints do) on the number of shifts assigned to \)</span>w<span class="math notranslate nohighlight">\( on the weekend. At the same time, since our objective is a minimization one, \)</span>e_w<span class="math notranslate nohighlight">\( will become equal to \)</span>0<span class="math notranslate nohighlight">\( in an optimal solution where \)</span>w$ does not have any weekend day-shifts.</p></li>
 </ul>
-<div class="math notranslate nohighlight">
-\[
-\begin{align*}
-\sum_{d,s\in\text{ T}} a_{w,d,s} &amp; \leq 21 \cdot n_w &amp; \forall w\in \text{W}
-\end{align*}
-\]</div>
-<p>Indeed, whenever any of the variables <span class="math notranslate nohighlight">\(a_{w,d,s}\)</span> is equal to 1, <span class="math notranslate nohighlight">\(n_w\)</span> has to become equal to 1, while at the same time, the number 21 is big enough for the right-hand side not to be a restriction (beyond what the other constraints do) on the total number of shifts assigned to a worked in this constraint. At the same time, because in our objective function we minimize, the variable <span class="math notranslate nohighlight">\(n_w\)</span> will naturally become equal to <span class="math notranslate nohighlight">\(0\)</span> in an optimal solution where the left-hand side would be equal to 0, so the constraint correctly enforces tracking the number of employed workers during the week.</p>
-<ul class="simple">
-<li><p>Do not assign any weekend shift to a worker that is not needed during the weekend.</p></li>
-</ul>
-<div class="math notranslate nohighlight">
-\[
-\begin{align*}
-\sum_{d,s\in\text{ E}} a_{w,d,s} &amp; \leq M_{\text{E}}\cdot e_w &amp; \forall w\in \text{W}
-\end{align*}
-\]</div>
 </section>
 </section>
 <section id="pyomo-implementation">
@@ -755,7 +753,7 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
     <span class="c1"># determine if a worker is assigned to a weekend shift</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">W</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">is__weekend</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">worker</span><span class="p">):</span>
-        <span class="k">return</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">e</span><span class="p">[</span><span class="n">worker</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">worker</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">shift</span><span class="p">]</span> <span class="k">for</span> <span class="n">day</span><span class="p">,</span> <span class="n">shift</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">E</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">worker</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">shift</span><span class="p">]</span> <span class="k">for</span> <span class="n">day</span><span class="p">,</span> <span class="n">shift</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">E</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">e</span><span class="p">[</span><span class="n">worker</span><span class="p">]</span>
 
     <span class="c1"># minimize a blended objective of needed workers and needed weekend workers</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>

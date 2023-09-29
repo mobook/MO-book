@@ -500,7 +500,6 @@ document.write(`
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#maximizing-the-profit-in-the-worst-case-for-a-multi-product-facility">Maximizing the profit in the worst case for a multi-product facility</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model">Pyomo Model</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#is-maximizing-the-worst-case-a-good-idea">Is maximizing the worst case a good idea?</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimizing-for-the-mean-scenario">Optimizing for the mean scenario</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#summary">Summary</a></li>
 </ul>
@@ -580,32 +579,32 @@ x_j &amp; \geq 0 &amp; \forall \, j\in J
 </section>
 <section id="data">
 <h2>Data<a class="headerlink" href="#data" title="Permalink to this heading">#</a></h2>
+<p>We import the same data as in the <a class="reference internal" href="bim-maxmin.html"><span class="doc std std-doc">previous notebook</span></a> regarding the BIM production with different possible profit scenarios.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span>
 
-<span class="n">BIM_scenarios</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span>
-    <span class="p">[</span><span class="mi">12</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span> 
-    <span class="p">[</span><span class="mi">11</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> 
-    <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">11</span><span class="p">]],</span> 
-    <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;product 1&quot;</span><span class="p">,</span> <span class="s2">&quot;product 2&quot;</span><span class="p">])</span>
+<span class="n">BIM_scenarios</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="p">[[</span><span class="mi">12</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span> <span class="p">[</span><span class="mi">11</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">11</span><span class="p">]],</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;product 1&quot;</span><span class="p">,</span> <span class="s2">&quot;product 2&quot;</span><span class="p">]</span>
+<span class="p">)</span>
 
 <span class="n">BIM_scenarios</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;scenarios&quot;</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Profit scenarios&quot;</span><span class="p">)</span>
 <span class="n">display</span><span class="p">(</span><span class="n">BIM_scenarios</span><span class="p">)</span>
 
-<span class="n">BIM_resources</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span>
-    <span class="p">[</span><span class="s2">&quot;silicon&quot;</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
-    <span class="p">[</span><span class="s2">&quot;germanium&quot;</span><span class="p">,</span> <span class="mi">1500</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-    <span class="p">[</span><span class="s2">&quot;plastic&quot;</span><span class="p">,</span> <span class="mi">1750</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-    <span class="p">[</span><span class="s2">&quot;copper&quot;</span><span class="p">,</span> <span class="mi">4000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]],</span>
-    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;resource&quot;</span><span class="p">,</span> <span class="s2">&quot;available&quot;</span><span class="p">,</span> <span class="s2">&quot;product 1&quot;</span><span class="p">,</span> <span class="s2">&quot;product 2&quot;</span><span class="p">])</span>
+<span class="n">BIM_resources</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">[</span><span class="s2">&quot;silicon&quot;</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="s2">&quot;germanium&quot;</span><span class="p">,</span> <span class="mi">1500</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="s2">&quot;plastic&quot;</span><span class="p">,</span> <span class="mi">1750</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="s2">&quot;copper&quot;</span><span class="p">,</span> <span class="mi">4000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+    <span class="p">],</span>
+    <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;resource&quot;</span><span class="p">,</span> <span class="s2">&quot;available&quot;</span><span class="p">,</span> <span class="s2">&quot;product 1&quot;</span><span class="p">,</span> <span class="s2">&quot;product 2&quot;</span><span class="p">],</span>
+<span class="p">)</span>
 <span class="n">BIM_resources</span> <span class="o">=</span> <span class="n">BIM_resources</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;resource&quot;</span><span class="p">)</span>
-    
+
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Available resources and resource requirements&quot;</span><span class="p">)</span>
 <span class="n">display</span><span class="p">(</span><span class="n">BIM_resources</span><span class="p">)</span>
-    
 </pre></div>
 </div>
 </div>
@@ -727,53 +726,54 @@ x_j &amp; \geq 0 &amp; \forall \, j\in J
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 
+
 <span class="k">def</span> <span class="nf">maxmin</span><span class="p">(</span><span class="n">scenarios</span><span class="p">,</span> <span class="n">resources</span><span class="p">):</span>
-    
-    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;BIM&#39;</span><span class="p">)</span>
-    
+    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;BIM&quot;</span><span class="p">)</span>
+
     <span class="n">products</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-    <span class="n">products</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;available&#39;</span><span class="p">)</span>
-    
+    <span class="n">products</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;available&quot;</span><span class="p">)</span>
+
     <span class="n">model</span><span class="o">.</span><span class="n">I</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">resources</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
     <span class="n">model</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">products</span><span class="p">)</span>
     <span class="n">model</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">scenarios</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">J</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">a</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">resources</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">b</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">resources</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;available&quot;</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">J</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">c</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">scenarios</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-    
+
     <span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">J</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">z</span>  <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">()</span> 
-    
+    <span class="n">model</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">()</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">z</span>
-    
+    <span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">scenario_profit</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span> <span class="o">&lt;=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">c</span><span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">J</span><span class="p">)</span>
-        
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span> <span class="o">&lt;=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">c</span><span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">J</span><span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">resource_limits</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">J</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">def</span> <span class="nf">resource_limits</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">J</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">model</span>
 
-<span class="n">BIM</span> <span class="o">=</span> <span class="n">maxmin</span><span class="p">(</span><span class="n">BIM_scenarios</span><span class="p">,</span> <span class="n">BIM_resources</span><span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">BIM</span><span class="p">)</span>
 
-<span class="n">worst_case_profit</span> <span class="o">=</span> <span class="n">BIM</span><span class="o">.</span><span class="n">profit</span><span class="p">()</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">maxmin</span><span class="p">(</span><span class="n">BIM_scenarios</span><span class="p">,</span> <span class="n">BIM_resources</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+<span class="n">worst_case_profit</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Worst case profit =&quot;</span><span class="p">,</span> <span class="n">worst_case_profit</span><span class="p">)</span>
 
-<span class="n">worst_case_plan</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="n">j</span><span class="p">:</span> <span class="n">BIM</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]()</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">BIM</span><span class="o">.</span><span class="n">J</span><span class="p">},</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;worst case&quot;</span><span class="p">)</span>
+<span class="n">worst_case_plan</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="n">j</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]()</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">J</span><span class="p">},</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;worst case&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Worst case production plan:&quot;</span><span class="p">)</span>
 <span class="n">display</span><span class="p">(</span><span class="n">worst_case_plan</span><span class="p">)</span>
 </pre></div>
@@ -793,53 +793,49 @@ Name: worst case, dtype: float64
 </div>
 </div>
 </section>
-<section id="is-maximizing-the-worst-case-a-good-idea">
-<h2>Is maximizing the worst case a good idea?<a class="headerlink" href="#is-maximizing-the-worst-case-a-good-idea" title="Permalink to this heading">#</a></h2>
-<p>Maximizing the worst case among all cases is a conservative planning outlook. It may be worth investigating alternative planning outlooks.</p>
+<section id="optimizing-for-the-mean-scenario">
+<h2>Optimizing for the mean scenario<a class="headerlink" href="#optimizing-for-the-mean-scenario" title="Permalink to this heading">#</a></h2>
+<p>Is maximizing the worst case a good idea? Maximizing the worst case among all cases is a conservative planning outlook. It may be worth investigating alternative planning outlooks.</p>
 <p>The first step is to create a model to optimize a single scenario. Without repeating the mathematical description, the following Pyomo model is simply the <code class="docutils literal notranslate"><span class="pre">maxmin</span></code> model adapted to a single scenario.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">max_profit</span><span class="p">(</span><span class="n">scenario</span><span class="p">,</span> <span class="n">resources</span><span class="p">):</span>
-    
-    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s1">&#39;BIM&#39;</span><span class="p">)</span>
-    
+    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;BIM&quot;</span><span class="p">)</span>
+
     <span class="n">products</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-    <span class="n">products</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;available&#39;</span><span class="p">)</span>
-    
+    <span class="n">products</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;available&quot;</span><span class="p">)</span>
+
     <span class="n">model</span><span class="o">.</span><span class="n">I</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">resources</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
     <span class="n">model</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">products</span><span class="p">)</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">I</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">J</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">a</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">resources</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">b</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">resources</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;available&quot;</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">J</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">c</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">scenario</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
-    
+
     <span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">J</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">z</span>  <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">()</span> 
-    
+    <span class="n">model</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">()</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">c</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">J</span><span class="p">)</span>
-        
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">c</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">J</span><span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">resource_limits</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">J</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">def</span> <span class="nf">resource_limits</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">J</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">model</span>
 </pre></div>
 </div>
 </div>
 </div>
-</section>
-<section id="optimizing-for-the-mean-scenario">
-<h2>Optimizing for the mean scenario<a class="headerlink" href="#optimizing-for-the-mean-scenario" title="Permalink to this heading">#</a></h2>
 <p>The next cell computes the optimal plan for the mean scenario.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -867,8 +863,8 @@ Name: mean case, dtype: float64
 </div>
 </div>
 </div>
-<p>The expected profit under the mean scenario if 17,833 which is 333 greater than for the worst case. Also note the production plan is different.</p>
-<p>Which plan should be preferred? The one that produces a guaranteed profit of 17,500 under all scenarios, or one that produces expected profit of 17,833?</p>
+<p>The expected profit under the mean scenario if 17833 which is 333 greater than for the worst case. Also note the production plan is different.</p>
+<p>Which plan should be preferred? The one that produces a guaranteed profit of 17500 under all scenarios, or one that produces expected profit of 17833?</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mean_case_outcomes</span> <span class="o">=</span> <span class="n">BIM_scenarios</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">mean_case_plan</span><span class="p">)</span>
@@ -877,16 +873,23 @@ Name: mean case, dtype: float64
 <span class="n">worst_case_outcomes</span> <span class="o">=</span> <span class="n">BIM_scenarios</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">worst_case_plan</span><span class="p">)</span>
 <span class="n">worst_case_outcomes</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;worst case outcomes&quot;</span>
 
-<span class="n">ax</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">worst_case_outcomes</span><span class="p">,</span> <span class="n">mean_case_outcomes</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="mi">15000</span><span class="p">,</span> <span class="mi">20000</span><span class="p">))</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">worst_case_profit</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">worst_case_outcomes</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;worst case plan, mean&quot;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">mean_case_outcomes</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;orange&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;mean case plan, mean&quot;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">worst_case_outcomes</span><span class="p">,</span> <span class="n">mean_case_outcomes</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="mi">15000</span><span class="p">,</span> <span class="mi">20000</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">worst_case_profit</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;overall worst case&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">worst_case_outcomes</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;worst case plan, mean&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span>
+    <span class="n">mean_case_outcomes</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span>
+    <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;orange&quot;</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;mean case plan, mean&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/608e1c6139d969c7703456d90922119cec32b3c9d3a67422a3047aca67a6d471.png" src="../../_images/608e1c6139d969c7703456d90922119cec32b3c9d3a67422a3047aca67a6d471.png" />
+<img alt="../../_images/dc21899152187c21526d32f2851ab41677bc93f40df307fc4d3d4133886673cd.png" src="../../_images/dc21899152187c21526d32f2851ab41677bc93f40df307fc4d3d4133886673cd.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -896,7 +899,7 @@ Name: mean case, dtype: float64
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/04d9ba34d01a95bfab48dc48432a9800417b0496453ed0946393610cc2dbe087.png" src="../../_images/04d9ba34d01a95bfab48dc48432a9800417b0496453ed0946393610cc2dbe087.png" />
+<img alt="../../_images/da21bb41bad8a9e2242201f56bf7d9f9aedfb3101a88ce26fd2300290d1398f3.png" src="../../_images/da21bb41bad8a9e2242201f56bf7d9f9aedfb3101a88ce26fd2300290d1398f3.png" />
 </div>
 </div>
 </section>
@@ -977,7 +980,6 @@ Name: mean case, dtype: float64
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#maximizing-the-profit-in-the-worst-case-for-a-multi-product-facility">Maximizing the profit in the worst case for a multi-product facility</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model">Pyomo Model</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#is-maximizing-the-worst-case-a-good-idea">Is maximizing the worst case a good idea?</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimizing-for-the-mean-scenario">Optimizing for the mean scenario</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#summary">Summary</a></li>
 </ul>
