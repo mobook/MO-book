@@ -34,7 +34,7 @@ If you wish to cite this work, please use
 ```
 @book{PostekZocca2024,
 title     = "Hands-On Optimization with Python",
-author    = "Postek, Krzysztof and Zocca, Alessandro and Gromicho, Joaquim and Kantor, Jeffrey"
+author    = "Postek, Krzysztof and Zocca, Alessandro and Gromicho, Joaquim and Kantor, Jeffrey",
 year      = 2024,
 publisher = "Online",
 url       = "https://mobook.github.io/MO-book/"
