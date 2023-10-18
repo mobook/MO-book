@@ -201,6 +201,8 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../03/simple-production-model-gdp.html">Production model using disjunctions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/machine-scheduling.html">Machine Scheduling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/facility-location.html">Facility location problem</a></li>
+
+
 <li class="toctree-l2"><a class="reference internal" href="../03/bim-production-revisited.html">BIM production revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/cryptarithms.html">Extra material: Cryptarithms puzzle</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/strip-packing.html">Extra material: Strip packing</a></li>
@@ -546,8 +548,8 @@ SolverFactory. It then verifies that SOLVER is available.</p>
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>pyomo<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
 
-    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;appsi_highs&#39;</span><span class="p">)</span>
     
 <span class="k">else</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
@@ -622,7 +624,7 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">from</span> <span class="nn">ast</span> <span class="kn">import</span> <span class="n">literal_eval</span> <span class="k">as</span> <span class="n">make_tuple</span>
 <span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
-<span class="kn">import</span> <span class="nn">time</span> 
+<span class="kn">import</span> <span class="nn">time</span>
 
 <span class="c1"># Load solver</span>
 <span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
@@ -657,11 +659,13 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Download the data</span>
 <span class="n">base_url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/notebooks/04/&quot;</span>
-<span class="n">nodes_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">base_url</span> <span class="o">+</span> <span class="s1">&#39;nodes.csv&#39;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">edges_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">base_url</span> <span class="o">+</span> <span class="s1">&#39;edges.csv&#39;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">nodes_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">base_url</span> <span class="o">+</span> <span class="s2">&quot;nodes.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">edges_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">base_url</span> <span class="o">+</span> <span class="s2">&quot;edges.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
 <span class="c1"># Read all instances</span>
-<span class="n">nodes</span> <span class="o">=</span> <span class="n">nodes_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;instance&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">data</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;node_id&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+<span class="n">nodes</span> <span class="o">=</span> <span class="n">nodes_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;instance&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">data</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;node_id&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+<span class="p">)</span>
 <span class="n">edges</span> <span class="o">=</span> <span class="n">edges_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">edges_df</span><span class="p">[</span><span class="s2">&quot;edge_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">make_tuple</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
 <span class="n">I</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;nodes&quot;</span><span class="p">:</span> <span class="n">n</span><span class="p">,</span> <span class="s2">&quot;edges&quot;</span><span class="p">:</span> <span class="n">edges</span><span class="p">}</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">]</span>
 
@@ -684,18 +688,33 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
     <span class="n">g</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
     <span class="n">pos</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">kamada_kawai_layout</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
-    <span class="n">color_mapping</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;solar&#39;</span><span class="p">:</span> <span class="s1">&#39;#ffcb36&#39;</span><span class="p">,</span>
-     <span class="s1">&#39;wind&#39;</span><span class="p">:</span> <span class="s1">&#39;white&#39;</span><span class="p">,</span>
-     <span class="s1">&#39;hydro&#39;</span><span class="p">:</span> <span class="s1">&#39;#a5efff&#39;</span><span class="p">,</span>
-     <span class="s1">&#39;coal&#39;</span><span class="p">:</span> <span class="s1">&#39;#686868&#39;</span><span class="p">,</span>
-     <span class="s1">&#39;gas&#39;</span><span class="p">:</span> <span class="s1">&#39;#00ab4e&#39;</span><span class="p">,</span>
-     <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">:</span> <span class="s1">&#39;#b6b6b6&#39;</span><span class="p">}</span>
-              
-    <span class="n">vertex2color</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="n">color_mapping</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s1">&#39;nodes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-    <span class="n">v2c_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">vertex2color</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">g</span><span class="o">.</span><span class="n">nodes</span><span class="p">]</span> <span class="c1"># Order based on networkx</span>
+    <span class="n">color_mapping</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;solar&quot;</span><span class="p">:</span> <span class="s2">&quot;#ffcb36&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;wind&quot;</span><span class="p">:</span> <span class="s2">&quot;white&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;hydro&quot;</span><span class="p">:</span> <span class="s2">&quot;#a5efff&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;coal&quot;</span><span class="p">:</span> <span class="s2">&quot;#686868&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;gas&quot;</span><span class="p">:</span> <span class="s2">&quot;#00ab4e&quot;</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">:</span> <span class="s2">&quot;#b6b6b6&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
 
-    <span class="n">nodes</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx_nodes</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">node_size</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span> <span class="n">node_color</span><span class="o">=</span><span class="n">v2c_list</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="mi">2</span><span class="p">,)</span>
-    <span class="n">edges</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx_edges</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">edge_color</span><span class="o">=</span><span class="s1">&#39;#595959&#39;</span><span class="p">,)</span>
+    <span class="n">vertex2color</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">i</span><span class="p">:</span> <span class="n">color_mapping</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy_type&quot;</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="n">v2c_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">vertex2color</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">g</span><span class="o">.</span><span class="n">nodes</span><span class="p">]</span>  <span class="c1"># Order based on networkx</span>
+
+    <span class="n">nodes</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx_nodes</span><span class="p">(</span>
+        <span class="n">g</span><span class="p">,</span>
+        <span class="n">pos</span><span class="p">,</span>
+        <span class="n">node_size</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span>
+        <span class="n">node_color</span><span class="o">=</span><span class="n">v2c_list</span><span class="p">,</span>
+        <span class="n">linewidths</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">edges</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx_edges</span><span class="p">(</span>
+        <span class="n">g</span><span class="p">,</span>
+        <span class="n">pos</span><span class="p">,</span>
+        <span class="n">width</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">edge_color</span><span class="o">=</span><span class="s2">&quot;#595959&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="c1"># Gives node colors</span>
     <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
@@ -1262,7 +1281,7 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 <p>In other words, each network consists of a dictionary, that contains a dictionary for nodes and edges, which again holds a dictionary for each node and edge. It might a be little bit confusing at first, but this data structure allows to easily access the parameters that you need for a specific constraint. For instance,</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">network</span><span class="p">[</span><span class="s1">&#39;nodes&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;d&#39;</span><span class="p">]</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;d&quot;</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -1275,7 +1294,7 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 <p>gives the demand of node <code class="docutils literal notranslate"><span class="pre">1</span></code>. To filter on generator nodes, you can use the following:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s1">&#39;nodes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;is_generator&#39;</span><span class="p">]]</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">]]</span>
 </pre></div>
 </div>
 </div>
@@ -1324,7 +1343,7 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 <span class="sd">    - power_generation: a dictionary containing the power generation for each node</span>
 <span class="sd">    - power_flows: a dictionary containing the power flow for each edge</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    
+
     <span class="c1"># Define a model</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Q1&quot;</span><span class="p">)</span>
 
@@ -1338,40 +1357,56 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
     <span class="c1"># Declare objective value</span>
     <span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">objective</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">])</span>
-    
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">outgoing_flow</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
-    
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">incoming_flow</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
-    
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">flow_conservation</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">outgoing_flow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">incoming_flow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;d&quot;</span><span class="p">]</span>
-    
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">outgoing_flow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">incoming_flow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;d&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">susceptance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)][</span><span class="s2">&quot;b&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
-    
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)][</span><span class="s2">&quot;b&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">abs_flow</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="n">e</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">fabs</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">flows_upper_bound</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="n">e</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">fabs</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][</span><span class="n">e</span><span class="p">][</span><span class="s2">&quot;f_max&quot;</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">generation_upper_bound</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_max&quot;</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">generation_lower_bound</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_min&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-    
+
     <span class="c1"># Solve</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
@@ -1382,7 +1417,9 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The average objective value over all instances is: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">OPF1</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">instance</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">I</span><span class="p">])</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;The average objective value over all instances is: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">OPF1</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">instance</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">I</span><span class="p">])</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1428,7 +1465,7 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 <span class="sd">    - power_generation: a dictionary containing the power generation for each node</span>
 <span class="sd">    - power_flows: a dictionary containing the power flow for each edge</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    
+
     <span class="c1"># Define a model</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Q2&quot;</span><span class="p">)</span>
 
@@ -1443,29 +1480,45 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
     <span class="c1"># Declare objective value</span>
     <span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">objective</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
 
     <span class="c1"># Declare constraints</span>
     <span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">outgoing_flow</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
-    
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">incoming_flow</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
-    
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">flow_conservation</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">outgoing_flow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">incoming_flow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;d&quot;</span><span class="p">]</span>
-    
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">outgoing_flow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">incoming_flow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;d&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">susceptance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)][</span><span class="s2">&quot;b&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
-    
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)][</span><span class="s2">&quot;b&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">abs_flows</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="n">e</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">fabs</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">flows_upper_bound</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="n">e</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">fabs</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][</span><span class="n">e</span><span class="p">][</span><span class="s2">&quot;f_max&quot;</span><span class="p">]</span>
@@ -1473,18 +1526,32 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">generation_upperound</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_max&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">generation_lower_bound</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_min&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
     <span class="k">def</span> <span class="nf">max_gas_plants</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;gas&#39;</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">2</span>
-    
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;gas&quot;</span>
+            <span class="p">)</span>
+            <span class="o">&lt;=</span> <span class="mi">2</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
     <span class="k">def</span> <span class="nf">max_coal_plants</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;coal&#39;</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;coal&quot;</span>
+            <span class="p">)</span>
+            <span class="o">&lt;=</span> <span class="mi">1</span>
+        <span class="p">)</span>
 
     <span class="c1"># Solve</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
@@ -1496,7 +1563,9 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The average objective value over all instances is: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">OPF2</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">instance</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">I</span><span class="p">])</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;The average objective value over all instances is: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">OPF2</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">instance</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">I</span><span class="p">])</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1544,7 +1613,7 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 <span class="sd">    - power_generation: a dictionary containing the power generation for each node</span>
 <span class="sd">    - power_flows: a dictionary containing the power flow for each edge</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    
+
     <span class="c1"># Define a model</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Q3&quot;</span><span class="p">)</span>
 
@@ -1558,35 +1627,55 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
     <span class="n">model</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
 
     <span class="c1"># Big-Ms</span>
-    <span class="n">max_total_renewable_production</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;p_max&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;solar&#39;</span><span class="p">,</span> <span class="s1">&#39;wind&#39;</span><span class="p">,</span> <span class="s1">&#39;hydro&#39;</span><span class="p">])</span>
+    <span class="n">max_total_renewable_production</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;p_max&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy_type&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;solar&quot;</span><span class="p">,</span> <span class="s2">&quot;wind&quot;</span><span class="p">,</span> <span class="s2">&quot;hydro&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
     <span class="n">M</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">max_total_renewable_production</span> <span class="o">-</span> <span class="mi">1000</span><span class="p">]</span>
 
     <span class="c1"># Declare objective value</span>
     <span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">objective</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;c_var&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;is_generator&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
 
     <span class="c1"># Declare constraints</span>
     <span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">outgoing_flow</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
-    
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">incoming_flow</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
-    
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">flow_conservation</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">outgoing_flow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">incoming_flow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;d&quot;</span><span class="p">]</span>
-    
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">outgoing_flow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">incoming_flow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;d&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">susceptance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)][</span><span class="s2">&quot;b&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)][</span><span class="s2">&quot;b&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="p">)</span>
 
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">abs_flows</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="n">e</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">fabs</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">fp</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">fm</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">flows_upper_bound</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="n">e</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">fabs</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">][</span><span class="n">e</span><span class="p">][</span><span class="s2">&quot;f_max&quot;</span><span class="p">]</span>
@@ -1594,34 +1683,57 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">generation_upper_bound</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_max&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">])</span>
     <span class="k">def</span> <span class="nf">generation_lower_bound</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;p_min&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-    
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
     <span class="k">def</span> <span class="nf">max_gas_plants</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;gas&#39;</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="o">*</span> <span class="n">M</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;gas&quot;</span>
+            <span class="p">)</span>
+            <span class="o">&lt;=</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="o">*</span> <span class="n">M</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
     <span class="k">def</span> <span class="nf">max_coal_plants</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;coal&#39;</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="o">*</span> <span class="n">M</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;coal&quot;</span>
+            <span class="p">)</span>
+            <span class="o">&lt;=</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="o">*</span> <span class="n">M</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">)</span>
 
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
     <span class="k">def</span> <span class="nf">renewable_energy_production</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;energy_type&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;solar&#39;</span><span class="p">,</span> <span class="s1">&#39;wind&#39;</span><span class="p">,</span> <span class="s1">&#39;hydro&#39;</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">1000</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">M</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-    
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">&quot;nodes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy_type&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;solar&quot;</span><span class="p">,</span> <span class="s2">&quot;wind&quot;</span><span class="p">,</span> <span class="s2">&quot;hydro&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="o">&lt;=</span> <span class="mi">1000</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">M</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="p">)</span>
+
     <span class="c1"># Solve</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
-    <span class="k">return</span>  <span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The average objective value over all instances is: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">OPF3</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">instance</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">I</span><span class="p">])</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;The average objective value over all instances is: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">OPF3</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">instance</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">I</span><span class="p">])</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1637,21 +1749,23 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 <p>For all three implemented models, we plot the objective values for all instances and explain the differences between the objective values in view of the different feasible regions.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">objs</span> <span class="o">=</span> <span class="p">[[</span><span class="n">OPF1</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span> <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="n">I</span><span class="p">],</span>
-        <span class="p">[</span><span class="n">OPF2</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span> <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="n">I</span><span class="p">],</span>
-        <span class="p">[</span><span class="n">OPF3</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span> <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="n">I</span><span class="p">]]</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">objs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span><span class="n">OPF1</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span> <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="n">I</span><span class="p">],</span>
+    <span class="p">[</span><span class="n">OPF2</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span> <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="n">I</span><span class="p">],</span>
+    <span class="p">[</span><span class="n">OPF3</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span> <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="n">I</span><span class="p">],</span>
+<span class="p">]</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;OPF1&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">objs</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;OPF2&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">objs</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;orange&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;OPF3&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Optimal objective values over all instances and models&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Instance number&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Optimal objective value&#39;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">objs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;OPF1&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">objs</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;OPF2&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">objs</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;orange&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;OPF3&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Optimal objective values over all instances and models&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Instance number&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Optimal objective value&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>

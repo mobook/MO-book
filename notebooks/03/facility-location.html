@@ -201,6 +201,8 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="simple-production-model-gdp.html">Production model using disjunctions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="machine-scheduling.html">Machine Scheduling</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Facility location problem</a></li>
+
+
 <li class="toctree-l2"><a class="reference internal" href="bim-production-revisited.html">BIM production revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cryptarithms.html">Extra material: Cryptarithms puzzle</a></li>
 <li class="toctree-l2"><a class="reference internal" href="strip-packing.html">Extra material: Strip packing</a></li>
@@ -497,11 +499,17 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Facility location problem</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#first-milo-formulation">First MILO formulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#second-milo-formulation">Second MILO formulation</a></li>
 </ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#solvers-and-options">Solvers and options</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#the-models">The models</a></li>
+</ul>
+
             </nav>
         </div>
     </div>
@@ -512,31 +520,21 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <span class="target" id="index-0"></span><section class="tex2jax_ignore mathjax_ignore" id="facility-location-problem">
-<span id="index-1"></span><h1>Facility location problem<a class="headerlink" href="#facility-location-problem" title="Permalink to this heading">#</a></h1>
+  <section class="tex2jax_ignore mathjax_ignore" id="facility-location-problem">
+<h1>Facility location problem<a class="headerlink" href="#facility-location-problem" title="Permalink to this heading">#</a></h1>
+<p>This notebook illustrates Example 20 from Chapter 3 of the textbook Hands-On Mathematical Optimization with Python, Cambridge University Press, 2024.</p>
+<p>For details about these models and more information we refer to the book.</p>
+<p>Also notice that at the end of Chapter 3 you may find a number of exercises that show that versions of this problem aiming at maximizing the importance of the customers served, when facing constraints that limit the possibility of serving all, leads to even more striking evidence for the importance of selecting the right model: it can offer large factors of speedup in solving the relevant instances!</p>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
-<p>This cell selects and verifies a global SOLVER for the notebook.</p>
-<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
-use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
-have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
-SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 
 <span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>pyomo<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
-
-    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    
-<span class="k">else</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
-
-<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
+    <span class="o">%</span><span class="k">pip</span> install pyomo
+    <span class="o">%</span><span class="k">pip</span> install highspy
+    <span class="o">!</span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>-qq<span class="w"> </span>coinor-cbc
 </pre></div>
 </div>
 </div>
@@ -576,8 +574,8 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 \[\begin{split}
 \begin{align*}
     \min \quad &amp; \sum_{j \in J} c_j x_j + \sum_{i \in I} \sum_{j \in J} h_{ij} y_{ij} \\
-    \textup{s.t.} \quad &amp; \sum_{j \in J} y_{ij} =1 \qquad \forall \, i \in I &amp; \textup{(every customer is served)}\\
-    &amp; y_{ij} \leq x_{j} \qquad \forall \, i\in I, \, \forall \, j \in J &amp; \textup{(facility built before use)}\\
+    \text{s.t.} \quad &amp; \sum_{j \in J} y_{ij} =1 \qquad \forall \, i \in I &amp; \text{(every customer is served)}\\
+    &amp; y_{ij} \leq x_{j} \qquad \forall \, i\in I, \, \forall \, j \in J &amp; \text{(facility built before use)}\\
     &amp; x_j \in \{0,1\} \qquad \forall \, i\in I\\
     &amp; y_{ij} \in \{0,1\} \qquad \forall \, i\in I, \, \forall \, j \in J.
 \end{align*}
@@ -597,8 +595,8 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 \[\begin{split}
 \begin{align*}
     \min \quad &amp; \sum_{j \in J} c_j x_j + \sum_{i \in I} \sum_{j \in J} h_{ij} y_{ij} \\
-    \textup{s.t.} \quad &amp; \sum_{j \in J} y_{ij} =1 \qquad \forall \, i \in I &amp; \textup{(every customer is served)}\\
-    &amp; \sum_i y_{ij} \leq n x_j \qquad \forall \, j \in J &amp; \textup{(facility built before use)}\\
+    \text{s.t.} \quad &amp; \sum_{j \in J} y_{ij} =1 \qquad \forall \, i \in I &amp; \text{(every customer is served)}\\
+    &amp; \sum_i y_{ij} \leq n x_j \qquad \forall \, j \in J &amp; \text{(facility built before use)}\\
     &amp; x_j \in \{0,1\} \qquad \forall \, i\in I\\
     &amp; y_{ij} \in \{0,1\} \qquad \forall \, i\in I, \, \forall \, j \in J.
 \end{align*}
@@ -615,9 +613,164 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 <span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">perf_counter</span> <span class="k">as</span> <span class="n">pc</span>
 <span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">import</span> <span class="nn">subprocess</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="solvers-and-options">
+<h1>Solvers and options<a class="headerlink" href="#solvers-and-options" title="Permalink to this heading">#</a></h1>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">ListAvailableSolvers</span><span class="p">():</span>
+    <span class="n">shell_command</span> <span class="o">=</span> <span class="s2">&quot;pyomo help --solvers&quot;</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">shell_command</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;)&quot;</span><span class="p">)</span>
+    <span class="p">]</span>
 
 
-<span class="k">def</span> <span class="nf">FacilityLocationCommon</span><span class="p">(</span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">GetSolverName</span><span class="p">(</span><span class="n">solver</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">solver</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;appsi_highs&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">SwitchCutsOff</span><span class="p">(</span><span class="n">solver</span><span class="p">):</span>
+    <span class="n">solver_name</span> <span class="o">=</span> <span class="n">GetSolverName</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;cbc&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;Cuts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;off&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;cplex&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_bqp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_cliques&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_covers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_disjunctive&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_flowcovers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_pathcut&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_gomory&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_gubcovers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_implied&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_localimplied&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_liftproj&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_mircut&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_mcfcut&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_rlt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;mip_cuts_zerohalfcut&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">elif</span> <span class="s2">&quot;gurobi&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;Cuts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">elif</span> <span class="s2">&quot;highs&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="k">pass</span>  <span class="c1"># there is no way to do this, see</span>
+        <span class="c1"># https://ergo-code.github.io/HiGHS/dev/options/definitions/</span>
+    <span class="k">elif</span> <span class="s2">&quot;xpress&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;CUTSTRATEGY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">return</span> <span class="n">solver</span>
+
+
+<span class="k">def</span> <span class="nf">SwitchPresolveOff</span><span class="p">(</span><span class="n">solver</span><span class="p">):</span>
+    <span class="n">solver_name</span> <span class="o">=</span> <span class="n">GetSolverName</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;cbc&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;Presolve&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;off&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;cplex&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;preprocessing_presolve&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">elif</span> <span class="s2">&quot;gurobi&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;Presolve&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">elif</span> <span class="s2">&quot;highs&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;presolve&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;off&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;xpress&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;PRESOLVE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">return</span> <span class="n">solver</span>
+
+
+<span class="k">def</span> <span class="nf">LimitSolveTime</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">max_in_seconds</span><span class="p">):</span>
+    <span class="n">solver_name</span> <span class="o">=</span> <span class="n">GetSolverName</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;cbc&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;seconds&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_in_seconds</span>
+    <span class="k">elif</span> <span class="s2">&quot;cplex&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;timelimit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_in_seconds</span>
+    <span class="k">elif</span> <span class="s2">&quot;gurobi&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;TimeLimit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_in_seconds</span>
+    <span class="k">elif</span> <span class="s2">&quot;highs&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;time_limit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_in_seconds</span>
+    <span class="k">elif</span> <span class="s2">&quot;xpress&quot;</span> <span class="ow">in</span> <span class="n">solver_name</span><span class="p">:</span>
+        <span class="n">solver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;MAXTIME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_in_seconds</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">return</span> <span class="n">solver</span>
+
+
+<span class="k">def</span> <span class="nf">ClosureForMaxTime</span><span class="p">(</span><span class="n">max_in_seconds</span><span class="p">):</span>
+    <span class="k">return</span> <span class="k">lambda</span> <span class="n">solver</span><span class="p">:</span> <span class="n">LimitSolveTime</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">max_in_seconds</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">compose</span><span class="p">(</span><span class="o">*</span><span class="n">functions</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">composed</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">functions</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">return</span> <span class="n">composed</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">initial_solvers</span> <span class="o">=</span> <span class="n">ListAvailableSolvers</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">initial_solvers</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[&#39;appsi_cbc&#39;,
+ &#39;appsi_highs&#39;,
+ &#39;cbc&#39;,
+ &#39;gdpopt&#39;,
+ &#39;gdpopt.gloa&#39;,
+ &#39;gdpopt.lbb&#39;,
+ &#39;gdpopt.loa&#39;,
+ &#39;gdpopt.ric&#39;,
+ &#39;mindtpy&#39;,
+ &#39;mindtpy.ecp&#39;,
+ &#39;mindtpy.fp&#39;,
+ &#39;mindtpy.goa&#39;,
+ &#39;mindtpy.oa&#39;,
+ &#39;mpec_minlp&#39;,
+ &#39;mpec_nlp&#39;,
+ &#39;multistart&#39;,
+ &#39;scipy.fsolve&#39;,
+ &#39;scipy.newton&#39;,
+ &#39;scipy.root&#39;,
+ &#39;scipy.secant-newton&#39;,
+ &#39;trustregion&#39;]
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="the-models">
+<h1>The models<a class="headerlink" href="#the-models" title="Permalink to this heading">#</a></h1>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">FacilityLocationCommon</span><span class="p">(</span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">):</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Facility location&quot;</span><span class="p">)</span>
     <span class="n">model</span><span class="o">.</span><span class="n">facilities</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">installation</span><span class="p">)))</span>
     <span class="n">model</span><span class="o">.</span><span class="n">customers</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">service</span><span class="p">)))</span>
@@ -627,28 +780,27 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 
     <span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">obj</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">installation</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">facilities</span><span class="p">])</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span>
-            <span class="p">[</span>
-                <span class="n">service</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">customers</span>
-                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">facilities</span>
-            <span class="p">]</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">installation</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">facilities</span><span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="n">service</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">customers</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">facilities</span>
         <span class="p">)</span>
 
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">customers</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">ChooseOneFacility</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">facilities</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">facilities</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
 
     <span class="k">return</span> <span class="n">model</span>
 
 
 <span class="k">def</span> <span class="nf">FacilityLocationWeak</span><span class="p">(</span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">):</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">FacilityLocationCommon</span><span class="p">(</span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">name</span> <span class="o">+=</span> <span class="s2">&quot; weak model&quot;</span>
 
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">facilities</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">ServeIfOpen</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span>
-            <span class="nb">sum</span><span class="p">([</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">customers</span><span class="p">])</span>
+            <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">customers</span><span class="p">)</span>
             <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">customers</span><span class="p">)</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
         <span class="p">)</span>
 
@@ -657,6 +809,7 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 
 <span class="k">def</span> <span class="nf">FacilityLocationStrong</span><span class="p">(</span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">):</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">FacilityLocationCommon</span><span class="p">(</span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">name</span> <span class="o">+=</span> <span class="s2">&quot; strong model&quot;</span>
 
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">customers</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">facilities</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">ServeIfOpen</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
@@ -684,7 +837,7 @@ SolverFactory. It then verifies that SOLVER is available.</p>
     <span class="n">xF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">nofFacilities</span><span class="p">)</span>
     <span class="n">yF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">nofFacilities</span><span class="p">)</span>
 
-    <span class="n">installation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="n">nofFacilities</span><span class="p">)</span>
+    <span class="n">installation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">2000</span><span class="p">,</span> <span class="n">nofFacilities</span><span class="p">)</span>
 
     <span class="n">dist</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="p">((</span><span class="n">xC</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">xF</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">yC</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">yF</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
 
@@ -693,19 +846,22 @@ SolverFactory. It then verifies that SOLVER is available.</p>
     <span class="k">return</span> <span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span>
 
 
-<span class="k">def</span> <span class="nf">ShowFacilityLocation</span><span class="p">(</span><span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="p">[],</span> <span class="n">Y</span><span class="o">=</span><span class="p">[],</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;weak&quot;</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">ShowFacilityLocation</span><span class="p">(</span><span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="p">[],</span> <span class="n">Y</span><span class="o">=</span><span class="p">[],</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
     <span class="p">[</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">xC</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">xF</span><span class="p">[</span><span class="n">j</span><span class="p">]],</span> <span class="p">[</span><span class="n">yC</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">yF</span><span class="p">[</span><span class="n">j</span><span class="p">]],</span> <span class="s2">&quot;g-&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">xC</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">xF</span><span class="p">[</span><span class="n">j</span><span class="p">]],</span> <span class="p">[</span><span class="n">yC</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">yF</span><span class="p">[</span><span class="n">j</span><span class="p">]],</span> <span class="s2">&quot;g-&quot;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">X</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
     <span class="p">]</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="s2">&quot;o&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="s2">&quot;o&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Optimal value of the </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2"> formulation: </span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">value</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Optimal value: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -713,7 +869,9 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 <p>We then generate an instance of the problem with 10 facilities and 100 customers and initialize both a strong and a weak Pyomo models.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span> <span class="o">=</span> <span class="n">GenerateFacilityLocationInstance</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">2023</span><span class="p">)</span>
+
+<span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span> <span class="o">=</span> <span class="n">GenerateFacilityLocationInstance</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
 <span class="n">ShowFacilityLocation</span><span class="p">(</span><span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">)</span>
 
 <span class="n">weak</span> <span class="o">=</span> <span class="n">FacilityLocationWeak</span><span class="p">(</span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span>
@@ -722,102 +880,133 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/5ad27e27de4026d4ffb836a059ae65c58b0bea03c9efdd54b3850bb1cf0548b3.png" src="../../_images/5ad27e27de4026d4ffb836a059ae65c58b0bea03c9efdd54b3850bb1cf0548b3.png" />
+<img alt="../../_images/c7d176f9de4360d2da66a679c567c4ee23168fce71878d8c01c483a0f6e0369a.png" src="../../_images/c7d176f9de4360d2da66a679c567c4ee23168fce71878d8c01c483a0f6e0369a.png" />
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">solver</span> <span class="o">=</span> <span class="s1">&#39;cbc&#39;</span>
-<span class="o">%</span><span class="k">time</span> pyo.SolverFactory(solver).solve(weak)
-<span class="n">ShowFacilityLocation</span><span class="p">(</span> <span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">,</span> <span class="o">*</span><span class="n">GetSolution</span><span class="p">(</span><span class="n">weak</span><span class="p">)</span> <span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;cbc&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 13.5 ms, sys: 13.1 ms, total: 26.6 ms
-Wall time: 649 ms
-</pre></div>
-</div>
-<img alt="../../_images/51bd23f985457241194bac17fc71ba764b9882f5554f376d50e2b98f8f937894.png" src="../../_images/51bd23f985457241194bac17fc71ba764b9882f5554f376d50e2b98f8f937894.png" />
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">solver</span> <span class="o">=</span> <span class="s1">&#39;cbc&#39;</span>
-<span class="o">%</span><span class="k">time</span> pyo.SolverFactory(solver).solve(strong)
-<span class="n">ShowFacilityLocation</span><span class="p">(</span> <span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">,</span> <span class="o">*</span><span class="n">GetSolution</span><span class="p">(</span><span class="n">strong</span><span class="p">)</span> <span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">Solve</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">GetSolution</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">title</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> solved by </span><span class="si">{</span><span class="n">GetSolverName</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">t</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> seconds </span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">title</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ShowFacilityLocation</span><span class="p">(</span><span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">,</span> <span class="o">*</span><span class="n">Solve</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">weak</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 17.4 ms, sys: 12 ms, total: 29.4 ms
-Wall time: 57.2 ms
+<img alt="../../_images/59e5a780059b4864897aa57d935b667b333005d769a99be9c004ea9861ea8b19.png" src="../../_images/59e5a780059b4864897aa57d935b667b333005d769a99be9c004ea9861ea8b19.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ShowFacilityLocation</span><span class="p">(</span><span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">,</span> <span class="o">*</span><span class="n">Solve</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">strong</span><span class="p">))</span>
 </pre></div>
 </div>
-<img alt="../../_images/51bd23f985457241194bac17fc71ba764b9882f5554f376d50e2b98f8f937894.png" src="../../_images/51bd23f985457241194bac17fc71ba764b9882f5554f376d50e2b98f8f937894.png" />
+</div>
+<div class="cell_output docutils container">
+<img alt="../../_images/ca0405ffd036bc28ddedfd64cb3cf11cefd69adb1170af26fba12b6ce142720a.png" src="../../_images/ca0405ffd036bc28ddedfd64cb3cf11cefd69adb1170af26fba12b6ce142720a.png" />
 </div>
 </div>
 <p>However, this is not a proper performance comparison between the two model formulations, since under the hood <code class="docutils literal notranslate"><span class="pre">cbc</span></code> is already solving the instance in a clever way. The commercial solver <code class="docutils literal notranslate"><span class="pre">gurobi</span></code> and the open-source solver <code class="docutils literal notranslate"><span class="pre">highs</span></code> also have a similar feature.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>gurobipy
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>cplex
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>xpress
-
-<span class="kn">import</span> <span class="nn">gurobipy</span>
-<span class="kn">import</span> <span class="nn">highspy</span>
-
-<span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span> <span class="o">=</span> <span class="n">GenerateFacilityLocationInstance</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
-<span class="n">weak</span> <span class="o">=</span> <span class="n">FacilityLocationWeak</span><span class="p">(</span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span>
-<span class="n">strong</span> <span class="o">=</span> <span class="n">FacilityLocationStrong</span><span class="p">(</span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span>
-
-<span class="k">for</span> <span class="n">solver</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;gurobi_direct&quot;</span><span class="p">,</span> <span class="s2">&quot;appsi_highs&quot;</span><span class="p">]:</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span>
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">weak</span><span class="p">)</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span>
-    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">GetSolution</span><span class="p">(</span><span class="n">weak</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Weak formulation solved with </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">t</span><span class="si">:</span><span class="s2">5.5f</span><span class="si">}</span><span class="s2"> seconds.&quot;</span><span class="p">)</span>
-    <span class="n">ShowFacilityLocation</span><span class="p">(</span><span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">solver</span> <span class="o">==</span> <span class="s1">&#39;gurobi_direct&#39;</span><span class="p">:</span>
-        <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">solver_io</span><span class="o">=</span><span class="s1">&#39;python&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">strong</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">strong</span><span class="p">)</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span>
-    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">GetSolution</span><span class="p">(</span><span class="n">strong</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Strong formulation solved with </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">t</span><span class="si">:</span><span class="s2">5.5f</span><span class="si">}</span><span class="s2"> seconds.&quot;</span><span class="p">)</span>
-    <span class="n">ShowFacilityLocation</span><span class="p">(</span><span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;strong&quot;</span><span class="p">)</span>
+    <span class="o">%</span><span class="k">pip</span> install gurobipy
+    <span class="o">%</span><span class="k">pip</span> install cplex
+    <span class="o">%</span><span class="k">pip</span> install xpress
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Weak formulation solved with gurobi_direct in 0.01959 seconds.
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Collecting gurobipy
+  Downloading gurobipy-10.0.3-cp310-cp310-manylinux2014_x86_64.whl (12.7 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">12.7/12.7 MB</span> <span class=" -Color -Color-Red">48.1 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
+?25hInstalling collected packages: gurobipy
+Successfully installed gurobipy-10.0.3
+Collecting cplex
+  Downloading cplex-22.1.1.0-cp310-cp310-manylinux1_x86_64.whl (44.2 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">44.2/44.2 MB</span> <span class=" -Color -Color-Red">20.7 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
+?25hInstalling collected packages: cplex
+Successfully installed cplex-22.1.1.0
+Collecting xpress
+  Downloading xpress-9.2.2-cp310-cp310-manylinux1_x86_64.whl (72.8 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ <span class=" -Color -Color-Green">72.8/72.8 MB</span> <span class=" -Color -Color-Red">8.6 MB/s</span> eta <span class=" -Color -Color-Cyan">0:00:00</span>
+?25hRequirement already satisfied: numpy&lt;2.0a0,&gt;=1.21 in /usr/local/lib/python3.10/dist-packages (from xpress) (1.23.5)
+Installing collected packages: xpress
+Successfully installed xpress-9.2.2
 </pre></div>
 </div>
-<img alt="../../_images/d48f3ccd0424c57f1f02710678f13e636cc9478ec24bb81abe6dae200384b088.png" src="../../_images/d48f3ccd0424c57f1f02710678f13e636cc9478ec24bb81abe6dae200384b088.png" />
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Strong formulation solved with gurobi_direct in 0.08160 seconds.
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">available_solvers</span> <span class="o">=</span> <span class="n">ListAvailableSolvers</span><span class="p">()</span>
+<span class="nb">set</span><span class="p">(</span><span class="n">available_solvers</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">initial_solvers</span><span class="p">)</span>
 </pre></div>
 </div>
-<img alt="../../_images/34be9dcc49464edd66fde1edd53148c285236f358dc03bb6d0ce697733d9408e.png" src="../../_images/34be9dcc49464edd66fde1edd53148c285236f358dc03bb6d0ce697733d9408e.png" />
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-Weak formulation solved with appsi_highs in 0.03061 seconds.
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{&#39;appsi_cplex&#39;,
+ &#39;appsi_gurobi&#39;,
+ &#39;cplex_direct&#39;,
+ &#39;cplex_persistent&#39;,
+ &#39;gurobi&#39;,
+ &#39;gurobi_direct&#39;,
+ &#39;gurobi_persistent&#39;,
+ &#39;xpress&#39;,
+ &#39;xpress_direct&#39;,
+ &#39;xpress_persistent&#39;}
 </pre></div>
 </div>
-<img alt="../../_images/d48f3ccd0424c57f1f02710678f13e636cc9478ec24bb81abe6dae200384b088.png" src="../../_images/d48f3ccd0424c57f1f02710678f13e636cc9478ec24bb81abe6dae200384b088.png" />
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-Strong formulation solved with appsi_highs in 0.02957 seconds.
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span> <span class="o">=</span> <span class="n">GenerateFacilityLocationInstance</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">88</span><span class="p">)</span>
+<span class="n">weak</span> <span class="o">=</span> <span class="n">FacilityLocationWeak</span><span class="p">(</span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span>
+<span class="n">strong</span> <span class="o">=</span> <span class="n">FacilityLocationStrong</span><span class="p">(</span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span>
+
+<span class="n">solver_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cplex_direct&quot;</span><span class="p">,</span> <span class="s2">&quot;gurobi_direct&quot;</span><span class="p">,</span> <span class="s2">&quot;xpress_direct&quot;</span><span class="p">,</span> <span class="s2">&quot;appsi_highs&quot;</span><span class="p">]</span>
+<span class="n">solver_names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">solver_names</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">ListAvailableSolvers</span><span class="p">()))</span>
+
+<span class="n">_</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">solver_names</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">solver_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">solver_names</span><span class="p">):</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">SwitchCutsOff</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver_name</span><span class="p">))</span>
+    <span class="n">ShowFacilityLocation</span><span class="p">(</span><span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">,</span> <span class="o">*</span><span class="n">Solve</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">weak</span><span class="p">),</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">ShowFacilityLocation</span><span class="p">(</span><span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span><span class="p">,</span> <span class="o">*</span><span class="n">Solve</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">strong</span><span class="p">),</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
 </pre></div>
 </div>
-<img alt="../../_images/ed3d3a45824646d4f7dea9ad02bce3035d3983ee3a76cd44d7e2511507c9a45c.png" src="../../_images/ed3d3a45824646d4f7dea9ad02bce3035d3983ee3a76cd44d7e2511507c9a45c.png" />
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Using the Community license in this session. If you have a full Xpress license, pass the full path to your license file to xpress.init(). If you want to use the FICO Community license and no longer want to see this message, use the following code before using the xpress module:
+  xpress.init(&#39;/usr/local/lib/python3.10/dist-packages/xpress/license/community-xpauth.xpr&#39;)
+</pre></div>
+</div>
+<img alt="../../_images/729772fbb79b2b6cb4990732c1be937539c1d87adb503ab3f62f8e348833e24f.png" src="../../_images/729772fbb79b2b6cb4990732c1be937539c1d87adb503ab3f62f8e348833e24f.png" />
 </div>
 </div>
 <p>We now run a more extensive performance comparison considering increasingly larger instances of the problem. We will see that the strong formulation is consistently faster than the weak formulation.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">SolveInstances</span><span class="p">(</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">solvers</span><span class="p">,</span> <span class="n">seed</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">SolveInstances</span><span class="p">(</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">solvers</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">modify</span><span class="o">=</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="p">):</span>
     <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
     <span class="n">model</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;weak&quot;</span><span class="p">:</span> <span class="n">FacilityLocationWeak</span><span class="p">,</span> <span class="s2">&quot;strong&quot;</span><span class="p">:</span> <span class="n">FacilityLocationStrong</span><span class="p">}</span>
     <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
@@ -825,20 +1014,21 @@ Strong formulation solved with appsi_highs in 0.02957 seconds.
         <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">it</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">keys</span><span class="p">())],</span>
     <span class="p">)</span>
     <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">):</span>
-        <span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">xC</span><span class="p">,</span> <span class="n">yC</span><span class="p">,</span> <span class="n">xF</span><span class="p">,</span> <span class="n">yF</span> <span class="o">=</span> <span class="n">GenerateFacilityLocationInstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+        <span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">GenerateFacilityLocationInstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
         <span class="n">instance</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">option</span><span class="p">:</span> <span class="n">model</span><span class="p">[</span><span class="n">option</span><span class="p">](</span><span class="n">installation</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span> <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
         <span class="p">}</span>
-        <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">solvers</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
             <span class="n">solver</span> <span class="o">=</span> <span class="n">column</span><span class="p">[:</span> <span class="n">column</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)]</span>
             <span class="n">option</span> <span class="o">=</span> <span class="n">column</span><span class="p">[</span><span class="n">column</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
             <span class="n">t</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span>
-            <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">instance</span><span class="p">[</span><span class="n">option</span><span class="p">])</span>
+            <span class="n">modify</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">))</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">instance</span><span class="p">[</span><span class="n">option</span><span class="p">])</span>
             <span class="n">df</span><span class="o">.</span><span class="n">at</span><span class="p">[(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">),</span> <span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span>
-            <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">GetSolution</span><span class="p">(</span><span class="n">instance</span><span class="p">[</span><span class="n">option</span><span class="p">])</span>
-            <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">values</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">values</span>
+            <span class="o">*</span><span class="n">_</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">GetSolution</span><span class="p">(</span><span class="n">instance</span><span class="p">[</span><span class="n">option</span><span class="p">])</span>
+            <span class="n">values</span><span class="p">[</span><span class="n">solver</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">df</span>
 </pre></div>
 </div>
@@ -847,74 +1037,71 @@ Strong formulation solved with appsi_highs in 0.02957 seconds.
 <p>We solve instances with 10 to 100 facilities and 100 to 1000 customers. We then plot the run-time of the strong and weak formulations as a function of the number of facilities.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">solvers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;gurobi_direct&quot;</span><span class="p">,</span> <span class="s2">&quot;cbc&quot;</span><span class="p">,</span> <span class="s2">&quot;appsi_highs&quot;</span><span class="p">]</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="n">solvers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cbc&quot;</span><span class="p">]</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">solvers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;gurobi_direct&quot;</span><span class="p">,</span> <span class="s2">&quot;cplex_direct&quot;</span><span class="p">]</span>
+<span class="n">dimensions</span> <span class="o">=</span> <span class="p">[(</span><span class="n">n</span><span class="p">,</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">51</span><span class="p">,</span> <span class="mi">5</span><span class="p">)]</span>
 
-<span class="n">SolveInstances</span><span class="p">([(</span><span class="n">n</span><span class="p">,</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">)],</span> <span class="n">solvers</span><span class="p">,</span> <span class="mi">2023</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">SolveInstances</span><span class="p">(</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">solvers</span><span class="p">,</span> <span class="mi">2023</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9c61d5cd36a940c99878b0e1a3df80d3", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "e6b7ea4df20a4a848eb5afb9ae4bffce", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "072163be46894e5fb2d9d09667429996", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "5282f70e18cc4df5ad2f549aabeb9e32", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "fac4728a5f3f4e93947154d87bc24f49", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "c7aae13494d44f33a22b2113dd12812a", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "8f2a530dba02479a987a038a5c8c5a93", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "02e4ad5bd56b4a35aed597f3f635d585", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "a9765b6554c84ad4b962f7cd39282bb7", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "789de8c9e2cc49088ad9b308e4f47a00", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "607c82b6ff22460397704afb7302c4ad", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "48819bcad9fa44d89a4436fb21542d4b", "version_major": 2, "version_minor": 0}</script><div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: &gt;
 </pre></div>
 </div>
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5c5db7fa65bd4cb2b448c5a1d90a5ebc", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
+<img alt="../../_images/da757671c42f11a8d40f01abd0eb6eb1605e68e3f21c03fbad7fa1633087b493.png" src="../../_images/da757671c42f11a8d40f01abd0eb6eb1605e68e3f21c03fbad7fa1633087b493.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">modify</span> <span class="o">=</span> <span class="n">compose</span><span class="p">(</span><span class="n">ClosureForMaxTime</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">SwitchCutsOff</span><span class="p">)</span>
+<span class="n">SolveInstances</span><span class="p">(</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">solvers</span><span class="p">,</span> <span class="mi">2023</span><span class="p">,</span> <span class="n">modify</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 </pre></div>
 </div>
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d2c47905a2bc418788411cf2f68c1235", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
+</div>
+<div class="cell_output docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "8c7086a7cfd7460aad559245cef7ff77", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "642df90b5e1b41408a81074ea013358d", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "396b75923524457cb5142db3f4af0c4d", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "14a3160cb16c46b7a13d9780b33914da", "version_major": 2, "version_minor": 0}</script><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:pyomo.core:Loading a SolverResults object with an &#39;aborted&#39; status, but containing a solution
 </pre></div>
 </div>
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "95fe42077db7467d95d411dcdfe9914a", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0acf882b5e864cde8f6fc362257a49c8", "version_major": 2, "version_minor": 0}</script><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:pyomo.core:Loading a SolverResults object with an &#39;aborted&#39; status, but containing a solution
 </pre></div>
 </div>
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "67de88c6775541b192d424a605e9a8f3", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "66bf0d682fc34f4e98fa1211f66a0d86", "version_major": 2, "version_minor": 0}</script><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:pyomo.core:Loading a SolverResults object with an &#39;aborted&#39; status, but containing a solution
 </pre></div>
 </div>
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "28044b6936a24cec9cd745cf0acd1b32", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a6388465ec334509ad4b28a1bf68ed45", "version_major": 2, "version_minor": 0}</script><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:pyomo.core:Loading a SolverResults object with an &#39;aborted&#39; status, but containing a solution
 </pre></div>
 </div>
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a3fb0b2f7b1c4a2490ccf4cde2a3bc40", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "bd419397f35e41b181e9d27801cf0ebe", "version_major": 2, "version_minor": 0}</script><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:pyomo.core:Loading a SolverResults object with an &#39;aborted&#39; status, but containing a solution
 </pre></div>
 </div>
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ed092907721d4720b7f1cdad63df4820", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "1a909a2324e841299ae8e4573479c641", "version_major": 2, "version_minor": 0}</script><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:pyomo.core:Loading a SolverResults object with an &#39;aborted&#39; status, but containing a solution
 </pre></div>
 </div>
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "febf42102bed4c1995c296e24498254d", "version_major": 2, "version_minor": 0}</script><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3dd533f28a5245f2ab55c1d445bc9104", "version_major": 2, "version_minor": 0}</script><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:pyomo.core:Loading a SolverResults object with an &#39;aborted&#39; status, but containing a solution
 </pre></div>
 </div>
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: &gt;
 </pre></div>
 </div>
-<img alt="../../_images/1efc3d33d0c3b1e415dc6fcdba0b4efd3840bf2b7747b08f5fefcd9375a3acca.png" src="../../_images/1efc3d33d0c3b1e415dc6fcdba0b4efd3840bf2b7747b08f5fefcd9375a3acca.png" />
+<img alt="../../_images/452fd2ccfedbfc73ab3dc74fd6daa69df8db2f4260045cb3c3f62f59afd9a53c.png" src="../../_images/452fd2ccfedbfc73ab3dc74fd6daa69df8db2f4260045cb3c3f62f59afd9a53c.png" />
 </div>
 </div>
-</section>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">SolveInstances</span><span class="p">(</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">solvers</span><span class="p">,</span> <span class="mi">2023</span><span class="p">,</span> <span class="n">SwitchPresolveOff</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "80b50f091f824bf581da1f4acc14a7b9", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "cd189c3366634e63961a523adade1895", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "0a72801cb28e4885b31120dc6aece997", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "ef7b8d5473a64de0901f904a83022884", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "7933f9200c4e4b10b838a900407119a0", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "f2247d826a1941af99873314c0bacba5", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "4e3bb73f18764060bcb6b7ee2f6fe485", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "473a1c307fb0453684a33f1df2418ba9", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "8f50142f64244cdb8ba137f5e29fa70f", "version_major": 2, "version_minor": 0}</script><script type="application/vnd.jupyter.widget-view+json">{"model_id": "d3f3df0d05ef48b8929943660e4e395f", "version_major": 2, "version_minor": 0}</script><div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: &gt;
+</pre></div>
+</div>
+<img alt="../../_images/cfd80cbc04a8753184eb4ffde90b2a8c7e568c7273b1702603fa4e95091e7b2c.png" src="../../_images/cfd80cbc04a8753184eb4ffde90b2a8c7e568c7273b1702603fa4e95091e7b2c.png" />
+</div>
+</div>
 </section>
 
     <script type="text/x-thebe-config">
@@ -980,11 +1167,17 @@ Copyright (c) 2023 HiGHS under MIT licence terms
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Facility location problem</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#first-milo-formulation">First MILO formulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#second-milo-formulation">Second MILO formulation</a></li>
 </ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#solvers-and-options">Solvers and options</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#the-models">The models</a></li>
+</ul>
+
   </nav></div>
 
 </div></div>
