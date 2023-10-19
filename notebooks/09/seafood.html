@@ -534,8 +534,8 @@ SolverFactory. It then verifies that SOLVER is available.</p>
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>pyomo<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
 
-    <span class="kn">from</span> <span class="nn">pyomo.contrib</span> <span class="kn">import</span> <span class="n">appsi</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">appsi</span><span class="o">.</span><span class="n">solvers</span><span class="o">.</span><span class="n">Highs</span><span class="p">(</span><span class="n">only_child_vars</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;appsi_highs&#39;</span><span class="p">)</span>
     
 <span class="k">else</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
@@ -631,9 +631,7 @@ x^* = F^{-1} \left( \frac{p-c}{p+h}\right).
 <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
 
-<span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;The quantile of interest given the parameters is equal to q = </span><span class="si">{</span><span class="n">q</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span>
-<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The quantile of interest given the parameters is equal to q = </span><span class="si">{</span><span class="n">q</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">distribution</span> <span class="ow">in</span> <span class="n">distributions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
     <span class="n">x_opt</span> <span class="o">=</span> <span class="n">distribution</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
@@ -661,7 +659,7 @@ The optimal solution for Weibull distribution is: 98.84 tons
 </section>
 <section id="deterministic-solution-for-average-demand">
 <h2>Deterministic solution for average demand<a class="headerlink" href="#deterministic-solution-for-average-demand" title="Permalink to this heading">#</a></h2>
-<p>We now find the optimal solution of the <em>deterministic LP model</em> obtained by assuming the demand is constant and equal to the average demand, i.e., <span class="math notranslate nohighlight">\(z = \bar{z} = \mathbb E z = 100\)</span>.</p>
+<p>We now find the optimal solution of the <em>deterministic linear problem model</em> obtained by assuming the demand is constant and equal to the average demand, i.e., <span class="math notranslate nohighlight">\(z = \bar{z} = \mathbb E z = 100\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># problem data</span>
@@ -732,10 +730,10 @@ Optimal deterministic profit = 1500€
 <section id="profits-resulting-from-using-average-demand">
 <h2>Profits resulting from using average demand<a class="headerlink" href="#profits-resulting-from-using-average-demand" title="Permalink to this heading">#</a></h2>
 <p>We now assess how well we perform by taking the average demand as input for each of the three demand distributions above.</p>
-<p>For a fixed decision variable <span class="math notranslate nohighlight">\(x=100\)</span>, approximate the expected net profit of the seafood distribution center for each of the three distributions above using the Sample Average Approximation method with <span class="math notranslate nohighlight">\(N=2500\)</span> points. More specifically, generate <span class="math notranslate nohighlight">\(N=2500\)</span> samples from the considered distribution and solve the extensive form of the stochastic LP resulting from those <span class="math notranslate nohighlight">\(N=2500\)</span> scenarios.</p>
+<p>For a fixed decision variable <span class="math notranslate nohighlight">\(x=100\)</span>, approximate the expected net profit of the seafood distribution center for each of the three distributions above using the Sample Average Approximation method with <span class="math notranslate nohighlight">\(N=2500\)</span> points. More specifically, generate <span class="math notranslate nohighlight">\(N=2500\)</span> samples from the considered distribution and solve the extensive form of the stochastic linear problem resulting from those <span class="math notranslate nohighlight">\(N=2500\)</span> scenarios.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># SAA of the two-stage stochastic LP to calculate the expected profit when buying the average</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># SAA of the two-stage stochastic linear problem to calculate the expected profit when buying the average</span>
 
 
 <span class="k">def</span> <span class="nf">NaiveSeafoodStockSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">distributiontype</span><span class="p">):</span>
@@ -767,18 +765,14 @@ Optimal deterministic profit = 1500€
         <span class="n">model</span><span class="o">.</span><span class="n">fishdonotdisappear</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">second_stage_profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">p</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">h</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">indices</span><span class="p">]</span>
-        <span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">p</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">h</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">indices</span><span class="p">])</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
 
     <span class="n">model</span><span class="o">.</span><span class="n">second_stage_profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="n">second_stage_profit</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">total_profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">first_stage_profit</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">second_stage_profit</span>
 
-    <span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span>
-        <span class="n">rule</span><span class="o">=</span><span class="n">total_profit</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span>
-    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="n">total_profit</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
@@ -822,10 +816,10 @@ Optimal deterministic profit = 1500€
 </section>
 <section id="approximating-the-solution-using-sample-average-approximation-method">
 <h2>Approximating the solution using Sample Average Approximation method<a class="headerlink" href="#approximating-the-solution-using-sample-average-approximation-method" title="Permalink to this heading">#</a></h2>
-<p>We now approximate the optimal solution of stock optimization problem for each of the three distributions above using the Sample Average Approximation method. More specifically, generate <span class="math notranslate nohighlight">\(N=5000\)</span> samples from each of the three distributions and thhen solve the extensive form of the stochastic LP resulting from those <span class="math notranslate nohighlight">\(N=5000\)</span> scenarios. For each of the three distribution, we compare the optimal expected profit with that obtained before and calculate the value of the stochastic solution (VSS).</p>
+<p>We now approximate the optimal solution of stock optimization problem for each of the three distributions above using the Sample Average Approximation method. More specifically, generate <span class="math notranslate nohighlight">\(N=5000\)</span> samples from each of the three distributions and then solve the extensive form of the stochastic linear problem resulting from those <span class="math notranslate nohighlight">\(N=5000\)</span> scenarios. For each of the three distribution, we compare the optimal expected profit with that obtained before and calculate the value of the stochastic solution (VSS).</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Two-stage stochastic LP using SAA</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Two-stage stochastic linear problem using SAA</span>
 
 
 <span class="k">def</span> <span class="nf">SeafoodStockSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">distributiontype</span><span class="p">,</span> <span class="n">printflag</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -859,18 +853,14 @@ Optimal deterministic profit = 1500€
         <span class="n">model</span><span class="o">.</span><span class="n">fishdonotdisappear</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">second_stage_profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">p</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">h</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">indices</span><span class="p">]</span>
-        <span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">p</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">h</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">indices</span><span class="p">])</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
 
     <span class="n">model</span><span class="o">.</span><span class="n">second_stage_profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="n">second_stage_profit</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">total_profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">first_stage_profit</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">second_stage_profit</span>
 
-    <span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span>
-        <span class="n">rule</span><span class="o">=</span><span class="n">total_profit</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span>
-    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="n">total_profit</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
