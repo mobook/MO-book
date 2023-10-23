@@ -500,7 +500,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-model-for-multi-layered-insulation">A Model for Multi-Layered Insulation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#analytic-solution-for-n-1">Analytic solution for <span class="math notranslate nohighlight">\(N=1\)</span></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model-for-n-1">Pyomo Model for <span class="math notranslate nohighlight">\(N=1\)</span></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-optimization-miqco">Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Optimization (MIQCO)</a><ul class="nav section-nav flex-column">
@@ -526,22 +526,27 @@ document.write(`
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">os</span>
-
-<span class="n">SOLVER_CONIC</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 
 <span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>idaes-pse<span class="w"> </span>--pre<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
     <span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin<span class="w"> </span>
     <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
     
-    <span class="n">SOLVER_CONIC</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
+    <span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
+    <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
+    <span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
+    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<section id="a-model-for-multi-layered-insulation">
-<h2>A Model for Multi-Layered Insulation<a class="headerlink" href="#a-model-for-multi-layered-insulation" title="Permalink to this heading">#</a></h2>
+<section id="problem-description">
+<h2>Problem description<a class="headerlink" href="#problem-description" title="Permalink to this heading">#</a></h2>
 <p>Consider a wall or surface separating conditioned interior space in a building at temperature <span class="math notranslate nohighlight">\(T_i\)</span> from the external environment at temperature <span class="math notranslate nohighlight">\(T_o\)</span>. Heat conduction through the wall is given by</p>
 <div class="math notranslate nohighlight">
 \[\dot{Q} = UA (T_i - T_o),\]</div>
@@ -565,27 +570,27 @@ x_n &amp; \leq Ty_n \\
 </section>
 <section id="analytic-solution-for-n-1">
 <h2>Analytic solution for <span class="math notranslate nohighlight">\(N=1\)</span><a class="headerlink" href="#analytic-solution-for-n-1" title="Permalink to this heading">#</a></h2>
-<p>In the case of a single layer, i.e., <span class="math notranslate nohighlight">\(N=1\)</span>, we have a one-dimensional cost optimization problem of which we can obtain a close-form analytical solution directly. Indeed, the expression for the cost <span class="math notranslate nohighlight">\(C(x)\)</span> as a function of the thickness <span class="math notranslate nohighlight">\(x\)</span> reads</p>
+<p>In the case of a single layer, i.e., <span class="math notranslate nohighlight">\(N=1\)</span>, we have a one-dimensional cost optimization problem of which we can directly obtain a closed-form analytical solution. Indeed, the expression for the cost <span class="math notranslate nohighlight">\(C(x)\)</span> as a function of the thickness <span class="math notranslate nohighlight">\(x\)</span> reads</p>
 <div class="math notranslate nohighlight">
 \[\begin{align}
 C(x) = \frac{\alpha k}{k R_0 + x} + \beta(a + bx).
 \end{align}\]</div>
-<p>For fixed parameters <span class="math notranslate nohighlight">\(k\)</span>, <span class="math notranslate nohighlight">\(R_0\)</span>, <span class="math notranslate nohighlight">\(\beta\)</span>, <span class="math notranslate nohighlight">\(b\)</span>, we can calculate the optimum thickness <span class="math notranslate nohighlight">\(x^*\)</span> as</p>
+<p>For fixed parameters <span class="math notranslate nohighlight">\(k\)</span>, <span class="math notranslate nohighlight">\(R_0\)</span>, <span class="math notranslate nohighlight">\(\beta\)</span>, <span class="math notranslate nohighlight">\(b\)</span>, we can calculate the optimal thickness <span class="math notranslate nohighlight">\(x^*\)</span> as</p>
 <div class="math notranslate nohighlight">
 \[x^{*} = - k R_0 + \sqrt{\frac{\alpha k}{\beta b}}.\]</div>
 <p>A plot illustrates the trade-off between energy operating costs and capital insulation costs and the corresponding optimal solution <span class="math notranslate nohighlight">\(x^*\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># application parameters</span>
-<span class="n">alpha</span> <span class="o">=</span> <span class="mi">30</span>        <span class="c1"># $ K / W annualized cost per sq meter per W/sq m/K</span>
-<span class="n">beta</span> <span class="o">=</span> <span class="mf">0.05</span>       <span class="c1"># equivalent annual cost factor</span>
-<span class="n">R0</span> <span class="o">=</span> <span class="mf">2.0</span>          <span class="c1"># Watts/K/m**2</span>
-<span class="n">T</span> <span class="o">=</span> <span class="mf">0.30</span>          <span class="c1"># maximum insulation thickness</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="mi">30</span>  <span class="c1"># $ K / W annualized cost per sq meter per W/sq m/K</span>
+<span class="n">beta</span> <span class="o">=</span> <span class="mf">0.05</span>  <span class="c1"># equivalent annual cost factor</span>
+<span class="n">R0</span> <span class="o">=</span> <span class="mf">2.0</span>  <span class="c1"># Watts/K/m**2</span>
+<span class="n">T</span> <span class="o">=</span> <span class="mf">0.30</span>  <span class="c1"># maximum insulation thickness</span>
 
 <span class="c1"># material properties</span>
-<span class="n">k</span> <span class="o">=</span> <span class="mf">0.030</span>         <span class="c1"># thermal conductivity as installed</span>
-<span class="n">a</span> <span class="o">=</span> <span class="mf">5.0</span>           <span class="c1"># installation cost per square meter</span>
-<span class="n">b</span> <span class="o">=</span> <span class="mf">150.0</span>         <span class="c1"># installed material cost per cubic meter</span>
+<span class="n">k</span> <span class="o">=</span> <span class="mf">0.030</span>  <span class="c1"># thermal conductivity as installed</span>
+<span class="n">a</span> <span class="o">=</span> <span class="mf">5.0</span>  <span class="c1"># installation cost per square meter</span>
+<span class="n">b</span> <span class="o">=</span> <span class="mf">150.0</span>  <span class="c1"># installed material cost per cubic meter</span>
 </pre></div>
 </div>
 </div>
@@ -595,14 +600,14 @@ C(x) = \frac{\alpha k}{k R_0 + x} + \beta(a + bx).
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">alpha</span><span class="o">/</span><span class="p">(</span><span class="n">R0</span> <span class="o">+</span> <span class="n">x</span><span class="o">/</span><span class="n">k</span><span class="p">)</span>
-<span class="n">g</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">beta</span><span class="o">*</span><span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
+<span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">alpha</span> <span class="o">/</span> <span class="p">(</span><span class="n">R0</span> <span class="o">+</span> <span class="n">x</span> <span class="o">/</span> <span class="n">k</span><span class="p">)</span>
+<span class="n">g</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span>
 
 <span class="c1"># solution</span>
-<span class="n">xopt</span> <span class="o">=</span>  <span class="o">-</span><span class="n">k</span><span class="o">*</span><span class="n">R0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">alpha</span><span class="o">*</span><span class="n">k</span><span class="o">/</span><span class="n">beta</span><span class="o">/</span><span class="n">b</span><span class="p">)</span>
+<span class="n">xopt</span> <span class="o">=</span> <span class="o">-</span><span class="n">k</span> <span class="o">*</span> <span class="n">R0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">k</span> <span class="o">/</span> <span class="n">beta</span> <span class="o">/</span> <span class="n">b</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">f</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">g</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal thickness is </span><span class="si">{</span><span class="n">xopt</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> meters</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">f</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">g</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal thickness is </span><span class="si">{</span><span class="n">xopt</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2"> meters</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="c1"># plotting</span>
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">201</span><span class="p">)</span>
@@ -612,13 +617,13 @@ C(x) = \frac{\alpha k}{k R_0 + x} + \beta(a + bx).
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;insulation&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xopt</span><span class="p">,</span> <span class="n">f</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span> <span class="o">+</span> <span class="n">g</span><span class="p">(</span><span class="n">xopt</span><span class="p">),</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;minimum&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xopt</span><span class="p">,</span> <span class="n">f</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span> <span class="o">+</span> <span class="n">g</span><span class="p">(</span><span class="n">xopt</span><span class="p">),</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;minimum&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">xopt</span><span class="p">],</span> <span class="p">[</span><span class="n">f</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span> <span class="o">+</span> <span class="n">g</span><span class="p">(</span><span class="n">xopt</span><span class="p">)]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;r--&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">xopt</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">f</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span> <span class="o">+</span> <span class="n">g</span><span class="p">(</span><span class="n">xopt</span><span class="p">)],</span> <span class="s1">&#39;r--&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">f</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span> <span class="o">+</span> <span class="n">g</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.3</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">f</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">g</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span><span class="si">:</span><span class="s2">0.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">xopt</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">xopt</span><span class="si">:</span><span class="s2">0.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">xopt</span><span class="p">],</span> <span class="p">[</span><span class="n">f</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span> <span class="o">+</span> <span class="n">g</span><span class="p">(</span><span class="n">xopt</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;r--&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">xopt</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">f</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span> <span class="o">+</span> <span class="n">g</span><span class="p">(</span><span class="n">xopt</span><span class="p">)],</span> <span class="s2">&quot;r--&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">f</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span> <span class="o">+</span> <span class="n">g</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.3</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">f</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">g</span><span class="p">(</span><span class="n">xopt</span><span class="p">)</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">xopt</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">xopt</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Insulation thickness [m]&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Cost &quot;</span><span class="p">)</span>
@@ -629,11 +634,11 @@ C(x) = \frac{\alpha k}{k R_0 + x} + \beta(a + bx).
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal cost is equal to 4.99615 per sq. meter
-The optimal thickness is 0.28641 meters
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal cost is equal to 4.9962 per sq. meter
+The optimal thickness is 0.2864 meters
 </pre></div>
 </div>
-<img alt="../../_images/678d7ac24b69d4c79c4a8aefb6cd897f7248b99fc87f4fb0044148ab95dabd55.png" src="../../_images/678d7ac24b69d4c79c4a8aefb6cd897f7248b99fc87f4fb0044148ab95dabd55.png" />
+<img alt="../../_images/bbe202ee0de5cff4ca897a1ae653937454840dd6de267d3f7b37a3dd99a37d2d.png" src="../../_images/bbe202ee0de5cff4ca897a1ae653937454840dd6de267d3f7b37a3dd99a37d2d.png" />
 </div>
 </div>
 </section>
@@ -658,10 +663,7 @@ The optimal thickness is 0.28641 meters
 <p>This model can be translated directly into into a Pyomo conic optimization problem using the Pyomo Kernel Library.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
-<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-
-<span class="n">m</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">block</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">block</span><span class="p">()</span>
 
 <span class="c1"># decision variables</span>
 <span class="n">m</span><span class="o">.</span><span class="n">R</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -669,16 +671,16 @@ The optimal thickness is 0.28641 meters
 <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="n">T</span><span class="p">)</span>
 
 <span class="c1"># objective</span>
-<span class="n">m</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">objective</span><span class="p">(</span><span class="n">alpha</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">U</span> <span class="o">+</span> <span class="n">beta</span><span class="o">*</span><span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">))</span>
+<span class="n">m</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">objective</span><span class="p">(</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">U</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">))</span>
 
 <span class="c1"># insulation model</span>
-<span class="n">m</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span> <span class="o">==</span> <span class="n">R0</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="o">/</span><span class="n">k</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span> <span class="o">==</span> <span class="n">R0</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">/</span> <span class="n">k</span><span class="p">)</span>
 
 <span class="c1"># conic constraint</span>
 <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">rotated_quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)])</span>
 
 <span class="c1"># solve</span>
-<span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_CONIC</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal thickness is xopt = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> meters&quot;</span><span class="p">)</span>
@@ -695,13 +697,13 @@ The optimal thickness is xopt = 0.28640 meters
 </section>
 <section id="multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-optimization-miqco">
 <h2>Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Optimization (MIQCO)<a class="headerlink" href="#multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-optimization-miqco" title="Permalink to this heading">#</a></h2>
-<p>For multiple layers, we cannot easily find an analytical optimal layer composition and we shall resort to conic optimization. Let <span class="math notranslate nohighlight">\(y_n\)</span> be the binary variable that indicates whether layer <span class="math notranslate nohighlight">\(n\)</span> is included in the insulation package or not, and <span class="math notranslate nohighlight">\(x_n\)</span> be the continuous variable describing the thickness of layer <span class="math notranslate nohighlight">\(n\)</span>, which is zero if layer <span class="math notranslate nohighlight">\(n\)</span> is not included.</p>
+<p>For multiple layers, we cannot easily find an analytical optimal layer composition and must resort to conic optimization. Let <span class="math notranslate nohighlight">\(y_n\)</span> be the binary variable that indicates whether layer <span class="math notranslate nohighlight">\(n\)</span> is included in the insulation package or not, and <span class="math notranslate nohighlight">\(x_n\)</span> be the continuous variable describing the thickness of layer <span class="math notranslate nohighlight">\(n\)</span>, which is zero if layer <span class="math notranslate nohighlight">\(n\)</span> is not included.</p>
 <p>In the general case with <span class="math notranslate nohighlight">\(N\)</span> layers, the objective function is given by</p>
 <div class="math notranslate nohighlight">
 \[
 \frac{\alpha}{R} +  \beta \sum_{n=1}^N (a_n y_n + b_n x_n),
 \]</div>
-<p>where the first term is nonlinear in the variables <span class="math notranslate nohighlight">\(x_1,\dots,x_N\)</span> since since the denominator of the first term is equal tosince at the denominator of the first term is equal to</p>
+<p>where the first term is nonlinear in the variables <span class="math notranslate nohighlight">\(x_1,\dots,x_N\)</span> since the denominator of the first term is equal to</p>
 <div class="math notranslate nohighlight">
 \[
 R = R_0 + \sum_{n=1}^N \frac{x_n}{k_n}.
@@ -727,14 +729,14 @@ z = 2
 \end{array}
 \right.
 \end{split}\]</div>
-<p>from which we see that the entire problem can be reformulated as a conic optimization problem.</p>
+<p>from which we see that the whole problem can be reformulated as a conic optimization problem.</p>
 <p>The middle formulation above can, in fact, be implemented in Pyomo as a <a class="reference external" href="https://pyomo.readthedocs.io/en/stable/library_reference/kernel/conic.html#pyomo.core.kernel.conic.rotated_quadratic">conic rotated constraint</a> of the form:</p>
 <div class="math notranslate nohighlight">
 \[
     \sum_{n=0}^{n-1} z_n^2 \leq 2 r_1 r_2.
 \]</div>
-<p>In our case, we pick <span class="math notranslate nohighlight">\(n=1\)</span>, <span class="math notranslate nohighlight">\(z_0 = z\)</span>, <span class="math notranslate nohighlight">\(r_1=R\)</span>, and <span class="math notranslate nohighlight">\(r_2=U\)</span>.</p>
-<p>Adopting this formulation, the full multi-layer optimization problem then reads:</p>
+<p>In our case, we choose <span class="math notranslate nohighlight">\(n=1\)</span>, <span class="math notranslate nohighlight">\(z_0 = z\)</span>, <span class="math notranslate nohighlight">\(r_1=R\)</span>, and <span class="math notranslate nohighlight">\(r_2=U\)</span>.</p>
+<p>Adopting this formulation, the full multilayer building isolation optimization problem then reads:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
@@ -754,8 +756,8 @@ z = 2
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
 
-<span class="k">def</span> <span class="nf">insulate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">R0</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
 
+<span class="k">def</span> <span class="nf">insulate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">R0</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">block</span><span class="p">()</span>
 
     <span class="c1"># index set</span>
@@ -772,28 +774,32 @@ z = 2
     <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable_dict</span><span class="p">({</span><span class="n">n</span><span class="p">:</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pmo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">})</span>
 
     <span class="c1"># objective</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">objective</span><span class="p">(</span><span class="n">alpha</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">U</span> <span class="o">+</span> <span class="n">beta</span><span class="o">*</span><span class="nb">sum</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="n">b</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">objective</span><span class="p">(</span>
+        <span class="n">alpha</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">U</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="n">b</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+    <span class="p">)</span>
 
     <span class="c1"># insulation model</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">insulation</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span> <span class="o">==</span> <span class="n">R0</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">/</span><span class="n">k</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">insulation</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span> <span class="o">==</span> <span class="n">R0</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">/</span> <span class="n">k</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">))</span>
 
     <span class="c1"># total thickness limit</span>
     <span class="n">m</span><span class="o">.</span><span class="n">thickness</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">T</span><span class="p">)</span>
 
-    <span class="c1"># layer model   </span>
-    <span class="n">m</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint_dict</span><span class="p">({</span><span class="n">n</span><span class="p">:</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">T</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">n</span><span class="p">])</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">})</span>
+    <span class="c1"># layer model</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint_dict</span><span class="p">(</span>
+        <span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">T</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">n</span><span class="p">])</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">}</span>
+    <span class="p">)</span>
 
     <span class="c1"># conic constraint</span>
     <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">rotated_quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)])</span>
 
     <span class="c1"># solve</span>
-    <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER_CONIC</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
     <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
-        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;x opt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]()</span> 
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;x opt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
     <span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
-    
+
     <span class="k">return</span> <span class="n">m</span>
 </pre></div>
 </div>
@@ -806,23 +812,25 @@ z = 2
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
 <span class="c1"># application parameters</span>
-<span class="n">alpha</span> <span class="o">=</span> <span class="mi">30</span>        <span class="c1"># $ K / W annualized cost per sq meter per W/sq m/K</span>
-<span class="n">beta</span> <span class="o">=</span> <span class="mf">0.05</span>       <span class="c1"># equivalent annual cost factor</span>
-<span class="n">R0</span> <span class="o">=</span> <span class="mf">2.0</span>          <span class="c1"># Watts/K/m**2</span>
-<span class="n">T</span> <span class="o">=</span> <span class="mf">0.30</span>          <span class="c1"># maximum insulation thickness</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="mi">30</span>  <span class="c1"># $ K / W annualized cost per sq meter per W/sq m/K</span>
+<span class="n">beta</span> <span class="o">=</span> <span class="mf">0.05</span>  <span class="c1"># equivalent annual cost factor</span>
+<span class="n">R0</span> <span class="o">=</span> <span class="mf">2.0</span>  <span class="c1"># Watts/K/m**2</span>
+<span class="n">T</span> <span class="o">=</span> <span class="mf">0.30</span>  <span class="c1"># maximum insulation thickness</span>
 
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-    <span class="s2">&quot;Mineral Wool&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">0.030</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">150.0</span><span class="p">},</span>
-    <span class="s2">&quot;Rigid Foam (high R)&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">0.015</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mf">8.0</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">180.0</span><span class="p">},</span>
-    <span class="s2">&quot;Rigid Foam (low R)&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mf">8.0</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">120.0</span><span class="p">}</span>
-<span class="p">})</span><span class="o">.</span><span class="n">T</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;Mineral Wool&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">0.030</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">150.0</span><span class="p">},</span>
+        <span class="s2">&quot;Rigid Foam (high R)&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">0.015</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mf">8.0</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">180.0</span><span class="p">},</span>
+        <span class="s2">&quot;Rigid Foam (low R)&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mf">8.0</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">120.0</span><span class="p">},</span>
+    <span class="p">}</span>
+<span class="p">)</span><span class="o">.</span><span class="n">T</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">insulate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">R0</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal cost is equal to 4.15492 per sq. meter
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal cost is equal to 4.1549 per sq. meter
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -881,22 +889,24 @@ z = 2
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># application parameters</span>
-<span class="n">alpha</span> <span class="o">=</span> <span class="mi">30</span>        <span class="c1"># $ K / W annualized cost per sq meter per W/sq m/K</span>
-<span class="n">beta</span> <span class="o">=</span> <span class="mf">0.05</span>       <span class="c1"># equivalent annual cost factor</span>
-<span class="n">R0</span> <span class="o">=</span> <span class="mf">2.0</span>          <span class="c1"># Watts/K/m**2</span>
-<span class="n">T</span> <span class="o">=</span> <span class="mf">0.15</span>          <span class="c1"># maximum insulation thickness</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="mi">30</span>  <span class="c1"># $ K / W annualized cost per sq meter per W/sq m/K</span>
+<span class="n">beta</span> <span class="o">=</span> <span class="mf">0.05</span>  <span class="c1"># equivalent annual cost factor</span>
+<span class="n">R0</span> <span class="o">=</span> <span class="mf">2.0</span>  <span class="c1"># Watts/K/m**2</span>
+<span class="n">T</span> <span class="o">=</span> <span class="mf">0.15</span>  <span class="c1"># maximum insulation thickness</span>
 
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-    <span class="s2">&quot;Foam&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">0.015</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">110.0</span><span class="p">},</span>
-    <span class="s2">&quot;Wool&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">0.010</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">200.0</span><span class="p">},</span>
-<span class="p">})</span><span class="o">.</span><span class="n">T</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;Foam&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">0.015</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">110.0</span><span class="p">},</span>
+        <span class="s2">&quot;Wool&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">0.010</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mf">200.0</span><span class="p">},</span>
+    <span class="p">}</span>
+<span class="p">)</span><span class="o">.</span><span class="n">T</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">insulate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">R0</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal cost is equal to 3.22992 per sq. meter
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal cost is equal to 3.2299 per sq. meter
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -952,10 +962,12 @@ z = 2
 <span class="n">a</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">])</span>
 <span class="n">b</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;b&quot;</span><span class="p">])</span>
 
-<span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">:</span> <span class="n">alpha</span><span class="o">/</span><span class="p">(</span><span class="n">R0</span> <span class="o">+</span> <span class="n">x0</span><span class="o">/</span><span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">x1</span><span class="o">/</span><span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">beta</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">x0</span> <span class="o">+</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">x1</span><span class="p">)</span>
+<span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">:</span> <span class="n">alpha</span> <span class="o">/</span> <span class="p">(</span><span class="n">R0</span> <span class="o">+</span> <span class="n">x0</span> <span class="o">/</span> <span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">x1</span> <span class="o">/</span> <span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span>
+    <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">x0</span> <span class="o">+</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">x1</span>
+<span class="p">)</span>
 
-<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.1</span><span class="o">*</span><span class="n">T</span><span class="p">,</span> <span class="mi">201</span><span class="p">)</span>
-<span class="n">x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.1</span><span class="o">*</span><span class="n">T</span><span class="p">,</span> <span class="mi">201</span><span class="p">)</span>
+<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.1</span> <span class="o">*</span> <span class="n">T</span><span class="p">,</span> <span class="mi">201</span><span class="p">)</span>
+<span class="n">x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.1</span> <span class="o">*</span> <span class="n">T</span><span class="p">,</span> <span class="mi">201</span><span class="p">)</span>
 
 <span class="n">X0</span><span class="p">,</span> <span class="n">X1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">)</span>
 
@@ -963,23 +975,24 @@ z = 2
 <span class="n">ax</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">f</span><span class="p">(</span><span class="n">X0</span><span class="p">,</span> <span class="n">X1</span><span class="p">),</span> <span class="mi">50</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">x0</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">x0</span><span class="p">))</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">x1</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">x1</span><span class="p">))</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">],</span> <span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">2.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">],</span> <span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">2.5</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
 <span class="n">x</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]()</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;r.&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;r.&quot;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="sa">f</span><span class="s2">&quot;    (</span><span class="si">{</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$x_0$&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$x_1$&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Contours of Constant Cost&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/d69a7543e49c808c7cc827c08291773c9d0eab1ef03c5dad885b057007a4009b.png" src="../../_images/d69a7543e49c808c7cc827c08291773c9d0eab1ef03c5dad885b057007a4009b.png" />
+<img alt="../../_images/0855e404590b948fb70e498d71909e354103df9475b704f2f87ec5b8fde9ccd9.png" src="../../_images/0855e404590b948fb70e498d71909e354103df9475b704f2f87ec5b8fde9ccd9.png" />
 </div>
 </div>
 </section>
@@ -1078,7 +1091,7 @@ z = 2
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-model-for-multi-layered-insulation">A Model for Multi-Layered Insulation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#analytic-solution-for-n-1">Analytic solution for <span class="math notranslate nohighlight">\(N=1\)</span></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model-for-n-1">Pyomo Model for <span class="math notranslate nohighlight">\(N=1\)</span></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-layer-solutions-as-a-mixed-integer-quadratic-constraint-optimization-miqco">Multi-Layer Solutions as a Mixed Integer Quadratic Constraint Optimization (MIQCO)</a><ul class="nav section-nav flex-column">
