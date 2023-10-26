@@ -503,20 +503,23 @@ document.write(`
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installations-and-imports">Installations and Imports</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#install-pyomo-and-a-solver">Install Pyomo and a solver</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#networkx">NetworkX</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ccxt">CCXT</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cryptocurrency-exchanges">Cryptocurrency exchanges</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#additional-libraries-needed-networkx-and-ccxt">Additional libraries needed: NetworkX and CCXT</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#available-cryptocurrency-exchanges">Available cryptocurrency exchanges</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#representing-an-exchange-as-a-directed-graph">Representing an exchange as a directed graph</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exchange-order-book">Exchange order book</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modelling-the-arbitrage-search-problem-as-a-graph">Modelling the arbitrage search problem as a graph</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#trading-and-arbitrage">Trading and Arbitrage</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#find-order-books-that-demonstrate-arbitrage-opportunities">Find order books that demonstrate arbitrage opportunities</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#trading-and-arbitrage">Trading and arbitrage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#find-order-books-that-have-arbitrage-opportunities">Find order books that have arbitrage opportunities</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#brute-force-search-arbitrage-with-simple-cycles">Brute force search arbitrage with simple cycles</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model-for-arbitrage-with-capacity-constraints">Pyomo Model for Arbitrage with Capacity Constraints</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#questions-to-the-user">Questions to the user</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model-for-arbitrage-with-capacity-constraints">Pyomo model for arbitrage with capacity constraints</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exercises-for-the-reader">Exercises for the reader</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#real-time-downloads-of-order-books-from-an-exchange">Real Time Downloads of Order Books from an Exchange</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bibliographic-notes">Bibliographic Notes</a></li>
 </ul>
             </nav>
         </div>
@@ -530,8 +533,6 @@ document.write(`
                   
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><section class="tex2jax_ignore mathjax_ignore" id="cryptocurrency-arbitrage-search">
 <span id="index-5"></span><h1>Cryptocurrency arbitrage search<a class="headerlink" href="#cryptocurrency-arbitrage-search" title="Permalink to this heading">#</a></h1>
-<p>Cryptocurrency exchanges are web services that enable the purchase, sale, and exchange of cryptocurrencies. These exchanges provide liquidity for owners and establish the relative value of these currencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, buy and sell currencies, and use cryptocurrencies for financial transactions.</p>
-<p>In this example, we explore the efficiency of cryptocurrency exchanges by testing for arbitrage opportunities. An arbitrage exists if a customer can realize a net profit through a sequence of risk-free trades. The efficient market hypothesis assumes arbitrage opportunities are quickly identified and exploited by investors. As a result of their trading, prices reach a new equilibrium so that any arbitrage opportunities would be small and fleeting in an efficient market. The question here is whether it is possible, with real-time data and rapid execution, for a trader to profit from these fleeting arbitrage opportunities.</p>
 <section id="installations-and-imports">
 <h2>Installations and Imports<a class="headerlink" href="#installations-and-imports" title="Permalink to this heading">#</a></h2>
 <section id="install-pyomo-and-a-solver">
@@ -544,102 +545,58 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
-
+ 
 <span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>pyomo<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
-
-    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;appsi_highs&#39;</span><span class="p">)</span>
-    
-<span class="k">else</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
-
-<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
+ 
+<span class="n">solver</span> <span class="o">=</span> <span class="s1">&#39;appsi_highs&#39;</span>
+ 
+<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+ 
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
 </section>
-<section id="networkx">
-<h3>NetworkX<a class="headerlink" href="#networkx" title="Permalink to this heading">#</a></h3>
-<p>This notebook uses the <a class="reference external" href="https://networkx.org/">NetworkX</a> library to display exchange and market data. NetworkX has been updated recently to version 3.0, but as of this writing (March, 2023) that update has not yet propagated through common Python distributions. If the code that follows in this notebook may generate errors on displaying networkx diagrams, it may be necessary to update the NetworkX library. This can be done with the following command executed in a new cell.</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>!pip install networkx --upgrade
-</pre></div>
-</div>
-<p>You will need to restart the kernel after this upgrade.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>networkx<span class="w"> </span>--upgrade
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Requirement already satisfied: networkx in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (3.1)
-</pre></div>
-</div>
-</div>
-</div>
 </section>
-<section id="ccxt">
-<h3>CCXT<a class="headerlink" href="#ccxt" title="Permalink to this heading">#</a></h3>
-<p>In addition to Pyomo and other standard Python libraries, this notebook uses the <a class="reference external" href="https://github.com/ccxt/ccxt">open-source library <code class="docutils literal notranslate"><span class="pre">ccxt</span></code></a>. <code class="docutils literal notranslate"><span class="pre">ccxt</span></code> supports the real-time APIs of the largest and most common exchanges on which cryptocurrencies are traded. The library can be installed with</p>
+<section id="problem-description">
+<h2>Problem description<a class="headerlink" href="#problem-description" title="Permalink to this heading">#</a></h2>
+<p>Cryptocurrency exchanges are web services that enable the purchase, sale, and exchange of cryptocurrencies. These exchanges provide liquidity for owners and establish the relative value of these currencies. Joining an exchange enables a user to maintain multiple currencies in a digital wallet, buy and sell currencies, and use cryptocurrencies for financial transactions.</p>
+<p>In this notebook, we explore the efficiency of cryptocurrency exchanges by testing for arbitrage opportunities. An arbitrage exists if a customer can realize a net profit through a sequence of risk-free trades. The efficient market hypothesis assumes arbitrage opportunities are quickly identified and exploited by investors. As a result of their trading, prices reach a new equilibrium so that any arbitrage opportunities would be small and fleeting in an efficient market. The question here is whether it is possible, with real-time data and rapid execution, for a trader to profit from these fleeting arbitrage opportunities.</p>
+<section id="additional-libraries-needed-networkx-and-ccxt">
+<h3>Additional libraries needed: NetworkX and CCXT<a class="headerlink" href="#additional-libraries-needed-networkx-and-ccxt" title="Permalink to this heading">#</a></h3>
+<p>This notebook uses two additional libraries: NetworkX and CCXT.</p>
+<p><a class="reference external" href="https://networkx.org/">NetworkX</a> is a Python library for the creation, manipulation, and study of the structure, dynamics, and functions of complex networks, which is installed by deafult on Google Colab.</p>
+<p><a class="reference external" href="https://github.com/ccxt/ccxt">CCXT</a> is an open-source library for connecting to cryptocurrency exchanges. The CCXT library is not installed by default in Google Colab, so it must be installed with the following command.</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>!pip install ccxt
 </pre></div>
 </div>
-<p>Here we import all needed libraries and <code class="docutils literal notranslate"><span class="pre">ccxt</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>ccxt
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Requirement already satisfied: ccxt in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (2.9.13)
-Requirement already satisfied: aiodns&gt;=1.1.1 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (3.0.0)
-Requirement already satisfied: aiohttp&gt;=3.8 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (3.8.4)
-Requirement already satisfied: setuptools&gt;=60.9.0 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (65.6.3)
-Requirement already satisfied: certifi&gt;=2018.1.18 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (2022.12.7)
-Requirement already satisfied: requests&gt;=2.18.4 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (2.28.1)
-Requirement already satisfied: yarl&gt;=1.7.2 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (1.8.2)
-Requirement already satisfied: cryptography&gt;=2.6.1 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from ccxt) (39.0.1)
-Requirement already satisfied: pycares&gt;=4.0.0 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiodns&gt;=1.1.1-&gt;ccxt) (4.3.0)
-Requirement already satisfied: aiosignal&gt;=1.1.2 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (1.3.1)
-Requirement already satisfied: frozenlist&gt;=1.1.1 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (1.3.3)
-Requirement already satisfied: charset-normalizer&lt;4.0,&gt;=2.0 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (2.0.4)
-Requirement already satisfied: multidict&lt;7.0,&gt;=4.5 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (6.0.4)
-Requirement already satisfied: async-timeout&lt;5.0,&gt;=4.0.0a3 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (4.0.2)
-Requirement already satisfied: attrs&gt;=17.3.0 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from aiohttp&gt;=3.8-&gt;ccxt) (22.1.0)
-Requirement already satisfied: cffi&gt;=1.12 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from cryptography&gt;=2.6.1-&gt;ccxt) (1.15.1)
-Requirement already satisfied: urllib3&lt;1.27,&gt;=1.21.1 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from requests&gt;=2.18.4-&gt;ccxt) (1.26.14)
-Requirement already satisfied: idna&lt;4,&gt;=2.5 in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from requests&gt;=2.18.4-&gt;ccxt) (3.4)
-Requirement already satisfied: pycparser in /Users/jeff/opt/anaconda3/lib/python3.9/site-packages (from cffi&gt;=1.12-&gt;cryptography&gt;=2.6.1-&gt;ccxt) (2.21)
-</pre></div>
 </div>
-</div>
-</div>
+<p>We import all the libraries we need for this notebook in the following cell.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
-<span class="kn">from</span> <span class="nn">timeit</span> <span class="kn">import</span> <span class="n">default_timer</span> <span class="k">as</span> <span class="n">timer</span>
-
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 <span class="kn">import</span> <span class="nn">ccxt</span>
+<span class="kn">import</span> <span class="nn">glob</span>
 </pre></div>
 </div>
 </div>
 </div>
 </section>
-</section>
-<section id="cryptocurrency-exchanges">
-<h2>Cryptocurrency exchanges<a class="headerlink" href="#cryptocurrency-exchanges" title="Permalink to this heading">#</a></h2>
+<section id="available-cryptocurrency-exchanges">
+<h3>Available cryptocurrency exchanges<a class="headerlink" href="#available-cryptocurrency-exchanges" title="Permalink to this heading">#</a></h3>
 <p>Here we use the <code class="docutils literal notranslate"><span class="pre">ccxt</span></code> library and list current exchanges supported by <code class="docutils literal notranslate"><span class="pre">ccxt</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -660,40 +617,38 @@ Requirement already satisfied: pycparser in /Users/jeff/opt/anaconda3/lib/python
  21) bitmart              22) bitmex               23) bitopro              24) bitpanda            
  25) bitrue               26) bitso                27) bitstamp             28) bitstamp1           
  29) bittrex              30) bitvavo              31) bkex                 32) bl3p                
- 33) blockchaincom        34) btcalpha             35) btcbox               36) btcex               
- 37) btcmarkets           38) btctradeua           39) btcturk              40) buda                
- 41) bybit                42) cex                  43) coinbase             44) coinbaseprime       
- 45) coinbasepro          46) coincheck            47) coinex               48) coinfalcon          
- 49) coinmate             50) coinone              51) coinspot             52) cryptocom           
- 53) currencycom          54) delta                55) deribit              56) digifinex           
- 57) exmo                 58) flowbtc              59) fmfwio               60) gate                
- 61) gateio               62) gemini               63) hitbtc               64) hitbtc3             
- 65) hollaex              66) huobi                67) huobijp              68) huobipro            
- 69) idex                 70) independentreserve   71) indodax              72) itbit               
- 73) kraken               74) krakenfutures        75) kucoin               76) kucoinfutures       
- 77) kuna                 78) latoken              79) lbank                80) lbank2              
- 81) luno                 82) lykke                83) mercado              84) mexc                
- 85) mexc3                86) ndax                 87) novadax              88) oceanex             
- 89) okcoin               90) okex                 91) okex5                92) okx                 
- 93) paymium              94) phemex               95) poloniex             96) poloniexfutures     
- 97) probit               98) ripio                99) stex                100) tidex               
-101) timex               102) tokocrypto          103) upbit               104) wavesexchange       
-105) wazirx              106) whitebit            107) woo                 108) yobit               
-109) zaif                110) zb                  111) zonda               
+ 33) blockchaincom        34) btcalpha             35) btcbox               36) btcmarkets          
+ 37) btctradeua           38) btcturk              39) bybit                40) cex                 
+ 41) coinbase             42) coinbaseprime        43) coinbasepro          44) coincheck           
+ 45) coinex               46) coinfalcon           47) coinmate             48) coinone             
+ 49) coinsph              50) coinspot             51) cryptocom            52) currencycom         
+ 53) delta                54) deribit              55) digifinex            56) exmo                
+ 57) fmfwio               58) gate                 59) gateio               60) gemini              
+ 61) hitbtc               62) hitbtc3              63) hollaex              64) huobi               
+ 65) huobijp              66) huobipro             67) idex                 68) independentreserve  
+ 69) indodax              70) kraken               71) krakenfutures        72) kucoin              
+ 73) kucoinfutures        74) kuna                 75) latoken              76) lbank               
+ 77) lbank2               78) luno                 79) lykke                80) mercado             
+ 81) mexc                 82) mexc3                83) ndax                 84) novadax             
+ 85) oceanex              86) okcoin               87) okex                 88) okex5               
+ 89) okx                  90) paymium              91) phemex               92) poloniex            
+ 93) poloniexfutures      94) probit               95) tidex                96) timex               
+ 97) tokocrypto           98) upbit                99) wavesexchange       100) wazirx              
+101) whitebit            102) woo                 103) yobit               104) zaif                
+105) zonda               
 </pre></div>
 </div>
 </div>
 </div>
 </section>
+</section>
 <section id="representing-an-exchange-as-a-directed-graph">
 <h2>Representing an exchange as a directed graph<a class="headerlink" href="#representing-an-exchange-as-a-directed-graph" title="Permalink to this heading">#</a></h2>
 <p>First, we need some terminology. Trading between two specific currencies is called a market, with each exchange hosting multiple markets. <code class="docutils literal notranslate"><span class="pre">ccxt</span></code> labels each market with a symbol common across exchanges. The market symbol is an upper-case string with abbreviations for a pair of traded currencies separated by a slash (<span class="math notranslate nohighlight">\(/\)</span>). The first abbreviation is the base currency, the second is the quote currency. Prices for the base currency are denominated in units of the quote currency. As an example, <span class="math notranslate nohighlight">\(ETH/BTC\)</span> refers to a market for the base currency Ethereum (ETH) quoted in units of the Bitcoin (BTC). The same market symbol can refer to an offer to sell the base currency (a ‘bid’) or to an offer to sell the base currency (an ‘ask’). For example, <span class="math notranslate nohighlight">\(x\)</span> ETH/BTC means you can buy <span class="math notranslate nohighlight">\(x\)</span> units of BTC with one unit of ETH.</p>
-<p>An exchange can be represented by a directed graph constructed from the market symbols available on that exchange. There, currencies correspond to nodes on the directed graph. Market symbols correspond to edges in the directed graph, with the source indicating the quote currency and the destination indicating the base currency. The following code develops such a sample graph.</p>
+<p>An exchange can be represented by a directed graph constructed from the market symbols available on that exchange. In such a graph currencies correspond to nodes on the directed graph. Market symbols correspond to edges in the directed graph, with the source indicating the quote currency and the destination indicating the base currency. The following code develops such a sample graph.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># global variables used in subsequent cells</span>
-
-<span class="c1"># create an exchange object</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create an exchange object</span>
 <span class="n">exchange</span> <span class="o">=</span> <span class="n">ccxt</span><span class="o">.</span><span class="n">binanceus</span><span class="p">()</span>
 
 
@@ -755,11 +710,11 @@ Requirement already satisfied: pycparser in /Users/jeff/opt/anaconda3/lib/python
     <span class="k">return</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
 
 
-<span class="n">minimum_in_degree</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">minimum_in_degree</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="n">exchange_dg</span> <span class="o">=</span> <span class="n">get_exchange_dg</span><span class="p">(</span><span class="n">exchange</span><span class="p">,</span> <span class="n">minimum_in_degree</span><span class="p">)</span>
 <span class="n">ax</span> <span class="o">=</span> <span class="n">draw_dg</span><span class="p">(</span><span class="n">exchange_dg</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
-    <span class="n">exchange</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Minimum in Degree (Base Currencies) = </span><span class="si">{</span><span class="n">minimum_in_degree</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">exchange</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; - Minimum indegree (Base Currencies) = </span><span class="si">{</span><span class="n">minimum_in_degree</span><span class="si">}</span><span class="s2">&quot;</span>
 <span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of nodes = </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">exchange_dg</span><span class="o">.</span><span class="n">nodes</span><span class="p">())</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -768,11 +723,11 @@ Requirement already satisfied: pycparser in /Users/jeff/opt/anaconda3/lib/python
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of nodes = 170
-Number of edges = 522
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of nodes = 155
+Number of edges = 449
 </pre></div>
 </div>
-<img alt="../../_images/4098ef1f09bdec6310a168a1dbd5ca43ca6f7f6f5d0e516530252e6180446f0c.png" src="../../_images/4098ef1f09bdec6310a168a1dbd5ca43ca6f7f6f5d0e516530252e6180446f0c.png" />
+<img alt="../../_images/78e40867aeb67dfff6e2c0c320dd2cc0ca8ef10a1981f09a8663c0c2b8c88fc5.png" src="../../_images/78e40867aeb67dfff6e2c0c320dd2cc0ca8ef10a1981f09a8663c0c2b8c88fc5.png" />
 </div>
 </div>
 </section>
@@ -780,9 +735,9 @@ Number of edges = 522
 <h2>Exchange order book<a class="headerlink" href="#exchange-order-book" title="Permalink to this heading">#</a></h2>
 <p>The order book for a currency exchange is the real-time inventory of trading orders.</p>
 <p>A <strong>bid</strong> is an offer to buy up to a specified amount of the base currency at the price not exceeding the ‘bid price’ in the quote currency.  An <strong>ask</strong> is an offer to sell up to a specified amount of the base currency at a price no less than a value specified given in the quote currency.</p>
-<p>The exchange attempts to match the bid to ask order at a price less than or equal to the bid price. If a transaction occurs, the  buyer will receive an amount of base currency less than or equal to the bid volume and the ask volume, at a price less than or equal to the bid price and no less than the specified value.</p>
+<p>The exchange attempts to match the bid to ask order at a price less than or equal to the bid price. If a transaction occurs, the buyer will receive an amount of base currency less than or equal to the bid volume and the ask volume, at a price less than or equal to the bid price and no less than the specified value.</p>
 <p>The order book for currency exchange is the real-time inventory of orders. The exchange order book maintains a list of all active orders for symbols traded on the exchange. Incoming bids above the lowest ask or incoming asks below the highest bid will be immediately matched and transactions executed following the rules of the exchange.</p>
-<p>The following cell reads and displays a previously saved order book.  Cells at the end of this notebook demonstrate how to retrieve an order book from an exchange and save it as a Pandas DataFrame.</p>
+<p>The following cell reads and displays a previously saved order book. Cells at the end of this notebook demonstrate how to retrieve an order book from an exchange and save it as a Pandas DataFrame.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
@@ -793,8 +748,6 @@ Number of edges = 522
     <span class="p">)</span>
 
 <span class="k">else</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">glob</span>
-
     <span class="c1"># find all previously saved order books</span>
     <span class="n">fnames</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;*orderbook*&quot;</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)))</span>
     <span class="n">fname</span> <span class="o">=</span> <span class="n">fnames</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -1343,8 +1296,8 @@ Number of edges = 522
 <section id="modelling-the-arbitrage-search-problem-as-a-graph">
 <h2>Modelling the arbitrage search problem as a graph<a class="headerlink" href="#modelling-the-arbitrage-search-problem-as-a-graph" title="Permalink to this heading">#</a></h2>
 <p>Our goal will be to find arbitrage opportunities, i.e., the possibility to start from a given currency and, through a sequence of executed trades, arrive back at the same currency with a higher balance than at the beginning. We will model this problem as a network one.</p>
-<p>A bid appearing in the order book for market symbol <span class="math notranslate nohighlight">\(b/q\)</span> is an order from a prospective counter party to purchase an amount of the base currency <span class="math notranslate nohighlight">\(b\)</span> at a bid price given in a quote currency <span class="math notranslate nohighlight">\(q\)</span>. For a currency trader, a bid in the order book is an opportunity to convert the base currency <span class="math notranslate nohighlight">\(b\)</span> into the quote currency <span class="math notranslate nohighlight">\(q\)</span>.</p>
-<p>The order book can be represented as a directed graph where nodes correspond to individual currencies. A directed edge <span class="math notranslate nohighlight">\(b\rightarrow q\)</span> from node <span class="math notranslate nohighlight">\(b\)</span> to node <span class="math notranslate nohighlight">\(q\)</span> describes an opportunity for us to convert currency <span class="math notranslate nohighlight">\(b\)</span> into units of currency <span class="math notranslate nohighlight">\(q\)</span>. Let <span class="math notranslate nohighlight">\(V_b\)</span> and <span class="math notranslate nohighlight">\(V_q\)</span> denote the amounts of each currency held by us, and let <span class="math notranslate nohighlight">\(x_{b\rightarrow q}\)</span> denote the amount of currency <span class="math notranslate nohighlight">\(b\)</span> exchanged for currency <span class="math notranslate nohighlight">\(j\)</span>. Following the transaction <span class="math notranslate nohighlight">\(x_{b\rightarrow q}\)</span> we have the following changes to the currency holdings</p>
+<p>A bid appearing in the order book for the market symbol <span class="math notranslate nohighlight">\(b/q\)</span> is an order from a prospective counter party to purchase an amount of the base currency <span class="math notranslate nohighlight">\(b\)</span> at a bid price given in a quote currency <span class="math notranslate nohighlight">\(q\)</span>. For a currency trader, a bid in the order book is an opportunity to convert the base currency <span class="math notranslate nohighlight">\(b\)</span> into the quote currency <span class="math notranslate nohighlight">\(q\)</span>.</p>
+<p>The order book can be represented as a directed graph where the nodes correspond to individual currencies. A directed edge <span class="math notranslate nohighlight">\(b\rightarrow q\)</span> from node <span class="math notranslate nohighlight">\(b\)</span> to node <span class="math notranslate nohighlight">\(q\)</span> describes an opportunity for us to convert currency <span class="math notranslate nohighlight">\(b\)</span> into units of currency <span class="math notranslate nohighlight">\(q\)</span>. Let <span class="math notranslate nohighlight">\(V_b\)</span> and <span class="math notranslate nohighlight">\(V_q\)</span> denote the amounts of each currency held by us, and let <span class="math notranslate nohighlight">\(x_{b\rightarrow q}\)</span> denote the amount of currency <span class="math notranslate nohighlight">\(b\)</span> exchanged for currency <span class="math notranslate nohighlight">\(j\)</span>. Following the transaction <span class="math notranslate nohighlight">\(x_{b\rightarrow q}\)</span> we have the following changes to the currency holdings</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -1352,13 +1305,13 @@ Number of edges = 522
     \Delta V_q &amp; = a_{b\rightarrow q} x_{b\rightarrow q},
 \end{align*}
 \end{split}\]</div>
-<p>where <span class="math notranslate nohighlight">\(a_{b\rightarrow q}\)</span> is a <em>conversion coefficient</em> equal to the price of <span class="math notranslate nohighlight">\(b\)</span> expressed in terms of currency <span class="math notranslate nohighlight">\(q\)</span>. The capacity <span class="math notranslate nohighlight">\(c_{b\rightarrow q}\)</span> of an trading along edge <span class="math notranslate nohighlight">\(b\rightarrow q\)</span> is specified by a relationship</p>
+<p>where <span class="math notranslate nohighlight">\(a_{b\rightarrow q}\)</span> is a <em>conversion coefficient</em> equal to the price of <span class="math notranslate nohighlight">\(b\)</span> expressed in terms of currency <span class="math notranslate nohighlight">\(q\)</span>. The capacity <span class="math notranslate nohighlight">\(c_{b\rightarrow q}\)</span> of a trading along edge <span class="math notranslate nohighlight">\(b\rightarrow q\)</span> is specified by a relationship</p>
 <div class="math notranslate nohighlight">
 \[
     x_{b\rightarrow q} \leq c_{b\rightarrow q}.
 \]</div>
-<p>Because the arcs in our graph correspond to two types of orders - bid and ask - we need to build a consistent way of expressing them in our  <span class="math notranslate nohighlight">\(a_{b\rightarrow q}\)</span>, <span class="math notranslate nohighlight">\(c_{b\rightarrow q}\)</span> notation. So now, imagine that we are the party that accepts the buy and ask bids existing in the graph.</p>
-<p>For bid orders, we have a chance to convert the base currency <span class="math notranslate nohighlight">\(b\)</span> into the quote currency <span class="math notranslate nohighlight">\(q\)</span>, for which we will use the following notation:</p>
+<p>Because the arcs in our graph correspond to two types of orders - bid and ask - we need to build a consistent way of expressing them in our  <span class="math notranslate nohighlight">\(a_{b\rightarrow q}\)</span>, <span class="math notranslate nohighlight">\(c_{b\rightarrow q}\)</span> notation. Imagine now that we are the party that accepts the buy and ask bids existing in the graph.</p>
+<p>For bid orders, we have the opportunity to convert the base currency <span class="math notranslate nohighlight">\(b\)</span> into the quote currency <span class="math notranslate nohighlight">\(q\)</span>, for which we will use the following notation:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -1366,7 +1319,7 @@ a_{b\rightarrow q} &amp; = \text{bid price} \\
 c_{b\rightarrow q} &amp; = \text{bid volume}
 \end{align*}
 \end{split}\]</div>
-<p>An ask order for symbol <span class="math notranslate nohighlight">\(b/q\)</span> is an order to sell the base currency at price not less than the ‘ask’ price given in terms of the quote currency. The ask volume is the amount of base currency to be sold. For us, a sell order is an opportunity to convert the quoted currency into the base currency such that</p>
+<p>An ask order for symbol <span class="math notranslate nohighlight">\(b/q\)</span> is an order to sell the base currency at a price not less than the ‘ask’ price given in terms of the quote currency. The ask volume is the amount of base currency to be sold. For us, a sell order is an opportunity to convert the quoted currency into the base currency such that</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -1380,16 +1333,6 @@ c_{q\rightarrow b} &amp; = \text{ask volume} \times \text{ask volume}
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">order_book_to_dg</span><span class="p">(</span><span class="n">order_book</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Convert an order book dataframe into a directed graph using the NetworkX library.</span>
-
-<span class="sd">    Parameters:</span>
-<span class="sd">    -----------</span>
-<span class="sd">    order_book : pandas.DataFrame</span>
-<span class="sd">        A dataframe containing the order book information.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">    --------</span>
-<span class="sd">    dg_order_book : networkx.DiGraph</span>
-<span class="sd">        A directed graph representing the order book.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># create a dictionary of edges index by (src, dst)</span>
@@ -1562,20 +1505,20 @@ USD   --&gt; TRX     ask       14.409222     15562.637700
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/48113fec426bb92a5359ca669da7fc4554dede241934be0de110d2ad76e339f1.png" src="../../_images/48113fec426bb92a5359ca669da7fc4554dede241934be0de110d2ad76e339f1.png" />
+<img alt="../../_images/9525828aee4956663c2f63de809e22d4322c78ab2de9c6bdf85489d494fb863a.png" src="../../_images/9525828aee4956663c2f63de809e22d4322c78ab2de9c6bdf85489d494fb863a.png" />
 </div>
 </div>
 </section>
 <section id="trading-and-arbitrage">
-<h2>Trading and Arbitrage<a class="headerlink" href="#trading-and-arbitrage" title="Permalink to this heading">#</a></h2>
-<p>With the unified treatment of the bid and ask orders, we are ready to pose the mathematical problem of finding an arbitrage opportunity. An arbitrage exists if it is possible to find a closed path and a sequence of transactions in the directed graph resulting in a net increase in currency holdings. Given a path</p>
+<h2>Trading and arbitrage<a class="headerlink" href="#trading-and-arbitrage" title="Permalink to this heading">#</a></h2>
+<p>With this unified treatment of bid and ask orders, we are ready to formulate the mathematical problem of finding an arbitrage opportunity. An arbitrage exists if it is possible to find a closed path and a sequence of transactions in the directed graph resulting in a net increase in currency holdings. Given a path</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
     i_0 \rightarrow i_1 \rightarrow i_2 \rightarrow \cdots \rightarrow i_{n-1} \rightarrow i_n
 \end{align*}
 \]</div>
-<p>the path is closed if <span class="math notranslate nohighlight">\(i_n = i_0\)</span>. The path has finite capacity if each edge in the path has a non-zero capacity. For a sufficiently small holding <span class="math notranslate nohighlight">\(w_{i_0}\)</span> of currency <span class="math notranslate nohighlight">\(i_0\)</span> (because of the capacity constraints), a closed path with <span class="math notranslate nohighlight">\(i_0 = i_n\)</span> represents an arbitrage opportunity if</p>
+<p>the path is closed if <span class="math notranslate nohighlight">\(i_n = i_0\)</span>. The path has finite capacity if each edge in the path has a non-zero capacity. For a sufficiently small holding <span class="math notranslate nohighlight">\(w_{i_0}\)</span> of currency <span class="math notranslate nohighlight">\(i_0\)</span> (because of capacity constraints), a closed path with <span class="math notranslate nohighlight">\(i_0 = i_n\)</span> represents an arbitrage opportunity if</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{equation} 
@@ -1589,12 +1532,12 @@ USD   --&gt; TRX     ask       14.409222     15562.637700
     -\log(\prod_{k=0}^{n-1} a_{i_k\rightarrow i_{k+1}}) = - \sum\limits_{k = 0}^{n-1} \log (a_{i_k\rightarrow i_{k+1}}) &lt; 0,
 \end{align*}
 \]</div>
-<p>In other words, if we assign the negative logarithm as the weight of arcs in a graph, then our problem just became translated into the problem of searching for a cycle with a total sum of weights along it to be negative.</p>
+<p>In other words, if we assign the negative logarithm as the weight of arcs in a graph, then our problem just becomes translated into the problem of searching for a cycle with a total sum of weights along it to be negative.</p>
 </section>
-<section id="find-order-books-that-demonstrate-arbitrage-opportunities">
-<h2>Find order books that demonstrate arbitrage opportunities<a class="headerlink" href="#find-order-books-that-demonstrate-arbitrage-opportunities" title="Permalink to this heading">#</a></h2>
-<p>A simple cycle is a closed path where no node appears twice. Simple cycles are distinct if they are not cyclic permutations (essentially, rewriting the same path but with a different start=end point) of each other. One could check for arbitrage opportunities by checking if there are any negative simple cycles in the graph.</p>
-<p>However, looking for a negative-weight cycle through searching for an arbitrage opportunity can be a daunting task - a brute-force search over all simple cycles has complexity <span class="math notranslate nohighlight">\((n + e)(c + 1)\)</span> which is impractical for large-scale applications. A more efficient search based on the Bellman-Ford algorithm is embedded in the NetworkX function <a class="reference external" href="https://networkx.org/documentation/networkx-1.10/reference/generated/networkx.algorithms.shortest_paths.weighted.negative_edge_cycle.html"><code class="docutils literal notranslate"><span class="pre">negative_edge_cycle</span></code></a> that returns a logical True if a negative cycle exists in a directed graph.</p>
+<section id="find-order-books-that-have-arbitrage-opportunities">
+<h2>Find order books that have arbitrage opportunities<a class="headerlink" href="#find-order-books-that-have-arbitrage-opportunities" title="Permalink to this heading">#</a></h2>
+<p>A <em>simple cycle</em> is a closed path in which no node appears twice. Simple cycles are distinct if they are not cyclic permutations (essentially, the same set of nodes but with a different start and end points) of each other. One could check for arbitrage opportunities by checking if there are any negative simple cycles in the graph.</p>
+<p>However, searching for a negative-weight cycle through searching for an arbitrage opportunity can be a daunting task - a brute-force search over all simple cycles has complexity <span class="math notranslate nohighlight">\((n + e)(c + 1)\)</span> which is impractical for large-scale applications. A more efficient search based on the Bellman-Ford algorithm is embedded in the NetworkX function <a class="reference external" href="https://networkx.org/documentation/networkx-1.10/reference/generated/networkx.algorithms.shortest_paths.weighted.negative_edge_cycle.html"><code class="docutils literal notranslate"><span class="pre">negative_edge_cycle</span></code></a> that returns a logical True if a negative cycle exists in a directed graph.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">order_book_dg</span> <span class="o">=</span> <span class="n">order_book_to_dg</span><span class="p">(</span><span class="n">order_book</span><span class="p">)</span>
@@ -1609,11 +1552,10 @@ USD   --&gt; TRX     ask       14.409222     15562.637700
 </div>
 </div>
 <p>The function <code class="docutils literal notranslate"><span class="pre">negative_edge_cycle</span></code> is fast, but it only indicates if there is a negative cycle or not, and we don’t even know what kind of a cycle is it so it would be hard to use that information to perform an arbitrage.</p>
-<p>Luckily, the <code class="docutils literal notranslate"><span class="pre">networkx</span></code> library includes the function <a class="reference external" href="https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.shortest_paths.weighted.find_negative_cycle.html"><code class="docutils literal notranslate"><span class="pre">find_negative_cycle</span></code></a> that locates a single negative edge cycle if one exists. We can use this to demonstrate the existence of an arbitrage opportunity and to highlight that opportunity on the directed graph of all possible trades. The following cell reports the cycle found and the trading return measured in basis points (1 bp = 0.01%), and marks it with thicker arcs in the graph.</p>
+<p>Luckily, the <code class="docutils literal notranslate"><span class="pre">networkx</span></code> library includes the function <a class="reference external" href="https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.shortest_paths.weighted.find_negative_cycle.html"><code class="docutils literal notranslate"><span class="pre">find_negative_cycle</span></code></a> that locates a single negative edge cycle if one exists. We can use this to demonstrate the existence of an arbitrage opportunity and to highlight that opportunity on the directed graph of all possible trades. The following cell reports the cycle found and the corresponding trading return measured in basis points (1 basis point = 0.01%). The same trading cycle is marked with thicker arcs in the graph.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># compute the sum of weights given a list of nodes</span>
-<span class="k">def</span> <span class="nf">sum_weights</span><span class="p">(</span><span class="n">cycle</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">sum_weights</span><span class="p">(</span><span class="n">cycle</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
         <span class="p">[</span>
             <span class="n">order_book_dg</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">edge</span><span class="p">][</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span>
@@ -1629,16 +1571,20 @@ USD   --&gt; TRX     ask       14.409222     15562.637700
 <span class="k">for</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">arb</span><span class="p">,</span> <span class="n">arb</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">arb</span><span class="p">[:</span><span class="mi">1</span><span class="p">]):</span>
     <span class="n">order_book_dg</span><span class="p">[</span><span class="n">src</span><span class="p">][</span><span class="n">dst</span><span class="p">][</span><span class="s2">&quot;width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
 
-<span class="n">ax</span> <span class="o">=</span> <span class="n">draw_dg</span><span class="p">(</span><span class="n">order_book_dg</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;Trading cycle with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">arb</span><span class="p">))</span><span class="si">}</span><span class="s2"> trades: </span><span class="si">{</span><span class="s1">&#39; -&gt; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">arb</span><span class="p">))</span><span class="si">}</span><span class="se">\n\n</span><span class="s2"> Return = </span><span class="si">{</span><span class="n">bp</span><span class="si">:</span><span class="s2">6.3f</span><span class="si">}</span><span class="s2"> basis points &quot;</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Trading cycle with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">arb</span><span class="p">))</span><span class="si">}</span><span class="s2"> trades: </span><span class="si">{</span><span class="s1">&#39; --&gt; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">arb</span><span class="p">))</span><span class="si">}</span><span class="se">\n</span><span class="s2">Return = </span><span class="si">{</span><span class="n">bp</span><span class="si">:</span><span class="s2">6.3f</span><span class="si">}</span><span class="s2"> basis points &quot;</span>
 <span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">draw_dg</span><span class="p">(</span><span class="n">order_book_dg</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/2cd8b45e011df5a83acd22d4db14608070817cd58bef4c4ef6551166475cc0e7.png" src="../../_images/2cd8b45e011df5a83acd22d4db14608070817cd58bef4c4ef6551166475cc0e7.png" />
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Trading cycle with 3 trades: USDC --&gt; USDT --&gt; BUSD
+Return =  5.002 basis points 
+</pre></div>
+</div>
+<img alt="../../_images/aaa4c91cb2955d8ef1f244926f55cf9beda7118b0f86320e2b6b95130035e20e.png" src="../../_images/aaa4c91cb2955d8ef1f244926f55cf9beda7118b0f86320e2b6b95130035e20e.png" />
 </div>
 </div>
 <p>Note this may or may not be the trading cycle with maximum return. There may be other cycles with higher or lower returns, and that allow higher or lower trading volumes.</p>
@@ -1649,12 +1595,10 @@ USD   --&gt; TRX     ask       14.409222     15562.637700
 <p>A crude way to search for a good arbitrage opportunity would be to enumerate all possible simple cycles in a graph and pick the one that’s best according to whatever criterion we pick. A brute force search over for all simple cycles has order <span class="math notranslate nohighlight">\((N_{nodes} + N_{edges})(N_{cycles} + 1)\)</span> complexity, which is prohibitive for large order books. Nevertheless, we explore this option here to better understand the problem of finding and valuing arbitrage opportunities.</p>
 <p>In the following cell, we compute the loss function for all simple cycles that can be constructed within a directed graph using the function <a class="reference external" href="https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.cycles.simple_cycles.html"><code class="docutils literal notranslate"><span class="pre">simple_cycles</span></code></a> from the <code class="docutils literal notranslate"><span class="pre">networkx</span></code> library to construct a dictionary of all distinct simple cycles in the order book. Each cycle is represented by an ordered list of nodes. For each cycle, the financial return is computed, and a histogram is constructed to show the distribution of potential returns. Several paths with the highest return are then overlaid on the graph of the order book.</p>
 <p>Again, note that no account is taken of the trading capacity available on each path.</p>
+<p>The next cell iterates over all simple cycles in a directed graph. This can take a long time for a large dense graph.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># This cell iterates over all simple cycles in a directed graph. This</span>
-<span class="c1"># can a long time for a large, well connected graph.</span>
-
-<span class="c1"># convert order book to a directed graph</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># convert order book to a directed graph</span>
 <span class="n">order_book_dg</span> <span class="o">=</span> <span class="n">order_book_to_dg</span><span class="p">(</span><span class="n">order_book</span><span class="p">)</span>
 
 
@@ -1694,7 +1638,7 @@ USD   --&gt; TRX     ask       14.409222     15562.637700
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>There are 203147 distinct simple cycles in the order book, 974 of which have positive return.
 </pre></div>
 </div>
-<img alt="../../_images/a04f92aa4af9d489c8d8458835ef335a26fc576ed97f4155324cccbf276ac0d6.png" src="../../_images/a04f92aa4af9d489c8d8458835ef335a26fc576ed97f4155324cccbf276ac0d6.png" />
+<img alt="../../_images/84ebc76f8acac6bb9ebd870a9eb7f70e1db739c2d6bd2d3bf50f5f056e2f8429.png" src="../../_images/84ebc76f8acac6bb9ebd870a9eb7f70e1db739c2d6bd2d3bf50f5f056e2f8429.png" />
 </div>
 </div>
 <p>Next, we sort out the negative cycles from this list and present them along with their basis-points (1% is 100 basis points) return.</p>
@@ -1711,7 +1655,7 @@ USD   --&gt; TRX     ask       14.409222     15562.637700
 <span class="k">for</span> <span class="n">cycle</span> <span class="ow">in</span> <span class="n">arbitrage</span><span class="p">[</span><span class="mi">0</span> <span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_cycles_to_list</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">arbitrage</span><span class="p">))]:</span>
     <span class="n">t</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cycle</span><span class="p">)</span>
     <span class="n">t</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cycle</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cycles</span><span class="p">[</span><span class="n">cycle</span><span class="p">]</span><span class="si">:</span><span class="s2">6.3f</span><span class="si">}</span><span class="s2">         </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="si">}</span><span class="s2"> trades: </span><span class="si">{</span><span class="s1">&#39; -&gt; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cycles</span><span class="p">[</span><span class="n">cycle</span><span class="p">]</span><span class="si">:</span><span class="s2">6.3f</span><span class="si">}</span><span class="s2">         </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="si">}</span><span class="s2"> trades: </span><span class="si">{</span><span class="s1">&#39; --&gt; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1719,11 +1663,11 @@ USD   --&gt; TRX     ask       14.409222     15562.637700
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Top 5
 
 Basis Points             Arbitrage Cycle
-14.774         8 trades: BTC -&gt; ETH -&gt; USD -&gt; BUSD -&gt; USDC -&gt; USDT -&gt; ADA -&gt; BTC
-14.747         8 trades: BTC -&gt; ETH -&gt; USD -&gt; BUSD -&gt; USDC -&gt; USDT -&gt; TRX -&gt; BTC
-14.699         7 trades: BTC -&gt; USD -&gt; BUSD -&gt; USDC -&gt; USDT -&gt; ADA -&gt; BTC
-14.673         7 trades: BTC -&gt; USD -&gt; BUSD -&gt; USDC -&gt; USDT -&gt; TRX -&gt; BTC
-13.772         7 trades: BTC -&gt; ETH -&gt; USD -&gt; USDC -&gt; USDT -&gt; ADA -&gt; BTC
+14.774         8 trades: USDT --&gt; ADA --&gt; BTC --&gt; ETH --&gt; USD --&gt; BUSD --&gt; USDC --&gt; USDT
+14.747         8 trades: USDT --&gt; TRX --&gt; BTC --&gt; ETH --&gt; USD --&gt; BUSD --&gt; USDC --&gt; USDT
+14.699         7 trades: USDT --&gt; ADA --&gt; BTC --&gt; USD --&gt; BUSD --&gt; USDC --&gt; USDT
+14.673         7 trades: USDT --&gt; TRX --&gt; BTC --&gt; USD --&gt; BUSD --&gt; USDC --&gt; USDT
+13.772         7 trades: USDT --&gt; ADA --&gt; BTC --&gt; ETH --&gt; USD --&gt; USDC --&gt; USDT
 </pre></div>
 </div>
 </div>
@@ -1734,6 +1678,9 @@ Basis Points             Arbitrage Cycle
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n_cycles_to_show</span> <span class="o">=</span> <span class="mi">1</span>
 
 <span class="k">for</span> <span class="n">cycle</span> <span class="ow">in</span> <span class="n">arbitrage</span><span class="p">[</span><span class="mi">0</span> <span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_cycles_to_show</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">arbitrage</span><span class="p">))]:</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Trading cycle with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="si">}</span><span class="s2"> trades: </span><span class="si">{</span><span class="s1">&#39; --&gt; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">Return = </span><span class="si">{</span><span class="n">cycles</span><span class="p">[</span><span class="n">cycle</span><span class="p">]</span><span class="si">:</span><span class="s2">6.3f</span><span class="si">}</span><span class="s2"> basis points &quot;</span>
+    <span class="p">)</span>
     <span class="c1"># get fresh graph to color nodes</span>
     <span class="n">order_book_dg</span> <span class="o">=</span> <span class="n">order_book_to_dg</span><span class="p">(</span><span class="n">order_book</span><span class="p">)</span>
 
@@ -1749,64 +1696,59 @@ Basis Points             Arbitrage Cycle
 
     <span class="n">t</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cycle</span><span class="p">)</span>
     <span class="n">t</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cycle</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Trading cycle with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="si">}</span><span class="s2"> trades: </span><span class="si">{</span><span class="s1">&#39; -&gt; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="si">}</span><span class="se">\n\n</span><span class="s2"> Return = </span><span class="si">{</span><span class="n">cycles</span><span class="p">[</span><span class="n">cycle</span><span class="p">]</span><span class="si">:</span><span class="s2">6.3f</span><span class="si">}</span><span class="s2"> basis points &quot;</span>
-    <span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;crypto3.pdf&quot;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/1a8259de0f1f658aef13ff89ec73a05849a141645d4343f5285c3ef2ff01e0fa.png" src="../../_images/1a8259de0f1f658aef13ff89ec73a05849a141645d4343f5285c3ef2ff01e0fa.png" />
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Trading cycle with 7 trades: USDT --&gt; ADA --&gt; BTC --&gt; ETH --&gt; USD --&gt; USDC --&gt; USDT
+Return = 14.774 basis points 
+</pre></div>
+</div>
+<img alt="../../_images/749a1e74684bb83fc23c73b1f949936e4628dbbe4087808e81d58fedb67ae609.png" src="../../_images/749a1e74684bb83fc23c73b1f949936e4628dbbe4087808e81d58fedb67ae609.png" />
 </div>
 </div>
 </section>
 <section id="pyomo-model-for-arbitrage-with-capacity-constraints">
-<h2>Pyomo Model for Arbitrage with Capacity Constraints<a class="headerlink" href="#pyomo-model-for-arbitrage-with-capacity-constraints" title="Permalink to this heading">#</a></h2>
-<p>The preceding analysis demonstrates some of the practical limitations of relying on generic implementations of network algorithms:</p>
+<h2>Pyomo model for arbitrage with capacity constraints<a class="headerlink" href="#pyomo-model-for-arbitrage-with-capacity-constraints" title="Permalink to this heading">#</a></h2>
+<p>The preceding analysis demonstrates some practical limitations of relying on generic implementations of network algorithms:</p>
 <ul class="simple">
-<li><p>First of all, more than one negative cycle may exist, so more than one arbitrage opportunity may exist, i.e. an optimal strategy consists of a combination of cycles.</p></li>
+<li><p>First, more than one negative cycle may exist, so more than one arbitrage opportunity may exist, i.e. an optimal strategy consists of a combination of cycles.</p></li>
 <li><p>Secondly, simply searching for a negative cycle using shortest path algorithms does not account for capacity constraints, i.e., the maximum size of each of the exchanges. For that reason, one may end up with a cycle on which a good `rate’ of arbitrage is available, but where the absolute gain need not be large due to the maximum amounts that can be traded.</p></li>
 </ul>
-<p>Instead, we can formulate the problem of searching for a maximum-gain arbitrage via linear optimization. We assume we are given a directed graph where each edge <span class="math notranslate nohighlight">\(i\rightarrow j\)</span> is labeled with a ‘multiplier’ <span class="math notranslate nohighlight">\(a_{i\rightarrow j}\)</span> indicating how many units of currency <span class="math notranslate nohighlight">\(j\)</span> will be received for one unit of currency <span class="math notranslate nohighlight">\(i\)</span>, and a ‘capacity’ <span class="math notranslate nohighlight">\(c_{i\rightarrow j}\)</span> indicating how many units of currency <span class="math notranslate nohighlight">\(i\)</span> can be converted to currency <span class="math notranslate nohighlight">\(j\)</span>.</p>
-<p>We will break the trading process down into steps indexed by <span class="math notranslate nohighlight">\(t = 1, 2, \ldots, T\)</span>, where currencies are exchanged between two adjacent nodes within a single step. We shall denote by <span class="math notranslate nohighlight">\(x_{i\rightarrow j}(t)\)</span> the currency amount traded from node <span class="math notranslate nohighlight">\(i\)</span> to <span class="math notranslate nohighlight">\(j\)</span> in step <span class="math notranslate nohighlight">\(t\)</span>. In this way, we start with the amount <span class="math notranslate nohighlight">\(w_{USD}(0)\)</span> at time <span class="math notranslate nohighlight">\(0\)</span> and aim to maximize the amount <span class="math notranslate nohighlight">\(w_{USD}(T)\)</span> at time <span class="math notranslate nohighlight">\(T\)</span>. Denote by <span class="math notranslate nohighlight">\(O_j\)</span> the set of nodes to which outgoing arcs from <span class="math notranslate nohighlight">\(j\)</span> lead, and by <span class="math notranslate nohighlight">\(I_j\)</span> the set of nodes from which incoming arcs lead.</p>
-<p>A single transaction converts <span class="math notranslate nohighlight">\(x_{i\rightarrow j}(t)\)</span> units of currency <span class="math notranslate nohighlight">\(i\)</span> to currency <span class="math notranslate nohighlight">\(j\)</span>. Following the all transactions at event <span class="math notranslate nohighlight">\(t\)</span>, the trader will hold <span class="math notranslate nohighlight">\(v_j(t)\)</span> units of currency <span class="math notranslate nohighlight">\(j\)</span> where</p>
+<p>Instead, we can formulate the problem of searching for a maximum-gain arbitrage via linear optimization. Assume that we are given a directed graph where each edge <span class="math notranslate nohighlight">\(i\rightarrow j\)</span> is labeled with a ‘multiplier’ <span class="math notranslate nohighlight">\(a_{i\rightarrow j}\)</span> indicating how many units of currency <span class="math notranslate nohighlight">\(j\)</span> will be received for one unit of currency <span class="math notranslate nohighlight">\(i\)</span>, and a ‘capacity’ <span class="math notranslate nohighlight">\(c_{i\rightarrow j}\)</span> indicating how many units of currency <span class="math notranslate nohighlight">\(i\)</span> can be converted to currency <span class="math notranslate nohighlight">\(j\)</span>.</p>
+<p>We break the trading process into steps indexed by <span class="math notranslate nohighlight">\(t = 1, 2, \ldots, T\)</span>, where currencies are exchanged between two adjacent nodes in a single step. We denote by <span class="math notranslate nohighlight">\(x_{i\rightarrow j}(t)\)</span> the amount of currency traded from node <span class="math notranslate nohighlight">\(i\)</span> to <span class="math notranslate nohighlight">\(j\)</span> in step <span class="math notranslate nohighlight">\(t\)</span>. In this way, we start with the amount <span class="math notranslate nohighlight">\(w_{USD}(0)\)</span> at time <span class="math notranslate nohighlight">\(0\)</span> and aim to maximize the amount <span class="math notranslate nohighlight">\(w_{USD}(T)\)</span> at time <span class="math notranslate nohighlight">\(T\)</span>. Denote by <span class="math notranslate nohighlight">\(O_j\)</span> the set of nodes to which outgoing arcs from <span class="math notranslate nohighlight">\(j\)</span> lead, and by <span class="math notranslate nohighlight">\(I_j\)</span> the set of nodes from which incoming arcs lead.</p>
+<p>A single transaction converts <span class="math notranslate nohighlight">\(x_{i\rightarrow j}(t)\)</span> units of currency <span class="math notranslate nohighlight">\(i\)</span> to currency <span class="math notranslate nohighlight">\(j\)</span>. Following all transactions at event <span class="math notranslate nohighlight">\(t\)</span>, the trader will hold <span class="math notranslate nohighlight">\(v_j(t)\)</span> units of currency <span class="math notranslate nohighlight">\(j\)</span> where</p>
 <div class="math notranslate nohighlight">
 \[v_{j}(t) = v_{j}(t-1) + \sum_{i\in I_j} a_{i\rightarrow j}x_{i\rightarrow j}(t) - \sum_{k\in O_j} x_{j\rightarrow k}(t)\]</div>
 <p>For every edge <span class="math notranslate nohighlight">\(i\rightarrow j\)</span>, the sum of all transactions must satisfy</p>
 <div class="math notranslate nohighlight">
 \[\sum_{t=1}^T x_{j\rightarrow k}(t) \leq c_{j\rightarrow k}\]</div>
-<p>The objective of the optimization model is to find a sequence of currency transactions that increase the holdings of a reference currency. The solution is constrained by assuming the trader cannot short sell any currency. The resulting model is</p>
+<p>The objective of the optimization model is to find a sequence of currency transactions that increase the holdings of a reference currency. The solution is constrained by assuming that the trader cannot short sell any currency. The resulting model is</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
 \max \quad &amp; v_{USD}(T) \\
-\\
 \text{s.t.} \quad &amp; v_{USD}(0) = v_0 \\ 
-\\
 &amp; v_{j}(t) = v_{j}(t-1) + \sum_{i\in I_j} a_{i\rightarrow j}x_{i\rightarrow j}(t) - \sum_{k\in O_j} x_{j\rightarrow k}(t) &amp; \forall j\in N, t=1, 2, \ldots, T \\
 &amp; v_j(t-1) \geq \sum_{k\in O_j} x_{j\rightarrow k}(t) &amp; \forall j\in N, t = 1, 2, \ldots, T  \\
 &amp; \sum_{t=1}^T x_{j\rightarrow k}(t) \leq c_{j\rightarrow k} &amp; \forall (j, k) \in E,  t = 1, 2, \ldots, T \\
-&amp; v_{j}(t), x_{i\rightarrow j}(t) \geq 0 &amp;&amp; \forall t
+&amp; v_{j}(t), x_{i\rightarrow j}(t) \geq 0 &amp; \forall t
 \end{align*}
 \end{split}\]</div>
-<p>where the subsequent constraints are the:</p>
+<p>where the constraints model:</p>
 <ul class="simple">
-<li><p>initial amount condition,</p></li>
-<li><p>balance equations linking the state of the given node in the previous and subsequent time periods,</p></li>
-<li><p>constraint that we cannot trade at time step <span class="math notranslate nohighlight">\(t\)</span> more of a given currency than we had in this currency from time step <span class="math notranslate nohighlight">\(t - 1\)</span>. This constraint ‘enforces’ the time order of trades, i.e., we cannot trade in time period <span class="math notranslate nohighlight">\(t\)</span> units which have been received in the same time period.</p></li>
-<li><p>the capacity constraints related to the maximum allowed trade volumes,</p></li>
-<li><p>non-negativity constraints.</p></li>
+<li><p>the initial amount condition,</p></li>
+<li><p>the balance equations linking the state of the given node in the previous and subsequent time periods,</p></li>
+<li><p>the fact that we cannot trade at time step <span class="math notranslate nohighlight">\(t\)</span> more of a given currency than we had in this currency from time step <span class="math notranslate nohighlight">\(t - 1\)</span>. This constraint ‘enforces’ the time order of trades, i.e., we cannot trade in time period <span class="math notranslate nohighlight">\(t\)</span> units which have been received in the same time period.</p></li>
+<li><p>the maximum allowed trade volumes,</p></li>
+<li><p>the non-negativity of the variables.</p></li>
 </ul>
-<p>The following Python code illustrates this formulation.</p>
+<p>The following cell implements this optimization model using Pyomo.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-
-
-<span class="k">def</span> <span class="nf">crypto_model</span><span class="p">(</span><span class="n">order_book_dg</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">v0</span><span class="o">=</span><span class="mf">100.0</span><span class="p">):</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">crypto_model</span><span class="p">(</span><span class="n">order_book_dg</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">v0</span><span class="o">=</span><span class="mf">100.0</span><span class="p">):</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Cryptocurrency arbitrage&quot;</span><span class="p">)</span>
 
     <span class="c1"># length of the trading chain</span>
     <span class="n">m</span><span class="o">.</span><span class="n">T0</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
@@ -1846,7 +1788,7 @@ Basis Points             Arbitrage Cycle
     <span class="k">def</span> <span class="nf">edge_capacity</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">c</span><span class="p">[</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">]</span>
 
-    <span class="c1"># initial assignment of 100 units on a selected currency</span>
+    <span class="c1"># initial assignment of v0 units on a selected currency</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">NODES</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">initial</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">node</span> <span class="o">==</span> <span class="s2">&quot;USD&quot;</span><span class="p">:</span>
@@ -1892,7 +1834,7 @@ Basis Points             Arbitrage Cycle
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Starting wealth = 10000.00 USD
 Weath after  8 transactions = 10009.01 USD
-Return = 9.007 basis points
+Return = 9.006 basis points
 </pre></div>
 </div>
 </div>
@@ -1916,12 +1858,12 @@ ADA       0.00000     0.00000     0.00000     0.00000     0.00000     0.00000   
 SOL       0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
 MATIC     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
 MANA      0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
-TRX       0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     4.00000     0.00000     0.00000
-USDT      0.00000  9998.02600     0.97433     0.00000 10003.02700     0.97482     0.00000 10008.03000     0.00000
-BUSD      0.00000     0.00000 10002.02700     0.97472     0.00000 10007.03000     0.00000     0.00000     0.00000
-USDC      0.00000     0.97424     0.00000 10002.02700     0.97472     0.00000 10007.03000     0.00000     0.00000
+TRX       0.00000     0.00000    -0.00000    -0.00000     0.00000     0.00000     4.00000    -0.00000     0.00000
+USDT      0.00000  4953.27900  5046.73030     0.00000  4955.75660  5049.25470     0.00000  4958.23550     0.00000
+BUSD      0.00000    -0.00000  4955.26110  5048.74980     0.00000  4957.73970  5050.30000     0.00000     0.00000
+USDC      0.00000  5046.22570     0.00000  4955.26110  5048.74980     0.00000  4957.73970  5050.30000     0.00000
 DAI       0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000
-USD   10000.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000     0.00000 10009.00700
+USD   10000.00000    -0.00000     0.00000     0.00000     0.00000    -0.00000     0.00000     0.00000 10009.00600
 </pre></div>
 </div>
 </div>
@@ -1944,38 +1886,41 @@ USD   10000.00000     0.00000     0.00000     0.00000     0.00000     0.00000   
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Transaction Events
 t = 1
- USD      -&gt; USDT    :    9999.025800    9998.025997
- USD      -&gt; USDC    :       0.974235       0.974235
+ USD      -&gt; USDT    :    4953.774300    4953.278972
+ USD      -&gt; USDC    :    5046.225700    5046.225700
 
 t = 2
- USDT     -&gt; BUSD    :    9998.026000   10002.026811
- USDC     -&gt; USDT    :       0.974235       0.974333
+ USDT     -&gt; BUSD    :    4953.279000    4955.261104
+ USDC     -&gt; USDT    :    5046.225700    5046.730323
 
 t = 3
- USDT     -&gt; BUSD    :       0.974333       0.974723
- BUSD     -&gt; USDC    :   10002.027000   10002.027000
+ USDT     -&gt; BUSD    :    5046.730300    5048.749800
+ BUSD     -&gt; USDC    :    4955.261100    4955.261100
 
 t = 4
- BUSD     -&gt; USDC    :       0.974723       0.974723
- USDC     -&gt; USDT    :   10002.027000   10003.027203
+ BUSD     -&gt; USDC    :    5048.749800    5048.749800
+ USDC     -&gt; USDT    :    4955.261100    4955.756626
 
 t = 5
- USDT     -&gt; BUSD    :   10003.027000   10007.029812
- USDC     -&gt; USDT    :       0.974723       0.974820
+ USDT     -&gt; BUSD    :    4955.756600    4957.739696
+ USDC     -&gt; USDT    :    5048.749800    5049.254675
 
 t = 6
  USDT     -&gt; ADA     :       0.697500       2.000000
+ USDT     -&gt; BUSD    :    5048.279900    5050.300020
  USDT     -&gt; TRX     :       0.277320       4.000000
- BUSD     -&gt; USDC    :   10007.030000   10007.030000
+ BUSD     -&gt; USDC    :    4957.739700    4957.739700
 
 t = 7
  ADA      -&gt; BTC     :       2.000000       0.000030
  TRX      -&gt; BTC     :       4.000000       0.000012
- USDC     -&gt; USDT    :   10007.030000   10008.030703
+ BUSD     -&gt; USDC    :    5050.300000    5050.300000
+ USDC     -&gt; USDT    :    4957.739700    4958.235474
 
 t = 8
  BTC      -&gt; USD     :       0.000042       0.976057
- USDT     -&gt; USD     :   10008.030000   10008.030000
+ USDT     -&gt; USD     :    4958.235500    4958.235500
+ USDC     -&gt; USD     :    5050.300000    5049.794970
 </pre></div>
 </div>
 </div>
@@ -1983,8 +1928,7 @@ t = 8
 <p>We next illustrate the arbitrage strategy in the graph by marking all the corresponding arcs thicker.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># add comment in the text to remind the reader about bids and asks</span>
-<span class="c1"># for each currency we took only one ask and one bid, this is why we are unique between each pair of nodes</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># for each currency we took only one ask and one bid, this is why we are unique between each pair of nodes</span>
 
 <span class="c1"># report what orders to issue</span>
 <span class="k">for</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">EDGES</span><span class="p">:</span>
@@ -1994,14 +1938,12 @@ t = 8
         <span class="n">order_book_dg</span><span class="p">[</span><span class="n">src</span><span class="p">][</span><span class="n">dst</span><span class="p">][</span><span class="s2">&quot;width&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span>
 
 <span class="n">draw_dg</span><span class="p">(</span><span class="n">order_book_dg</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: &gt;
-</pre></div>
-</div>
-<img alt="../../_images/9e95d7b389c18e84e01f32758bbaf8e4bd113f30c8c8cc4e50074871f96970e9.png" src="../../_images/9e95d7b389c18e84e01f32758bbaf8e4bd113f30c8c8cc4e50074871f96970e9.png" />
+<img alt="../../_images/c8e09848a0061a31c2320dab857f119655d6501dcc36977800ba51e26f0a88a9.png" src="../../_images/c8e09848a0061a31c2320dab857f119655d6501dcc36977800ba51e26f0a88a9.png" />
 </div>
 </div>
 <p>If we want to be even more precise about the execution of the trading strategy, we can formulate a printout of the list of orders that we, as the counter party to the orders stated in the order book, should issue for our strategy to take place.</p>
@@ -2041,13 +1983,14 @@ t = 8
   ADA -&gt; BTC   bid      2.00000        2.00000  &gt;&gt;&gt;  buy         2.000000 ADA/BTC     at     0.000015
   TRX -&gt; BTC   bid      4.00000        4.00000  &gt;&gt;&gt;  buy         4.000000 TRX/BTC     at     0.000003
  USDT -&gt; ADA   ask    178.28100        0.69750  &gt;&gt;&gt;  sell        2.000000 ADA/USDT    at     0.348750
- USDT -&gt; BUSD  ask 317048.85971    20002.02700  &gt;&gt;&gt;  sell    20010.031012 BUSD/USDT   at     0.999600
+ USDT -&gt; BUSD  ask 317048.85971    20004.04600  &gt;&gt;&gt;  sell    20012.050820 BUSD/USDT   at     0.999600
  USDT -&gt; TRX   ask    750.05354        0.27732  &gt;&gt;&gt;  sell        4.000000 TRX/USDT    at     0.069330
- USDT -&gt; USD   bid  10407.87000    10008.03000  &gt;&gt;&gt;  buy     10008.030000 USDT/USD    at     1.000000
- BUSD -&gt; USDC  ask 279879.62000    20010.03100  &gt;&gt;&gt;  sell    20010.031000 USDC/BUSD   at     1.000000
- USDC -&gt; USDT  bid 307657.00000    20011.00600  &gt;&gt;&gt;  buy     20011.006000 USDC/USDT   at     1.000100
-  USD -&gt; USDT  ask 954935.16397     9999.02580  &gt;&gt;&gt;  sell     9998.025997 USDT/USD    at     1.000100
-  USD -&gt; USDC  ask 517682.17000        0.97424  &gt;&gt;&gt;  sell        0.974235 USDC/USD    at     1.000000
+ USDT -&gt; USD   bid  10407.87000     4958.23550  &gt;&gt;&gt;  buy      4958.235500 USDT/USD    at     1.000000
+ BUSD -&gt; USDC  ask 279879.62000    20012.05100  &gt;&gt;&gt;  sell    20012.051000 USDC/BUSD   at     1.000000
+ USDC -&gt; USDT  bid 307657.00000    20007.97600  &gt;&gt;&gt;  buy     20007.976000 USDC/USDT   at     1.000100
+ USDC -&gt; USD   bid   5050.30000     5050.30000  &gt;&gt;&gt;  buy      5050.300000 USDC/USD    at     0.999900
+  USD -&gt; USDT  ask 954935.16397     4953.77430  &gt;&gt;&gt;  sell     4953.278972 USDT/USD    at     1.000100
+  USD -&gt; USDC  ask 517682.17000     5046.22570  &gt;&gt;&gt;  sell     5046.225700 USDC/USD    at     1.000000
 </pre></div>
 </div>
 </div>
@@ -2075,12 +2018,12 @@ t = 8
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/af9664cc37d8e1f73f48a67d7598b9f07ae3a9f6de7e37554b6e2792dbf8189d.png" src="../../_images/af9664cc37d8e1f73f48a67d7598b9f07ae3a9f6de7e37554b6e2792dbf8189d.png" />
+<img alt="../../_images/06eb2ef896260feb73fe97d3f472b664ef63288789733cb5e3331e8ddaefce6a.png" src="../../_images/06eb2ef896260feb73fe97d3f472b664ef63288789733cb5e3331e8ddaefce6a.png" />
 </div>
 </div>
 </section>
-<section id="questions-to-the-user">
-<h2>Questions to the user<a class="headerlink" href="#questions-to-the-user" title="Permalink to this heading">#</a></h2>
+<section id="exercises-for-the-reader">
+<h2>Exercises for the reader<a class="headerlink" href="#exercises-for-the-reader" title="Permalink to this heading">#</a></h2>
 <p>The previous notebook cells made certain assumptions that we need to consider. The first assumption was that there was at most one bid and one ask order between any pair of currencies in an exchange. This assumption was based on the number of orders we downloaded from the online database, but in reality, there may be more orders. How would the presence of multiple orders per pair affect our graph formulation? How can we adjust the MILO formulation to account for this?</p>
 <p>Another assumption was that we only traded currencies within one exchange. However, in reality, we can trade across multiple exchanges. How can we modify the graph-based problem formulation to accommodate this scenario?</p>
 <p>Further, we have assigned no cost to the number of trades required to implement the strategy produced by optimization. How can the modeled be modified to either minimize the number of trades, or to explicitly include trading costs?</p>
@@ -2092,10 +2035,7 @@ t = 8
 <p>The subsequent cell in the notebook utilizes <code class="docutils literal notranslate"><span class="pre">ccxt.exchange.fetch_order_book</span></code> to obtain the highest bid and lowest ask orders from an exchange for market symbols that meet the criteria of having a minimum in-degree for their base currencies.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-
-
-<span class="k">def</span> <span class="nf">get_order_book</span><span class="p">(</span><span class="n">exchange</span><span class="p">,</span> <span class="n">exchange_dg</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_order_book</span><span class="p">(</span><span class="n">exchange</span><span class="p">,</span> <span class="n">exchange_dg</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">get_orders</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">quote</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return order book data for a specified symbol.</span>
@@ -2134,7 +2074,7 @@ t = 8
     <span class="p">]</span>
 
 
-<span class="n">minimum_in_degree</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">minimum_in_degree</span> <span class="o">=</span> <span class="mi">10</span>
 
 <span class="c1"># get graph of market symbols with mininum_in_degree for base currencies</span>
 <span class="n">exchange_dg</span> <span class="o">=</span> <span class="n">get_exchange_dg</span><span class="p">(</span><span class="n">exchange</span><span class="p">,</span> <span class="n">minimum_in_degree</span><span class="p">)</span>
@@ -2154,7 +2094,7 @@ t = 8
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Potential Return = 0.101 basis points
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Potential Return = 0.000 basis points
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -2189,57 +2129,57 @@ t = 8
     <tr>
       <th>0</th>
       <td>ETH/BTC</td>
-      <td>2023-06-15 00:27:22.888</td>
+      <td>2023-10-26 10:28:07.688</td>
       <td>ETH</td>
       <td>BTC</td>
-      <td>0.065550</td>
-      <td>9.900000e-03</td>
-      <td>0.065834</td>
-      <td>7.900000e-03</td>
+      <td>0.0534</td>
+      <td>1.00000</td>
+      <td>0.0535</td>
+      <td>1.01680</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>BNB/BTC</td>
-      <td>2023-06-15 00:27:23.035</td>
-      <td>BNB</td>
+      <td>BTC/USDT</td>
+      <td>2023-10-26 10:28:07.785</td>
       <td>BTC</td>
-      <td>0.009385</td>
-      <td>3.400000e-02</td>
-      <td>0.009415</td>
-      <td>1.029000e+00</td>
+      <td>USDT</td>
+      <td>34422.5300</td>
+      <td>0.04934</td>
+      <td>34450.7000</td>
+      <td>0.00128</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>LTC/BTC</td>
-      <td>2023-06-15 00:27:23.111</td>
-      <td>LTC</td>
-      <td>BTC</td>
-      <td>0.002904</td>
-      <td>1.270000e-01</td>
-      <td>0.002925</td>
-      <td>5.000000e-01</td>
+      <td>ETH/USDT</td>
+      <td>2023-10-26 10:28:08.017</td>
+      <td>ETH</td>
+      <td>USDT</td>
+      <td>1840.2700</td>
+      <td>1.07030</td>
+      <td>1841.6900</td>
+      <td>2.09630</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>ADA/BTC</td>
-      <td>2023-06-15 00:27:23.328</td>
-      <td>ADA</td>
-      <td>BTC</td>
-      <td>0.000010</td>
-      <td>4.002000e+02</td>
-      <td>0.000010</td>
-      <td>5.120000e+01</td>
+      <td>BAT/USDT</td>
+      <td>2023-10-26 10:28:08.118</td>
+      <td>BAT</td>
+      <td>USDT</td>
+      <td>0.2032</td>
+      <td>659.00000</td>
+      <td>0.2044</td>
+      <td>804.00000</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>LINK/BTC</td>
-      <td>2023-06-15 00:27:23.401</td>
-      <td>LINK</td>
-      <td>BTC</td>
-      <td>0.000208</td>
-      <td>6.705000e+01</td>
-      <td>0.000210</td>
-      <td>4.710000e+00</td>
+      <td>ETC/USDT</td>
+      <td>2023-10-26 10:28:08.213</td>
+      <td>ETC</td>
+      <td>USDT</td>
+      <td>16.5500</td>
+      <td>6.27000</td>
+      <td>16.8500</td>
+      <td>0.10000</td>
     </tr>
     <tr>
       <th>...</th>
@@ -2253,63 +2193,63 @@ t = 8
       <td>...</td>
     </tr>
     <tr>
-      <th>311</th>
-      <td>IOST/USD</td>
-      <td>2023-06-15 00:27:48.713</td>
-      <td>IOST</td>
-      <td>USD</td>
-      <td>0.006830</td>
-      <td>1.652040e+05</td>
-      <td>0.007860</td>
-      <td>3.254300e+04</td>
+      <th>143</th>
+      <td>BTC/USDC</td>
+      <td>2023-10-26 10:28:29.614</td>
+      <td>BTC</td>
+      <td>USDC</td>
+      <td>34358.6800</td>
+      <td>0.00504</td>
+      <td>34467.3700</td>
+      <td>0.00290</td>
     </tr>
     <tr>
-      <th>312</th>
-      <td>ARB/USD</td>
-      <td>2023-06-15 00:27:48.855</td>
-      <td>ARB</td>
-      <td>USD</td>
-      <td>0.961000</td>
-      <td>7.520000e+01</td>
-      <td>1.079900</td>
-      <td>1.474000e+02</td>
+      <th>144</th>
+      <td>ETH/USDC</td>
+      <td>2023-10-26 10:28:29.712</td>
+      <td>ETH</td>
+      <td>USDC</td>
+      <td>1834.3500</td>
+      <td>1.11010</td>
+      <td>1862.0600</td>
+      <td>0.21520</td>
     </tr>
     <tr>
-      <th>313</th>
-      <td>FLOKI/USD</td>
-      <td>2023-06-15 00:27:48.927</td>
-      <td>FLOKI</td>
-      <td>USD</td>
-      <td>0.000022</td>
-      <td>1.834030e+05</td>
-      <td>0.000022</td>
-      <td>4.502476e+06</td>
+      <th>145</th>
+      <td>BTC/DAI</td>
+      <td>2023-10-26 10:28:29.828</td>
+      <td>BTC</td>
+      <td>DAI</td>
+      <td>33763.7400</td>
+      <td>0.00030</td>
+      <td>35062.9500</td>
+      <td>0.00030</td>
     </tr>
     <tr>
-      <th>314</th>
-      <td>XEC/USD</td>
-      <td>2023-06-15 00:27:49.001</td>
-      <td>XEC</td>
-      <td>USD</td>
-      <td>0.000016</td>
-      <td>1.356363e+07</td>
-      <td>0.000021</td>
-      <td>5.642790e+05</td>
+      <th>146</th>
+      <td>ETH/DAI</td>
+      <td>2023-10-26 10:28:30.036</td>
+      <td>ETH</td>
+      <td>DAI</td>
+      <td>1635.0100</td>
+      <td>0.02700</td>
+      <td>1872.4900</td>
+      <td>0.00120</td>
     </tr>
     <tr>
-      <th>315</th>
-      <td>BLUR/USD</td>
-      <td>2023-06-15 00:27:49.067</td>
-      <td>BLUR</td>
+      <th>147</th>
+      <td>USDT/USD</td>
+      <td>2023-10-26 10:28:30.430</td>
+      <td>USDT</td>
       <td>USD</td>
-      <td>0.283000</td>
-      <td>2.990000e+01</td>
-      <td>0.305000</td>
-      <td>2.910000e+01</td>
+      <td>1.0000</td>
+      <td>4030.00000</td>
+      <td>1.0006</td>
+      <td>620.00000</td>
     </tr>
   </tbody>
 </table>
-<p>316 rows × 8 columns</p>
+<p>148 rows × 8 columns</p>
 </div></div></div>
 </div>
 <p>The following cell can be used to download additional order book data sets for testing.</p>
@@ -2317,7 +2257,6 @@ t = 8
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">glob</span>
 
 <span class="c1"># get graph of market symbols with mininum_in_degree for base currencies</span>
 <span class="n">minimum_in_degree</span> <span class="o">=</span> <span class="mi">5</span>
@@ -2333,7 +2272,7 @@ t = 8
 <span class="c1"># wait for arbitrage opportunity</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Search for </span><span class="si">{</span><span class="n">search_time</span><span class="si">}</span><span class="s2"> seconds.&quot;</span><span class="p">)</span>
 <span class="k">while</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">timeout</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;bp = &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Basis points = &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
     <span class="n">order_book</span> <span class="o">=</span> <span class="n">get_order_book</span><span class="p">(</span><span class="n">exchange</span><span class="p">,</span> <span class="n">exchange_dg</span><span class="p">)</span>
     <span class="n">order_book_dg</span> <span class="o">=</span> <span class="n">order_book_to_dg</span><span class="p">(</span><span class="n">order_book</span><span class="p">)</span>
 
@@ -2357,49 +2296,52 @@ t = 8
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Search for 20 seconds.
-bp = 0.068
+Basis points = 0.149
 Search complete.
 </pre></div>
 </div>
 </div>
 </div>
-<!---
-
-## Bibliographic Notes
-
-Crytocurrency markets are relatively new compared to other markets, and relatively few academic papers are available that specifically address arbitrage on those markets. Early studies, such as the following, reported periods of large, recurrent arbitrage opportunities that exist across exchanges, and that can persist for several days or weeks.
-
-> Makarov, I., & Schoar, A. (2020). Trading and arbitrage in cryptocurrency markets. Journal of Financial Economics, 135(2), 293-319.
-
-Subsequent work reports these prices differentials do exist, but only at a fraction of the values previously reported, and only for fleeting periods of time. 
-
-> Crépellière, T., & Zeisberger, S. (2020). Arbitrage in the Market for Cryptocurrencies. Available at SSRN 3606053.  https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3606053
-
-The use of network algorithms to identify cross-exchange arbitrage has appeared in the academic literature, and in numerous web sites demonstrating optimization and network applications. Representative examples are cited below.
-
-> Peduzzi, G., James, J., & Xu, J. (2021, September). JACK THE RIPPLER: Arbitrage on the Decentralized Exchange of the XRP Ledger. In 2021 3rd Conference on Blockchain Research & Applications for Innovative Networks and Services (BRAINS) (pp. 1-2). IEEE. https://arxiv.org/pdf/2106.16158.pdf
-
-> Bruzgė, R., & Šapkauskienė, A. (2022). Network analysis on Bitcoin arbitrage opportunities. The North American Journal of Economics and Finance, 59, 101562. https://doi.org/10.1016/j.najef.2021.101562
-
-> Bruzgė, R., & Šapkauskienė, A. (2022). Dataset for Bitcoin arbitrage in different cryptocurrency exchanges. Data in Brief, 40, 107731. 
-
-The work in this notebook is related to materials found in the following web resources.
-
-> https://anilpai.medium.com/currency-arbitrage-using-bellman-ford-algorithm-8938dcea56ea
-
-> [Crypto Trading and Arbitrage Identification Strategies](https://nbviewer.org/github/rcroessmann/sharing_public/blob/master/arbitrage_identification.ipynb)
-
-A more complete analysis of trading and exploiting arbitrage opportunities in decentralized finance markets is available in the following paper and thesis.
-
-> Byrne, S. An Exploration of Novel Trading and Arbitrage Methods within Decentralised Finance. https://www.scss.tcd.ie/Donal.OMahony/bfg/202021/StephenByrneDissertation.pdf
-
-> Levus, R., Berko, A., Chyrun, L., Panasyuk, V., & Hrubel, M. (2021). Intelligent System for Arbitrage Situations Searching in the Cryptocurrency Market. In CEUR Workshop Proceedings (pp. 407-440). http://ceur-ws.org/Vol-2917/paper32.pdf
-
-In addition to the analysis of arbitrage opportunities, convex optimization may also have an important role in the developing of trading algorithms for crypocurrency exchanges.
-
-> Angeris, G., Agrawal, A., Evans, A., Chitra, T., & Boyd, S. (2021). Constant function market makers: Multi-asset trades via convex optimization. arXiv preprint arXiv:2107.12484. https://baincapitalcrypto.com/constant-function-market-makers-multi-asset-trades-via-convex-optimization/ and https://arxiv.org/pdf/2107.12484.pdf
-
----></section>
+</section>
+<section id="bibliographic-notes">
+<h2>Bibliographic Notes<a class="headerlink" href="#bibliographic-notes" title="Permalink to this heading">#</a></h2>
+<p>Crytocurrency markets are relatively new compared to other markets, and relatively few academic papers are available that specifically address arbitrage on those markets. Early studies, such as the following, reported periods of large, recurrent arbitrage opportunities that exist across exchanges, and that can persist for several days or weeks.</p>
+<blockquote>
+<div><p>Makarov, I., &amp; Schoar, A. (2020). Trading and arbitrage in cryptocurrency markets. Journal of Financial Economics, 135(2), 293-319.</p>
+</div></blockquote>
+<p>Subsequent work reports these prices differentials do exist, but only at a fraction of the values previously reported, and only for fleeting periods of time.</p>
+<blockquote>
+<div><p>Crépellière, T., &amp; Zeisberger, S. (2020). Arbitrage in the Market for Cryptocurrencies. Available at SSRN 3606053.  <a class="reference external" href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3606053">https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3606053</a></p>
+</div></blockquote>
+<p>The use of network algorithms to identify cross-exchange arbitrage has appeared in the academic literature, and in numerous web sites demonstrating optimization and network applications. Representative examples are cited below.</p>
+<blockquote>
+<div><p>Peduzzi, G., James, J., &amp; Xu, J. (2021, September). JACK THE RIPPLER: Arbitrage on the Decentralized Exchange of the XRP Ledger. In 2021 3rd Conference on Blockchain Research &amp; Applications for Innovative Networks and Services (BRAINS) (pp. 1-2). IEEE. <a class="reference external" href="https://arxiv.org/pdf/2106.16158.pdf">https://arxiv.org/pdf/2106.16158.pdf</a></p>
+</div></blockquote>
+<blockquote>
+<div><p>Bruzgė, R., &amp; Šapkauskienė, A. (2022). Network analysis on Bitcoin arbitrage opportunities. The North American Journal of Economics and Finance, 59, 101562. <a class="reference external" href="https://doi.org/10.1016/j.najef.2021.101562">https://doi.org/10.1016/j.najef.2021.101562</a></p>
+</div></blockquote>
+<blockquote>
+<div><p>Bruzgė, R., &amp; Šapkauskienė, A. (2022). Dataset for Bitcoin arbitrage in different cryptocurrency exchanges. Data in Brief, 40, 107731.</p>
+</div></blockquote>
+<p>The work in this notebook is related to materials found in the following web resources.</p>
+<blockquote>
+<div><p><a class="reference external" href="https://anilpai.medium.com/currency-arbitrage-using-bellman-ford-algorithm-8938dcea56ea">https://anilpai.medium.com/currency-arbitrage-using-bellman-ford-algorithm-8938dcea56ea</a></p>
+</div></blockquote>
+<blockquote>
+<div><p><a class="reference external" href="https://nbviewer.org/github/rcroessmann/sharing_public/blob/master/arbitrage_identification.ipynb">Crypto Trading and Arbitrage Identification Strategies</a></p>
+</div></blockquote>
+<p>A more complete analysis of trading and exploiting arbitrage opportunities in decentralized finance markets is available in the following paper and thesis.</p>
+<blockquote>
+<div><p>Byrne, S. An Exploration of Novel Trading and Arbitrage Methods within Decentralised Finance. <a class="reference external" href="https://www.scss.tcd.ie/Donal.OMahony/bfg/202021/StephenByrneDissertation.pdf">https://www.scss.tcd.ie/Donal.OMahony/bfg/202021/StephenByrneDissertation.pdf</a></p>
+</div></blockquote>
+<blockquote>
+<div><p>Levus, R., Berko, A., Chyrun, L., Panasyuk, V., &amp; Hrubel, M. (2021). Intelligent System for Arbitrage Situations Searching in the Cryptocurrency Market. In CEUR Workshop Proceedings (pp. 407-440). <a class="reference external" href="http://ceur-ws.org/Vol-2917/paper32.pdf">http://ceur-ws.org/Vol-2917/paper32.pdf</a></p>
+</div></blockquote>
+<p>In addition to the analysis of arbitrage opportunities, convex optimization may also have an important role in the developing of trading algorithms for crypocurrency exchanges.</p>
+<blockquote>
+<div><p>Angeris, G., Agrawal, A., Evans, A., Chitra, T., &amp; Boyd, S. (2021). Constant function market makers: Multi-asset trades via convex optimization. arXiv preprint arXiv:2107.12484. <a class="reference external" href="https://baincapitalcrypto.com/constant-function-market-makers-multi-asset-trades-via-convex-optimization/">https://baincapitalcrypto.com/constant-function-market-makers-multi-asset-trades-via-convex-optimization/</a> and <a class="reference external" href="https://arxiv.org/pdf/2107.12484.pdf">https://arxiv.org/pdf/2107.12484.pdf</a></p>
+</div></blockquote>
+</section>
 </section>
 
     <script type="text/x-thebe-config">
@@ -2467,20 +2409,23 @@ In addition to the analysis of arbitrage opportunities, convex optimization may 
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installations-and-imports">Installations and Imports</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#install-pyomo-and-a-solver">Install Pyomo and a solver</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#networkx">NetworkX</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ccxt">CCXT</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cryptocurrency-exchanges">Cryptocurrency exchanges</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#additional-libraries-needed-networkx-and-ccxt">Additional libraries needed: NetworkX and CCXT</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#available-cryptocurrency-exchanges">Available cryptocurrency exchanges</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#representing-an-exchange-as-a-directed-graph">Representing an exchange as a directed graph</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exchange-order-book">Exchange order book</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modelling-the-arbitrage-search-problem-as-a-graph">Modelling the arbitrage search problem as a graph</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#trading-and-arbitrage">Trading and Arbitrage</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#find-order-books-that-demonstrate-arbitrage-opportunities">Find order books that demonstrate arbitrage opportunities</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#trading-and-arbitrage">Trading and arbitrage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#find-order-books-that-have-arbitrage-opportunities">Find order books that have arbitrage opportunities</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#brute-force-search-arbitrage-with-simple-cycles">Brute force search arbitrage with simple cycles</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model-for-arbitrage-with-capacity-constraints">Pyomo Model for Arbitrage with Capacity Constraints</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#questions-to-the-user">Questions to the user</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model-for-arbitrage-with-capacity-constraints">Pyomo model for arbitrage with capacity constraints</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exercises-for-the-reader">Exercises for the reader</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#real-time-downloads-of-order-books-from-an-exchange">Real Time Downloads of Order Books from an Exchange</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bibliographic-notes">Bibliographic Notes</a></li>
 </ul>
   </nav></div>
 
