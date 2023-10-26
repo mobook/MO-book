@@ -222,7 +222,6 @@ const thebe_selector_output = ".output, .cell_output"
 
 
 
-
 <li class="toctree-l2"><a class="reference internal" href="forex-arbitrage.html">Forex Arbitrage</a></li>
 </ul>
 </li>
@@ -568,9 +567,9 @@ document.write(`
     &amp; x_{ik} \in \{ 0, 1 \} &amp;&amp; \forall \, i \in V, \, \forall \, k = 1,\dots,K.
 \end{align*}
 \end{split}\]</div>
-<p>The optimal solution of this problem is known as the <strong>chromatic number</strong> of the graph <span class="math notranslate nohighlight">\(G\)</span> and corresponds to the minimum number of time slots needed to schedule all exams.</p>
-<p>In the rest of the notebook, for simplicity, we will use the graph terminology. The interested reader can easily interpret variables, constraints, and other considerations into the scheduling context.</p>
-<p>The following cell defines the graph coloring problem in Pyomo. The function <code class="docutils literal notranslate"><span class="pre">graph_coloring</span></code> besides the graph <code class="docutils literal notranslate"><span class="pre">G</span></code> takes as optional argument the maximum number <code class="docutils literal notranslate"><span class="pre">Kmax</span></code> of colors to use in the model. Note that this might result in an infeasible model if <code class="docutils literal notranslate"><span class="pre">Kmax</span></code> is too small. The other optional argument <code class="docutils literal notranslate"><span class="pre">catch_infeasibility</span></code> is used precisely to diagnose the model infeasibility without raising errors.</p>
+<p>In this formulation, the objective function tries to minimize the number of colors used, while the constraints ensure that (i) two connected nodes do not share the same color, (ii) only a color <span class="math notranslate nohighlight">\(k\)</span> that is being used can be assigned to a node <span class="math notranslate nohighlight">\(i\)</span>, and (iii) each node has to be assigned exactly one color. The optimal solution of this problem is known as the <strong>chromatic number</strong> of the graph <span class="math notranslate nohighlight">\(G\)</span> and corresponds to the minimum number of time slots needed to schedule all exams.</p>
+<p>In the rest of the notebook, for simplicity, we will use the graph terminology but an interested reader should be able easily interpret the results back in the scheduling context.</p>
+<p>The following cell defines the graph coloring problem in Pyomo. The function <code class="docutils literal notranslate"><span class="pre">graph_coloring</span></code> besides a networkx graph object <code class="docutils literal notranslate"><span class="pre">G</span></code> takes as optional argument the maximum number <code class="docutils literal notranslate"><span class="pre">K</span></code> of colors to use in the model. Note that this might result in an infeasible model if <code class="docutils literal notranslate"><span class="pre">K</span></code> is too small. The other optional argument <code class="docutils literal notranslate"><span class="pre">catch_infeasibility</span></code> is used precisely to diagnose the model infeasibility without raising errors.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
@@ -578,10 +577,10 @@ document.write(`
 <span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">perf_counter</span> <span class="k">as</span> <span class="n">pc</span>
 
 
-<span class="k">def</span> <span class="nf">graph_coloring</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">Kmax</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">catch_infeasibility</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">graph_coloring</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">catch_infeasibility</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Graph Coloring&quot;</span><span class="p">)</span>
 
-    <span class="n">m</span><span class="o">.</span><span class="n">colors</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Kmax</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">colors</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">K</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">edges</span><span class="p">),</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
@@ -621,7 +620,13 @@ document.write(`
         <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">colors</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">]())</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">coloring</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">k</span>
-    <span class="k">return</span> <span class="n">coloring</span>
+    <span class="n">unique_labels</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">coloring</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">tab20</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s2">&quot;tab20&quot;</span><span class="p">)</span>
+    <span class="n">color_palette</span> <span class="o">=</span> <span class="p">[</span><span class="n">tab20</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span>
+    <span class="n">label_to_color</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">label</span><span class="p">:</span> <span class="n">color</span> <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">unique_labels</span><span class="p">,</span> <span class="n">color_palette</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">label_to_color</span><span class="p">[</span><span class="n">coloring</span><span class="p">[</span><span class="n">key</span><span class="p">]]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">coloring</span><span class="o">.</span><span class="n">keys</span><span class="p">())]</span>
 </pre></div>
 </div>
 </div>
@@ -629,7 +634,7 @@ document.write(`
 <p>Let us now solve this problem for a small example. We generate a random graph using the Erdos-Renyi <span class="math notranslate nohighlight">\((n,p)\)</span> model. Since we are interested in a connected graph, we keep generating random graphs changing the random seed until we obtained a connected one.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n</span> <span class="o">=</span> <span class="mi">14</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n</span> <span class="o">=</span> <span class="mi">15</span>
 <span class="n">p</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">/</span> <span class="n">n</span>
 
 <span class="n">seed</span> <span class="o">=</span> <span class="mi">1</span>
@@ -638,30 +643,22 @@ document.write(`
     <span class="n">seed</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">gnp_random_graph</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
 
-<span class="n">pos</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">spring_layout</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+<span class="n">pos</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">kamada_kawai_layout</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
 <span class="n">nx</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="n">pos</span><span class="p">,</span> <span class="n">with_labels</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/012c0ac7fc1ef68266b235563008020d2d0d8956166b1c2a0f4249e483bb05b6.png" src="../../_images/012c0ac7fc1ef68266b235563008020d2d0d8956166b1c2a0f4249e483bb05b6.png" />
+<img alt="../../_images/4a958f6164537dc50c0238eafd06a158d8db082511c4cea0e4da68e13694f8f2.png" src="../../_images/4a958f6164537dc50c0238eafd06a158d8db082511c4cea0e4da68e13694f8f2.png" />
 </div>
 </div>
-<p>If we have a reasonable upper bound on the number of colors necessary, we can set it using the optional argument <code class="docutils literal notranslate"><span class="pre">Kmax</span></code>. Otherwise, the default for the model is <code class="docutils literal notranslate"><span class="pre">Kmax=10</span></code>.</p>
+<p>If we have a reasonable upper bound on the number of colors necessary, we can set it using the optional argument <code class="docutils literal notranslate"><span class="pre">K</span></code>. Otherwise, the default for the model is <code class="docutils literal notranslate"><span class="pre">K=10</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Kmax</span> <span class="o">=</span> <span class="mi">4</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">graph_coloring</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">Kmax</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">K</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">graph_coloring</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">K</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The chromatic number of G is: </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">number_used_colors</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-<span class="c1"># Plot the graph with the coloring</span>
-<span class="n">tab20</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s2">&quot;tab20&quot;</span><span class="p">)</span>
-<span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="n">tab20</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]</span>
-<span class="n">coloring</span> <span class="o">=</span> <span class="n">get_coloring</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="n">nx</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span>
-    <span class="n">G</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="n">pos</span><span class="p">,</span> <span class="n">with_labels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">node_color</span><span class="o">=</span><span class="p">[</span><span class="n">colors</span><span class="p">[</span><span class="n">coloring</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">]</span>
-<span class="p">)</span>
+<span class="n">nx</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="n">pos</span><span class="p">,</span> <span class="n">with_labels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">node_color</span><span class="o">=</span><span class="n">get_coloring</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -669,10 +666,10 @@ document.write(`
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The chromatic number of G is: 3
 </pre></div>
 </div>
-<img alt="../../_images/8b81c2a184c076c22ffa803d1d8ea294a5a37b812824dd1cffab7845b1aed61c.png" src="../../_images/8b81c2a184c076c22ffa803d1d8ea294a5a37b812824dd1cffab7845b1aed61c.png" />
+<img alt="../../_images/7b5ab8c778114aa5f3811e14abc6a3432a0a14b7f0dd44b84e807b42a82bb443.png" src="../../_images/7b5ab8c778114aa5f3811e14abc6a3432a0a14b7f0dd44b84e807b42a82bb443.png" />
 </div>
 </div>
-<p>Alternatively, especially if we do not have a good guess for the upper bound of colors which are necessary, instead of choosing a very large <code class="docutils literal notranslate"><span class="pre">Kmax</span></code> which would make the MILO much larger and slower to solve, we can take an alternative approach.</p>
+<p>Alternatively, especially if we do not have a good guess for the upper bound of colors which are necessary, instead of choosing a very large <code class="docutils literal notranslate"><span class="pre">K</span></code> which would make the MILO much larger and slower to solve, we can take an alternative approach.</p>
 <p>Let us start by creating a much larger connected graph with the same strategy as before.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -684,43 +681,35 @@ document.write(`
     <span class="n">seed</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">gnp_random_graph</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
 
-<span class="n">pos</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">spring_layout</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
-<span class="n">nx</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="n">pos</span><span class="p">,</span> <span class="n">with_labels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">node_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+<span class="n">pos</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">kamada_kawai_layout</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+<span class="n">nx</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="n">pos</span><span class="p">,</span> <span class="n">with_labels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">node_size</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/eea2e649c26e8415e05af2dc7aea168b29d2ba3be8955fc81e9bd4beba2661f2.png" src="../../_images/eea2e649c26e8415e05af2dc7aea168b29d2ba3be8955fc81e9bd4beba2661f2.png" />
+<img alt="../../_images/65af28bac15dc33c59e44d5c77fcc66bff62565f31fb07f17c7eb445a15bcd61.png" src="../../_images/65af28bac15dc33c59e44d5c77fcc66bff62565f31fb07f17c7eb445a15bcd61.png" />
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span>
-<span class="n">Kmax</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">K</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-    <span class="n">results</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="n">graph_coloring</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">Kmax</span><span class="p">,</span> <span class="n">catch_infeasibility</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="n">graph_coloring</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">catch_infeasibility</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="o">==</span> <span class="n">pyo</span><span class="o">.</span><span class="n">TerminationCondition</span><span class="o">.</span><span class="n">optimal</span><span class="p">:</span>
-        <span class="n">m</span> <span class="o">=</span> <span class="n">graph_coloring</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">Kmax</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The chromatic number of G is: </span><span class="si">{</span><span class="n">Kmax</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">graph_coloring</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">K</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The chromatic number of G is: </span><span class="si">{</span><span class="n">K</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Time elapsed: </span><span class="si">{</span><span class="n">pc</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
         <span class="k">break</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">Kmax</span><span class="si">}</span><span class="s2"> colors are not enough&quot;</span><span class="p">)</span>
-        <span class="n">Kmax</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">K</span><span class="si">}</span><span class="s2"> colors are not enough&quot;</span><span class="p">)</span>
+        <span class="n">K</span> <span class="o">+=</span> <span class="mi">1</span>
 
-<span class="c1"># Plot the graph with the coloring</span>
-<span class="n">tab20</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s2">&quot;tab20&quot;</span><span class="p">)</span>
-<span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="n">tab20</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]</span>
-<span class="n">coloring</span> <span class="o">=</span> <span class="n">get_coloring</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">nx</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span>
-    <span class="n">G</span><span class="p">,</span>
-    <span class="n">pos</span><span class="o">=</span><span class="n">pos</span><span class="p">,</span>
-    <span class="n">with_labels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">node_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-    <span class="n">width</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
-    <span class="n">node_color</span><span class="o">=</span><span class="p">[</span><span class="n">colors</span><span class="p">[</span><span class="n">coloring</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">],</span>
+    <span class="n">G</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="n">pos</span><span class="p">,</span> <span class="n">with_labels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">node_size</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">node_color</span><span class="o">=</span><span class="n">get_coloring</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -729,17 +718,17 @@ document.write(`
 3 colors are not enough
 4 colors are not enough
 The chromatic number of G is: 5
-Time elapsed: 6.99 seconds
+Time elapsed: 6.62 seconds
 </pre></div>
 </div>
-<img alt="../../_images/d122e190c38f57c64f87900ee69e5f9ddc764fe94eb3cfc6f5154678d1b51bfa.png" src="../../_images/d122e190c38f57c64f87900ee69e5f9ddc764fe94eb3cfc6f5154678d1b51bfa.png" />
+<img alt="../../_images/a14d32935b261690016cda1f27ca562e1f9f7c0666d018f3afdba61ab61253c3.png" src="../../_images/a14d32935b261690016cda1f27ca562e1f9f7c0666d018f3afdba61ab61253c3.png" />
 </div>
 </div>
-<p>This approach is much faster than solving the same MILO with a large <code class="docutils literal notranslate"><span class="pre">Kmax</span></code>, say 10, which results in a much larger model, both in terms of number of variables and constraints.</p>
+<p>This approach is much faster than solving the same MILO with a large <code class="docutils literal notranslate"><span class="pre">K</span></code>, say 10, which results in a much larger model, both in terms of number of variables and constraints.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">graph_coloring</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">Kmax</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">graph_coloring</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The chromatic number of G is: </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">number_used_colors</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Time elapsed: </span><span class="si">{</span><span class="n">pc</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
 </pre></div>
@@ -747,7 +736,7 @@ Time elapsed: 6.99 seconds
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The chromatic number of G is: 5
-Time elapsed: 75.88 seconds
+Time elapsed: 73.99 seconds
 </pre></div>
 </div>
 </div>
@@ -757,20 +746,22 @@ Time elapsed: 75.88 seconds
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span>
 <span class="n">nxcoloring</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">algorithms</span><span class="o">.</span><span class="n">coloring</span><span class="o">.</span><span class="n">greedy_color</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
-<span class="n">Kmax</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">nxcoloring</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+<span class="n">K</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">nxcoloring</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
 <span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;Upper bound found by networkx: Kmax=</span><span class="si">{</span><span class="n">Kmax</span><span class="si">}</span><span class="s2">. This will be used as the parameter of the optimization model.&quot;</span>
+    <span class="sa">f</span><span class="s2">&quot;Upper bound found by networkx: K=</span><span class="si">{</span><span class="n">K</span><span class="si">}</span><span class="s2">. This will be used as the parameter of the optimization model.&quot;</span>
 <span class="p">)</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">graph_coloring</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">Kmax</span><span class="p">)</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">graph_coloring</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">K</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The chromatic number of G is: </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">number_used_colors</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Time elapsed: </span><span class="si">{</span><span class="n">pc</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Upper bound found by networkx: Kmax=6. This will be used as the parameter of the optimization model.
-The chromatic number of G is: 5
-Time elapsed: 7.24 seconds
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Upper bound found by networkx: K=6. This will be used as the parameter of the optimization model.
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The chromatic number of G is: 5
+Time elapsed: 7.26 seconds
 </pre></div>
 </div>
 </div>

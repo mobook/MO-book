@@ -222,7 +222,6 @@ const thebe_selector_output = ".output, .cell_output"
 
 
 
-
 <li class="toctree-l2"><a class="reference internal" href="forex-arbitrage.html">Forex Arbitrage</a></li>
 </ul>
 </li>
@@ -504,20 +503,20 @@ document.write(`
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Extra material: Energy dispatch problem</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#background-power-networks-and-power-flow-physics">Background: Power networks and power flow physics</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-power-flow">Optimal Power Flow</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-power-flow-problem">Optimal Power Flow problem</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#setup-code">Setup code</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data-import">Data import</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#setup-code-and-data-import">Setup code and data import</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#network-data">Network data</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#edges">Edges</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#network-data-structure">Network data structure</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instances">Instances</a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solving-the-opf-problem">Solving the OPF problem</a></li>
 </ul>
 </li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#solving-opf">Solving OPF</a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#strict-fossil-fuel-policy-pt-1">Strict fossil fuel policy pt.1</a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#strict-fossil-fuel-policy-pt-2">Strict fossil fuel policy pt.2</a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#comparing-the-three-models">Comparing the three models</a></li>
@@ -535,7 +534,6 @@ document.write(`
                   
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><section class="tex2jax_ignore mathjax_ignore" id="extra-material-energy-dispatch-problem">
 <span id="index-5"></span><h1>Extra material: Energy dispatch problem<a class="headerlink" href="#extra-material-energy-dispatch-problem" title="Permalink to this heading">#</a></h1>
-<p>To meet the energy demand, power plants run day and night across the country to produce electricity from a variety of sources such as fossil fuels and renewable energy. On the short-time scale, the best operating levels for electric power plants are derived every 15 minutes by solving the so-called <em>Optimal Power Flow (OPF)</em> model. The OPF model is an optimization problem with the objective of minimizing the total energy dispatching cost, while ensuring that the generation meets the total energy demand. Furthermore, the model takes into account many constraints, among which operational and physical constraints.</p>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
 <p>This cell selects and verifies a global SOLVER for the notebook.</p>
@@ -546,23 +544,25 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
-
+ 
 <span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>pyomo<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
-
-    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;appsi_highs&#39;</span><span class="p">)</span>
-    
-<span class="k">else</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
-
-<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
+ 
+<span class="n">solver</span> <span class="o">=</span> <span class="s1">&#39;appsi_highs&#39;</span>
+ 
+<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+ 
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
+</section>
+<section id="problem-description">
+<h2>Problem description<a class="headerlink" href="#problem-description" title="Permalink to this heading">#</a></h2>
+<p>To meet the energy demand, power plants run day and night across the country to produce electricity from a variety of sources such as fossil fuels and renewable energy. On the short-time scale, the best operating levels for electric power plants are derived every 15 minutes by solving the so-called <em>Optimal Power Flow (OPF)</em> model. The OPF model is an optimization problem with the objective of minimizing the total energy dispatching cost, while ensuring that the generation meets the total energy demand and taking into account operational and physical constraints.</p>
 </section>
 <section id="background-power-networks-and-power-flow-physics">
 <h2>Background: Power networks and power flow physics<a class="headerlink" href="#background-power-networks-and-power-flow-physics" title="Permalink to this heading">#</a></h2>
@@ -578,8 +578,8 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 <p>The first set of constraints ensures flow conservation and the second set of constrations captures the flow dependency on susceptances and angle differences. The DC power flow equations admit a unique power flow solution <span class="math notranslate nohighlight">\(\mathbf{f}\)</span> given matched power injections <span class="math notranslate nohighlight">\(\mathbf{p}\)</span> and demand <span class="math notranslate nohighlight">\(\mathbf{d}\)</span>.</p>
 <p>For a given matched supply and demand vector <span class="math notranslate nohighlight">\(\mathbf{p}\)</span> and <span class="math notranslate nohighlight">\(\mathbf{d}\)</span>, we can compute the power flows on the network by solving the linear equations as described above. There are exactly <span class="math notranslate nohighlight">\(|V|\)</span> and <span class="math notranslate nohighlight">\(|E|\)</span> equations for the <span class="math notranslate nohighlight">\(\theta_i\)</span> variables and <span class="math notranslate nohighlight">\(f_{ij}\)</span> variables, meaning that this system of equations admit a solution.</p>
 </section>
-<section id="optimal-power-flow">
-<h2>Optimal Power Flow<a class="headerlink" href="#optimal-power-flow" title="Permalink to this heading">#</a></h2>
+<section id="optimal-power-flow-problem">
+<h2>Optimal Power Flow problem<a class="headerlink" href="#optimal-power-flow-problem" title="Permalink to this heading">#</a></h2>
 <p>We assumed above that the power injections <span class="math notranslate nohighlight">\(\mathbf{p}\)</span> were given. However, in practice, the power injections need to be determined for each generator in the power network, where some types of generators may be cheaper than others. Moreover, we need to take into account operational constraints, such as the maximum flow and generator limits.</p>
 <p>On the short-time scale, the power injections are calculated for each generator by solving the so-called <em>Optimal Power Flow (OPF)</em> problem. The goal of the OPF problem is to determine a solution <span class="math notranslate nohighlight">\((\mathbf{p}, \mathbf{f}, \mathbf{\theta})\)</span> with minimal costs such that:</p>
 <ul class="simple">
@@ -589,18 +589,18 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 </ul>
 <p>Let <span class="math notranslate nohighlight">\(c_i &gt; 0\)</span> be the cost associated with the production of a unit energy by generator <span class="math notranslate nohighlight">\(i\)</span>. Then, the OPF problem can be formulated as</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align}
-\begin{array}{llll}
-\max        &amp; \sum_{i \in V} c_i p_i \\
-\text{s.t.} &amp; \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = p_i - d_i &amp; \forall \, i \in V,\\
-&amp; f_{ij} =  b_{ij}(\theta_i - \theta_j), &amp; \forall \, (i, j) \in E, \\
-            &amp; |f_{ij}| \leq  f_{ij}^{\max}    &amp; \forall (i, j) \in E,\\
-            &amp; p_{i}^{\min } \leq p_{i} \leq p_{i}^{\max }         &amp; \forall i \in V, \\
-            &amp; p_i \in \mathbb{R}_{\geq 0}        &amp; \forall i \in V,                \\
-            &amp; \theta_i \in \mathbb{R} &amp; \forall i \in V, \\
-            &amp; f_{ij} \in \mathbb{R}                 &amp; \forall (i, j) \in E                \\
-\end{array}
-\end{align}\end{split}\]</div>
+\[\begin{split}
+\begin{align*}
+\min        \, &amp; \sum_{i \in V} c_i p_i \\
+\text{s.t.} \, &amp; \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = p_i - d_i &amp; \forall \, i \in V\\
+            &amp; f_{ij} =  b_{ij}(\theta_i - \theta_j)                                    &amp; \forall \, (i, j) \in E \\
+            &amp; |f_{ij}| \leq  f_{ij}^{\max}                                              &amp; \forall \,(i, j) \in E\\
+            &amp; p_{i}^{\min } \leq p_{i} \leq p_{i}^{\max }                               &amp; \forall \,i \in V \\
+            &amp; p_i \geq 0                                                                &amp; \forall \,i \in V \\
+            &amp; \theta_i \in \mathbb{R}                                                   &amp; \forall \,i \in V \\
+            &amp; f_{ij} \in \mathbb{R}                                                     &amp; \forall \,(i, j) \in E.
+\end{align*}
+\end{split}\]</div>
 <p>For simplicity, you may assume that all load nodes do not produce energy, i.e., <span class="math notranslate nohighlight">\(p_i = p_i^{\min} = p_i^{\max} = 0\)</span> for all <span class="math notranslate nohighlight">\(i \in \mathcal{D}\)</span>. You may therefore model <span class="math notranslate nohighlight">\(p_i\)</span> as decision variables for all nodes (both generator and load nodes). Similarly, you may assume that all generator nodes have no demand, i.e., <span class="math notranslate nohighlight">\(d_i = 0\)</span> for all <span class="math notranslate nohighlight">\(i \in \mathcal{G}\)</span>.</p>
 <p>To summarize, the decision variables in the OPF problem are:</p>
 <ul class="simple">
@@ -608,60 +608,23 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 <li><p><span class="math notranslate nohighlight">\(\theta_i\)</span> phase angles</p></li>
 <li><p><span class="math notranslate nohighlight">\(f_{ij}\)</span> power flows</p></li>
 </ul>
-<p>All the other quantities are instance dependent parameters.</p>
+<p>All the other quantities are instance-dependent parameters. Each of the 96 instances captures the network in a different moment in time, thus with different energy demand at each node and different realizations for the power produced by renewable energy sources.</p>
 </section>
 <section id="data">
 <h2>Data<a class="headerlink" href="#data" title="Permalink to this heading">#</a></h2>
-<p>You will solve the OPF problem on the IEEE-118 power network, which is a standard test network consisting of 118 nodes and 179 edges. In the following, we will load the data into the notebook and provide a description of the data. Make sure to run the setup code below. We will first describe the data which are initially provided as <code class="docutils literal notranslate"><span class="pre">pandas.DataFrames</span></code>. We will then provide a new network data structure to easily access the data for the implementation of the optimization model.</p>
-<section id="setup-code">
-<h3>Setup code<a class="headerlink" href="#setup-code" title="Permalink to this heading">#</a></h3>
+<p>You will solve the OPF problem on the IEEE-118 power network, which is a standard test network consisting of 118 nodes and 179 edges. In the following, we will load the data into the notebook and provide a description of the data. We will first describe the data which are initially provided as <code class="docutils literal notranslate"><span class="pre">pandas.DataFrames</span></code>. We will then provide a new network data structure to easily access the data for the implementation of the optimization model.</p>
+<section id="setup-code-and-data-import">
+<h3>Setup code and data import<a class="headerlink" href="#setup-code-and-data-import" title="Permalink to this heading">#</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load packages</span>
-
-<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">Markdown</span><span class="p">,</span> <span class="n">HTML</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">numpy.random</span> <span class="k">as</span> <span class="nn">rnd</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">ast</span> <span class="kn">import</span> <span class="n">literal_eval</span> <span class="k">as</span> <span class="n">make_tuple</span>
 <span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
-<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">ast</span> <span class="kn">import</span> <span class="n">literal_eval</span> <span class="k">as</span> <span class="n">make_tuple</span>
 
-<span class="c1"># Load solver</span>
-<span class="n">solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING: Failed to create solver with name
-    &#39;&lt;pyomo.solvers.plugins.solvers.CBCplugin.CBCSHELL object at
-    0x7f7a85e3d880&gt;&#39;: Failed to set executable for solver asl. File with
-    name=&lt;pyomo.solvers.plugins.solvers.CBCplugin.CBCSHELL object at
-    0x7f7a85e3d880&gt; either does not exist or it is not executable. To skip
-    this validation, call set_executable with validate=False.
-Traceback (most recent call last):
-  File &quot;/Users/jeff/opt/anaconda3/lib/python3.9/site-packages/pyomo/opt/base/solvers.py&quot;, line 166, in __call__
-    opt = self._cls[_implicit_solvers[mode]](**kwds)
-  File &quot;/Users/jeff/opt/anaconda3/lib/python3.9/site-packages/pyomo/solvers/plugins/solvers/ASL.py&quot;, line 45, in __init__
-    SystemCallSolver.__init__(self, **kwds)
-  File &quot;/Users/jeff/opt/anaconda3/lib/python3.9/site-packages/pyomo/opt/solver/shellcmd.py&quot;, line 66, in __init__
-    self.set_executable(name=executable, validate=validate)
-  File &quot;/Users/jeff/opt/anaconda3/lib/python3.9/site-packages/pyomo/opt/solver/shellcmd.py&quot;, line 114, in set_executable
-    raise ValueError(
-ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.solvers.plugins.solvers.CBCplugin.CBCSHELL object at 0x7f7a85e3d880&gt; either does not exist or it is not executable. To skip this validation, call set_executable with validate=False.
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="data-import">
-<h3>Data import<a class="headerlink" href="#data-import" title="Permalink to this heading">#</a></h3>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Download the data</span>
-<span class="n">base_url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/notebooks/04/&quot;</span>
+<span class="c1"># Download the data</span>
+<span class="n">base_url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/notebooks/04/data/&quot;</span>
 <span class="n">nodes_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">base_url</span> <span class="o">+</span> <span class="s2">&quot;nodes.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">edges_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">base_url</span> <span class="o">+</span> <span class="s2">&quot;edges.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
@@ -679,6 +642,136 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">HTTPError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">ale</span><span class="o">/</span><span class="n">My</span> <span class="n">Drive</span><span class="o">/</span><span class="n">GitHub</span> <span class="n">repositories</span><span class="o">/</span><span class="n">MO</span><span class="o">-</span><span class="n">book</span><span class="o">/</span><span class="n">notebooks</span><span class="o">/</span><span class="mi">04</span><span class="o">/</span><span class="n">power</span><span class="o">-</span><span class="n">network</span><span class="o">.</span><span class="n">ipynb</span> <span class="n">Cell</span> <span class="mi">10</span> <span class="n">line</span> <span class="mi">9</span>
+      <span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s1">&#39;vscode-notebook-cell:/Users/ale/My%20Drive/GitHub</span><span class="si">%20r</span><span class="s1">epositories/MO-book/notebooks/04/power-network.ipynb#X13sZmlsZQ%3D%3D?line=6&#39;</span><span class="o">&gt;</span><span class="mi">7</span><span class="o">&lt;/</span><span class="n">a</span><span class="o">&gt;</span> <span class="c1"># Download the data</span>
+      <span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s1">&#39;vscode-notebook-cell:/Users/ale/My%20Drive/GitHub</span><span class="si">%20r</span><span class="s1">epositories/MO-book/notebooks/04/power-network.ipynb#X13sZmlsZQ%3D%3D?line=7&#39;</span><span class="o">&gt;</span><span class="mi">8</span><span class="o">&lt;/</span><span class="n">a</span><span class="o">&gt;</span> <span class="n">base_url</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/mobook/MO-book/main/notebooks/04/data/&quot;</span>
+<span class="o">----&gt;</span> <span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s1">&#39;vscode-notebook-cell:/Users/ale/My%20Drive/GitHub</span><span class="si">%20r</span><span class="s1">epositories/MO-book/notebooks/04/power-network.ipynb#X13sZmlsZQ%3D%3D?line=8&#39;</span><span class="o">&gt;</span><span class="mi">9</span><span class="o">&lt;/</span><span class="n">a</span><span class="o">&gt;</span> <span class="n">nodes_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">base_url</span> <span class="o">+</span> <span class="s2">&quot;nodes.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+     <span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s1">&#39;vscode-notebook-cell:/Users/ale/My%20Drive/GitHub</span><span class="si">%20r</span><span class="s1">epositories/MO-book/notebooks/04/power-network.ipynb#X13sZmlsZQ%3D%3D?line=9&#39;</span><span class="o">&gt;</span><span class="mi">10</span><span class="o">&lt;/</span><span class="n">a</span><span class="o">&gt;</span> <span class="n">edges_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">base_url</span> <span class="o">+</span> <span class="s2">&quot;edges.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+     <span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s1">&#39;vscode-notebook-cell:/Users/ale/My%20Drive/GitHub</span><span class="si">%20r</span><span class="s1">epositories/MO-book/notebooks/04/power-network.ipynb#X13sZmlsZQ%3D%3D?line=11&#39;</span><span class="o">&gt;</span><span class="mi">12</span><span class="o">&lt;/</span><span class="n">a</span><span class="o">&gt;</span> <span class="c1"># Read all instances</span>
+
+<span class="nn">File ~/Library/Caches/pypoetry/virtualenvs/mo-book-rd3A6LPh-py3.10/lib/python3.10/site-packages/pandas/util/_decorators.py:211,</span> in <span class="ni">deprecate_kwarg.&lt;locals&gt;._deprecate_kwarg.&lt;locals&gt;.wrapper</span><span class="nt">(*args, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">209</span>     <span class="k">else</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">210</span>         <span class="n">kwargs</span><span class="p">[</span><span class="n">new_arg_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_arg_value</span>
+<span class="ne">--&gt; </span><span class="mi">211</span> <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="nn">File ~/Library/Caches/pypoetry/virtualenvs/mo-book-rd3A6LPh-py3.10/lib/python3.10/site-packages/pandas/util/_decorators.py:331,</span> in <span class="ni">deprecate_nonkeyword_arguments.&lt;locals&gt;.decorate.&lt;locals&gt;.wrapper</span><span class="nt">(*args, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">325</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">num_allow_args</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">326</span>     <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+<span class="g g-Whitespace">    </span><span class="mi">327</span>         <span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">arguments</span><span class="o">=</span><span class="n">_format_argument_list</span><span class="p">(</span><span class="n">allow_args</span><span class="p">)),</span>
+<span class="g g-Whitespace">    </span><span class="mi">328</span>         <span class="ne">FutureWarning</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">329</span>         <span class="n">stacklevel</span><span class="o">=</span><span class="n">find_stack_level</span><span class="p">(),</span>
+<span class="g g-Whitespace">    </span><span class="mi">330</span>     <span class="p">)</span>
+<span class="ne">--&gt; </span><span class="mi">331</span> <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="nn">File ~/Library/Caches/pypoetry/virtualenvs/mo-book-rd3A6LPh-py3.10/lib/python3.10/site-packages/pandas/io/parsers/readers.py:950,</span> in <span class="ni">read_csv</span><span class="nt">(filepath_or_buffer, sep, delimiter, header, names, index_col, usecols, squeeze, prefix, mangle_dupe_cols, dtype, engine, converters, true_values, false_values, skipinitialspace, skiprows, skipfooter, nrows, na_values, keep_default_na, na_filter, verbose, skip_blank_lines, parse_dates, infer_datetime_format, keep_date_col, date_parser, dayfirst, cache_dates, iterator, chunksize, compression, thousands, decimal, lineterminator, quotechar, quoting, doublequote, escapechar, comment, encoding, encoding_errors, dialect, error_bad_lines, warn_bad_lines, on_bad_lines, delim_whitespace, low_memory, memory_map, float_precision, storage_options)</span>
+<span class="g g-Whitespace">    </span><span class="mi">935</span> <span class="n">kwds_defaults</span> <span class="o">=</span> <span class="n">_refine_defaults_read</span><span class="p">(</span>
+<span class="g g-Whitespace">    </span><span class="mi">936</span>     <span class="n">dialect</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">937</span>     <span class="n">delimiter</span><span class="p">,</span>
+   <span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">946</span>     <span class="n">defaults</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;delimiter&quot;</span><span class="p">:</span> <span class="s2">&quot;,&quot;</span><span class="p">},</span>
+<span class="g g-Whitespace">    </span><span class="mi">947</span> <span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">948</span> <span class="n">kwds</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwds_defaults</span><span class="p">)</span>
+<span class="ne">--&gt; </span><span class="mi">950</span> <span class="k">return</span> <span class="n">_read</span><span class="p">(</span><span class="n">filepath_or_buffer</span><span class="p">,</span> <span class="n">kwds</span><span class="p">)</span>
+
+<span class="nn">File ~/Library/Caches/pypoetry/virtualenvs/mo-book-rd3A6LPh-py3.10/lib/python3.10/site-packages/pandas/io/parsers/readers.py:605,</span> in <span class="ni">_read</span><span class="nt">(filepath_or_buffer, kwds)</span>
+<span class="g g-Whitespace">    </span><span class="mi">602</span> <span class="n">_validate_names</span><span class="p">(</span><span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;names&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+<span class="g g-Whitespace">    </span><span class="mi">604</span> <span class="c1"># Create the parser.</span>
+<span class="ne">--&gt; </span><span class="mi">605</span> <span class="n">parser</span> <span class="o">=</span> <span class="n">TextFileReader</span><span class="p">(</span><span class="n">filepath_or_buffer</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">607</span> <span class="k">if</span> <span class="n">chunksize</span> <span class="ow">or</span> <span class="n">iterator</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">608</span>     <span class="k">return</span> <span class="n">parser</span>
+
+<span class="nn">File ~/Library/Caches/pypoetry/virtualenvs/mo-book-rd3A6LPh-py3.10/lib/python3.10/site-packages/pandas/io/parsers/readers.py:1442,</span> in <span class="ni">TextFileReader.__init__</span><span class="nt">(self, f, engine, **kwds)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1439</span>     <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;has_index_names&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwds</span><span class="p">[</span><span class="s2">&quot;has_index_names&quot;</span><span class="p">]</span>
+<span class="g g-Whitespace">   </span><span class="mi">1441</span> <span class="bp">self</span><span class="o">.</span><span class="n">handles</span><span class="p">:</span> <span class="n">IOHandles</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="ne">-&gt; </span><span class="mi">1442</span> <span class="bp">self</span><span class="o">.</span><span class="n">_engine</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_engine</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">)</span>
+
+<span class="nn">File ~/Library/Caches/pypoetry/virtualenvs/mo-book-rd3A6LPh-py3.10/lib/python3.10/site-packages/pandas/io/parsers/readers.py:1735,</span> in <span class="ni">TextFileReader._make_engine</span><span class="nt">(self, f, engine)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1733</span>     <span class="k">if</span> <span class="s2">&quot;b&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mode</span><span class="p">:</span>
+<span class="g g-Whitespace">   </span><span class="mi">1734</span>         <span class="n">mode</span> <span class="o">+=</span> <span class="s2">&quot;b&quot;</span>
+<span class="ne">-&gt; </span><span class="mi">1735</span> <span class="bp">self</span><span class="o">.</span><span class="n">handles</span> <span class="o">=</span> <span class="n">get_handle</span><span class="p">(</span>
+<span class="g g-Whitespace">   </span><span class="mi">1736</span>     <span class="n">f</span><span class="p">,</span>
+<span class="g g-Whitespace">   </span><span class="mi">1737</span>     <span class="n">mode</span><span class="p">,</span>
+<span class="g g-Whitespace">   </span><span class="mi">1738</span>     <span class="n">encoding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;encoding&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+<span class="g g-Whitespace">   </span><span class="mi">1739</span>     <span class="n">compression</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;compression&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+<span class="g g-Whitespace">   </span><span class="mi">1740</span>     <span class="n">memory_map</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;memory_map&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+<span class="g g-Whitespace">   </span><span class="mi">1741</span>     <span class="n">is_text</span><span class="o">=</span><span class="n">is_text</span><span class="p">,</span>
+<span class="g g-Whitespace">   </span><span class="mi">1742</span>     <span class="n">errors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;encoding_errors&quot;</span><span class="p">,</span> <span class="s2">&quot;strict&quot;</span><span class="p">),</span>
+<span class="g g-Whitespace">   </span><span class="mi">1743</span>     <span class="n">storage_options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;storage_options&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+<span class="g g-Whitespace">   </span><span class="mi">1744</span> <span class="p">)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1745</span> <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">handles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<span class="g g-Whitespace">   </span><span class="mi">1746</span> <span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">handles</span><span class="o">.</span><span class="n">handle</span>
+
+<span class="nn">File ~/Library/Caches/pypoetry/virtualenvs/mo-book-rd3A6LPh-py3.10/lib/python3.10/site-packages/pandas/io/common.py:713,</span> in <span class="ni">get_handle</span><span class="nt">(path_or_buf, mode, encoding, compression, memory_map, is_text, errors, storage_options)</span>
+<span class="g g-Whitespace">    </span><span class="mi">710</span>     <span class="n">codecs</span><span class="o">.</span><span class="n">lookup_error</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">712</span> <span class="c1"># open URLs</span>
+<span class="ne">--&gt; </span><span class="mi">713</span> <span class="n">ioargs</span> <span class="o">=</span> <span class="n">_get_filepath_or_buffer</span><span class="p">(</span>
+<span class="g g-Whitespace">    </span><span class="mi">714</span>     <span class="n">path_or_buf</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">715</span>     <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">716</span>     <span class="n">compression</span><span class="o">=</span><span class="n">compression</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">717</span>     <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">718</span>     <span class="n">storage_options</span><span class="o">=</span><span class="n">storage_options</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">719</span> <span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">721</span> <span class="n">handle</span> <span class="o">=</span> <span class="n">ioargs</span><span class="o">.</span><span class="n">filepath_or_buffer</span>
+<span class="g g-Whitespace">    </span><span class="mi">722</span> <span class="n">handles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">BaseBuffer</span><span class="p">]</span>
+
+<span class="nn">File ~/Library/Caches/pypoetry/virtualenvs/mo-book-rd3A6LPh-py3.10/lib/python3.10/site-packages/pandas/io/common.py:363,</span> in <span class="ni">_get_filepath_or_buffer</span><span class="nt">(filepath_or_buffer, encoding, compression, mode, storage_options)</span>
+<span class="g g-Whitespace">    </span><span class="mi">361</span> <span class="c1"># assuming storage_options is to be interpreted as headers</span>
+<span class="g g-Whitespace">    </span><span class="mi">362</span> <span class="n">req_info</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="n">filepath_or_buffer</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">storage_options</span><span class="p">)</span>
+<span class="ne">--&gt; </span><span class="mi">363</span> <span class="k">with</span> <span class="n">urlopen</span><span class="p">(</span><span class="n">req_info</span><span class="p">)</span> <span class="k">as</span> <span class="n">req</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">364</span>     <span class="n">content_encoding</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Content-Encoding&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">365</span>     <span class="k">if</span> <span class="n">content_encoding</span> <span class="o">==</span> <span class="s2">&quot;gzip&quot;</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">366</span>         <span class="c1"># Override compression based on Content-Encoding header</span>
+
+<span class="nn">File ~/Library/Caches/pypoetry/virtualenvs/mo-book-rd3A6LPh-py3.10/lib/python3.10/site-packages/pandas/io/common.py:265,</span> in <span class="ni">urlopen</span><span class="nt">(*args, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">259</span><span class="w"> </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="g g-Whitespace">    </span><span class="mi">260</span><span class="sd"> Lazy-import wrapper for stdlib urlopen, as that imports a big chunk of</span>
+<span class="g g-Whitespace">    </span><span class="mi">261</span><span class="sd"> the stdlib.</span>
+<span class="g g-Whitespace">    </span><span class="mi">262</span><span class="sd"> &quot;&quot;&quot;</span>
+<span class="g g-Whitespace">    </span><span class="mi">263</span> <span class="kn">import</span> <span class="nn">urllib.request</span>
+<span class="ne">--&gt; </span><span class="mi">265</span> <span class="k">return</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="nn">File ~/.pyenv/versions/3.10.10/lib/python3.10/urllib/request.py:216,</span> in <span class="ni">urlopen</span><span class="nt">(url, data, timeout, cafile, capath, cadefault, context)</span>
+<span class="g g-Whitespace">    </span><span class="mi">214</span> <span class="k">else</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">215</span>     <span class="n">opener</span> <span class="o">=</span> <span class="n">_opener</span>
+<span class="ne">--&gt; </span><span class="mi">216</span> <span class="k">return</span> <span class="n">opener</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span>
+
+<span class="nn">File ~/.pyenv/versions/3.10.10/lib/python3.10/urllib/request.py:525,</span> in <span class="ni">OpenerDirector.open</span><span class="nt">(self, fullurl, data, timeout)</span>
+<span class="g g-Whitespace">    </span><span class="mi">523</span> <span class="k">for</span> <span class="n">processor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">protocol</span><span class="p">,</span> <span class="p">[]):</span>
+<span class="g g-Whitespace">    </span><span class="mi">524</span>     <span class="n">meth</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">processor</span><span class="p">,</span> <span class="n">meth_name</span><span class="p">)</span>
+<span class="ne">--&gt; </span><span class="mi">525</span>     <span class="n">response</span> <span class="o">=</span> <span class="n">meth</span><span class="p">(</span><span class="n">req</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">527</span> <span class="k">return</span> <span class="n">response</span>
+
+<span class="nn">File ~/.pyenv/versions/3.10.10/lib/python3.10/urllib/request.py:634,</span> in <span class="ni">HTTPErrorProcessor.http_response</span><span class="nt">(self, request, response)</span>
+<span class="g g-Whitespace">    </span><span class="mi">631</span> <span class="c1"># According to RFC 2616, &quot;2xx&quot; code indicates that the client&#39;s</span>
+<span class="g g-Whitespace">    </span><span class="mi">632</span> <span class="c1"># request was successfully received, understood, and accepted.</span>
+<span class="g g-Whitespace">    </span><span class="mi">633</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">200</span> <span class="o">&lt;=</span> <span class="n">code</span> <span class="o">&lt;</span> <span class="mi">300</span><span class="p">):</span>
+<span class="ne">--&gt; </span><span class="mi">634</span>     <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+<span class="g g-Whitespace">    </span><span class="mi">635</span>         <span class="s1">&#39;http&#39;</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">hdrs</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">637</span> <span class="k">return</span> <span class="n">response</span>
+
+<span class="nn">File ~/.pyenv/versions/3.10.10/lib/python3.10/urllib/request.py:563,</span> in <span class="ni">OpenerDirector.error</span><span class="nt">(self, proto, *args)</span>
+<span class="g g-Whitespace">    </span><span class="mi">561</span> <span class="k">if</span> <span class="n">http_err</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">562</span>     <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="s1">&#39;http_error_default&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">orig_args</span>
+<span class="ne">--&gt; </span><span class="mi">563</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_chain</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+<span class="nn">File ~/.pyenv/versions/3.10.10/lib/python3.10/urllib/request.py:496,</span> in <span class="ni">OpenerDirector._call_chain</span><span class="nt">(self, chain, kind, meth_name, *args)</span>
+<span class="g g-Whitespace">    </span><span class="mi">494</span> <span class="k">for</span> <span class="n">handler</span> <span class="ow">in</span> <span class="n">handlers</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">495</span>     <span class="n">func</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="n">meth_name</span><span class="p">)</span>
+<span class="ne">--&gt; </span><span class="mi">496</span>     <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">497</span>     <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">498</span>         <span class="k">return</span> <span class="n">result</span>
+
+<span class="nn">File ~/.pyenv/versions/3.10.10/lib/python3.10/urllib/request.py:643,</span> in <span class="ni">HTTPDefaultErrorHandler.http_error_default</span><span class="nt">(self, req, fp, code, msg, hdrs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">642</span> <span class="k">def</span> <span class="nf">http_error_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">req</span><span class="p">,</span> <span class="n">fp</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">hdrs</span><span class="p">):</span>
+<span class="ne">--&gt; </span><span class="mi">643</span>     <span class="k">raise</span> <span class="n">HTTPError</span><span class="p">(</span><span class="n">req</span><span class="o">.</span><span class="n">full_url</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">hdrs</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span>
+
+<span class="ne">HTTPError</span>: HTTP Error 404: Not Found
+</pre></div>
+</div>
+</div>
 </div>
 </section>
 <section id="network-data">
@@ -687,7 +780,7 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">visualize_network</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">edge_flows</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Visualize a network instance, highlighting the generators in orange and the load buses in green.&quot;&quot;&quot;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span> <span class="mi">10</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
     <span class="n">g</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
     <span class="n">pos</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">kamada_kawai_layout</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
@@ -1314,24 +1407,22 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 <p>The network instances are stored in the variable <code class="docutils literal notranslate"><span class="pre">I</span></code> as a list and can be accessed using indexing, i.e., <code class="docutils literal notranslate"><span class="pre">I[0]</span></code> gives the first network instance and <code class="docutils literal notranslate"><span class="pre">I[95]</span></code> gives the 96th network instance.</p>
 </section>
 </section>
-</section>
-<hr class="docutils" />
-<section class="tex2jax_ignore mathjax_ignore" id="solving-opf">
-<h1>Solving OPF<a class="headerlink" href="#solving-opf" title="Permalink to this heading">#</a></h1>
+<section id="solving-the-opf-problem">
+<h2>Solving the OPF problem<a class="headerlink" href="#solving-the-opf-problem" title="Permalink to this heading">#</a></h2>
 <p>Observe that the stated OPF problem contains absolute decision values. We first rewrite the OPF problem into a linear optimization problem.</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align}
-\begin{array}{llll}
-\min        &amp; \sum_{i \in V} c_i p_i \\
-\text{s.t.} &amp; \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i &amp; \forall \, i \in V,\\
-&amp; f^+_{ij} - f^-_{ij} =  b_{ij}(\theta_i - \theta_j), &amp; \forall \, (i, j) \in E, \\
-            &amp; f^+_{ij} + f^-_{ij} \leq  f_{ij}^{\max}    &amp; \forall (i, j) \in E,\\
-            &amp; p_{i}^{\min } \leq p_{i} \leq p_{i}^{\max }         &amp; \forall i \in V, \\
-            &amp; p_i \in \mathbb{R}_{\geq 0}        &amp; \forall i \in V,                \\
-            &amp; \theta_i \in \mathbb{R} &amp; \forall i \in V, \\
-            &amp; f_{ij}^+, f_{ij}^- \in \mathbb{R}                 &amp; \forall (i, j) \in E                \\
-\end{array}
-\end{align}\end{split}\]</div>
+\[\begin{split}
+\begin{align*}
+\min       \, &amp; \sum_{i \in V} c_i p_i \\
+\text{s.t.} \, &amp; \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i &amp; \forall \, i \in V,\\
+            &amp; f^+_{ij} - f^-_{ij} =  b_{ij}(\theta_i - \theta_j), &amp; \forall \, (i, j) \in E\\
+            &amp; f^+_{ij} + f^-_{ij} \leq  f_{ij}^{\max} &amp; \forall \,(i, j) \in E\\
+            &amp; p_{i}^{\min } \leq p_{i} \leq p_{i}^{\max } &amp; \forall \,i \in V \\
+            &amp; p_i \geq 0  &amp; \forall \,i \in V\\
+            &amp; \theta_i \in \mathbb{R} &amp; \forall \,i \in V\\
+            &amp; f_{ij}^+, f_{ij}^- \in \mathbb{R} &amp; \forall \,(i, j) \in E.
+\end{align*}
+\end{split}\]</div>
 <p>We then implement the model using <code class="docutils literal notranslate"><span class="pre">pyomo</span></code> and solve it for all instances <code class="docutils literal notranslate"><span class="pre">I[0]</span></code> to <code class="docutils literal notranslate"><span class="pre">I[95]</span></code>, reporting the average objective value across all the 96 instances.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1433,27 +1524,28 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 </div>
 </div>
 </section>
+</section>
 <section class="tex2jax_ignore mathjax_ignore" id="strict-fossil-fuel-policy-pt-1">
 <h1>Strict fossil fuel policy pt.1<a class="headerlink" href="#strict-fossil-fuel-policy-pt-1" title="Permalink to this heading">#</a></h1>
 <p>Gas and coal plants emit CO2, while renewable energy sources are carbon neutral. For this reason, the Dutch government has decided to constrain the number of active fossil-fuel-based power plants for the generation of electricity. More specifically, a maximum of 2 gas plants and 1 coal plant may be <em>active</em> during a single OPF instance. Any plant that is set <em>inactive</em> for a specific instance cannot produce any electricity.</p>
-<p>We first write down the new model. To this end, we introduce new decision variables <span class="math notranslate nohighlight">\(x_i, i\in V\)</span> to the model, which indicate whether a generator <span class="math notranslate nohighlight">\(i\)</span> is active or inactive.</p>
+<p>We first write down the new model. To this end, we introduce new decision variables <span class="math notranslate nohighlight">\(x_i\)</span>, <span class="math notranslate nohighlight">\(i\in V\)</span>, to the model, which indicate whether a generator <span class="math notranslate nohighlight">\(i\)</span> is active or inactive.</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align}
-\begin{array}{llll}
-\min        &amp; \sum_{i \in V} c_i p_i \\
-\text{s.t.} &amp; \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i &amp; \forall \, i \in V,\\
-&amp; f^+_{ij} - f^-_{ij} =  b_{ij}(\theta_i - \theta_j), &amp; \forall \, (i, j) \in E, \\
-&amp; f^{abs}_{ij} = f^+_{ij} + f^-_{ij}, &amp; \forall \, (i, j) \in E, \\
-            &amp; f_{ij}^{abs} \leq  f_{ij}^{\max}    &amp; \forall (i, j) \in E,\\
-            &amp; p_{i}^{\min } x_i \leq p_{i} \leq p_{i}^{\max } x_i        &amp; \forall i \in V, \\
+\[\begin{split}
+\begin{align*}
+\min        \, &amp; \sum_{i \in V} c_i p_i \\
+\text{s.t.} \, &amp; \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i &amp; \forall \, i \in V\\
+            &amp; f^+_{ij} - f^-_{ij} =  b_{ij}(\theta_i - \theta_j) &amp; \forall \, (i, j) \in E \\
+            &amp; f^{abs}_{ij} = f^+_{ij} + f^-_{ij} &amp; \forall \, (i, j) \in E \\
+            &amp; f_{ij}^{abs} \leq  f_{ij}^{\max}    &amp; \forall \, (i, j) \in E\\
+            &amp; p_{i}^{\min } x_i \leq p_{i} \leq p_{i}^{\max } x_i        &amp; \forall \, i \in V \\
             &amp; \sum_{i \in \mathcal{G}_{\text{gas}}} x_i \leq 2 &amp; \\
             &amp; \sum_{i \in \mathcal{G}_{\text{coal}}} x_i \leq 1 &amp;  \\
-            &amp; p_i \in \mathbb{R}_{\geq 0}        &amp; \forall i \in V,                \\
-            &amp; \theta_i \in \mathbb{R} &amp; \forall i \in V, \\
-            &amp; f_{ij} \in \mathbb{R}                 &amp; \forall (i, j) \in E                \\
-            &amp; x_i  \in \{0, 1\} &amp; \forall i \in V\\
-\end{array}
-\end{align}\end{split}\]</div>
+            &amp; p_i \geq 0        &amp; \forall \, i \in V\\
+            &amp; \theta_i \in \mathbb{R} &amp; \forall \,i \in V \\
+            &amp; f_{ij} \in \mathbb{R}                 &amp; \forall \,(i, j) \in E\\
+            &amp; x_i  \in \{0, 1\} &amp; \forall \,i \in V.
+\end{align*}
+\end{split}\]</div>
 <p>We then implement the new model using <code class="docutils literal notranslate"><span class="pre">pyomo</span></code> and solve it for all instances <code class="docutils literal notranslate"><span class="pre">I[0]</span></code> to <code class="docutils literal notranslate"><span class="pre">I[95]</span></code>, reporting the average objective value across the instances.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1584,24 +1676,24 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
 <p>The restriction on the number of gas and coal plants may pose a threat to the availability of electricity production when renewable energy sources fail to deliver. For this reason, the grid operators have decided to slightly change the constraint that was introduced for OPF2. If the total production of energy from renewable energy sources (i.e., solar, wind and hydro) is above 1000, then the number of gas and coal plants is restricted to 2 and 1, respectively. Otherwise, the restriction on the number of gas and coal plants is lifted. These constraints can be modeled as <em>either-or</em> constraints.</p>
 <p>We first write down the new model, using big-<span class="math notranslate nohighlight">\(M\)</span> constraints to model the either-or constraint.</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align}
-\begin{array}{llll}
-\min        &amp; \sum_{i \in V} c_i p_i \\
-\text{s.t.} &amp; \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i &amp; \forall \, i \in V,\\
-&amp; f^+_{ij} - f^-_{ij} =  b_{ij}(\theta_i - \theta_j), &amp; \forall \, (i, j) \in E, \\
-&amp; f^{abs}_{ij} = f^+_{ij} + f^-_{ij}, &amp; \forall \, (i, j) \in E, \\
-            &amp; f_{ij}^{abs} \leq  f_{ij}^{\max}    &amp; \forall (i, j) \in E,\\
-            &amp; p_{i}^{\min } x_i \leq p_{i} \leq p_{i}^{\max } x_i        &amp; \forall i \in V, \\
+\[\begin{split}
+\begin{align*}
+\min        \, &amp; \sum_{i \in V} c_i p_i \\
+\text{s.t.} \, &amp; \sum_{j: (i, j) \in E} f^+_{ij} - f^-_{ij} - \sum_{j: (j, i) \in E} f^+_{ji} - f_{ji}^- = p_i - d_i &amp; \forall \, i \in V\\
+            &amp; f^+_{ij} - f^-_{ij} =  b_{ij}(\theta_i - \theta_j) &amp; \forall \, (i, j) \in E\\
+            &amp; f^{abs}_{ij} = f^+_{ij} + f^-_{ij} &amp; \forall \, (i, j) \in E\\
+            &amp; f_{ij}^{abs} \leq  f_{ij}^{\max} &amp; \forall \,(i, j) \in E\\
+            &amp; p_{i}^{\min } x_i \leq p_{i} \leq p_{i}^{\max } x_i        &amp; \forall \,i \in V\\
             &amp; \sum_{i \in \mathcal{G}_{\text{gas}}} x_i \leq 2 + (1-y)M_0 &amp; \\
-            &amp; \sum_{i \in \mathcal{G}_{\text{coal}}} x_i \leq 1 + (1-y)M_1 &amp;  \\
+            &amp; \sum_{i \in \mathcal{G}_{\text{coal}}} x_i \leq 1 + (1-y)M_1 &amp; \\
             &amp; \sum_{i \in \mathcal{G}_\text{solar}} p_i + \sum_{i \in \mathcal{G}_\text{wind}} p_i + \sum_{i \in \mathcal{G}_\text{hydro}} p_i \leq 1000 + yM_2&amp;\\
-            &amp; p_i \in \mathbb{R}_{\geq 0}        &amp; \forall i \in V,                \\
-            &amp; \theta_i \in \mathbb{R} &amp; \forall i \in V, \\
-            &amp; f_{ij} \in \mathbb{R}                 &amp; \forall (i, j) \in E                \\
-            &amp; x_i  \in \{0, 1\} &amp; \forall i \in V\\
+            &amp; p_i \geq 0        &amp; \forall \,i \in V\\
+            &amp; \theta_i \in \mathbb{R} &amp; \forall \,i \in V \\
+            &amp; f_{ij} \in \mathbb{R}                 &amp; \forall \,(i, j) \in E \\
+            &amp; x_i  \in \{0, 1\} &amp; \forall \,i \in V\\
             &amp; y \in \{0, 1\} &amp;\\
-\end{array}
-\end{align}\end{split}\]</div>
+\end{align*}
+\end{split}\]</div>
 <p>We now implement the new model using <code class="docutils literal notranslate"><span class="pre">pyomo</span></code> and solve it for all instances <code class="docutils literal notranslate"><span class="pre">I[0]</span></code> to <code class="docutils literal notranslate"><span class="pre">I[95]</span></code>, reporting the average objective value across the instances.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1853,20 +1945,20 @@ ValueError: Failed to set executable for solver asl. File with name=&lt;pyomo.so
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Extra material: Energy dispatch problem</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#background-power-networks-and-power-flow-physics">Background: Power networks and power flow physics</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-power-flow">Optimal Power Flow</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-power-flow-problem">Optimal Power Flow problem</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#setup-code">Setup code</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data-import">Data import</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#setup-code-and-data-import">Setup code and data import</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#network-data">Network data</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#edges">Edges</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#network-data-structure">Network data structure</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#instances">Instances</a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solving-the-opf-problem">Solving the OPF problem</a></li>
 </ul>
 </li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#solving-opf">Solving OPF</a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#strict-fossil-fuel-policy-pt-1">Strict fossil fuel policy pt.1</a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#strict-fossil-fuel-policy-pt-2">Strict fossil fuel policy pt.2</a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#comparing-the-three-models">Comparing the three models</a></li>
