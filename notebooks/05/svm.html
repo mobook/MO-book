@@ -546,24 +546,25 @@ document.write(`
 <p>In this notebook, we will demonstrate the process of training an SVM for binary classification using linear and quadratic programming. Our implementation will initially focus on linear support vector machines which separate the feature space by means of a hyperplane. We will explore both primal and dual formulations. Then, using kernels, the dual formulation is extended to binary classification in higher-order and nonlinear feature spaces. Several different formulations of the optimization problem are given in Pyomo and applied to a banknote classification application.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
-
-<span class="n">solver_LO</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
-<span class="n">solver_NLO</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
 
 <span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>idaes-pse<span class="w"> </span>--pre<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
     <span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin<span class="w"> </span>
     <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
+    <span class="n">solver_NLO</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">solver_NLO</span> <span class="o">=</span> <span class="s2">&quot;mosek&quot;</span>
 
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span> 
+
+<span class="n">solver_LO</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 <span class="n">SOLVER_LO</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver_LO</span><span class="p">)</span>
 <span class="n">SOLVER_NLO</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver_NLO</span><span class="p">)</span>
 
-<span class="k">if</span> <span class="ow">not</span> <span class="n">SOLVER_LO</span><span class="o">.</span><span class="n">available</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver_LO</span><span class="si">}</span><span class="s2"> is not available&quot;</span><span class="p">)</span>
-<span class="k">if</span> <span class="ow">not</span> <span class="n">SOLVER_NLO</span><span class="o">.</span><span class="n">available</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver_NLO</span><span class="si">}</span><span class="s2"> is not available&quot;</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">SOLVER_LO</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver_LO</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
+<span class="k">assert</span> <span class="n">SOLVER_NLO</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver_NLO</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -577,28 +578,21 @@ document.write(`
 <tr class="row-odd"><th class="head text-left"><p></p></th>
 <th class="head text-center"><p>Predicted Positive</p></th>
 <th class="head text-center"><p>Predicted Negative</p></th>
-<th class="head text-left"><p></p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td class="text-left"><p>Actual Positive</p></td>
 <td class="text-center"><p>True Positive (TP)</p></td>
 <td class="text-center"><p>False Negative (FN)</p></td>
-<td class="text-left"><p></p></td>
 </tr>
 <tr class="row-odd"><td class="text-left"><p>Actual Negative</p></td>
 <td class="text-center"><p>False Positive (FP)</p></td>
 <td class="text-center"><p>True Negative (TN)</p></td>
-<td class="text-left"><p></p></td>
 </tr>
 </tbody>
 </table>
 <p>A vending machine user would be frustrated if a genuine banknote is incorrectly rejected as a false negative. <strong>Sensitivity</strong> is defined as the number of true positives (TP) divided by the total number of actual positives (TP + FN). A user of the vending machine would prefer high sensitivity because that means genuine banknotes are likely to be accepted.</p>
-<p>The vending machine owner/operator, on the other hand, wants to avoid accepting counterfeit banknotes and would therefore prefer a low number of false positives (FP). <strong>Precision</strong> is the number of true positives (TP) divided by the total number of predicted positives (TP + FP). The owner/operate would prefer high precision because that means almost all of the accepted notes are genuine.</p>
-<ul class="simple">
-<li><p><strong>Sensitivity</strong>: The number of true positives divided by the total number of actual positives. High sensitivity indicates a low false negative rate.</p></li>
-<li><p><strong>Precision</strong>: The number of true positives identified by the model divided by the total number of predicted positives, which includes both true and false positives. High precision indicates a low false positive rate.</p></li>
-</ul>
+<p>The vending machine owner/operator, on the other hand, wants to avoid accepting counterfeit banknotes and would therefore prefer a low number of false positives (FP). <strong>Precision</strong> is the number of true positives (TP) divided by the total number of predicted positives (TP + FP). The owner/operate would prefer high precision because that means almost all the accepted notes are genuine.</p>
 <p>To achieve high sensitivity, a classifier can follow the “innocent until proven guilty” standard, rejecting banknotes only when certain they are counterfeit. To achieve high precision, a classifier can adopt the “guilty unless proven innocent” standard, rejecting banknotes unless absolutely certain they are genuine.</p>
 <p>The challenge in developing binary classifiers is to balance these conflicting objectives and to optimize performance from both perspectives at the same time.</p>
 </section>
@@ -880,11 +874,13 @@ document.write(`
     <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Test Set&quot;</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/7219247b7999d4e5df4540bd340f157ed5fd27d539d957cb48cf1d850d49c757.png" src="../../_images/7219247b7999d4e5df4540bd340f157ed5fd27d539d957cb48cf1d850d49c757.png" />
+<img alt="../../_images/6ae52a1e1b5071dc190e4465aa23671ca8e7c9a2c35734271fb12fa0439aeb6c.png" src="../../_images/6ae52a1e1b5071dc190e4465aa23671ca8e7c9a2c35734271fb12fa0439aeb6c.png" />
 </div>
 </div>
 </section>
@@ -964,7 +960,7 @@ document.write(`
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 1, &#39;skewness&#39;: 0}, b = 0.0)
-Accuracy =  83.6%
+Accuracy =  83.3%
 </pre></div>
 </div>
 </div>
@@ -1008,6 +1004,8 @@ Accuracy =  83.6%
         <span class="n">ylim</span><span class="o">=</span><span class="n">ylim</span><span class="p">,</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Prediction&quot;</span><span class="p">,</span>
     <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
     <span class="c1"># Plot actual positives and actual negatives</span>
     <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
@@ -1031,6 +1029,8 @@ Accuracy =  83.6%
         <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Actual Negatives&quot;</span><span class="p">,</span>
     <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -1042,8 +1042,8 @@ Accuracy =  83.6%
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/8a0e5d6518d8478169781e3e5da9ad49a2440b707744d85d5a040fe76fa10aad.png" src="../../_images/8a0e5d6518d8478169781e3e5da9ad49a2440b707744d85d5a040fe76fa10aad.png" />
-<img alt="../../_images/77f815fae93f4628b4b910518978861a5ae94035c1f224e7837c5fef80cf8ad4.png" src="../../_images/77f815fae93f4628b4b910518978861a5ae94035c1f224e7837c5fef80cf8ad4.png" />
+<img alt="../../_images/f59d550a9be9cd0f24768d8b716a05e911d071fe15694bce2fa66981ddfb5ada.png" src="../../_images/f59d550a9be9cd0f24768d8b716a05e911d071fe15694bce2fa66981ddfb5ada.png" />
+<img alt="../../_images/479291929f51fbf1024f2168beed8f76353ba19c2facfd51aebb43e689134d35.png" src="../../_images/479291929f51fbf1024f2168beed8f76353ba19c2facfd51aebb43e689134d35.png" />
 </div>
 </div>
 </section>
@@ -1133,10 +1133,10 @@ Accuracy =  83.6%
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 1, &#39;skewness&#39;: 0}, b = 0.0) 
 
-Matthews correlation coefficient (MCC) = 0.667
-Sensitivity =  84.8%
-Precision =  86.5%
-Accuracy =  83.6%
+Matthews correlation coefficient (MCC) = 0.661
+Sensitivity =  85.1%
+Precision =  85.1%
+Accuracy =  83.3%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1164,18 +1164,18 @@ Accuracy =  83.6%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>134</td>
-      <td>24</td>
+      <td>131</td>
+      <td>23</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>21</td>
-      <td>96</td>
+      <td>23</td>
+      <td>98</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/8a0e5d6518d8478169781e3e5da9ad49a2440b707744d85d5a040fe76fa10aad.png" src="../../_images/8a0e5d6518d8478169781e3e5da9ad49a2440b707744d85d5a040fe76fa10aad.png" />
-<img alt="../../_images/77f815fae93f4628b4b910518978861a5ae94035c1f224e7837c5fef80cf8ad4.png" src="../../_images/77f815fae93f4628b4b910518978861a5ae94035c1f224e7837c5fef80cf8ad4.png" />
+</div></div><img alt="../../_images/f59d550a9be9cd0f24768d8b716a05e911d071fe15694bce2fa66981ddfb5ada.png" src="../../_images/f59d550a9be9cd0f24768d8b716a05e911d071fe15694bce2fa66981ddfb5ada.png" />
+<img alt="../../_images/479291929f51fbf1024f2168beed8f76353ba19c2facfd51aebb43e689134d35.png" src="../../_images/479291929f51fbf1024f2168beed8f76353ba19c2facfd51aebb43e689134d35.png" />
 </div>
 </div>
 </section>
@@ -1308,12 +1308,14 @@ y_i (w^\top x_i + b) &amp; \geq 1 - z_i &amp; \forall i = 1, 2, \dots, n
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 0.24607501, &#39;skewness&#39;: 0.053474389}, b = -0.0058897667) 
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
+Copyright (c) 2023 HiGHS under MIT licence terms
+LinearSvm(w = {&#39;variance&#39;: 0.24257023720674875, &#39;skewness&#39;: 0.055108819378508436}, b = 0.004704238874285824) 
 
-Matthews correlation coefficient (MCC) = 0.716
-Sensitivity =  90.5%
-Precision =  86.1%
-Accuracy =  86.2%
+Matthews correlation coefficient (MCC) = 0.729
+Sensitivity =  93.5%
+Precision =  84.2%
+Accuracy =  86.5%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1341,18 +1343,18 @@ Accuracy =  86.2%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>143</td>
-      <td>15</td>
+      <td>144</td>
+      <td>10</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>23</td>
+      <td>27</td>
       <td>94</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/2f5c35537acfa5b9fb2a804f2bac4c19f8b6860972bf97172a5693595032250e.png" src="../../_images/2f5c35537acfa5b9fb2a804f2bac4c19f8b6860972bf97172a5693595032250e.png" />
-<img alt="../../_images/791510a1a23385384908ec1f80fa4714f230165d7a9a9b28190af1f401b4ac0e.png" src="../../_images/791510a1a23385384908ec1f80fa4714f230165d7a9a9b28190af1f401b4ac0e.png" />
+</div></div><img alt="../../_images/de0edaf5f8de8b80a422d9a9f3ca753bbd765671829126ded9486a724be8e02b.png" src="../../_images/de0edaf5f8de8b80a422d9a9f3ca753bbd765671829126ded9486a724be8e02b.png" />
+<img alt="../../_images/3c2157db92b2c9526357d351c8ddef3bf3dd13b811fbcf804f47c62a3194865d.png" src="../../_images/3c2157db92b2c9526357d351c8ddef3bf3dd13b811fbcf804f47c62a3194865d.png" />
 </div>
 </div>
 </section>
@@ -1449,12 +1451,12 @@ y_i \left( w^\top x_i + b \right) &amp; \geq 1 - z_i&amp; \forall i \in 1, 2, \d
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 0.3705558690404267, &#39;skewness&#39;: 0.12373970025774439}, b = -0.1493160233858407) 
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 0.36656392059193305, &#39;skewness&#39;: 0.11710989157644607}, b = -0.14541701315506445) 
 
-Matthews correlation coefficient (MCC) = 0.702
-Sensitivity =  87.3%
-Precision =  87.3%
-Accuracy =  85.5%
+Matthews correlation coefficient (MCC) = 0.742
+Sensitivity =  92.9%
+Precision =  85.6%
+Accuracy =  87.3%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1482,18 +1484,18 @@ Accuracy =  85.5%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>138</td>
-      <td>20</td>
+      <td>143</td>
+      <td>11</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>20</td>
+      <td>24</td>
       <td>97</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/255b98fddfaceccb0b1cbce3013d64729298da542390c700df4d748666907932.png" src="../../_images/255b98fddfaceccb0b1cbce3013d64729298da542390c700df4d748666907932.png" />
-<img alt="../../_images/7c51d14094300b46019eaac05650a32adc43f2cfbc4989dd344a91439427f216.png" src="../../_images/7c51d14094300b46019eaac05650a32adc43f2cfbc4989dd344a91439427f216.png" />
+</div></div><img alt="../../_images/3126d6b9564fdbe627bb8e911bb7e9d4e34d8bdcbf17c133a1cb19a3b4ca7bc8.png" src="../../_images/3126d6b9564fdbe627bb8e911bb7e9d4e34d8bdcbf17c133a1cb19a3b4ca7bc8.png" />
+<img alt="../../_images/76b21ad40fd4896699e946b74d1e3d37c8dfe95253caf6347720dbcba3bba599.png" src="../../_images/76b21ad40fd4896699e946b74d1e3d37c8dfe95253caf6347720dbcba3bba599.png" />
 </div>
 </div>
 </section>
@@ -1625,12 +1627,12 @@ b &amp; = y_i - w^\top x_i &amp; \forall i\in 1, 2, \ldots, n\quad \text{s.t.}\q
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 0.3705560469152364, &#39;skewness&#39;: 0.12373974216158136}, b = -0.1493161249124506) 
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LinearSvm(w = {&#39;variance&#39;: 0.36659753046810317, &#39;skewness&#39;: 0.11713531687779753}, b = -0.1452699652847259) 
 
-Matthews correlation coefficient (MCC) = 0.702
-Sensitivity =  87.3%
-Precision =  87.3%
-Accuracy =  85.5%
+Matthews correlation coefficient (MCC) = 0.742
+Sensitivity =  92.9%
+Precision =  85.6%
+Accuracy =  87.3%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1658,18 +1660,18 @@ Accuracy =  85.5%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>138</td>
-      <td>20</td>
+      <td>143</td>
+      <td>11</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>20</td>
+      <td>24</td>
       <td>97</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/255b98fddfaceccb0b1cbce3013d64729298da542390c700df4d748666907932.png" src="../../_images/255b98fddfaceccb0b1cbce3013d64729298da542390c700df4d748666907932.png" />
-<img alt="../../_images/7c51d14094300b46019eaac05650a32adc43f2cfbc4989dd344a91439427f216.png" src="../../_images/7c51d14094300b46019eaac05650a32adc43f2cfbc4989dd344a91439427f216.png" />
+</div></div><img alt="../../_images/1553d02491da9929a622b422ee8282075f9cc8f99a1993d79fa9304a865b95f1.png" src="../../_images/1553d02491da9929a622b422ee8282075f9cc8f99a1993d79fa9304a865b95f1.png" />
+<img alt="../../_images/0fb88d3162c6751b24b4c565e042e14fb615bb13dac6b50e3496c998dae63096.png" src="../../_images/0fb88d3162c6751b24b4c565e042e14fb615bb13dac6b50e3496c998dae63096.png" />
 </div>
 </div>
 </section>
@@ -1940,12 +1942,12 @@ G = \begin{bmatrix}
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;__main__.KernelSVM object at 0x2a9271d80&gt; 
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;__main__.KernelSVM object at 0x17ff39120&gt; 
 
-Matthews correlation coefficient (MCC) = 0.702
-Sensitivity =  87.3%
-Precision =  87.3%
-Accuracy =  85.5%
+Matthews correlation coefficient (MCC) = 0.742
+Sensitivity =  92.9%
+Precision =  85.6%
+Accuracy =  87.3%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1973,19 +1975,19 @@ Accuracy =  85.5%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>138</td>
-      <td>20</td>
+      <td>143</td>
+      <td>11</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>20</td>
+      <td>24</td>
       <td>97</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/729905b91c5ce529d0e74774e3c51d187a0b52d420584c1050de1d3f61932def.png" src="../../_images/729905b91c5ce529d0e74774e3c51d187a0b52d420584c1050de1d3f61932def.png" />
-<img alt="../../_images/255b98fddfaceccb0b1cbce3013d64729298da542390c700df4d748666907932.png" src="../../_images/255b98fddfaceccb0b1cbce3013d64729298da542390c700df4d748666907932.png" />
-<img alt="../../_images/7c51d14094300b46019eaac05650a32adc43f2cfbc4989dd344a91439427f216.png" src="../../_images/7c51d14094300b46019eaac05650a32adc43f2cfbc4989dd344a91439427f216.png" />
+</div></div><img alt="../../_images/6968444e307494383071728e2fdc31eb51ee46a9c4ba72f4651795fe19b50f44.png" src="../../_images/6968444e307494383071728e2fdc31eb51ee46a9c4ba72f4651795fe19b50f44.png" />
+<img alt="../../_images/1553d02491da9929a622b422ee8282075f9cc8f99a1993d79fa9304a865b95f1.png" src="../../_images/1553d02491da9929a622b422ee8282075f9cc8f99a1993d79fa9304a865b95f1.png" />
+<img alt="../../_images/0fb88d3162c6751b24b4c565e042e14fb615bb13dac6b50e3496c998dae63096.png" src="../../_images/0fb88d3162c6751b24b4c565e042e14fb615bb13dac6b50e3496c998dae63096.png" />
 </div>
 </div>
 </section>
@@ -2005,12 +2007,12 @@ Accuracy =  85.5%
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;__main__.KernelSVM object at 0x2a92f6170&gt; 
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;__main__.KernelSVM object at 0x17faaf460&gt; 
 
-Matthews correlation coefficient (MCC) = 0.757
-Sensitivity =  87.3%
-Precision =  91.4%
-Accuracy =  88.0%
+Matthews correlation coefficient (MCC) = 0.845
+Sensitivity =  93.5%
+Precision =  92.9%
+Accuracy =  92.4%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -2038,19 +2040,19 @@ Accuracy =  88.0%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>138</td>
-      <td>20</td>
+      <td>144</td>
+      <td>10</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>13</td>
-      <td>104</td>
+      <td>11</td>
+      <td>110</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/17e2df58939ed30b73da632fe99280d8583c1871459a3214aa31dbee8c8da0e4.png" src="../../_images/17e2df58939ed30b73da632fe99280d8583c1871459a3214aa31dbee8c8da0e4.png" />
-<img alt="../../_images/7cc7506783315056df6f6d2be1c38f6ed050338c8898cd4f8a745b80bd70fd9e.png" src="../../_images/7cc7506783315056df6f6d2be1c38f6ed050338c8898cd4f8a745b80bd70fd9e.png" />
-<img alt="../../_images/2aa50ee8c5b41594f9973e6a7d1d6a6f12f09e5968c5a9bd2229b95a78548b4c.png" src="../../_images/2aa50ee8c5b41594f9973e6a7d1d6a6f12f09e5968c5a9bd2229b95a78548b4c.png" />
+</div></div><img alt="../../_images/be3db0fb01925d6438e064523ce214df01b7b90ec4f7c5030b704cb03d14100b.png" src="../../_images/be3db0fb01925d6438e064523ce214df01b7b90ec4f7c5030b704cb03d14100b.png" />
+<img alt="../../_images/c6b27eb1f842867ceebea7938085b9b43fabf673a20153824c0cffc636cf3612.png" src="../../_images/c6b27eb1f842867ceebea7938085b9b43fabf673a20153824c0cffc636cf3612.png" />
+<img alt="../../_images/9fdc00fc874ba422d1f228a1fb401902f72644e13dea3fdfe147022e13e1099e.png" src="../../_images/9fdc00fc874ba422d1f228a1fb401902f72644e13dea3fdfe147022e13e1099e.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -2063,12 +2065,12 @@ Accuracy =  88.0%
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;__main__.KernelSVM object at 0x2a94613f0&gt; 
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;__main__.KernelSVM object at 0x17f341c00&gt; 
 
-Matthews correlation coefficient (MCC) = 0.807
-Sensitivity =  86.7%
-Precision =  95.8%
-Accuracy =  90.2%
+Matthews correlation coefficient (MCC) = 0.827
+Sensitivity =  89.0%
+Precision =  95.1%
+Accuracy =  91.3%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -2097,18 +2099,18 @@ Accuracy =  90.2%
     <tr>
       <th>Actual Positive</th>
       <td>137</td>
-      <td>21</td>
+      <td>17</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>6</td>
-      <td>111</td>
+      <td>7</td>
+      <td>114</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/c9ace20259970bb71472b7619588a8ba23db4bcd3c681ec259f8ebdbc20c7cd5.png" src="../../_images/c9ace20259970bb71472b7619588a8ba23db4bcd3c681ec259f8ebdbc20c7cd5.png" />
-<img alt="../../_images/9c505377ddc5d7cd2b06b52bfe83552f5bf87fae99d788a8fa872ffdc1342f8f.png" src="../../_images/9c505377ddc5d7cd2b06b52bfe83552f5bf87fae99d788a8fa872ffdc1342f8f.png" />
-<img alt="../../_images/64433ba71713b5d6cd0686d11398e51fcd377cd2fe248426e60e9e575225c689.png" src="../../_images/64433ba71713b5d6cd0686d11398e51fcd377cd2fe248426e60e9e575225c689.png" />
+</div></div><img alt="../../_images/12471e0934a253bb0e708bbfda2d50e31fae0e082661572f2ec0dcd945c88418.png" src="../../_images/12471e0934a253bb0e708bbfda2d50e31fae0e082661572f2ec0dcd945c88418.png" />
+<img alt="../../_images/dfda163de7189f4ae49a02278e3ace01863104353331d64510e119e4e608c2df.png" src="../../_images/dfda163de7189f4ae49a02278e3ace01863104353331d64510e119e4e608c2df.png" />
+<img alt="../../_images/9d77406cd27fc4159c39eae4d1c03ec61cfec2a09c44c4f92899834a86df6675.png" src="../../_images/9d77406cd27fc4159c39eae4d1c03ec61cfec2a09c44c4f92899834a86df6675.png" />
 </div>
 </div>
 </section>

@@ -518,11 +518,8 @@ document.write(`
 <span id="index-2"></span><h1>Markowitz portfolio optimization<a class="headerlink" href="#markowitz-portfolio-optimization" title="Permalink to this heading">#</a></h1>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
-<p>This cell selects and verifies a global SOLVER for the notebook.</p>
-<p>If run on Google Colab, the cell installs Pyomo and ipopt, then sets SOLVER to
-use the ipopt solver. If run elsewhere, it assumes Pyomo and the Mosek solver
-have been previously installed and sets SOLVER to use the Mosek solver via the Pyomo
-SolverFactory. It then verifies that SOLVER is available.</p>
+<p>This cell selects and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and ipopt, then sets SOLVER to
+use the ipopt solver. If run elsewhere, it assumes Pyomo and the Mosek solver have been previously installed and sets SOLVER to use the Mosek solver via the Pyomo SolverFactory. In both cases it then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
@@ -531,22 +528,20 @@ SolverFactory. It then verifies that SOLVER is available.</p>
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>idaes-pse<span class="w"> </span>--pre<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
     <span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin<span class="w"> </span>
     <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
-    
+    <span class="n">solver</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-<span class="k">if</span> <span class="ow">not</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">available</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available&quot;</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">Markdown</span><span class="p">,</span> <span class="n">HTML</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 </pre></div>
 </div>
@@ -555,12 +550,12 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 </section>
 <section id="problem-description-and-model-formulation">
 <h2>Problem description and model formulation<a class="headerlink" href="#problem-description-and-model-formulation" title="Permalink to this heading">#</a></h2>
-<p>A canonical stochastic optimization problem is the so-called portfolio selection problem, also known as <strong>Markowitz portfolio optimization</strong>. Assume an investor has an initial capital <span class="math notranslate nohighlight">\(C\)</span> that she wants to invest in <span class="math notranslate nohighlight">\(n\)</span> possible risky assets, each of them with an unknown return rate <span class="math notranslate nohighlight">\(r_i\)</span>, <span class="math notranslate nohighlight">\(i=1,\dots,n\)</span>, or in another risk-free asset with guaranteed return rate <span class="math notranslate nohighlight">\(R\)</span>. Let <span class="math notranslate nohighlight">\(x\)</span> be the vector whose <span class="math notranslate nohighlight">\(i\)</span>-th component <span class="math notranslate nohighlight">\(x_i\)</span> describes the amount invested in asset <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(\tilde{x}\)</span> the amount invested in the risk-free asset. We consider a stochastic model where the return of the <span class="math notranslate nohighlight">\(n\)</span> risky assets is then a random vector <span class="math notranslate nohighlight">\(r\)</span> with known expected values <span class="math notranslate nohighlight">\(\mu = \mathbb E r \)</span> and covariance</p>
+<p>A canonical stochastic optimization problem is the so-called portfolio selection problem, also known as <strong>Markowitz portfolio optimization</strong>. Assume that an investor has an initial capital <span class="math notranslate nohighlight">\(C\)</span> that she wants to invest in <span class="math notranslate nohighlight">\(n\)</span> possible risky assets, each of them with an unknown return rate <span class="math notranslate nohighlight">\(r_i\)</span>, <span class="math notranslate nohighlight">\(i=1,\dots,n\)</span>, or in another risk-free asset with a guaranteed return rate <span class="math notranslate nohighlight">\(R\)</span>. Let <span class="math notranslate nohighlight">\(x\)</span> be the vector whose <span class="math notranslate nohighlight">\(i\)</span>-th component <span class="math notranslate nohighlight">\(x_i\)</span> describes the amount invested in asset <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(\tilde{x}\)</span> the amount invested in the risk-free asset. We consider a stochastic model in which the return of the <span class="math notranslate nohighlight">\(n\)</span> risky assets is then a random vector <span class="math notranslate nohighlight">\(r\)</span> with known expected values <span class="math notranslate nohighlight">\(\mu = \mathbb E r \)</span> and covariance</p>
 <div class="math notranslate nohighlight">
 \[
     \Sigma = \mathbb{E} [ (r-\mu)(r-\mu)^\top].
 \]</div>
-<p>The return of the investment <span class="math notranslate nohighlight">\(y = R \tilde{x} + r^\top x\)</span> then also becomes a random variable with mean</p>
+<p>The investment return <span class="math notranslate nohighlight">\(y = R \tilde{x} + r^\top x\)</span> then becomes also a random variable with mean</p>
 <div class="math notranslate nohighlight">
 \[
     \mathbb{E} y = R \tilde{x} + \mathbb{E} r^\top x = R \tilde{x} + \mu^\top x
@@ -570,8 +565,8 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 \[
     \mathrm{Var}(y) = \mathbb{E}(y-\mathbb{E}y)^2 = x^\top \Sigma x.
 \]</div>
-<p>The variance of the return of the investment is one possible way to quantify the risk of the investment <span class="math notranslate nohighlight">\(x\)</span>.</p>
-<p>The problem the investor is facing is how to select a portfolio that achieves a good compromise between risk and expected return. More specifically, one could try to maximize the expected return <span class="math notranslate nohighlight">\(\mathbb{E} y\)</span> subject to an upper bound on the tolerable risk, obtaining the following optimization problem:</p>
+<p>The variance of the investment return is a possible way to quantify the risk of the investment <span class="math notranslate nohighlight">\(x\)</span>.</p>
+<p>The investor needs to select a portfolio that achieves a good compromise between risk and expected return. One could try to maximize the expected return <span class="math notranslate nohighlight">\(\mathbb{E} y\)</span> subject to an upper bound on the tolerable risk, obtaining the following optimization problem:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -583,8 +578,36 @@ SolverFactory. It then verifies that SOLVER is available.</p>
     &amp; x_i \geq 0 &amp; \forall \, i=1,\dots,n.
 \end{align*}
 \end{split}\]</div>
-<p>The first constraint describes the fact that the total amount invested must be equal to the initial capital. The second constraint ensures that the variance of the chosen portfolio is upper bounded by a parameter <span class="math notranslate nohighlight">\(\gamma\)</span>, which captures the risk the investor is willing to undertake. The last nonnegativity constraint excludes the possibility of short-selling.</p>
-<p>One can easily show that the quadratic constraint <span class="math notranslate nohighlight">\(x^\top \Sigma x \leq \gamma\)</span> is convex in <span class="math notranslate nohighlight">\(x\)</span> due to the fact that <span class="math notranslate nohighlight">\(\Sigma\)</span> is positive semidefinite, being a covariance matrix. Therefore, the optimization problem is convex. Let us implement it in Pyomo and solve it.</p>
+<p>The first constraint describes the fact that the total amount invested must be equal to the initial capital. The second constraint ensures that the variance of the chosen portfolio is upper bounded by a parameter <span class="math notranslate nohighlight">\(\gamma\)</span>, which captures the risk the investor is willing to take. The last non-negativity constraint excludes the possibility of short-selling.</p>
+<p>One can easily show that the quadratic constraint <span class="math notranslate nohighlight">\(x^\top \Sigma x \leq \gamma\)</span> is convex in <span class="math notranslate nohighlight">\(x\)</span> due to the fact that <span class="math notranslate nohighlight">\(\Sigma\)</span> is positive semi-definite, being a covariance matrix. Therefore, the optimization problem is convex. Let us implement it in Pyomo and solve it.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">markowitz</span><span class="p">(</span><span class="n">gamma</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">):</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Markowitz portfolio optimization&quot;</span><span class="p">)</span>
+
+    <span class="n">m</span><span class="o">.</span><span class="n">xtilde</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">objective</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">mu</span> <span class="o">@</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">R</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">xtilde</span>
+
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">bounded_variance</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">@</span> <span class="p">(</span><span class="n">Sigma</span> <span class="o">@</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">gamma</span>
+
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">total_assets</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">xtilde</span> <span class="o">==</span> <span class="n">C</span>
+
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">m</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We now calculate the optimal investment strategy for a portfolio with <span class="math notranslate nohighlight">\(n=3\)</span> assets, with expected returns <span class="math notranslate nohighlight">\(\mu = (1.2, 1.1, 1.3)\)</span> and a predefined covariance matrix. We set the risk parameter <span class="math notranslate nohighlight">\(\gamma\)</span> to <span class="math notranslate nohighlight">\(q\)</span> and the risk-free return rate <span class="math notranslate nohighlight">\(R\)</span> to <span class="math notranslate nohighlight">\(1.01\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the initial capital, the risk threshold, and the guaranteed return rate.</span>
@@ -600,57 +623,29 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 <span class="c1"># Check that Sigma is semi-definite positive</span>
 <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigvals</span><span class="p">(</span><span class="n">Sigma</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
 
-<span class="c1"># If you want to change the covariance matrix Sigma, ensure you input a semi-definite positive one.</span>
-<span class="c1"># The easiest way to generate a random covariance matrix is first generating a random m x m matrix A</span>
-<span class="c1"># and then taking the matrix A^T A (which is always semi-definite positive)</span>
+<span class="c1"># When changing the matrix Sigma, make sure to input a semi-definite positive matrix.</span>
+<span class="c1"># The easiest way to generate a random covariance matrix is as follows:</span>
+<span class="c1"># first generate a random m x m matrix A and than take the matrix A A^T</span>
+<span class="c1"># which is always semi-definite positive by construction.</span>
+<span class="c1">#</span>
 <span class="c1"># m = 3</span>
 <span class="c1"># A = np.random.rand(m, m)</span>
 <span class="c1"># Sigma = A.T @ A</span>
 
+<span class="n">m</span> <span class="o">=</span> <span class="n">markowitz</span><span class="p">(</span><span class="n">gamma</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">markowitz</span><span class="p">(</span><span class="n">gamma</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">):</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Markowitz portfolio optimization&quot;</span><span class="p">)</span>
-
-    <span class="n">model</span><span class="o">.</span><span class="n">xtilde</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-
-    <span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">objective</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">mu</span> <span class="o">@</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">R</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">xtilde</span>
-
-    <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-    <span class="k">def</span> <span class="nf">bounded_variance</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">@</span> <span class="p">(</span><span class="n">Sigma</span> <span class="o">@</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">gamma</span>
-
-    <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-    <span class="k">def</span> <span class="nf">total_assets</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">xtilde</span> <span class="o">==</span> <span class="n">C</span>
-
-    <span class="n">result</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">result</span><span class="p">,</span> <span class="n">model</span>
-
-
-<span class="n">result</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">markowitz</span><span class="p">(</span><span class="n">gamma</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">)</span>
-
-<span class="n">display</span><span class="p">(</span>
-    <span class="n">Markdown</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;**Solver status:** *</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="si">}</span><span class="s2">*&quot;</span>
-    <span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Optimal solution: xtilde = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">xtilde</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, x_1 = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, x_2 = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, x_3 = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
 <span class="p">)</span>
-<span class="n">display</span><span class="p">(</span>
-    <span class="n">Markdown</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;**Solution:** $</span><span class="se">\\</span><span class="s2">tilde x = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">xtilde</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">$, $x_1 = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">$,  $x_2 = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">$,  $x_3 = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">$&quot;</span>
-    <span class="p">)</span>
-<span class="p">)</span>
-<span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;**Maximizes objective value to:** $</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">$&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Optimal investment return: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<p><strong>Solver status:</strong> <em>ok, optimal</em></p>
-<p><strong>Solution:</strong> $\tilde x = 0.158$, $x_1 = 0.561$,  $x_2 = 0.142$,  $x_3 = 0.139$</p>
-<p><strong>Maximizes objective value to:</strong> $1.17$</p>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Optimal solution: xtilde = 0.158, x_1 = 0.561, x_2 = 0.142, x_3 = 0.139
+Optimal investment return: 1.17
+</pre></div>
+</div>
 </div>
 </div>
 <p>The next plot shows how the objective function changes as the risk threshold parameter <span class="math notranslate nohighlight">\(\gamma\)</span> varies.</p>
@@ -703,8 +698,8 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;font.size&quot;</span><span class="p">:</span> <span class="mi">14</span><span class="p">})</span>
 <span class="k">for</span> <span class="n">gamma</span> <span class="ow">in</span> <span class="n">gamma_values</span><span class="p">:</span>
-    <span class="n">_</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">markowitz</span><span class="p">(</span><span class="n">gamma</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">)</span>
-    <span class="n">objective</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">(),</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">markowitz</span><span class="p">(</span><span class="n">gamma</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">)</span>
+    <span class="n">objective</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">objective</span><span class="p">(),</span> <span class="mi">3</span><span class="p">))</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">gamma_values</span><span class="p">,</span> <span class="n">objective</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">tab20c</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;Risk threshold $\gamma$&quot;</span><span class="p">)</span>
