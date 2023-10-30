@@ -541,24 +541,21 @@ document.write(`
 <p>Point of attention: An important difference with the first notebook will be the fact that we will eliminate the ‘intercept’ <span class="math notranslate nohighlight">\(b\)</span> of the SVM to keep our equations simple.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
 
 <span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>idaes-pse<span class="w"> </span>--pre<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
     <span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin<span class="w"> </span>
     <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
-    
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
-    <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span> 
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
-
 <span class="k">else</span><span class="p">:</span>
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
-    <span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
 
-<span class="k">if</span> <span class="ow">not</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available&quot;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
+<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span> 
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -1091,10 +1088,7 @@ y^{pred} &amp; =  \text{sgn}\left( \sum_{i\in\cal{SV}} \alpha_i y_i \bar{x}_i^\t
 <h3>Pyomo implementation<a class="headerlink" href="#pyomo-implementation" title="Permalink to this heading">#</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
-
-
-<span class="k">def</span> <span class="nf">conicDualSVMFactory</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">conicDualSVMFactory</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="n">n</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
     <span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
         <span class="p">[</span><span class="n">y</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
@@ -1300,11 +1294,7 @@ G = \begin{bmatrix}
 <p>The following cell implements this model, leaving it to the user to specify the kernel function via a lambda-function argument.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
-
-
-<span class="k">def</span> <span class="nf">kernelSVMFactory</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">)):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">kernelSVMFactory</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">)):</span>
     <span class="n">n</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
 
     <span class="c1"># convert to numpy arrays for speed</span>

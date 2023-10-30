@@ -501,6 +501,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description-pooling-milk-for-wholesale-blending-and-distribution">Problem description: Pooling milk for wholesale blending and distribution</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#option-1-business-as-usual">Option 1. Business as usual</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#option-2-buy-an-additional-truck">Option 2. Buy an additional truck</a></li>
@@ -528,9 +529,16 @@ document.write(`
 <span id="index-6"></span><h1>Milk pooling and blending<a class="headerlink" href="#milk-pooling-and-blending" title="Permalink to this heading">#</a></h1>
 <p>Pooling and blending operations involve the “pooling” of various streams to create intermediate mixtures that are subsequently blended with other streams to meet final product specifications. These operations are common to the chemical processing and petroleum sectors where limited tankage may be available, or when it is necessary to transport materials by train, truck, or pipeline to remote blending terminals. Similar applications arise in agriculture, food, mining, wastewater treatment, and other industries.</p>
 <p>This notebook considers a simple example of a wholesale milk distributor to show how <strong>non-convexity</strong> arises in the optimization of pooling and blending operations. Non-convexity is due to presence of <strong>bilinear</strong> terms that are the product of two decision variables where one is a scale-dependent <strong>extensive</strong> quantity measuring the amount or flow of a product, and the other is scale-independent <strong>intensive</strong> quantity such as product composition. The notebook then shows how to develop and solve a convex approximation of the problem, and finally demonstrates solution the use of <code class="docutils literal notranslate"><span class="pre">ipotp</span></code>, a solver specifically designed to find global solutions to nonlinear optimization (NLO) problems.</p>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
+<p>This cell selects and verifies a global SOLVER for the notebook.</p>
+<p>If run on Google Colab, the cell installs Pyomo and ipopt, then sets SOLVER to use the ipopt solver. If run elsewhere, it assumes Pyomo and the Mosek solver
+have been previously installed and sets SOLVER to use the Mosek solver via the Pyomo SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
+
+<span class="n">solver_LO</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 
 <span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>idaes-pse<span class="w"> </span>--pre<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
@@ -543,7 +551,6 @@ document.write(`
 
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span> 
 
-<span class="n">solver_LO</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
 <span class="n">SOLVER_LO</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver_LO</span><span class="p">)</span>
 <span class="n">SOLVER_NLO</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver_NLO</span><span class="p">)</span>
 
@@ -558,11 +565,11 @@ document.write(`
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 </pre></div>
 </div>
 </div>
 </div>
+</section>
 <section id="problem-description-pooling-milk-for-wholesale-blending-and-distribution">
 <h2>Problem description: Pooling milk for wholesale blending and distribution<a class="headerlink" href="#problem-description-pooling-milk-for-wholesale-blending-and-distribution" title="Permalink to this heading">#</a></h2>
 <p>A bulk distributor supplies custom milk blends to several customers. Each customer has specified a minimum fat content, a maximum price, and a maximum amount of milk they wish to buy. The distributor sources raw milk from local farms. Each farm produces a milk with a known fat content and cost.</p>
@@ -2300,6 +2307,7 @@ Supplier Report
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description-pooling-milk-for-wholesale-blending-and-distribution">Problem description: Pooling milk for wholesale blending and distribution</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#option-1-business-as-usual">Option 1. Business as usual</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#option-2-buy-an-additional-truck">Option 2. Buy an additional truck</a></li>

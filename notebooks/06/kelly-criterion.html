@@ -530,22 +530,21 @@ document.write(`
 <p>This notebook presents solutions to Kelly’s problem using exponential cones. A significant feature of this notebook is the inclusion of risk constraints recently proposed by Boyd and coworkers. These notes are based on recent papers by Busseti, Ryu, and Boyd (2016), Fu, Narasimhan, and Boyd (2017). Additional bibliographic notes are provided at the end of the notebook.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
 
 <span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>idaes-pse<span class="w"> </span>--pre<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
     <span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin<span class="w"> </span>
     <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;:bin&#39;</span>
-    
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">&quot;ipopt&quot;</span>
-    <span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
-    <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span> 
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
-
 <span class="k">else</span><span class="p">:</span>
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
-    <span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
+<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span> 
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -636,7 +635,8 @@ p - \frac{1-p}{b} &amp; p(b+1) &gt; 1, \\
 <p>The following code shows how to obtain the optimal solution using the conic optimization functions of the Pyomo kernel library and the Mosek solver.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
 <span class="c1"># parameter values</span>
 <span class="n">b</span> <span class="o">=</span> <span class="mf">1.25</span>
@@ -725,10 +725,7 @@ u_1 + u_2 &amp; \leq 1 \\
 <p>The following cell solves this problem with a Pyomo model using the Mosek solver.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-
-<span class="c1"># parameter values</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># parameter values</span>
 <span class="n">b</span> <span class="o">=</span> <span class="mf">1.25</span>
 <span class="n">p</span> <span class="o">=</span> <span class="mf">0.51</span>
 <span class="n">lambd</span> <span class="o">=</span> <span class="mi">3</span>
@@ -785,11 +782,7 @@ Analytical solution for w:  0.1180
 <p>The following cells simulate the performance of the Kelly Criterion both with and without risk constraints. Compare the cases by comparing the log mean growth, which is reduced by presence of risk constraints, and the portfolio draw down for the most pathological cases, which is improved by the presence of risk constraints.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-
-
-<span class="k">def</span> <span class="nf">kelly_sim</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">lambd</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">kelly_sim</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">lambd</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="n">w</span> <span class="o">=</span> <span class="n">kelly_rc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">lambd</span><span class="p">)</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">p</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">b</span> <span class="o">*</span> <span class="n">w</span><span class="p">))</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">w</span><span class="p">))</span>
 
