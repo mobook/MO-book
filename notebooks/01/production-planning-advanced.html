@@ -529,27 +529,21 @@ document.write(`
 <p>We will begin this analysis by examining the problem data sets to identify the underlying problem structure.</p>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
-<p>This cell selects and verifies a global SOLVER for the notebook.</p>
-<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
-use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
-have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
-SolverFactory. It then verifies that SOLVER is available.</p>
+<p>The following cell checks if the notebook is run on Google Colab. If so, it does a quiet installation of Pyomo and the HiGHS solver. The solver is then selected, a test performed to verify that the solver is available, and the solver interface is stored in a global object <code class="docutils literal notranslate"><span class="pre">SOLVER</span></code> for later use.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
-
+ 
 <span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>pyomo<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
-
-    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;appsi_highs&#39;</span><span class="p">)</span>
-    
-<span class="k">else</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
-
-<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
+    <span class="o">%</span><span class="k">pip</span> install pyomo &gt;/dev/null 2&gt;/dev/null
+    <span class="o">%</span><span class="k">pip</span> install highspy &gt;/dev/null 2&gt;/dev/null
+ 
+<span class="n">solver</span> <span class="o">=</span> <span class="s1">&#39;appsi_highs&#39;</span>
+ 
+<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+ 
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -813,9 +807,7 @@ V    labor B    1
 <p>As before, we begin the construction of a Pyomo model by creating a <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-
-<span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -998,6 +990,8 @@ V    labor B    1
         labor B :  -Inf : 2*y[U] + y[V] - x[labor B] :   0.0 :   True
 
 12 Declarations: PRODUCTS RESOURCES demand available cp cr a_index a x y profit materials_used
+Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
+Copyright (c) 2023 HiGHS under MIT licence terms
 Profit = 2600.0
 
 Production Report
@@ -1018,10 +1012,7 @@ Resource Report
 <p>Some readers of these notebooks may be more experienced Python developers who wish to apply Pyomo in more specialized, data driven applications. The following cell shows how the Pyomo <code class="docutils literal notranslate"><span class="pre">ConcreteModel()</span></code> class can be extended by subclassing to create specialized model classes. Here we create a subclass called <code class="docutils literal notranslate"><span class="pre">ProductionModel</span></code> that accepts a particular representation of the problem data to produce a production model object. The production model object inherits all of the methods associated with any <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code>, such as <code class="docutils literal notranslate"><span class="pre">.display()</span></code>, <code class="docutils literal notranslate"><span class="pre">.solve()</span></code>, and <code class="docutils literal notranslate"><span class="pre">.pprint()</span></code>, but can be extended with additional methods.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-
-
-<span class="k">class</span> <span class="nc">ProductionModel</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ProductionModel</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class representing a production model using Pyomo.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1120,7 +1111,9 @@ Resource Report
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Profit = 2600.0
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
+Copyright (c) 2023 HiGHS under MIT licence terms
+Profit = 2600.0
 
 Production Report
  U  produced =  20.0

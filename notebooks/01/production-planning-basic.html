@@ -539,33 +539,24 @@ document.write(`
 <p>This notebook also introduces the use of Python decorators to designate Pyomo expressions, objectives, and constraints. While decorators may be unfamiliar to some Python users, or even current Pyomo users, they offer a significant improvement in the readability of Pyomo model. This feature is relatively new and is available in recent versions of Pyomo.</p>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
-<p>This collection of notebooks is intended to be run in the cloud on <a class="reference external" href="https://colab.google/">Google Colab</a> or on a personal computer. To meet this goal, we start each notebook by verifying the installation of Pyomo and an appropriate solver. When run on Google Colab, an installation of Pyomo and a solver must be done for each new Colab session. The <a class="reference external" href="https://highs.dev/">HiGHS solver</a> is a high performance open source solver for linear and mixed integer optimization on Google Colab.  For a personal computer, we assume Python, Pyomo and the <a class="reference external" href="https://coin-or.github.io/Cbc/intro.html">COIN-OR Cbc solver</a> (“COIN-OR branch and cut”) have been previously installed. Note that there are other suitable solvers, both open-source, such as GLPK, and commercial, such as CPLEX, Gurobi, and Mosek.</p>
-<p>The following cell checks if the notebook is running on Google Colab. If so, it does a quiet installation of Pyomo and a solver. A solver is then selected, a test performed to verify that the solver is available, and the solver interface is stored in a global object <code class="docutils literal notranslate"><span class="pre">SOLVER</span></code> for later use.</p>
+<p>This collection of notebooks is intended to be run in the cloud on <a class="reference external" href="https://colab.google/">Google Colab</a> or on a personal computer. To meet this goal, we start each notebook by verifying the installation of Pyomo and an appropriate solver.</p>
+<p>When run on Google Colab, an installation of Pyomo and a solver must be done for each new Colab session. The <a class="reference external" href="https://highs.dev/">HiGHS solver</a> is a high performance open source solver for linear and mixed integer optimization on Google Colab. For a personal computer, we assume Python, Pyomo and the <a class="reference external" href="https://highs.dev/">HiGHS solver</a> have been previously installed. Note that there are other suitable solvers, both open-source, such as <a class="reference external" href="https://coin-or.github.io/Cbc/intro.html">COIN-OR Cbc solver</a> and <a class="reference external" href="https://www.gnu.org/software/glpk/">GLPK</a>, and commercial, such as CPLEX, Gurobi, and Mosek.</p>
+<p>The following cell sets and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and the HiGHS solver, while, if run elsewhere, it
+assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGHS as solver via the appsi module and a test is performed to verify that it is available. The solver interface is stored in a global object <code class="docutils literal notranslate"><span class="pre">SOLVER</span></code> for later use.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">This cell sets and verifies a global SOLVER for the notebook.</span>
-
-<span class="sd">If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to use</span>
-<span class="sd">the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC</span>
-<span class="sd">have been previously installed and sets SOLVER to use the CBC solver via the Pyomo </span>
-<span class="sd">SolverFactory. For both cases, it then verifies that SOLVER is available.</span>
-<span class="sd">&quot;&quot;&quot;</span>
-
-<span class="kn">import</span> <span class="nn">sys</span>
-
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+ 
 <span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>pyomo<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;/dev/null
-
-    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;appsi_highs&#39;</span><span class="p">)</span>
-    
-<span class="k">else</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="n">SolverFactory</span>
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s1">&#39;cbc&#39;</span><span class="p">)</span>
-
-<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">SOLVER</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
+    <span class="o">%</span><span class="k">pip</span> install pyomo &gt;/dev/null 2&gt;/dev/null
+    <span class="o">%</span><span class="k">pip</span> install highspy &gt;/dev/null 2&gt;/dev/null
+ 
+<span class="n">solver</span> <span class="o">=</span> <span class="s1">&#39;appsi_highs&#39;</span>
+ 
+<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+ 
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -573,7 +564,7 @@ document.write(`
 </section>
 <section id="step-1-import-pyomo">
 <h2>Step 1. Import Pyomo<a class="headerlink" href="#step-1-import-pyomo" title="Permalink to this heading">#</a></h2>
-<p>The first step for a new Pyomo model is to import the needed components into the Python environment. The module <code class="docutils literal notranslate"><span class="pre">pyomo.environ</span></code> provides the components most commonly used for building Pyomo models. This collection of notebooks uses a consistent convention of importing <code class="docutils literal notranslate"><span class="pre">pyomo.environ</span></code> with the <code class="docutils literal notranslate"><span class="pre">pyo</span></code> prefix.</p>
+<p>The first step for a new Pyomo model is to import the needed components into the Python environment. The module <code class="docutils literal notranslate"><span class="pre">pyomo.environ</span></code> provides the components most commonly used for building Pyomo models. Although this module was imported in the previous code cell, we mention it again here also to emphasize our standardized conventions. Throughout this collection of notebooks, a uniform standard is maintained for importing <code class="docutils literal notranslate"><span class="pre">pyomo.environ</span></code> consistently using the alias <code class="docutils literal notranslate"><span class="pre">pyo</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
@@ -699,73 +690,29 @@ document.write(`
 <h2>Step 5. Objective<a class="headerlink" href="#step-5-objective" title="Permalink to this heading">#</a></h2>
 <p>The objective for this example is to maximize profit which is given by the difference between revenue and cost. There are two ways this objective could be specified in Pyomo.</p>
 <p>The first method is to use <code class="docutils literal notranslate"><span class="pre">pyo.Objective()</span></code> where the expression to be optimized is assigned with the <code class="docutils literal notranslate"><span class="pre">expr</span></code> keyword and the type of objective is assigned with the <code class="docutils literal notranslate"><span class="pre">sense</span></code> keyword.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">model</span><span class="o">.</span><span class="n">profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">cost</span><span class="p">,</span> <span class="n">sense</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">model</span><span class="o">.</span><span class="n">profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">cost</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Recent releases of Pyomo provide a second method that uses Python <a class="reference external" href="https://peps.python.org/pep-0318/">decorators</a> to specify an objective. With a decorator, the same objective is written as</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">cost</span>
-</pre></div>
-</div>
-<p>Python decorators modify the behavior of the function defined in the next line.  In this case, the decorator <code class="docutils literal notranslate"><span class="pre">&#64;model.Objective()</span></code> modifies the behavior of <code class="docutils literal notranslate"><span class="pre">profit()</span></code> so that it returns an expression for the profit to Pyomo. The keyword <code class="docutils literal notranslate"><span class="pre">sense</span></code> sets the type of objective, which can either be to maximize or minimize the value returned by the objective function. The function <code class="docutils literal notranslate"><span class="pre">profit()</span></code>, after being decorated, takes the Pyomo model as its first argument and adds its name to the model attributes.</p>
-<p>In effect, Pyomo decorators are tags that insert functions into a Pyomo model to serve as expressions, objectives, or constraints. Decorators can improve the readability and maintainability of more complex models. They also simplify the syntax for creating other Pyomo objects expressions, constraints, and other optimization-related elements.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">cost</span>
-
-
-<span class="n">model</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Model &#39;Production Planning: Version 1&#39;
-
-  Variables:
-    x_M : Size=1, Index=None
-        Key  : Lower : Value : Upper : Fixed : Stale : Domain
-        None :     0 :  None :  None : False :  True :  Reals
-    x_A : Size=1, Index=None
-        Key  : Lower : Value : Upper : Fixed : Stale : Domain
-        None :     0 :  None :    80 : False :  True :  Reals
-    x_B : Size=1, Index=None
-        Key  : Lower : Value : Upper : Fixed : Stale : Domain
-        None :     0 :  None :   100 : False :  True :  Reals
-    y_U : Size=1, Index=None
-        Key  : Lower : Value : Upper : Fixed : Stale : Domain
-        None :     0 :  None :    40 : False :  True :  Reals
-    y_V : Size=1, Index=None
-        Key  : Lower : Value : Upper : Fixed : Stale : Domain
-        None :     0 :  None :  None : False :  True :  Reals
-
-  Objectives:
-    profit : Size=1, Index=None, Active=True
-ERROR: evaluating object as numeric value: y_U
-        (object: &lt;class &#39;pyomo.core.base.var.ScalarVar&#39;&gt;)
-    No value for uninitialized NumericValue object y_U
-ERROR: evaluating object as numeric value: profit
-        (object: &lt;class &#39;pyomo.core.base.objective.ScalarObjective&#39;&gt;)
-    No value for uninitialized NumericValue object y_U
-        Key : Active : Value
-        None :   None :  None
-
-  Constraints:
-    None
 </pre></div>
 </div>
 </div>
 </div>
+<p>Python decorators modify the behavior of the function defined in the next line.  In this case, the decorator <code class="docutils literal notranslate"><span class="pre">&#64;model.Objective()</span></code> modifies the behavior of <code class="docutils literal notranslate"><span class="pre">profit()</span></code> so that it returns an expression for the profit to Pyomo. The keyword <code class="docutils literal notranslate"><span class="pre">sense</span></code> sets the type of objective, which can either be to maximize or minimize the value returned by the objective function. The function <code class="docutils literal notranslate"><span class="pre">profit()</span></code>, after being decorated, takes the Pyomo model as its first argument and adds its name to the model attributes.</p>
+<p>In effect, Pyomo decorators are tags that insert functions into a Pyomo model to serve as expressions, objectives, or constraints. Decorators can improve the readability and maintainability of more complex models. They also simplify the syntax for creating other Pyomo objects expressions, constraints, and other optimization-related elements.</p>
 </section>
 <section id="step-6-constraints">
 <h2>Step 6. Constraints<a class="headerlink" href="#step-6-constraints" title="Permalink to this heading">#</a></h2>
 <p>Constraints are logical relationships between expressions that define the range of feasible solutions in an optimization problem. A constraint consists of two expressions separated by one of the logical relationships. The logical relationships can be equality (<code class="docutils literal notranslate"><span class="pre">==</span></code>), less-than (<code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>), or greater-than (<code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>).</p>
 <p>Constraints can be created with <code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code>. The constraint is passed as a keyword argument <code class="docutils literal notranslate"><span class="pre">expr</span></code> to <code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code>. For this application the constraints could be expressed as</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>model.raw_materials = pyo.Constraint(expr = 10 * model.y_U + 9 * model.y_V &lt;= model.x_M)
-model.labor_A = pyo.Constraint(expr = 1 * model.y_U + 1 * model.y_V &lt;= model.x_A)
-model.labor_B = pyo.Constraint(expr = 2 * model.y_U + 1 * model.y_V &lt;= model.x_B)
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">model</span><span class="o">.</span><span class="n">raw_materials</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">9</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x_M</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">labor_A</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x_A</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">labor_B</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x_B</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Alternatively, the <code class="docutils literal notranslate"><span class="pre">&#64;model.Constraint()</span></code> decorator ‘tags’ the output of the following function as a constraint. For the present example, the constraints are expressed with decorators below. This collection of notebooks uses decorators whenever possible to improve the readability and maintainability of Pyomo models.</p>
@@ -840,37 +787,23 @@ model.labor_B = pyo.Constraint(expr = 2 * model.y_U + 1 * model.y_V &lt;= model.
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Welcome to the CBC MILP Solver 
-Version: 2.10.10 
-Build Date: Apr 20 2023 
-
-command line - /opt/homebrew/opt/cbc/bin/cbc -printingOptions all -import /var/folders/zb/k0pc77yj6c3gv6gr6jj41g1r0000gn/T/tmp2_hwem4f.pyomo.lp -stat=1 -solve -solu /var/folders/zb/k0pc77yj6c3gv6gr6jj41g1r0000gn/T/tmp2_hwem4f.pyomo.soln (default strategy 1)
-Option for printingOptions changed from normal to all
- CoinLpIO::readLp(): Maximization problem reformulated as minimization
-Coin0009I Switching back to maximization to get correct duals etc
-Presolve 3 (0) rows, 5 (0) columns and 9 (0) elements
-Statistics for presolved model
-
-
-Problem has 3 rows, 5 columns (5 with objective) and 9 elements
-There are 3 singletons with objective 
-Column breakdown:
-2 of type 0.0-&gt;inf, 3 of type 0.0-&gt;up, 0 of type lo-&gt;inf, 
-0 of type lo-&gt;up, 0 of type free, 0 of type fixed, 
-0 of type -inf-&gt;0.0, 0 of type -inf-&gt;up, 0 of type 0.0-&gt;1.0 
-Row breakdown:
-2 of type E 0.0, 0 of type E 1.0, 0 of type E -1.0, 
-0 of type E other, 0 of type G 0.0, 0 of type G 1.0, 
-0 of type G other, 1 of type L 0.0, 0 of type L 1.0, 
-0 of type L other, 0 of type Range 0.0-&gt;1.0, 0 of type Range other, 
-0 of type Free 
-Presolve 3 (0) rows, 5 (0) columns and 9 (0) elements
-0  Obj 0 Dual inf 480 (2)
-0  Obj 0 Dual inf 480 (2)
-6  Obj 2600
-Optimal - objective value 2600
-Optimal objective 2600 - 6 iterations time 0.002
-Total time (CPU seconds):       0.00   (Wallclock seconds):       0.00
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
+Copyright (c) 2023 HiGHS under MIT licence terms
+WARNING: No semi-integer/integer variables in model with non-empty integrality
+Presolving model
+2 rows, 4 cols, 6 nonzeros
+2 rows, 4 cols, 6 nonzeros
+Presolve : Reductions: rows 2(-1); columns 4(-1); elements 6(-3)
+Solving the presolved LP
+Using EKK dual simplex solver - serial
+  Iteration        Objective     Infeasibilities num(sum)
+          0    -2.0999953995e+02 Ph1: 2(4); Du: 3(210) 0s
+          3    -2.6000000000e+03 Pr: 0(0) 0s
+Solving the original LP from the solution after postsolve
+Model   status      : Optimal
+Simplex   iterations: 3
+Objective value     :  2.6000000000e+03
+HiGHS run time      :          0.00
 </pre></div>
 </div>
 </div>
@@ -1060,7 +993,7 @@ dtype: float64
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/cc4837d53cfd8491d2d7eac3d54a65e8f1ba9d94ac68084f404622a417d7b106.png" src="../../_images/cc4837d53cfd8491d2d7eac3d54a65e8f1ba9d94ac68084f404622a417d7b106.png" />
+<img alt="../../_images/bbf21b7015cc83ed41ea77948f1b50e50acb157c2ec5cec3589d2e68f557b116.png" src="../../_images/bbf21b7015cc83ed41ea77948f1b50e50acb157c2ec5cec3589d2e68f557b116.png" />
 </div>
 </div>
 <p>To discover more advanced Pyomo features, see the <a class="reference internal" href="production-planning-advanced.html"><span class="doc std std-doc">next notebook</span></a>.</p>
