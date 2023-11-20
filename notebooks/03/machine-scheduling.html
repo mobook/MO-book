@@ -530,11 +530,7 @@ document.write(`
 <span id="index-3"></span><h1>Machine Scheduling<a class="headerlink" href="#machine-scheduling" title="Permalink to this heading">#</a></h1>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
-<p>This cell selects and verifies a global SOLVER for the notebook.</p>
-<p>If run on Google Colab, the cell installs Pyomo and HiGHS, then sets SOLVER to
-use the Highs solver via the appsi module. If run elsewhere, it assumes Pyomo and CBC
-have been previously installed and sets SOLVER to use the CBC solver via the Pyomo
-SolverFactory. It then verifies that SOLVER is available.</p>
+<p>The following cell sets and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and the HiGHS solver, while, if run elsewhere, it assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGHS as solver via the appsi module and a test is performed to verify that it is available. The solver interface is stored in a global object <code class="docutils literal notranslate"><span class="pre">SOLVER</span></code> for later use.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
@@ -553,6 +549,15 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 </div>
 </div>
 </div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib.lines</span> <span class="kn">import</span> <span class="n">Line2D</span>
+</pre></div>
+</div>
+</div>
+</div>
 </section>
 <section id="problem-description">
 <h2>Problem description<a class="headerlink" href="#problem-description" title="Permalink to this heading">#</a></h2>
@@ -564,9 +569,7 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 <p>The data is given as a Pandas dataframe in which each row corresponds to a job, its release time, duration, and due date.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-
-<span class="n">jobs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">jobs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
     <span class="p">{</span>
         <span class="s2">&quot;A&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;release&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;due&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">},</span>
         <span class="s2">&quot;B&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;release&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="s2">&quot;due&quot;</span><span class="p">:</span> <span class="mi">21</span><span class="p">},</span>
@@ -753,11 +756,7 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 <p>A classical way of visualizing scheduling data in the form of a Gantt chart. The next cell defines a function <code class="docutils literal notranslate"><span class="pre">gantt</span></code> that plots a Gantt chart given jobs and schedule information.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">matplotlib.lines</span> <span class="kn">import</span> <span class="n">Line2D</span>
-
-
-<span class="k">def</span> <span class="nf">gantt</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">schedule</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">gantt</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">schedule</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
     <span class="n">w</span> <span class="o">=</span> <span class="mf">0.25</span>  <span class="c1"># bar width</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;font.size&quot;</span><span class="p">:</span> <span class="mi">13</span><span class="p">})</span>
@@ -827,7 +826,6 @@ SolverFactory. It then verifies that SOLVER is available.</p>
     <span class="p">)</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;machinescheduling_</span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">.svg&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
 
@@ -839,7 +837,7 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Using the &quot;job order&quot; strategy, the total past due is 68.0
 </pre></div>
 </div>
-<img alt="../../_images/8c5048f558d2aa9259c361055c66f17db3b6e5d960d42babdb9cd2acb1b9083c.png" src="../../_images/8c5048f558d2aa9259c361055c66f17db3b6e5d960d42babdb9cd2acb1b9083c.png" />
+<img alt="../../_images/57a388e5f90b99bfc7aaddd654f9d790e14c890b148af9426754c194a646f19b.png" src="../../_images/57a388e5f90b99bfc7aaddd654f9d790e14c890b148af9426754c194a646f19b.png" />
 </div>
 </div>
 </section>
@@ -866,7 +864,7 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Using the &quot;First in, First out&quot; strategy, the total past due is 31.0
 </pre></div>
 </div>
-<img alt="../../_images/1ed30b9de382e42f69b52d627b48cc3ed8a093a5dd09d963a68597865127f8d8.png" src="../../_images/1ed30b9de382e42f69b52d627b48cc3ed8a093a5dd09d963a68597865127f8d8.png" />
+<img alt="../../_images/fc19ec0fa3e7613c295170cfbf50f5813da555fc1f212b2cc15711c932ac22aa.png" src="../../_images/fc19ec0fa3e7613c295170cfbf50f5813da555fc1f212b2cc15711c932ac22aa.png" />
 </div>
 </div>
 </section>
@@ -884,7 +882,7 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Using the &quot;Earliest due date&quot; strategy, the total past due is 27.0
 </pre></div>
 </div>
-<img alt="../../_images/34de783342305bc7c1e62fdee714a1acde3db222190c20ba44dfb1a90d0e7503.png" src="../../_images/34de783342305bc7c1e62fdee714a1acde3db222190c20ba44dfb1a90d0e7503.png" />
+<img alt="../../_images/27be359c55a1c19794de6def37c5587a57ca8887793e2679cc5dd61267ab9a88.png" src="../../_images/27be359c55a1c19794de6def37c5587a57ca8887793e2679cc5dd61267ab9a88.png" />
 </div>
 </div>
 </section>
@@ -902,7 +900,7 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Using the &quot;Shortest Processing Time&quot; strategy, the total past due is 51.0
 </pre></div>
 </div>
-<img alt="../../_images/aecde088cf38e157f1b661decc1ca9f824e4834649a2aa52fdc41deabd0a8781.png" src="../../_images/aecde088cf38e157f1b661decc1ca9f824e4834649a2aa52fdc41deabd0a8781.png" />
+<img alt="../../_images/a5064862b770b0ffa220c22625b8e270a6d21fca4f9e086edb18dc631022ac62.png" src="../../_images/a5064862b770b0ffa220c22625b8e270a6d21fca4f9e086edb18dc631022ac62.png" />
 </div>
 </div>
 </section>
@@ -989,10 +987,7 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 <p>This model and constraints can be directly translated to Pyomo using the Disjuction component as follows.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-
-
-<span class="k">def</span> <span class="nf">machine_schedule</span><span class="p">(</span><span class="n">jobs</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">machine_schedule</span><span class="p">(</span><span class="n">jobs</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Job machine scheduling&quot;</span><span class="p">)</span>
 
     <span class="c1"># Create a set of jobs using the dataframe index and a</span>
@@ -1049,6 +1044,10 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
+Copyright (c) 2023 HiGHS under MIT licence terms
+</pre></div>
+</div>
 <div class="output text_html"><div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
@@ -1077,50 +1076,50 @@ SolverFactory. It then verifies that SOLVER is available.</p>
       <th>A</th>
       <td>2.0</td>
       <td>7.0</td>
-      <td>0.0</td>
+      <td>-0.000000e+00</td>
     </tr>
     <tr>
       <th>B</th>
       <td>14.0</td>
       <td>20.0</td>
-      <td>0.0</td>
+      <td>0.000000e+00</td>
     </tr>
     <tr>
       <th>C</th>
       <td>22.0</td>
       <td>30.0</td>
-      <td>15.0</td>
+      <td>1.500000e+01</td>
     </tr>
     <tr>
       <th>D</th>
       <td>7.0</td>
       <td>11.0</td>
-      <td>1.0</td>
+      <td>1.000000e+00</td>
     </tr>
     <tr>
       <th>E</th>
       <td>0.0</td>
       <td>2.0</td>
-      <td>0.0</td>
+      <td>-0.000000e+00</td>
     </tr>
     <tr>
       <th>F</th>
       <td>11.0</td>
       <td>14.0</td>
-      <td>0.0</td>
+      <td>-1.465494e-14</td>
     </tr>
     <tr>
       <th>G</th>
       <td>20.0</td>
       <td>22.0</td>
-      <td>0.0</td>
+      <td>0.000000e+00</td>
     </tr>
   </tbody>
 </table>
-</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Using the &quot;Minimize total past due&quot; strategy, the total past due is 16.0
+</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Using the &quot;Minimize total past due&quot; strategy, the total past due is 15.999999999998455
 </pre></div>
 </div>
-<img alt="../../_images/11b19873229e38a3cd2ba7b48db7b07e92b9883e355ee3e375ae5d52a18f5edf.png" src="../../_images/11b19873229e38a3cd2ba7b48db7b07e92b9883e355ee3e375ae5d52a18f5edf.png" />
+<img alt="../../_images/9671016bf1fcd63ebac8f3997227b9a299e644d17dc9c64c95ce037e81c69e4c.png" src="../../_images/9671016bf1fcd63ebac8f3997227b9a299e644d17dc9c64c95ce037e81c69e4c.png" />
 </div>
 </div>
 <p>The solution obtained solving the optimization problem outperforms that derived from any of the rules outline above. Nonetheless, heuristic techniques become essential when tackling large scheduling problems.</p>
@@ -1195,6 +1194,10 @@ SolverFactory. It then verifies that SOLVER is available.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
+Copyright (c) 2023 HiGHS under MIT licence terms
+</pre></div>
+</div>
 <div class="output text_html"><div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
@@ -1221,15 +1224,15 @@ SolverFactory. It then verifies that SOLVER is available.</p>
   <tbody>
     <tr>
       <th>A</th>
-      <td>6.0</td>
-      <td>11.0</td>
-      <td>1.0</td>
+      <td>2.0</td>
+      <td>7.0</td>
+      <td>-0.0</td>
     </tr>
     <tr>
       <th>B</th>
       <td>14.0</td>
       <td>20.0</td>
-      <td>0.0</td>
+      <td>-0.0</td>
     </tr>
     <tr>
       <th>C</th>
@@ -1239,21 +1242,21 @@ SolverFactory. It then verifies that SOLVER is available.</p>
     </tr>
     <tr>
       <th>D</th>
-      <td>2.0</td>
-      <td>6.0</td>
-      <td>0.0</td>
+      <td>7.0</td>
+      <td>11.0</td>
+      <td>1.0</td>
     </tr>
     <tr>
       <th>E</th>
       <td>0.0</td>
       <td>2.0</td>
-      <td>0.0</td>
+      <td>-0.0</td>
     </tr>
     <tr>
       <th>F</th>
       <td>11.0</td>
       <td>14.0</td>
-      <td>0.0</td>
+      <td>-0.0</td>
     </tr>
     <tr>
       <th>G</th>
@@ -1263,10 +1266,10 @@ SolverFactory. It then verifies that SOLVER is available.</p>
     </tr>
   </tbody>
 </table>
-</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Using the &quot;Minimize total past due&quot; strategy, the total past due is 16.0
+</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Using the &quot;Minimize total past due&quot; strategy, the total past due is 15.999999999999986
 </pre></div>
 </div>
-<img alt="../../_images/aad57631779e9f67135c9a02f2aab1df000eae7ff8610d98ab4c777c58ccbd83.png" src="../../_images/aad57631779e9f67135c9a02f2aab1df000eae7ff8610d98ab4c777c58ccbd83.png" />
+<img alt="../../_images/0ccc8c43585a49bbfa011a45d5060645f24d5c7817fe09d2cae17d4e6e964904.png" src="../../_images/0ccc8c43585a49bbfa011a45d5060645f24d5c7817fe09d2cae17d4e6e964904.png" />
 </div>
 </div>
 </section>

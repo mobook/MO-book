@@ -478,7 +478,9 @@ document.write(`
   </button>
 `);
 </script>
-
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
 </div></div>
       
     </div>
@@ -494,6 +496,15 @@ document.write(`
     <div id="print-main-content">
         <div id="jb-print-toc">
             
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
+</ul>
+            </nav>
         </div>
     </div>
 </div>
@@ -505,6 +516,9 @@ document.write(`
                   
   <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><section class="tex2jax_ignore mathjax_ignore" id="markowitz-portfolio-optimization-with-chance-constraints">
 <span id="index-3"></span><h1>Markowitz portfolio optimization with chance constraints<a class="headerlink" href="#markowitz-portfolio-optimization-with-chance-constraints" title="Permalink to this heading">#</a></h1>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
+<p>This cell selects and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and the ipopt solver via the IDEAS repository, then sets SOLVER to use the ipopt solver. If run elsewhere, it assumes Pyomo and the Mosek solver have been previously installed and sets SOLVER to use the Mosek solver via the Pyomo SolverFactory. It then verifies that SOLVER is available.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
@@ -533,6 +547,9 @@ document.write(`
 </div>
 </div>
 </div>
+</section>
+<section id="problem-description">
+<h2>Problem description<a class="headerlink" href="#problem-description" title="Permalink to this heading">#</a></h2>
 <p>We consider here another variant of the Markowitz portfolio optimization problem, which we already encountered in the context of convex optimization <a class="reference internal" href="../05/markowitz_portfolio.html"><span class="doc std std-doc">here</span></a> and in the context of conic optimization <a class="reference internal" href="../06/markowitz_portfolio_revisited.html"><span class="doc std std-doc">here</span></a>.</p>
 <p>Assuming there is an initial unit capital <span class="math notranslate nohighlight">\(C\)</span> that needs to be invested in a selection of <span class="math notranslate nohighlight">\(n\)</span> possible assets, each of them with a unknown return rate <span class="math notranslate nohighlight">\(r_i\)</span>, <span class="math notranslate nohighlight">\(i=1,\dots,n\)</span>. Let <span class="math notranslate nohighlight">\(x\)</span> be the vector whose <span class="math notranslate nohighlight">\(i\)</span>-th component <span class="math notranslate nohighlight">\(x_i\)</span> describes the fraction of the capital invested in asset <span class="math notranslate nohighlight">\(i\)</span>. The return rate vector <span class="math notranslate nohighlight">\(r\)</span> can be modelled by a multivariate Gaussian distribution with mean <span class="math notranslate nohighlight">\(\mu\)</span> and covariance <span class="math notranslate nohighlight">\(\Sigma\)</span>. Assume there is also a risk-free asset with guaranteed return rate <span class="math notranslate nohighlight">\(R\)</span> and let <span class="math notranslate nohighlight">\(\tilde{x}\)</span> the amount invested in that asset. We want to determine the portfolio that maximizes the <em>expected</em> return <span class="math notranslate nohighlight">\(\mathbb{E} ( R \tilde{x} + r^\top x )\)</span>, which in view of our assumptions rewrites as <span class="math notranslate nohighlight">\( \mathbb{E} ( R \tilde{x} + r^\top x ) = R \tilde{x} + \mu^\top x\)</span>.</p>
 <p>Additionally, we includ a <em>loss risk chance constraint</em> of the form</p>
@@ -559,15 +576,15 @@ document.write(`
 <p>We now implement as a Pyomo model and solve it for <span class="math notranslate nohighlight">\(n=3\)</span>, <span class="math notranslate nohighlight">\(\alpha = 0.6\)</span>, <span class="math notranslate nohighlight">\(\beta =0.3\)</span>, the given vector <span class="math notranslate nohighlight">\(\mu\)</span> and semi-definite positive covariance matrix <span class="math notranslate nohighlight">\(\Sigma\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># we import the inverse CDF or quantile function for the standard normal norm.ppf() from scipy.stats</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># import the inverse CDF or quantile function for the standard normal norm.ppf() from scipy.stats</span>
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">norm</span>
 
-<span class="c1"># We set our risk threshold and risk levels (sometimes you may get an infeasible problem if the chance</span>
+<span class="c1"># set our risk threshold and risk levels (sometimes you may get an infeasible problem if the chance</span>
 <span class="c1"># constraint becomes too tight!)</span>
 <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.6</span>
 <span class="n">beta</span> <span class="o">=</span> <span class="mf">0.3</span>
 
-<span class="c1"># We specify the initial capital, the risk-free return the number of risky assets, their expected returns, and their covariance matrix.</span>
+<span class="c1"># specify the initial capital, the risk-free return the number of risky assets, their expected returns, and their covariance matrix.</span>
 <span class="n">C</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="n">R</span> <span class="o">=</span> <span class="mf">1.05</span>
 <span class="n">n</span> <span class="o">=</span> <span class="mi">3</span>
@@ -577,7 +594,7 @@ document.write(`
 <span class="c1"># Check how dramatically the optimal solution changes if we assume i.i.d. deviations for the returns.</span>
 <span class="c1"># Sigma = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])</span>
 
-<span class="c1"># If you want to change covariance matrix, make sure you input a semi-definite positive one.</span>
+<span class="c1"># To change covariance matrix, make sure you input a semi-definite positive one.</span>
 <span class="c1"># The easiest way to generate a random covariance matrix is first generating a random m x m matrix A</span>
 <span class="c1"># and then taking the matrix A^T A (which is always semi-definite positive)</span>
 <span class="c1"># m = 3</span>
@@ -630,6 +647,7 @@ document.write(`
 <p><strong>Maximizes objective value to:</strong> $1.23$</p>
 </div>
 </div>
+</section>
 </section>
 
     <script type="text/x-thebe-config">
@@ -686,6 +704,21 @@ document.write(`
             </div>
             
             
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
           </div>
