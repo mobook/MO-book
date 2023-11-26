@@ -74,7 +74,7 @@ const thebe_selector_output = ".output, .cell_output"
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/09/03-seafood-distribution-center';</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="9.4 Economic dispatch in energy systems" href="04-economic-dispatch.html" />
+    <link rel="next" title="9.4 Economic dispatch in renewable energy systems using chance constraints" href="04-economic-dispatch.html" />
     <link rel="prev" title="9.2 Markowitz portfolio optimization with chance constraints" href="02-markowitz-portfolio-with-chance-constraint.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -257,13 +257,12 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="01-pop-up-shop.html">9.1 Pop-up shop</a></li>
 <li class="toctree-l2"><a class="reference internal" href="02-markowitz-portfolio-with-chance-constraint.html">9.2 Markowitz portfolio optimization with chance constraints</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">9.3 Stock optimization for seafood distribution center</a></li>
-<li class="toctree-l2"><a class="reference internal" href="04-economic-dispatch.html">9.4 Economic dispatch in energy systems</a></li>
-
+<li class="toctree-l2"><a class="reference internal" href="04-economic-dispatch.html">9.4 Economic dispatch in renewable energy systems using chance constraints</a></li>
 
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../10/10.00.html">10. Two-Stage Problems</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-10"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../10/01-airline-seating-allocation.html">10.1 Airline seat allocation problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../10/01-aircraft-seat-allocation.html">10.1 Aircraft seat allocation problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/02-opf-linear-decision-rule.html">10.2 Optimal power flow problem with recourse actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/03-two-stage-production-planning.html">10.3 Two-stage production planning using constraint and column generation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/04-farmer-problem.html">Extra: The farmer’s problem and its variants</a></li>
@@ -536,7 +535,6 @@ document.write(`
  
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
- 
 <span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
@@ -660,48 +658,48 @@ The optimal solution for Weibull distribution is: 98.84 tons
 <span class="n">p</span> <span class="o">=</span> <span class="mi">25</span>
 <span class="n">h</span> <span class="o">=</span> <span class="mi">3</span>
 
-<span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
 
-<span class="c1"># key parameter for possible parametric study</span>
-<span class="n">model</span><span class="o">.</span><span class="n">mean_demand</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">mutable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">SeafoodStockDeterministic</span><span class="p">():</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span>
+        <span class="s2">&quot;Seafood distribution center - Deterministic average demand&quot;</span>
+    <span class="p">)</span>
 
-<span class="c1"># first stage variables and expressions</span>
-<span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="c1"># key parameter for possible parametric study</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">mean_demand</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">mutable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># first stage variables and expressions</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">first_stage_profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">c</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span>
+
+    <span class="c1"># second stage variables, constraints, and expressions</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">cant_sell_fish_i_dont_have</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">mean_demand</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">fish_do_not_disappear</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">second_stage_profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">p</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">-</span> <span class="n">h</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span>
+
+    <span class="c1"># objective</span>
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">total_profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">first_stage_profit</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">second_stage_profit</span>
+
+    <span class="k">return</span> <span class="n">model</span>
 
 
-<span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">first_stage_profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="k">return</span> <span class="o">-</span><span class="n">c</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span>
-
-
-<span class="c1"># second stage variables, constraints, and expressions</span>
-<span class="n">model</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-
-
-<span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">cant_sell_fish_i_dont_have</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">mean_demand</span>
-
-
-<span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">fish_do_not_disappear</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span>
-
-
-<span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">second_stage_profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">p</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">-</span> <span class="n">h</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span>
-
-
-<span class="c1"># objective</span>
-<span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">total_profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">first_stage_profit</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">second_stage_profit</span>
-
-
+<span class="n">model</span> <span class="o">=</span> <span class="n">SeafoodStockDeterministic</span><span class="p">()</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-
 <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;ok&quot;</span>
 <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="o">==</span> <span class="s2">&quot;optimal&quot;</span>
 
@@ -726,11 +724,10 @@ Optimal deterministic profit = 1500€
 <p>For a fixed decision variable <span class="math notranslate nohighlight">\(x=100\)</span>, approximate the expected net profit of the seafood distribution center for each of the three distributions above using the Sample Average Approximation method with <span class="math notranslate nohighlight">\(N=2500\)</span> points. More specifically, generate <span class="math notranslate nohighlight">\(N=2500\)</span> samples from the considered distribution and solve the extensive form of the stochastic linear problem resulting from those <span class="math notranslate nohighlight">\(N=2500\)</span> scenarios.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># SAA of the two-stage stochastic linear problem to calculate the expected profit when buying the average</span>
-
-
-<span class="k">def</span> <span class="nf">NaiveSeafoodStockSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">distributiontype</span><span class="p">):</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">NaiveSeafoodStockSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">distributiontype</span><span class="p">):</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span>
+        <span class="s2">&quot;Seafood distribution center - Naive solution performance&quot;</span>
+    <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">indices_rule</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
@@ -812,11 +809,8 @@ Optimal deterministic profit = 1500€
 <p>We now approximate the optimal solution of stock optimization problem for each of the three distributions above using the Sample Average Approximation method. More specifically, generate <span class="math notranslate nohighlight">\(N=5000\)</span> samples from each of the three distributions and then solve the extensive form of the stochastic linear problem resulting from those <span class="math notranslate nohighlight">\(N=5000\)</span> scenarios. For each of the three distribution, we compare the optimal expected profit with that obtained before and calculate the value of the stochastic solution (VSS).</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Two-stage stochastic linear problem using SAA</span>
-
-
-<span class="k">def</span> <span class="nf">SeafoodStockSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">distributiontype</span><span class="p">,</span> <span class="n">printflag</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">SeafoodStockSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">sample</span><span class="p">):</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Seafood Stock using SAA method&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">indices_rule</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
@@ -855,44 +849,52 @@ Optimal deterministic profit = 1500€
 
     <span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="n">total_profit</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
 
-    <span class="n">result</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span>
 
-    <span class="k">if</span> <span class="n">printflag</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Approximate solution in the case of </span><span class="si">{</span><span class="n">distributiontype</span><span class="si">}</span><span class="s2"> distribution using N=</span><span class="si">{</span><span class="n">N</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> samples&quot;</span>
-        <span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Approximate optimal solution: x = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> tons&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Approximate expected optimal profit: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">€&quot;</span>
-        <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span><span class="p">(),</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">value</span>
+<span class="k">def</span> <span class="nf">display_results</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">distributiontype</span><span class="p">):</span>
+    <span class="n">smartprofit</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">total_expected_profit</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Approximate solution in the case of </span><span class="si">{</span><span class="n">distributiontype</span><span class="si">}</span><span class="s2"> distribution using N=</span><span class="si">{</span><span class="n">N</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> samples&quot;</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Approximate optimal solution: x = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> tons&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Approximate expected optimal profit: </span><span class="si">{</span><span class="n">smartprofit</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">€&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">distributiontype</span> <span class="o">==</span> <span class="s2">&quot;uniform&quot;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Value of the stochastic solution: </span><span class="si">{</span><span class="n">smartprofit</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">naiveprofit_uniform</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">smartprofit</span><span class="o">-</span><span class="n">naiveprofit_uniform</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">€</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">distributiontype</span> <span class="o">==</span> <span class="s2">&quot;Pareto&quot;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Value of the stochastic solution: </span><span class="si">{</span><span class="n">smartprofit</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">naiveprofit_pareto</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">smartprofit</span><span class="o">-</span><span class="n">naiveprofit_pareto</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">€</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">distributiontype</span> <span class="o">==</span> <span class="s2">&quot;Weibull&quot;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Value of the stochastic solution: </span><span class="si">{</span><span class="n">smartprofit</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">naiveprofit_weibull</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">smartprofit</span><span class="o">-</span><span class="n">naiveprofit_weibull</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">€</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
 
 
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">N</span> <span class="o">=</span> <span class="mi">5000</span>
 
 <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mf">25.0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mf">175.0</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">N</span><span class="p">)</span>
-<span class="n">smartprofit_uniform</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="n">SeafoodStockSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="s2">&quot;uniform&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;Value of the stochastic solution: </span><span class="si">{</span><span class="n">smartprofit_uniform</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">naiveprofit_uniform</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">smartprofit_uniform</span><span class="o">-</span><span class="n">naiveprofit_uniform</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">€</span><span class="se">\n</span><span class="s2">&quot;</span>
-<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SeafoodStockSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">samples</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">display_results</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;uniform&quot;</span><span class="p">)</span>
 
 <span class="n">shape</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="n">xm</span> <span class="o">=</span> <span class="mi">50</span>
 <span class="n">samples</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">pareto</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">N</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">xm</span>
-<span class="n">smartprofit_pareto</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="n">SeafoodStockSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="s2">&quot;Pareto&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;Value of the stochastic solution: </span><span class="si">{</span><span class="n">smartprofit_pareto</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">naiveprofit_pareto</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">smartprofit_pareto</span><span class="o">-</span><span class="n">naiveprofit_pareto</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">€</span><span class="se">\n</span><span class="s2">&quot;</span>
-<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SeafoodStockSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">samples</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">display_results</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;Pareto&quot;</span><span class="p">)</span>
 
 <span class="n">shape</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="n">scale</span> <span class="o">=</span> <span class="mi">113</span>
 <span class="n">samples</span> <span class="o">=</span> <span class="n">scale</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">weibull</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">N</span><span class="p">)</span>
-<span class="n">smartprofit_weibull</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="n">SeafoodStockSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="s2">&quot;Weibull&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;Value of the stochastic solution: </span><span class="si">{</span><span class="n">smartprofit_weibull</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">naiveprofit_weibull</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">smartprofit_weibull</span><span class="o">-</span><span class="n">naiveprofit_weibull</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">€</span><span class="se">\n</span><span class="s2">&quot;</span>
-<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SeafoodStockSAA</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">samples</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">display_results</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;Weibull&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1002,7 +1004,7 @@ Value of the stochastic solution: 919.08-910.55 = 8.54€
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">9.4 Economic dispatch in energy systems</p>
+        <p class="prev-next-title">9.4 Economic dispatch in renewable energy systems using chance constraints</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

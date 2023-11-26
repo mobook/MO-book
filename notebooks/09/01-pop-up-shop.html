@@ -257,13 +257,12 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">9.1 Pop-up shop</a></li>
 <li class="toctree-l2"><a class="reference internal" href="02-markowitz-portfolio-with-chance-constraint.html">9.2 Markowitz portfolio optimization with chance constraints</a></li>
 <li class="toctree-l2"><a class="reference internal" href="03-seafood-distribution-center.html">9.3 Stock optimization for seafood distribution center</a></li>
-<li class="toctree-l2"><a class="reference internal" href="04-economic-dispatch.html">9.4 Economic dispatch in energy systems</a></li>
-
+<li class="toctree-l2"><a class="reference internal" href="04-economic-dispatch.html">9.4 Economic dispatch in renewable energy systems using chance constraints</a></li>
 
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../10/10.00.html">10. Two-Stage Problems</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-10"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../10/01-airline-seating-allocation.html">10.1 Airline seat allocation problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../10/01-aircraft-seat-allocation.html">10.1 Aircraft seat allocation problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/02-opf-linear-decision-rule.html">10.2 Optimal power flow problem with recourse actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/03-two-stage-production-planning.html">10.3 Two-stage production planning using constraint and column generation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../10/04-farmer-problem.html">Extra: The farmer’s problem and its variants</a></li>
@@ -535,7 +534,6 @@ document.write(`
  
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
- 
 <span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
@@ -800,60 +798,47 @@ The optimization problem is to find the order size <span class="math notranslate
 <p>We can implement this problem in Pyomo as follows.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">PopUpShop</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">scenarios</span><span class="p">):</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Pop-up shop&quot;</span><span class="p">)</span>
 
-<span class="c1"># price and scenario information</span>
-<span class="n">r</span> <span class="o">=</span> <span class="mi">40</span>
-<span class="n">c</span> <span class="o">=</span> <span class="mi">12</span>
-<span class="n">w</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="c1"># set of scenarios</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">scenarios</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
-<span class="n">scenarios</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;sunny skies&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="mi">650</span><span class="p">,</span> <span class="s2">&quot;probability&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span>
-    <span class="s2">&quot;good weather&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span> <span class="s2">&quot;probability&quot;</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">},</span>
-    <span class="s2">&quot;poor weather&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="s2">&quot;probability&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">},</span>
-<span class="p">}</span>
+    <span class="c1"># decision variables</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
 
-<span class="c1"># create model instance</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Pop-up shop&quot;</span><span class="p">)</span>
+    <span class="c1"># parameters</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">r</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">w</span><span class="p">)</span>
 
-<span class="c1"># set of scenarios</span>
-<span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">scenarios</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="c1"># objective</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">EV</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">scenarios</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;probability&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">])</span>
 
-<span class="c1"># decision variables</span>
-<span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
+    <span class="c1"># constraints</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">r</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">])</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">c</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span>
 
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">sales_less_than_order</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span>
 
-<span class="c1"># objective</span>
-<span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">EV</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">scenarios</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;probability&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">])</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">sales_less_than_demand</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">scenarios</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;demand&quot;</span><span class="p">]</span>
 
-
-<span class="c1"># constraints</span>
-<span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">==</span> <span class="n">r</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">+</span> <span class="n">w</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">])</span> <span class="o">-</span> <span class="n">c</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span>
-
-
-<span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">sales_less_than_order</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span>
+    <span class="k">return</span> <span class="n">m</span>
 
 
-<span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">sales_less_than_demand</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">scenarios</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;demand&quot;</span><span class="p">]</span>
-
-
+<span class="n">m</span> <span class="o">=</span> <span class="n">PopUpShop</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">scenarios</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Solver Termination Condition:&quot;</span><span class="p">,</span> <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">()</span>
-
-<span class="c1"># display solution using Pandas</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Solver termination condition: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected profit: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">EV</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">:</span>
     <span class="n">scenarios</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;order&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">()</span>
     <span class="n">scenarios</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;sold&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]()</span>
@@ -862,12 +847,12 @@ The optimization problem is to find the order size <span class="math notranslate
 
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">scenarios</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
 <span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Expected Profit:&quot;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">EV</span><span class="p">())</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Solver Termination Condition: optimal
+Expected Profit: 8920.0
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -926,10 +911,7 @@ The optimization problem is to find the order size <span class="math notranslate
     </tr>
   </tbody>
 </table>
-</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Expected Profit: 8920.0
-</pre></div>
-</div>
-</div>
+</div></div></div>
 </div>
 <p>Optimizing over all scenarios provides an expected profit of 8,920 €, an increase of 581 € over the naive strategy of simply ordering the expected number of items sold. The new optimal solution places a larger order, that is <span class="math notranslate nohighlight">\(x=400\)</span>. In poor weather conditions, there will be more returns and lower profit that is more than compensated by the increased profits in good weather conditions.</p>
 <p>The additional value that results from solve of this planning problem is called the <strong>Value of the Stochastic Solution (VSS)</strong>. The value of the stochastic solution is the additional profit compared to ordering to meet the expected demand. In this case,</p>
@@ -940,7 +922,7 @@ The optimization problem is to find the order size <span class="math notranslate
 <h2>Expected value with perfect information (EVPI)<a class="headerlink" href="#expected-value-with-perfect-information-evpi" title="Permalink to this heading">#</a></h2>
 <p>Maximizing expected profit requires the size of the order be decided before knowing what scenario will unfold. The decision for <span class="math notranslate nohighlight">\(x\)</span> has to be made “here and now” with probablistic information about the future, but without specific information on which future will actually transpire.</p>
 <p>Nevertheless, we can perform the hypothetical calculation of what profit would be realized if we could know the future. We are still subject to the variability of weather, what is different is we know what the weather will be at the time the order is placed.</p>
-<p>The resulting value for the expected profit is called the <strong>Expected Value of Perfect Information (EVPI)</strong>.  The difference EVPI - EV is the extra profit due to having perfect knowledge of the future.</p>
+<p>The resulting value for the expected profit is called the <strong>Expected Value of Perfect Information (EVPI)</strong>.  The difference <span class="math notranslate nohighlight">\(EVPI - EV\)</span> is the extra profit due to having perfect knowledge of the future.</p>
 <p>To compute the expected profit with perfect information, we let the order variable <span class="math notranslate nohighlight">\(x\)</span> be indexed by the subsequent scenario that will unfold. Given decision varaible <span class="math notranslate nohighlight">\(x_s\)</span>, the model for EVPI becomes</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -952,64 +934,51 @@ The optimization problem is to find the order size <span class="math notranslate
 &amp; y_s \leq d_s &amp; \forall s \in S
 \end{align*}
 \end{split}\]</div>
-<p>The following implementation is a variation of the prior cell.</p>
+<p>The following implementation is a variation of the prior Pyomo model, with the only difference that now <span class="math notranslate nohighlight">\(x\)</span> is a decision variable indexed by the scenarios.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">PopUpShop_PI</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">scenarios</span><span class="p">):</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Pop-up shop with perfect information&quot;</span><span class="p">)</span>
 
-<span class="c1"># price information</span>
-<span class="n">r</span> <span class="o">=</span> <span class="mi">40</span>
-<span class="n">c</span> <span class="o">=</span> <span class="mi">12</span>
-<span class="n">w</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="c1"># set of scenarios</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">scenarios</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
-<span class="c1"># scenario information</span>
-<span class="n">scenarios</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;sunny skies&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="mi">650</span><span class="p">,</span> <span class="s2">&quot;probability&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span>
-    <span class="s2">&quot;good weather&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span> <span class="s2">&quot;probability&quot;</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">},</span>
-    <span class="s2">&quot;poor weather&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;demand&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="s2">&quot;probability&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">},</span>
-<span class="p">}</span>
+    <span class="c1"># decision variables</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>  <span class="c1"># one for each scenario</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
 
-<span class="c1"># create model instance</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Pop-up Shop&quot;</span><span class="p">)</span>
+    <span class="c1"># parameters</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">r</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">w</span><span class="p">)</span>
 
-<span class="c1"># set of scenarios</span>
-<span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">scenarios</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="c1"># objective</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">EV</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">scenarios</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;probability&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">])</span>
 
-<span class="c1"># decision variables</span>
-<span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">)</span>
-<span class="n">m</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
+    <span class="c1"># constraints</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">r</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">])</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">c</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
 
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">sales_less_than_order</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
 
-<span class="c1"># objective</span>
-<span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">EV</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">scenarios</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;probability&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">])</span>
+    <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">sales_less_than_demand</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">scenarios</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;demand&quot;</span><span class="p">]</span>
 
-
-<span class="c1"># constraints</span>
-<span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">==</span> <span class="n">r</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">+</span> <span class="n">w</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">])</span> <span class="o">-</span> <span class="n">c</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">m</span>
 
 
-<span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">sales_less_than_order</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
-
-
-<span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">sales_less_than_demand</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">scenarios</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;demand&quot;</span><span class="p">]</span>
-
-
+<span class="n">m</span> <span class="o">=</span> <span class="n">PopUpShop_PI</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">scenarios</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
-<span class="c1"># display solution using Pandas</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Solver Termination Condition:&quot;</span><span class="p">,</span> <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Expected Profit:&quot;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">EV</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Solver termination condition: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected profit: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">EV</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">:</span>
     <span class="n">scenarios</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;order&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]()</span>
     <span class="n">scenarios</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">&quot;sold&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">s</span><span class="p">]()</span>
@@ -1133,7 +1102,7 @@ VSS = EVSS - EVM = 581
 VPI = EVPI - EVSS = 1,300
 \end{align*}
 \]</div>
-<p>As one might expect, there is a cost that results from lack of knowledge about an uncertain future.</p>
+<p>As one might have expected, there is a cost that results from lack of knowledge about an uncertain future.</p>
 </section>
 </section>
 
