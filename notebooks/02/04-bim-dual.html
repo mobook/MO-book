@@ -185,7 +185,7 @@ const thebe_selector_output = ".output, .cell_output"
 </ul>
 </li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="02.00.html">2. Linear Optimization</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="01-bim.html">2.1 BIM production</a></li>
+<li class="toctree-l2"><a class="reference internal" href="01-bim.html">2.1 BIM production planning using linear optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="02-lad-regression.html">2.2 Least Absolute Deviation (LAD) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="03-mad-portfolio-optimization.html">2.3 Mean Absolute Deviation (MAD) portfolio optimization</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">2.4 Dual of the BIM production problem</a></li>
@@ -240,7 +240,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../06/02-kelly-criterion.html">6.2 The Kelly criterion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/03-markowitz-portfolio-revisited.html">6.3 Markowitz portfolio optimization revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/04-building-insulation.html">6.4 Optimal Design of Multilayered Building Insulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../06/05-svm-conic.html">6.5 Support Vector Machines with Conic Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../06/05-svm-conic.html">Extra material: Support Vector Machines with conic optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/06-investment-wheel.html">Extra material: Luenberger’s Investment Wheel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/07-optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios with Risk Aversion</a></li>
 </ul>
@@ -516,8 +516,8 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><section class="tex2jax_ignore mathjax_ignore" id="dual-of-the-bim-production-problem">
-<span id="index-2"></span><h1>2.4 Dual of the BIM production problem<a class="headerlink" href="#dual-of-the-bim-production-problem" title="Permalink to this heading">#</a></h1>
+  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><section class="tex2jax_ignore mathjax_ignore" id="dual-of-the-bim-production-problem">
+<span id="index-3"></span><h1>2.4 Dual of the BIM production problem<a class="headerlink" href="#dual-of-the-bim-production-problem" title="Permalink to this heading">#</a></h1>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
 <p>The following cell sets and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and the HiGHS solver, while, if run elsewhere, it assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGHS as solver via the appsi module and a test is performed to verify that it is available. The solver interface is stored in a global object <code class="docutils literal notranslate"><span class="pre">SOLVER</span></code> for later use.</p>
@@ -533,7 +533,7 @@ document.write(`
  
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
- 
+
 <span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
@@ -595,9 +595,7 @@ document.write(`
 <p>The Pyomo code that implements and solves the dual problem is given below.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-
-<span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;BIM dual&quot;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;BIM production planning dual problem&quot;</span><span class="p">)</span>
 
 <span class="c1"># Decision variables and their domain</span>
 <span class="n">model</span><span class="o">.</span><span class="n">y1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
@@ -635,7 +633,7 @@ optimal value = 17700.00
 <p>If we are interested only in the optimal value of the dual variables, we can solve the original problem and ask Pyomo to return us the optimal values of the dual variables.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;BIM with decorators&quot;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;BIM production planning with decorators&quot;</span><span class="p">)</span>
 
 <span class="c1"># Decision variables and their domains</span>
 <span class="n">model</span><span class="o">.</span><span class="n">x1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>

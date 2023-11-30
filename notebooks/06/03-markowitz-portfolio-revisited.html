@@ -185,7 +185,7 @@ const thebe_selector_output = ".output, .cell_output"
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../02/02.00.html">2. Linear Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../02/01-bim.html">2.1 BIM production</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../02/01-bim.html">2.1 BIM production planning using linear optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../02/02-lad-regression.html">2.2 Least Absolute Deviation (LAD) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../02/03-mad-portfolio-optimization.html">2.3 Mean Absolute Deviation (MAD) portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../02/04-bim-dual.html">2.4 Dual of the BIM production problem</a></li>
@@ -240,7 +240,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="02-kelly-criterion.html">6.2 The Kelly criterion</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">6.3 Markowitz portfolio optimization revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="04-building-insulation.html">6.4 Optimal Design of Multilayered Building Insulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="05-svm-conic.html">6.5 Support Vector Machines with Conic Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="05-svm-conic.html">Extra material: Support Vector Machines with conic optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="06-investment-wheel.html">Extra material: Luenberger’s Investment Wheel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="07-optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios with Risk Aversion</a></li>
 </ul>
@@ -535,9 +535,8 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
 <span class="k">else</span><span class="p">:</span>
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 
-<span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span> 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
 
 <span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
@@ -597,9 +596,9 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
 <span class="c1"># Check that Sigma is semi-definite positive</span>
 <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigvals</span><span class="p">(</span><span class="n">Sigma</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
 
-<span class="c1"># If you want to change the covariance matrix Sigma, ensure you input a semi-definite positive one.</span>
-<span class="c1"># The easiest way to generate a random covariance matrix is first generating a random m x m matrix A</span>
-<span class="c1"># and then taking the matrix A^T A (which is always semi-definite positive)</span>
+<span class="c1"># When changing the covariance matrix Sigma, ensure you input a semi-definite positive one.</span>
+<span class="c1"># The easiest way to generate a random covariance matrix is first generating a random</span>
+<span class="c1"># m x m matrix A and then taking the matrix A^T A (which is always semi-definite positive)</span>
 <span class="c1"># m = 3</span>
 <span class="c1"># A = np.random.rand(m, m)</span>
 <span class="c1"># Sigma = A.T @ A</span>
@@ -607,7 +606,7 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
 <span class="c1"># Moreover, in practive such a matrix A, called factor, can be low-rank,</span>
 <span class="c1"># see https://docs.mosek.com/modeling-cookbook/qcqo.html#example-factor-model.</span>
 <span class="c1"># This would provide better numerical properties for the proper conic formulation</span>
-<span class="c1">#        y=Ax, |y|^2 &lt;= s,</span>
+<span class="c1">#   y=Ax, |y|^2 &lt;= s,</span>
 <span class="c1"># corresponding to the mathematical formulation above.</span>
 
 
@@ -630,13 +629,11 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
     <span class="k">def</span> <span class="nf">total_assets</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">xtilde</span> <span class="o">==</span> <span class="n">C</span>
 
-    <span class="n">result</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">result</span><span class="p">,</span> <span class="n">model</span>
+    <span class="k">return</span> <span class="n">model</span>
 
 
-<span class="n">result</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">markowitz_revisited</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">)</span>
-
+<span class="n">model</span> <span class="o">=</span> <span class="n">markowitz_revisited</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 <span class="n">display</span><span class="p">(</span>
     <span class="n">Markdown</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">&quot;**Solver status:** *</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="si">}</span><span class="s2">*&quot;</span>
@@ -690,7 +687,8 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
 
 <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;font.size&quot;</span><span class="p">:</span> <span class="mi">14</span><span class="p">})</span>
 <span class="k">for</span> <span class="n">alpha</span> <span class="ow">in</span> <span class="n">alpha_values</span><span class="p">:</span>
-    <span class="n">_</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">markowitz_revisited</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">markowitz_revisited</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">)</span>
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
     <span class="n">objective</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">(),</span> <span class="mi">3</span><span class="p">))</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">alpha_values</span><span class="p">,</span> <span class="n">objective</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">tab20c</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
@@ -702,7 +700,7 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/70f0a2d6b5d3bbd259bc5b152b0085cf5e6db4ac83c7468ff092c61a35705928.png" src="../../_images/70f0a2d6b5d3bbd259bc5b152b0085cf5e6db4ac83c7468ff092c61a35705928.png" />
+<img alt="../../_images/4e6e6ed555faf58f4fa4e26a659fa58d39c13a76419542b01b30727e77841f52.png" src="../../_images/4e6e6ed555faf58f4fa4e26a659fa58d39c13a76419542b01b30727e77841f52.png" />
 </div>
 </div>
 </section>

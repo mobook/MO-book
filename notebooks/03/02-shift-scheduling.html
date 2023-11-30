@@ -185,7 +185,7 @@ const thebe_selector_output = ".output, .cell_output"
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../02/02.00.html">2. Linear Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../02/01-bim.html">2.1 BIM production</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../02/01-bim.html">2.1 BIM production planning using linear optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../02/02-lad-regression.html">2.2 Least Absolute Deviation (LAD) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../02/03-mad-portfolio-optimization.html">2.3 Mean Absolute Deviation (MAD) portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../02/04-bim-dual.html">2.4 Dual of the BIM production problem</a></li>
@@ -240,7 +240,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../06/02-kelly-criterion.html">6.2 The Kelly criterion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/03-markowitz-portfolio-revisited.html">6.3 Markowitz portfolio optimization revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/04-building-insulation.html">6.4 Optimal Design of Multilayered Building Insulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../06/05-svm-conic.html">6.5 Support Vector Machines with Conic Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../06/05-svm-conic.html">Extra material: Support Vector Machines with conic optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/06-investment-wheel.html">Extra material: Luenberger’s Investment Wheel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/07-optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios with Risk Aversion</a></li>
 </ul>
@@ -532,8 +532,8 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><section class="tex2jax_ignore mathjax_ignore" id="workforce-shift-scheduling">
-<span id="index-4"></span><h1>3.2 Workforce shift scheduling<a class="headerlink" href="#workforce-shift-scheduling" title="Permalink to this heading">#</a></h1>
+  <span class="target" id="index-0"></span><span class="target" id="index-1"></span><span class="target" id="index-2"></span><span class="target" id="index-3"></span><span class="target" id="index-4"></span><section class="tex2jax_ignore mathjax_ignore" id="workforce-shift-scheduling">
+<span id="index-5"></span><h1>3.2 Workforce shift scheduling<a class="headerlink" href="#workforce-shift-scheduling" title="Permalink to this heading">#</a></h1>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
 <p>The following cell sets and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and the HiGHS solver, while, if run elsewhere, it assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGHS as solver via the appsi module and a test is performed to verify that it is available. The solver interface is stored in a global object <code class="docutils literal notranslate"><span class="pre">SOLVER</span></code> for later use.</p>
@@ -549,7 +549,7 @@ document.write(`
 
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
- 
+
 <span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
@@ -688,10 +688,7 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
 <h2>Pyomo implementation<a class="headerlink" href="#pyomo-implementation" title="Permalink to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-
-
-<span class="k">def</span> <span class="nf">shift_schedule</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">hours</span><span class="o">=</span><span class="mi">40</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">shift_schedule</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">hours</span><span class="o">=</span><span class="mi">40</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Workforce Shift Scheduling&quot;</span><span class="p">)</span>
 
     <span class="c1"># ordered set of avaiable workers</span>
@@ -767,18 +764,11 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
             <span class="n">i</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">n</span><span class="p">[</span><span class="n">worker</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">i</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">e</span><span class="p">[</span><span class="n">worker</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">worker</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">W</span><span class="p">)</span>
         <span class="p">)</span>
 
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-
     <span class="k">return</span> <span class="n">m</span>
 
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">shift_schedule</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
+<span class="n">_</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -850,7 +840,7 @@ Copyright (c) 2023 HiGHS under MIT licence terms
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/c76aa134b0d85d88e6ab42245590c01dde251c64342454df017e89abcf11b9a4.png" src="../../_images/c76aa134b0d85d88e6ab42245590c01dde251c64342454df017e89abcf11b9a4.png" />
+<img alt="../../_images/0765f6d168b83e68020c89b9c5fa69bf5ec400cca57ace42835f8db71e420056.png" src="../../_images/0765f6d168b83e68020c89b9c5fa69bf5ec400cca57ace42835f8db71e420056.png" />
 </div>
 </div>
 </section>
@@ -912,200 +902,200 @@ Copyright (c) 2023 HiGHS under MIT licence terms
   </thead>
   <tbody>
     <tr>
-      <th>25</th>
+      <th>23</th>
       <td>W06</td>
       <td>Mon</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>W07</td>
+      <td>Mon</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>W03</td>
+      <td>Mon</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>W05</td>
+      <td>Mon</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>W04</td>
+      <td>Mon</td>
+      <td>night</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>W06</td>
+      <td>Tue</td>
       <td>morning</td>
     </tr>
     <tr>
       <th>29</th>
       <td>W07</td>
-      <td>Mon</td>
+      <td>Tue</td>
       <td>morning</td>
     </tr>
     <tr>
-      <th>0</th>
-      <td>W01</td>
-      <td>Mon</td>
+      <th>4</th>
+      <td>W02</td>
+      <td>Tue</td>
       <td>evening</td>
     </tr>
     <tr>
       <th>10</th>
       <td>W03</td>
-      <td>Mon</td>
+      <td>Tue</td>
       <td>evening</td>
     </tr>
     <tr>
-      <th>15</th>
+      <th>14</th>
       <td>W04</td>
-      <td>Mon</td>
+      <td>Tue</td>
       <td>night</td>
     </tr>
     <tr>
-      <th>5</th>
-      <td>W02</td>
-      <td>Tue</td>
+      <th>19</th>
+      <td>W05</td>
+      <td>Wed</td>
       <td>morning</td>
     </tr>
     <tr>
       <th>30</th>
       <td>W07</td>
-      <td>Tue</td>
+      <td>Wed</td>
       <td>morning</td>
     </tr>
     <tr>
-      <th>1</th>
+      <th>0</th>
       <td>W01</td>
-      <td>Tue</td>
+      <td>Wed</td>
       <td>evening</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>W06</td>
+      <td>Wed</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>W04</td>
+      <td>Wed</td>
+      <td>night</td>
     </tr>
     <tr>
       <th>20</th>
       <td>W05</td>
-      <td>Tue</td>
-      <td>evening</td>
-    </tr>
-    <tr>
-      <th>11</th>
-      <td>W03</td>
-      <td>Tue</td>
-      <td>night</td>
-    </tr>
-    <tr>
-      <th>26</th>
-      <td>W06</td>
-      <td>Wed</td>
+      <td>Thu</td>
       <td>morning</td>
     </tr>
     <tr>
       <th>31</th>
       <td>W07</td>
-      <td>Wed</td>
+      <td>Thu</td>
       <td>morning</td>
     </tr>
     <tr>
-      <th>2</th>
-      <td>W01</td>
-      <td>Wed</td>
+      <th>5</th>
+      <td>W02</td>
+      <td>Thu</td>
       <td>evening</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>W06</td>
+      <td>Thu</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>W01</td>
+      <td>Thu</td>
+      <td>night</td>
     </tr>
     <tr>
       <th>16</th>
       <td>W04</td>
-      <td>Wed</td>
-      <td>evening</td>
+      <td>Fri</td>
+      <td>morning</td>
     </tr>
     <tr>
       <th>21</th>
       <td>W05</td>
-      <td>Wed</td>
-      <td>night</td>
-    </tr>
-    <tr>
-      <th>12</th>
-      <td>W03</td>
-      <td>Thu</td>
-      <td>morning</td>
-    </tr>
-    <tr>
-      <th>27</th>
-      <td>W06</td>
-      <td>Thu</td>
+      <td>Fri</td>
       <td>morning</td>
     </tr>
     <tr>
       <th>6</th>
       <td>W02</td>
-      <td>Thu</td>
-      <td>evening</td>
-    </tr>
-    <tr>
-      <th>17</th>
-      <td>W04</td>
-      <td>Thu</td>
-      <td>evening</td>
-    </tr>
-    <tr>
-      <th>22</th>
-      <td>W05</td>
-      <td>Thu</td>
-      <td>night</td>
-    </tr>
-    <tr>
-      <th>28</th>
-      <td>W06</td>
       <td>Fri</td>
-      <td>morning</td>
+      <td>evening</td>
     </tr>
     <tr>
       <th>32</th>
       <td>W07</td>
       <td>Fri</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>W06</td>
+      <td>Fri</td>
+      <td>night</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>W01</td>
+      <td>Sat</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>W05</td>
+      <td>Sat</td>
       <td>morning</td>
     </tr>
     <tr>
       <th>7</th>
       <td>W02</td>
-      <td>Fri</td>
+      <td>Sat</td>
       <td>evening</td>
     </tr>
     <tr>
-      <th>13</th>
+      <th>17</th>
+      <td>W04</td>
+      <td>Sat</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>11</th>
       <td>W03</td>
-      <td>Fri</td>
-      <td>evening</td>
-    </tr>
-    <tr>
-      <th>23</th>
-      <td>W05</td>
-      <td>Fri</td>
+      <td>Sat</td>
       <td>night</td>
     </tr>
     <tr>
       <th>3</th>
       <td>W01</td>
-      <td>Sat</td>
-      <td>morning</td>
-    </tr>
-    <tr>
-      <th>18</th>
-      <td>W04</td>
-      <td>Sat</td>
+      <td>Sun</td>
       <td>morning</td>
     </tr>
     <tr>
       <th>8</th>
       <td>W02</td>
-      <td>Sat</td>
+      <td>Sun</td>
       <td>evening</td>
     </tr>
     <tr>
-      <th>14</th>
+      <th>12</th>
       <td>W03</td>
-      <td>Sat</td>
-      <td>evening</td>
-    </tr>
-    <tr>
-      <th>24</th>
-      <td>W05</td>
-      <td>Sat</td>
-      <td>night</td>
-    </tr>
-    <tr>
-      <th>19</th>
-      <td>W04</td>
-      <td>Sun</td>
-      <td>morning</td>
-    </tr>
-    <tr>
-      <th>9</th>
-      <td>W02</td>
-      <td>Sun</td>
-      <td>evening</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>W01</td>
       <td>Sun</td>
       <td>night</td>
     </tr>
@@ -1136,15 +1126,14 @@ Copyright (c) 2023 HiGHS under MIT licence terms
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Work schedule for W01
 worker day   shift
-   W01 Mon evening
-   W01 Tue evening
    W01 Wed evening
+   W01 Thu   night
    W01 Sat morning
-   W01 Sun   night
+   W01 Sun morning
 
 Work schedule for W02
 worker day   shift
-   W02 Tue morning
+   W02 Tue evening
    W02 Thu evening
    W02 Fri evening
    W02 Sat evening
@@ -1153,40 +1142,41 @@ worker day   shift
 Work schedule for W03
 worker day   shift
    W03 Mon evening
-   W03 Tue   night
-   W03 Thu morning
-   W03 Fri evening
-   W03 Sat evening
+   W03 Tue evening
+   W03 Sat   night
+   W03 Sun   night
 
 Work schedule for W04
 worker day   shift
    W04 Mon   night
-   W04 Wed evening
-   W04 Thu evening
-   W04 Sat morning
-   W04 Sun morning
+   W04 Tue   night
+   W04 Wed   night
+   W04 Fri morning
+   W04 Sat evening
 
 Work schedule for W05
 worker day   shift
-   W05 Tue evening
-   W05 Wed   night
-   W05 Thu   night
-   W05 Fri   night
-   W05 Sat   night
+   W05 Mon evening
+   W05 Wed morning
+   W05 Thu morning
+   W05 Fri morning
+   W05 Sat morning
 
 Work schedule for W06
 worker day   shift
    W06 Mon morning
-   W06 Wed morning
-   W06 Thu morning
-   W06 Fri morning
+   W06 Tue morning
+   W06 Wed evening
+   W06 Thu evening
+   W06 Fri   night
 
 Work schedule for W07
 worker day   shift
    W07 Mon morning
    W07 Tue morning
    W07 Wed morning
-   W07 Fri morning
+   W07 Thu morning
+   W07 Fri evening
 
 Work schedule for W08
    no assigned shifts
@@ -1220,38 +1210,38 @@ Work schedule for W10
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Shift schedule for Mon
    morning shift: W06, W07
-   evening shift: W01, W03
+   evening shift: W03, W05
    night shift: W04
 
 Shift schedule for Tue
-   morning shift: W02, W07
-   evening shift: W01, W05
-   night shift: W03
+   morning shift: W06, W07
+   evening shift: W02, W03
+   night shift: W04
 
 Shift schedule for Wed
-   morning shift: W06, W07
-   evening shift: W01, W04
-   night shift: W05
+   morning shift: W05, W07
+   evening shift: W01, W06
+   night shift: W04
 
 Shift schedule for Thu
-   morning shift: W03, W06
-   evening shift: W02, W04
-   night shift: W05
+   morning shift: W05, W07
+   evening shift: W02, W06
+   night shift: W01
 
 Shift schedule for Fri
-   morning shift: W06, W07
-   evening shift: W02, W03
-   night shift: W05
+   morning shift: W04, W05
+   evening shift: W02, W07
+   night shift: W06
 
 Shift schedule for Sat
-   morning shift: W01, W04
-   evening shift: W02, W03
-   night shift: W05
+   morning shift: W01, W05
+   evening shift: W02, W04
+   night shift: W03
 
 Shift schedule for Sun
-   morning shift: W04
+   morning shift: W01
    evening shift: W02
-   night shift: W01
+   night shift: W03
 </pre></div>
 </div>
 </div>

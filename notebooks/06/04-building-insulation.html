@@ -74,7 +74,7 @@ const thebe_selector_output = ".output, .cell_output"
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/06/04-building-insulation';</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="6.5 Support Vector Machines with Conic Optimization" href="05-svm-conic.html" />
+    <link rel="next" title="Extra material: Support Vector Machines with conic optimization" href="05-svm-conic.html" />
     <link rel="prev" title="6.3 Markowitz portfolio optimization revisited" href="03-markowitz-portfolio-revisited.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -185,7 +185,7 @@ const thebe_selector_output = ".output, .cell_output"
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../02/02.00.html">2. Linear Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../02/01-bim.html">2.1 BIM production</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../02/01-bim.html">2.1 BIM production planning using linear optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../02/02-lad-regression.html">2.2 Least Absolute Deviation (LAD) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../02/03-mad-portfolio-optimization.html">2.3 Mean Absolute Deviation (MAD) portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../02/04-bim-dual.html">2.4 Dual of the BIM production problem</a></li>
@@ -240,7 +240,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="02-kelly-criterion.html">6.2 The Kelly criterion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="03-markowitz-portfolio-revisited.html">6.3 Markowitz portfolio optimization revisited</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">6.4 Optimal Design of Multilayered Building Insulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="05-svm-conic.html">6.5 Support Vector Machines with Conic Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="05-svm-conic.html">Extra material: Support Vector Machines with conic optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="06-investment-wheel.html">Extra material: Luenberger’s Investment Wheel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="07-optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios with Risk Aversion</a></li>
 </ul>
@@ -545,7 +545,6 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">&quot;mosek_direct&quot;</span>
 
 <span class="kn">import</span> <span class="nn">pyomo.kernel</span> <span class="k">as</span> <span class="nn">pmo</span>
-<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span> 
 <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
 
 <span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
@@ -590,7 +589,11 @@ C(x) = \frac{\alpha k}{k R_0 + x} + \beta(a + bx).
 <p>A plot illustrates the trade-off between energy operating costs and capital insulation costs and the corresponding optimal solution <span class="math notranslate nohighlight">\(x^*\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># application parameters</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="c1"># application parameters</span>
 <span class="n">alpha</span> <span class="o">=</span> <span class="mi">30</span>  <span class="c1"># $ K / W annualized cost per sq meter per W/sq m/K</span>
 <span class="n">beta</span> <span class="o">=</span> <span class="mf">0.05</span>  <span class="c1"># equivalent annual cost factor</span>
 <span class="n">R0</span> <span class="o">=</span> <span class="mf">2.0</span>  <span class="c1"># Watts/K/m**2</span>
@@ -600,15 +603,6 @@ C(x) = \frac{\alpha k}{k R_0 + x} + \beta(a + bx).
 <span class="n">k</span> <span class="o">=</span> <span class="mf">0.030</span>  <span class="c1"># thermal conductivity as installed</span>
 <span class="n">a</span> <span class="o">=</span> <span class="mf">5.0</span>  <span class="c1"># installation cost per square meter</span>
 <span class="n">b</span> <span class="o">=</span> <span class="mf">150.0</span>  <span class="c1"># installed material cost per cubic meter</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
 <span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">alpha</span> <span class="o">/</span> <span class="p">(</span><span class="n">R0</span> <span class="o">+</span> <span class="n">x</span> <span class="o">/</span> <span class="n">k</span><span class="p">)</span>
 <span class="n">g</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span>
@@ -648,7 +642,7 @@ C(x) = \frac{\alpha k}{k R_0 + x} + \beta(a + bx).
 The optimal thickness is 0.2864 meters
 </pre></div>
 </div>
-<img alt="../../_images/bbe202ee0de5cff4ca897a1ae653937454840dd6de267d3f7b37a3dd99a37d2d.png" src="../../_images/bbe202ee0de5cff4ca897a1ae653937454840dd6de267d3f7b37a3dd99a37d2d.png" />
+<img alt="../../_images/740bdd0f31eda35e7f79aebab3e11652786e26a8d27091751ab13b0676788676.png" src="../../_images/740bdd0f31eda35e7f79aebab3e11652786e26a8d27091751ab13b0676788676.png" />
 </div>
 </div>
 </section>
@@ -799,13 +793,6 @@ z = 2
     <span class="c1"># conic constraint</span>
     <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">rotated_quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">U</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)])</span>
 
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
-        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;x opt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
-    <span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
-
     <span class="k">return</span> <span class="n">m</span>
 </pre></div>
 </div>
@@ -830,6 +817,12 @@ z = 2
 <span class="p">)</span><span class="o">.</span><span class="n">T</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">insulate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">R0</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;x opt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -906,6 +899,12 @@ z = 2
 <span class="p">)</span><span class="o">.</span><span class="n">T</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">insulate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">R0</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;x opt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The optimal cost is equal to </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2"> per sq. meter&quot;</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -993,7 +992,7 @@ z = 2
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/0855e404590b948fb70e498d71909e354103df9475b704f2f87ec5b8fde9ccd9.png" src="../../_images/0855e404590b948fb70e498d71909e354103df9475b704f2f87ec5b8fde9ccd9.png" />
+<img alt="../../_images/2fa0b30fc1715eb0667ee988f0adef60a03edbea6839e836c8e8014077c5746d.png" src="../../_images/2fa0b30fc1715eb0667ee988f0adef60a03edbea6839e836c8e8014077c5746d.png" />
 </div>
 </div>
 </section>
@@ -1073,7 +1072,7 @@ z = 2
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">6.5 Support Vector Machines with Conic Optimization</p>
+        <p class="prev-next-title">Extra material: Support Vector Machines with conic optimization</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

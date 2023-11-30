@@ -185,7 +185,7 @@ const thebe_selector_output = ".output, .cell_output"
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../02/02.00.html">2. Linear Optimization</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../02/01-bim.html">2.1 BIM production</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../02/01-bim.html">2.1 BIM production planning using linear optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../02/02-lad-regression.html">2.2 Least Absolute Deviation (LAD) Regression</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../02/03-mad-portfolio-optimization.html">2.3 Mean Absolute Deviation (MAD) portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../02/04-bim-dual.html">2.4 Dual of the BIM production problem</a></li>
@@ -240,7 +240,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="../06/02-kelly-criterion.html">6.2 The Kelly criterion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/03-markowitz-portfolio-revisited.html">6.3 Markowitz portfolio optimization revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/04-building-insulation.html">6.4 Optimal Design of Multilayered Building Insulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../06/05-svm-conic.html">6.5 Support Vector Machines with Conic Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../06/05-svm-conic.html">Extra material: Support Vector Machines with conic optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/06-investment-wheel.html">Extra material: Luenberger’s Investment Wheel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../06/07-optimal-growth-portfolios.html">Extra material: Optimal Growth Portfolios with Risk Aversion</a></li>
 </ul>
@@ -539,7 +539,7 @@ document.write(`
 
 <span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
- 
+
 <span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
@@ -633,6 +633,7 @@ t_i^{dep} &amp; = t_i^{arr}.
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pyomo.gdp</span> <span class="k">as</span> <span class="nn">gdp</span>
 
 <span class="c1"># specify number of charging stations</span>
 <span class="n">n_charging_stations</span> <span class="o">=</span> <span class="mi">20</span>
@@ -890,13 +891,10 @@ t_i^{dep} &amp; = t_i^{arr}.
 <p>We can implement the problem described above as a Pyomo model and solve it. The solution is presented in a table that shows the location, the arrival time, the departure time, the battery charge at arrival and at departure, and the length of the stop.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-<span class="kn">import</span> <span class="nn">pyomo.gdp</span> <span class="k">as</span> <span class="nn">gdp</span>
-
-
-<span class="k">def</span> <span class="nf">ev_plan</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">D</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">ev_plan</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">D</span><span class="p">):</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">D</span> <span class="o">=</span> <span class="n">D</span>
     <span class="c1"># find stations between x and x + D</span>
-    <span class="n">on_route</span> <span class="o">=</span> <span class="n">stations</span><span class="p">[(</span><span class="n">stations</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">x</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">stations</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">D</span><span class="p">)]</span>
+    <span class="n">on_route</span> <span class="o">=</span> <span class="n">stations</span><span class="p">[(</span><span class="n">stations</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">x</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">stations</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">D</span><span class="p">)]</span>
 
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Recharging EV strategy&quot;</span><span class="p">)</span>
 
@@ -928,8 +926,6 @@ t_i^{dep} &amp; = t_i^{arr}.
     <span class="n">m</span><span class="o">.</span><span class="n">r_dep</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">c_dep</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
 
-    <span class="n">m</span><span class="o">.</span><span class="n">D</span> <span class="o">=</span> <span class="n">D</span>
-
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">STATIONS</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">C</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">on_route</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;kW&quot;</span><span class="p">]</span>
@@ -939,7 +935,7 @@ t_i^{dep} &amp; = t_i^{arr}.
         <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">x</span>
         <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">D</span>
+            <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">D</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">on_route</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;location&quot;</span><span class="p">]</span>
 
@@ -986,14 +982,12 @@ t_i^{dep} &amp; = t_i^{arr}.
         <span class="c1"># return a list disjuncts</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">disjunct_1</span><span class="p">,</span> <span class="n">disjunct_2</span><span class="p">]</span>
 
-    <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-
     <span class="k">return</span> <span class="n">m</span>
 
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">ev_plan</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2000</span><span class="p">)</span>
-
+<span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
     <span class="p">{</span>
         <span class="n">i</span><span class="p">:</span> <span class="p">{</span>
@@ -1008,7 +1002,6 @@ t_i^{dep} &amp; = t_i^{arr}.
 <span class="p">)</span><span class="o">.</span><span class="n">T</span>
 
 <span class="n">results</span><span class="p">[</span><span class="s2">&quot;t_stop&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;t_dep&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;t_arr&quot;</span><span class="p">]</span>
-
 <span class="n">display</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 </pre></div>
 </div>
