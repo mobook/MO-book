@@ -75,7 +75,7 @@ const thebe_selector_output = ".output, .cell_output"
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Extra: Two-stage energy dispatch optimization with wind curtailment" href="05-opf-wind-curtailment.html" />
-    <link rel="prev" title="10.3 Two-stage production planning using constraint and column generation" href="03-two-stage-production-planning.html" />
+    <link rel="prev" title="10.3 Optimal power flow problem with recourse actions" href="03-opf-linear-decision-rule.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -264,8 +264,8 @@ const thebe_selector_output = ".output, .cell_output"
 </li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="10.00.html">10. Two-Stage Problems</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-10"><i class="fa-solid fa-chevron-down"></i></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="01-aircraft-seat-allocation.html">10.1 Aircraft seat allocation problem</a></li>
-<li class="toctree-l2"><a class="reference internal" href="02-opf-linear-decision-rule.html">10.2 Optimal power flow problem with recourse actions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="03-two-stage-production-planning.html">10.3 Two-stage production planning using constraint and column generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="02-two-stage-production-planning.html">10.2 Two-stage production planning using constraint and column generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="03-opf-linear-decision-rule.html">10.3 Optimal power flow problem with recourse actions</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Extra: The farmer’s problem and its variants</a></li>
 <li class="toctree-l2"><a class="reference internal" href="05-opf-wind-curtailment.html">Extra: Two-stage energy dispatch optimization with wind curtailment</a></li>
 
@@ -503,6 +503,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-statement">Problem Statement</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-summary">Data Summary</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-modeling">Data Modeling</a></li>
@@ -530,16 +531,23 @@ document.write(`
 <ul class="simple">
 <li><p>Birge, John R., and Francois Louveaux. Introduction to stochastic programming. Springer Science &amp; Business Media, 2011.</p></li>
 </ul>
+<section id="preamble-install-pyomo-and-a-solver">
+<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Permalink to this heading">#</a></h2>
+<p>The following cell sets and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and the HiGHS solver, while, if run elsewhere, it assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGHS as solver via the appsi module and a test is performed to verify that it is available. The solver interface is stored in a global object <code class="docutils literal notranslate"><span class="pre">SOLVER</span></code> for later use.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># install pyomo and select solver</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+ 
+<span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">%</span><span class="k">pip</span> install pyomo &gt;/dev/null 2&gt;/dev/null
+    <span class="o">%</span><span class="k">pip</span> install highspy &gt;/dev/null 2&gt;/dev/null
 
-<span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;cbc&quot;</span>
+<span class="n">solver</span> <span class="o">=</span> <span class="s1">&#39;appsi_highs&#39;</span>
+ 
+<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
+<span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
 
-<span class="k">if</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>highspy<span class="w"> </span>&gt;/dev/null
-    <span class="n">SOLVER</span> <span class="o">=</span> <span class="s2">&quot;appsi_highs&quot;</span>
+<span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available.&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -554,6 +562,7 @@ document.write(`
 </div>
 </div>
 </div>
+</section>
 <section id="problem-statement">
 <h2>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this heading">#</a></h2>
 <p>In the <a class="reference external" href="https://www.math.uh.edu/~rohop/Spring_15/Chapter1.pdf">farmer’s problem</a>, a European farmer must allocate 500 acres of land among three different crops (wheat, corn, and sugar beets) aiming to maximize profit. The following information is given:</p>
@@ -804,11 +813,7 @@ document.write(`
 <h2>Model Building<a class="headerlink" href="#model-building" title="Permalink to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
-<span class="kn">import</span> <span class="nn">pyomo.gdp</span> <span class="k">as</span> <span class="nn">gdp</span>
-
-
-<span class="k">def</span> <span class="nf">farmer</span><span class="p">(</span><span class="n">crops</span><span class="p">,</span> <span class="n">yields</span><span class="p">,</span> <span class="n">total_land</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">farmer</span><span class="p">(</span><span class="n">crops</span><span class="p">,</span> <span class="n">yields</span><span class="p">,</span> <span class="n">total_land</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">&quot;Farmer&#39;s Problem&quot;</span><span class="p">)</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">CROPS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">crops</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
@@ -872,7 +877,6 @@ document.write(`
     <span class="k">def</span> <span class="nf">scenario_profit</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">revenue</span><span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">expense</span><span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CROPS</span><span class="p">)</span>
 
-    <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">m</span>
 </pre></div>
 </div>
@@ -909,6 +913,7 @@ document.write(`
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">farmer</span><span class="p">(</span><span class="n">crops</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">yields</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 
 <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
@@ -916,7 +921,7 @@ document.write(`
     <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">summation</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">scenario_profit</span><span class="p">)</span>
 
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">farm_report</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -925,7 +930,7 @@ document.write(`
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Objective = 118600.00
 
 Scenario: mean
-Scenario profit = 118600.0
+Scenario profit = 118599.99999999997
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1010,6 +1015,7 @@ Scenario profit = 118600.0
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># maximize mean profit</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">farmer</span><span class="p">(</span><span class="n">crops</span><span class="p">,</span> <span class="n">yields</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 
 <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
@@ -1017,7 +1023,7 @@ Scenario profit = 118600.0
     <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">summation</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">scenario_profit</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
 
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">farm_report</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1262,6 +1268,7 @@ Scenario profit = 48820.0
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># find worst case profit</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">farmer</span><span class="p">(</span><span class="n">crops</span><span class="p">,</span> <span class="n">yields</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="n">m</span><span class="o">.</span><span class="n">worst_case_profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">()</span>
 
@@ -1276,7 +1283,7 @@ Scenario profit = 48820.0
     <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">worst_case_profit</span>
 
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">farm_report</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1285,7 +1292,7 @@ Scenario profit = 48820.0
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Objective = 59950.00
 
 Scenario: good
-Scenario profit = 113250.0
+Scenario profit = 59950.0
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1352,16 +1359,16 @@ Scenario profit = 113250.0
       <td>0.0</td>
       <td>0.0</td>
       <td>6000.0</td>
-      <td>6000.0</td>
-      <td>3000.0</td>
-      <td>246000.0</td>
+      <td>3950.0</td>
+      <td>5050.0</td>
+      <td>192700.0</td>
       <td>97500.0</td>
-      <td>148500.0</td>
+      <td>95200.0</td>
     </tr>
   </tbody>
 </table>
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Scenario: average
-Scenario profit = 59950.0
+Scenario profit = 86599.99999999997
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1428,11 +1435,11 @@ Scenario profit = 59950.0
       <td>0.0</td>
       <td>0.0</td>
       <td>6000.0</td>
-      <td>4975.0</td>
-      <td>2525.0</td>
-      <td>204350.0</td>
+      <td>6000.0</td>
+      <td>1500.0</td>
+      <td>231000.0</td>
       <td>97500.0</td>
-      <td>106850.0</td>
+      <td>133500.0</td>
     </tr>
   </tbody>
 </table>
@@ -1521,6 +1528,7 @@ Scenario profit = 59950.0
 <span class="c1"># maximize expected profit subject to worst case as lower bound</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">farmer</span><span class="p">(</span><span class="n">crops</span><span class="p">,</span> <span class="n">yields</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 
 <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
@@ -1533,7 +1541,7 @@ Scenario profit = 59950.0
     <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">summation</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">scenario_profit</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
 
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="n">farm_report</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1694,7 +1702,7 @@ Scenario profit = 86600.0
   </tbody>
 </table>
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Scenario: poor
-Scenario profit = 59950.00000000055
+Scenario profit = 59950.0
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1732,7 +1740,7 @@ Scenario profit = 59950.00000000055
       <th>wheat</th>
       <td>100.0</td>
       <td>200.0</td>
-      <td>-0.0</td>
+      <td>0.0</td>
       <td>200.0</td>
       <td>20000.0</td>
       <td>0.0</td>
@@ -1780,6 +1788,7 @@ Scenario profit = 59950.00000000055
 
 <span class="k">for</span> <span class="n">wc</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">48820</span><span class="p">,</span> <span class="mi">59950</span><span class="p">,</span> <span class="mi">50</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">farmer</span><span class="p">(</span><span class="n">crops</span><span class="p">,</span> <span class="n">yields</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">min_profit</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
@@ -1790,7 +1799,7 @@ Scenario profit = 59950.00000000055
     <span class="k">def</span> <span class="nf">objective</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">summation</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">scenario_profit</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
 
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">wc</span><span class="p">,</span> <span class="s2">&quot;return&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span>
     <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">wc</span><span class="p">,</span> <span class="s2">&quot;wc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">wc</span>
@@ -1803,7 +1812,7 @@ Scenario profit = 59950.00000000055
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: xlabel=&#39;worst case&#39;, ylabel=&#39;mean return&#39;&gt;
 </pre></div>
 </div>
-<img alt="../../_images/dd9b8d3b93414f909811f7097f3b4bc06fbbeb9a7f42fdb4c38fd6ea230dd3df.png" src="../../_images/dd9b8d3b93414f909811f7097f3b4bc06fbbeb9a7f42fdb4c38fd6ea230dd3df.png" />
+<img alt="../../_images/52ae6c7f9bf894f76397c2cafd0044d77ad2a86a44b4b19fc6877316df62645d.png" src="../../_images/52ae6c7f9bf894f76397c2cafd0044d77ad2a86a44b4b19fc6877316df62645d.png" />
 </div>
 </div>
 </section>
@@ -1815,6 +1824,7 @@ Scenario profit = 59950.00000000055
 
 <span class="k">for</span> <span class="n">wc</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">56750</span><span class="p">,</span> <span class="mi">56820</span><span class="p">,</span> <span class="mi">50</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">farmer</span><span class="p">(</span><span class="n">crops</span><span class="p">,</span> <span class="n">yields</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">min_profit</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
@@ -1825,7 +1835,7 @@ Scenario profit = 59950.00000000055
     <span class="k">def</span> <span class="nf">objective</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">summation</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">scenario_profit</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
 
-    <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
     <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">wc</span><span class="p">,</span> <span class="s2">&quot;return&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span>
     <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">wc</span><span class="p">,</span> <span class="s2">&quot;wc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">wc</span>
@@ -1838,7 +1848,7 @@ Scenario profit = 59950.00000000055
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: xlabel=&#39;worst case&#39;, ylabel=&#39;mean return&#39;&gt;
 </pre></div>
 </div>
-<img alt="../../_images/4f51f9402653195da19b80236a417db412818b79b7599b3e0849809030717168.png" src="../../_images/4f51f9402653195da19b80236a417db412818b79b7599b3e0849809030717168.png" />
+<img alt="../../_images/aefb0a889331dbc001cc2c11dbaa7d6ba742198051cd9d64281e103d8c7f0232.png" src="../../_images/aefb0a889331dbc001cc2c11dbaa7d6ba742198051cd9d64281e103d8c7f0232.png" />
 </div>
 </div>
 <p>What we see is that the worst case can be raised from 48,820 to 56,800 (a difference of 7,980 euro) at a cost of reducing the expected from from 108,390 to 107,100 (a reduction of 1,290 euro). This improvement in worst-case performance may be worth the reduction in mean profit.</p>
@@ -1847,6 +1857,7 @@ Scenario profit = 59950.00000000055
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">wc</span> <span class="o">=</span> <span class="mi">56800</span>
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">farmer</span><span class="p">(</span><span class="n">crops</span><span class="p">,</span> <span class="n">yields</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">&quot;gdp.bigm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 
 <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
@@ -1860,7 +1871,7 @@ Scenario profit = 59950.00000000055
     <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">summation</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">scenario_profit</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SCENARIOS</span><span class="p">)</span>
 
 
-<span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">SOLVER</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
 <span class="n">farm_report</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
@@ -1946,7 +1957,7 @@ Scenario profit = 147000.0
   </tbody>
 </table>
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Scenario: average
-Scenario profit = 117500.0
+Scenario profit = 117499.99999999999
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -2022,7 +2033,7 @@ Scenario profit = 117500.0
   </tbody>
 </table>
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Scenario: poor
-Scenario profit = 56800.0
+Scenario profit = 56799.999999999956
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -2063,7 +2074,7 @@ Scenario profit = 56800.0
       <td>0.0</td>
       <td>200.0</td>
       <td>20000.0</td>
-      <td>0.0</td>
+      <td>-0.0</td>
       <td>0.0</td>
       <td>0.0</td>
       <td>15000.0</td>
@@ -2141,12 +2152,12 @@ Scenario profit = 56800.0
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="03-two-stage-production-planning.html"
+       href="03-opf-linear-decision-rule.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">10.3 Two-stage production planning using constraint and column generation</p>
+        <p class="prev-next-title">10.3 Optimal power flow problem with recourse actions</p>
       </div>
     </a>
     <a class="right-next"
@@ -2173,6 +2184,7 @@ Scenario profit = 56800.0
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-statement">Problem Statement</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-summary">Data Summary</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-modeling">Data Modeling</a></li>
