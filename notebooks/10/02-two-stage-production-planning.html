@@ -566,7 +566,6 @@ document.write(`
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pyo</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 </pre></div>
@@ -634,22 +633,22 @@ P_V &amp; = 210 - 50(1+z_A) - 40(1+z_B) - 90) \\
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
-\max \quad &amp; - 10x + \inf\limits_{\bm{z} \in Z} Q(x, \bm{z}) \\
+\max \quad &amp; - 10x + \inf\limits_{z \in Z} Q(x, z) \\
 \text{s.t.} \quad &amp; x \geq 0, 
 \end{align*}
 \end{split}\]</div>
-<p>where <span class="math notranslate nohighlight">\(x\)</span> is the amount of raw material to order, and where the uncertainty <span class="math notranslate nohighlight">\(\bm{z} = (z_A, z_B, z_D)\)</span> is given by</p>
+<p>where <span class="math notranslate nohighlight">\(x\)</span> is the amount of raw material to order, and where the uncertainty <span class="math notranslate nohighlight">\(z = (z_A, z_B, z_D)\)</span> is given by</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
-Z = \left\{ \bm{z}=(z_A, z_B, z_D): \ |z_A| \leq 0.15, \ |z_B| \leq 0.25, \ |z_D| \leq 0.25, \ \frac{|z_A|}{0.15} + \frac{|z_A|}{0.25} + \frac{|z_D|}{0.25} \leq 2 \right\}.
+Z = \left\{ z=(z_A, z_B, z_D): \ |z_A| \leq 0.15, \ |z_B| \leq 0.25, \ |z_D| \leq 0.25, \ \frac{|z_A|}{0.15} + \frac{|z_A|}{0.25} + \frac{|z_D|}{0.25} \leq 2 \right\}.
 \end{align*}
 \]</div>
-<p><span class="math notranslate nohighlight">\(Q(x, \bm{z})\)</span> is the second-stage profit defined by</p>
+<p><span class="math notranslate nohighlight">\(Q(x, z)\)</span> is the second-stage profit defined by</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
-Q(x, \bm{z}) = \min \quad &amp; y_3 \\
+Q(x, z) = \min \quad &amp; y_3 \\
 \text{s.t.}\quad &amp; (140 - 50z_A - 80z_B) y_1 + (120 - 50z_A - 40z_B) y_2 \geq y_3 &amp;&amp; \text{(worst-case profit)} \\
 &amp; y_1 \geq 20 (1 + z_D) &amp;&amp; \text{(pre-production orders)} \\
 &amp; y_2 \leq 40 &amp;&amp; \text{(maximum demand for $U$)}\\
@@ -691,7 +690,7 @@ t(z) = \begin{pmatrix} 0 \\ -20(1+z_D) \\ 80 \\ 100 \\ 0 \end{pmatrix} \\
 </section>
 <section id="solving-the-robust-problem-using-sampled-scenarios">
 <h2>Solving the robust problem using sampled scenarios<a class="headerlink" href="#solving-the-robust-problem-using-sampled-scenarios" title="Permalink to this heading">#</a></h2>
-<p>How can we actually solve such a two-stage problem if it is indeed the worst-case profit that we are interested in? Note that the matrix <span class="math notranslate nohighlight">\(S(\bm{z})\)</span> depends on <span class="math notranslate nohighlight">\(\bm{z}\)</span> and, therefore, we cannot easily formulate the second-stage decisions as linear functions of <span class="math notranslate nohighlight">\(\bm{z}\)</span> (linear decision rules). However, we can generate a finite list of <span class="math notranslate nohighlight">\(N\)</span> scenarios and solve a problem that will maximize the worst-case profit across such a set of scenarios:</p>
+<p>How can we actually solve such a two-stage problem if it is indeed the worst-case profit that we are interested in? Note that the matrix <span class="math notranslate nohighlight">\(S(z)\)</span> depends on <span class="math notranslate nohighlight">\(z\)</span> and, therefore, we cannot easily formulate the second-stage decisions as linear functions of <span class="math notranslate nohighlight">\(z\)</span> (linear decision rules). However, we can generate a finite list of <span class="math notranslate nohighlight">\(N\)</span> scenarios and solve a problem that will maximize the worst-case profit across such a set of scenarios:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -701,7 +700,7 @@ t(z) = \begin{pmatrix} 0 \\ -20(1+z_D) \\ 80 \\ 100 \\ 0 \end{pmatrix} \\
 &amp; x, y^1, \ldots, y^N, \tau \geq 0 
 \end{align*}
 \end{split}\]</div>
-<p>We first define an auxiliary function that evaluates the system matrix coefficients for a particular scenario <span class="math notranslate nohighlight">\(\bm{z} \in Z\)</span> and returns them as nested dictionaries.</p>
+<p>We first define an auxiliary function that evaluates the system matrix coefficients for a particular scenario <span class="math notranslate nohighlight">\(z \in Z\)</span> and returns them as nested dictionaries.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Function to return the vectors and matrices c, q, R, S, t evaluated for a specific realization (z_A, z_B, z_D)</span>
@@ -761,8 +760,8 @@ t = {&#39;profit&#39;: 0, &#39;demand&#39;: -20, &#39;labor A&#39;: 80, &#39;lab
 </div>
 </div>
 </div>
-<p>We define Pyomo model to maximize the worst-case profit for a set of scenarios, where the block structure is used to repeat the parts of the model which are structurally identical for each outcome of <span class="math notranslate nohighlight">\(\bm{z}\)</span>.</p>
-<p>We then generate <span class="math notranslate nohighlight">\(N=1000\)</span> scenarios sampling uniformly at random from the given uncertainty set. We then solve both the nominal problem (inputting a single scenario with the nominal values for the parameters) and the robust problem using <span class="math notranslate nohighlight">\(N=1000\)</span> samples.</p>
+<p>We define Pyomo model to maximize the worst-case profit for a set of scenarios, where the block structure is used to repeat the parts of the model which are structurally identical for each outcome of <span class="math notranslate nohighlight">\(z\)</span>.</p>
+<p>We generate <span class="math notranslate nohighlight">\(N=1000\)</span> scenarios sampling uniformly at random from the given uncertainty set. We then solve both the nominal problem (inputting a single scenario with the nominal values for the parameters) and the robust problem using <span class="math notranslate nohighlight">\(N=1000\)</span> samples.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sample the random variables z_A, z_B, z_D uniformly in the given set</span>
