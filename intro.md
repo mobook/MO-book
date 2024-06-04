@@ -1,6 +1,8 @@
 # Hands-On Mathematical Optimization with Python
 
-Welcome to this repository of companion notebooks for the book *Hands-On Mathematical Optimization with Python*, which will be published by Cambridge University press in 2024. This book introduces the concepts and tools of mathematical optimization with examples from a range of disciplines. The goals of these companion notebooks are to:
+Welcome to this repository of companion notebooks for the book *[Hands-On Mathematical Optimization with Python](https://www.cambridge.org/highereducation/books/hands-on-mathematical-optimization-with-python/F15ABA8AF886E7E6F7444151F40683A1#overview)*, which will be published by Cambridge University press in October 2024. 
+
+This book introduces the concepts and tools of mathematical optimization with examples from a range of disciplines. The goals of these companion notebooks are to:
 
 * Provide a foundation for hands-on learning of mathematical optimization,
 * Demonstrate the tools and concepts of optimization with practical examples,
@@ -36,7 +38,8 @@ If you wish to cite this work, please use
   author = {Postek, Krzysztof and Zocca, Alessandro and Gromicho, Joaquim and Kantor, Jeffrey},
   title = {{Hands-On Mathematical Optimization with Python}},
   year = {2024},
-  publisher = {Cambridge University Press}
+  publisher = {Cambridge University Press},
+  place={Cambridge}
 }
 ```
 
@@ -49,6 +52,5 @@ and
   year = {2024},
   publisher = {GitHub},
   howpublished = {\url{https://github.com/mobook/MO-book}},
-  note = {Textbook to be published by Cambridge University Press},
 }
 ```
