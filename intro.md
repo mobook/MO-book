@@ -2,7 +2,7 @@
 
 Welcome to this repository of companion notebooks for the book _[Hands-On Mathematical Optimization with Python](https://www.cambridge.org/highereducation/books/hands-on-mathematical-optimization-with-python/F15ABA8AF886E7E6F7444151F40683A1#overview)_, published by Cambridge University Press.
 
-The book is already available for pre-order on [this webpage](https://www.cambridge.org/us/universitypress/subjects/mathematics/optimization-or-and-risk-analysis/hands-mathematical-optimization-python?format=PB) and on [Amazon](https://www.amazon.com/Hands-Mathematical-Optimization-Python-Krzysztof/dp/1009493507). If you are a lecturer interested in adopting this book for your course, you can request an inspection copy [filling this form](https://cup.my.salesforce-sites.com/Samples?isbn=9781009493505&Title=Hands-On+Mathematical+Optimization+with+Python&Author=Postek+et+al).
+The book can be purchased on [the CUP website](https://www.cambridge.org/us/universitypress/subjects/mathematics/optimization-or-and-risk-analysis/hands-mathematical-optimization-python?format=PB), on [Amazon](https://www.amazon.com/Hands-Mathematical-Optimization-Python-Krzysztof/dp/1009493507), and many other stores. If you are a lecturer interested in adopting this book for your course, you can request an inspection copy [filling this form](https://cup.my.salesforce-sites.com/Samples?isbn=9781009493505&Title=Hands-On+Mathematical+Optimization+with+Python&Author=Postek+et+al).
 
 This book introduces the concepts and tools of mathematical optimization with examples from a range of disciplines. The goals of these companion notebooks are to:
 
