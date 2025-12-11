@@ -5,6 +5,9 @@ on:
     branches:
     - main
 
+permissions:
+  contents: write
+  
 jobs:
   deploy-book:
     runs-on: ubuntu-latest
@@ -20,21 +23,28 @@ jobs:
       run: |
         pip install --upgrade pip
         pip install -r requirements.txt
+        
+    - name: Clean build directory
+      run: rm -rf _build
       
     - name: Build the book
-      run: jupyter-book build .
+      run: jupyter-book build . --all
 
-    - name: Verify build output
-      run: ls -R _build
+    - name: Check build output
+      run: |
+        echo "Checking if HTML was generated:"
+        ls -la _build/
+        if [ ! -d "_build/html" ]; then
+          echo "ERROR: _build/html directory was not created!"
+          exit 1
+        fi
+        echo "HTML build successful!"
 
     - name: Inspect build output
       run: |
         echo "Listing after build:"
         ls -R .
         ls -R _build || true
-
-    - name: Disable Jekyll
-      run: touch ./_build/html/.nojekyll
 
     - name: GitHub Pages action
       uses: peaceiris/actions-gh-pages@v3
