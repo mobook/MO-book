@@ -586,10 +586,11 @@
                 <article class="bd-article">
                   
   <section class="tex2jax_ignore mathjax_ignore" id="markowitz-portfolio-optimization-with-chance-constraints">
-<span id="index-3"></span><span id="index-2"></span><span id="index-1"></span><span id="index-0"></span><h1>9.1 Markowitz portfolio optimization with chance constraints<a class="headerlink" href="#markowitz-portfolio-optimization-with-chance-constraints" title="Link to this heading">#</a></h1>
+<span id="index-4"></span><span id="index-3"></span><span id="index-2"></span><span id="index-1"></span><span id="index-0"></span><h1>9.1 Markowitz portfolio optimization with chance constraints<a class="headerlink" href="#markowitz-portfolio-optimization-with-chance-constraints" title="Link to this heading">#</a></h1>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Link to this heading">#</a></h2>
-<p>This cell selects and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and the ipopt solver via the IDEAS repository, then sets SOLVER to use the ipopt solver. If run elsewhere, it assumes Pyomo and the Mosek solver have been previously installed and sets SOLVER to use the Mosek solver via the Pyomo SolverFactory. It then verifies that SOLVER is available.</p>
+<p>This cell selects and verifies a global SOLVER for the notebook. On Google Colab it installs Pyomo and Ipopt via the IDAES package and selects Ipopt. Elsewhere, it assumes Pyomo and a licensed Mosek installation are available and selects Mosek via the Pyomo SolverFactory.</p>
+<p>The implementation below uses an explicit quadratic cone from <code class="docutils literal notranslate"><span class="pre">pyomo.kernel</span></code>. Mosek recognizes this cone directly; Ipopt handles its nonlinear representation. We initialize the cone variables away from the zero point and check solver termination before reading the solution.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span>
@@ -597,7 +598,7 @@
 <span class="k">if</span> <span class="s1">'google.colab'</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="o">%</span><span class="k">pip</span> install idaes-pse --pre &gt;/dev/null 2&gt;/dev/null
     <span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin<span class="w"> </span>
-    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'PATH'</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">':bin'</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'PATH'</span><span class="p">]</span> <span class="o">+=</span> <span class="n">os</span><span class="o">.</span><span class="n">pathsep</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">'bin'</span><span class="p">)</span>
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">"ipopt"</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">"mosek_direct"</span>
@@ -611,8 +612,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">Markdown</span><span class="p">,</span> <span class="n">HTML</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.environ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyo</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.kernel</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pmo</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">norm</span>
 </pre></div>
@@ -623,18 +623,24 @@
 <section id="problem-description">
 <h2>Problem description<a class="headerlink" href="#problem-description" title="Link to this heading">#</a></h2>
 <p>We consider here another variant of the Markowitz portfolio optimization problem, which we already encountered in the context of convex optimization <a class="reference internal" href="../05/03-markowitz-portfolio.html"><span class="std std-doc">here</span></a> and in the context of conic optimization <a class="reference internal" href="../06/03-markowitz-portfolio-revisited.html"><span class="std std-doc">here</span></a>.</p>
-<p>Assuming there is an initial unit capital <span class="math notranslate nohighlight">\(C\)</span> that needs to be invested in a selection of <span class="math notranslate nohighlight">\(n\)</span> possible assets, each of them with a unknown return rate <span class="math notranslate nohighlight">\(r_i\)</span>, <span class="math notranslate nohighlight">\(i=1,\dots,n\)</span>. Let <span class="math notranslate nohighlight">\(x\)</span> be the vector whose <span class="math notranslate nohighlight">\(i\)</span>-th component <span class="math notranslate nohighlight">\(x_i\)</span> describes the fraction of the capital invested in asset <span class="math notranslate nohighlight">\(i\)</span>. The return rate vector <span class="math notranslate nohighlight">\(r\)</span> can be modelled by a multivariate Gaussian distribution with mean <span class="math notranslate nohighlight">\(\mu\)</span> and covariance <span class="math notranslate nohighlight">\(\Sigma\)</span>. Assume there is also a risk-free asset with guaranteed return rate <span class="math notranslate nohighlight">\(R\)</span> and let <span class="math notranslate nohighlight">\(\tilde{x}\)</span> the amount invested in that asset. We want to determine the portfolio that maximizes the <em>expected</em> return <span class="math notranslate nohighlight">\(\mathbb{E} ( R \tilde{x} + r^\top x )\)</span>, which in view of our assumptions rewrites as <span class="math notranslate nohighlight">\( \mathbb{E} ( R \tilde{x} + r^\top x ) = R \tilde{x} + \mu^\top x\)</span>.</p>
-<p>Additionally, we include a <em>loss risk chance constraint</em> of the form</p>
+<p>Suppose an initial capital <span class="math notranslate nohighlight">\(C\)</span> can be invested in <span class="math notranslate nohighlight">\(n\)</span> risky assets, each with an unknown return rate <span class="math notranslate nohighlight">\(r_i\)</span>, <span class="math notranslate nohighlight">\(i=1,\dots,n\)</span>. Let <span class="math notranslate nohighlight">\(x_i\)</span> be the amount invested in asset <span class="math notranslate nohighlight">\(i\)</span>. When <span class="math notranslate nohighlight">\(C=1\)</span>, these amounts are also fractions of the initial capital. The return rate vector <span class="math notranslate nohighlight">\(r\)</span> can be modelled by a multivariate Gaussian distribution with mean <span class="math notranslate nohighlight">\(\mu\)</span> and covariance <span class="math notranslate nohighlight">\(\Sigma\)</span>. Assume there is also a risk-free asset with guaranteed return rate <span class="math notranslate nohighlight">\(R\)</span> and let <span class="math notranslate nohighlight">\(\tilde{x}\)</span> be the amount invested in that asset. We want to determine the portfolio that maximizes the <em>expected</em> return <span class="math notranslate nohighlight">\(\mathbb{E} ( R \tilde{x} + r^\top x )\)</span>, which in view of our assumptions rewrites as <span class="math notranslate nohighlight">\( \mathbb{E} ( R \tilde{x} + r^\top x ) = R \tilde{x} + \mu^\top x\)</span>.</p>
+<p>Additionally, we limit the probability that the return from the <strong>risky holdings</strong> falls below a threshold <span class="math notranslate nohighlight">\(\alpha\)</span>. The risk-free contribution is included in the objective, but not in this chance constraint:</p>
 <div class="math notranslate nohighlight">
 \[
 \mathbb{P} ( r^\top x \leq \alpha) \leq \beta.
 \]</div>
-<p>Thanks to the assumption that <span class="math notranslate nohighlight">\(r\)</span> is multivariate Gaussian, this chance constraint can be equivalently rewritten as</p>
+<p>For positive variance, the risky return is normal with mean <span class="math notranslate nohighlight">\(\mu^\top x\)</span> and standard deviation <span class="math notranslate nohighlight">\(\sqrt{x^\top\Sigma x}\)</span>. Hence,</p>
 <div class="math notranslate nohighlight">
 \[
-    \mu^\top x \geq \Phi^{-1}(1-\beta) \| \Sigma^{1/2} r \|_2 + \alpha,
+\mathbb{P}(r^\top x\leq\alpha)
+=\Phi\left(\frac{\alpha-\mu^\top x}{\sqrt{x^\top\Sigma x}}\right).
 \]</div>
-<p>which the theory guarantees to be a convex constraint if <span class="math notranslate nohighlight">\(\beta \leq 1/2\)</span>. The resulting portfolio optimization problem written as a SOCP is</p>
+<p>Writing <span class="math notranslate nohighlight">\(z_\beta=\Phi^{-1}(1-\beta)\)</span>, the chance constraint is equivalent to</p>
+<div class="math notranslate nohighlight">
+\[
+    \mu^\top x \geq \Phi^{-1}(1-\beta) \| \Sigma^{1/2} x \|_2 + \alpha,
+\]</div>
+<p>The square root is essential: replacing the standard deviation by the variance changes the risk constraint. For <span class="math notranslate nohighlight">\(0&lt;\beta\leq 1/2\)</span>, <span class="math notranslate nohighlight">\(z_\beta\)</span> is nonnegative and the constraint is convex. The resulting portfolio optimization problem written as a SOCP is</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -645,7 +651,15 @@
     &amp;  x_i \geq 0 &amp; i=1,\dots,n.
 \end{align*}
 \end{split}\]</div>
-<p>We now implement as a Pyomo model and solve it for <span class="math notranslate nohighlight">\(n=3\)</span>, <span class="math notranslate nohighlight">\(\alpha = 0.6\)</span>, <span class="math notranslate nohighlight">\(\beta =0.3\)</span>, the given vector <span class="math notranslate nohighlight">\(\mu\)</span> and semi-definite positive covariance matrix <span class="math notranslate nohighlight">\(\Sigma\)</span>.</p>
+<p>We now implement this model for <span class="math notranslate nohighlight">\(n=3\)</span>, <span class="math notranslate nohighlight">\(\alpha=0.6\)</span> and <span class="math notranslate nohighlight">\(\beta=0.3\)</span>. For the positive definite covariance matrix used here, the Cholesky factorization gives <span class="math notranslate nohighlight">\(\Sigma=B^\top B\)</span>, where <code class="docutils literal notranslate"><span class="pre">B</span> <span class="pre">=</span> <span class="pre">np.linalg.cholesky(Sigma).T</span></code>. Thus the chance constraint is the quadratic cone</p>
+<div class="math notranslate nohighlight">
+\[
+\left(\mu^\top x-\alpha,\;z_\beta Bx\right)\in\mathcal{L}^{n+1},
+\qquad
+\mathcal{L}^{n+1}=\{(t,u):\|u\|_2\leq t\}.
+\]</div>
+<p>We use the explicit cone interface introduced in <a class="reference internal" href="../06/01-economic-order-quantity.html"><span class="std std-doc">Chapter 6</span></a>, rather than passing a square-root expression to Mosek. The cone also enforces <span class="math notranslate nohighlight">\(\mu^\top x-\alpha\geq0\)</span>; squaring the inequality without retaining this sign condition would not be equivalent.</p>
+<p>This implementation requires positive definite <span class="math notranslate nohighlight">\(\Sigma\)</span>. A singular covariance needs another factorization and separate treatment of zero-variance portfolios. Here <span class="math notranslate nohighlight">\(\alpha&gt;0\)</span> forces every feasible portfolio to have positive variance.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># set our risk threshold and risk levels (sometimes you may get an infeasible</span>
@@ -664,59 +678,84 @@
 <span class="c1"># Check how dramatically the optimal solution changes if we assume i.i.d.</span>
 <span class="c1"># deviations for the returns. # Sigma = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])</span>
 
-<span class="c1"># To change covariance matrix, make sure you input a semi-definite positive one.</span>
+<span class="c1"># To change covariance matrix, make sure you input a positive definite one.</span>
 <span class="c1"># The easiest way to generate a random covariance matrix is first generating</span>
-<span class="c1"># a random m x m matrix A and then taking the matrix A^T A (which is always</span>
-<span class="c1"># semi-definite positive)</span>
+<span class="c1"># a full-rank m x m matrix A and then taking A^T A</span>
 <span class="c1"># m = 3</span>
 <span class="c1"># A = np.random.rand(m, m)</span>
 <span class="c1"># Sigma = A.T @ A</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">markowitz_chanceconstraints</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">):</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">"Markowitz portfolio problem with chance constraints"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">markowitz_chanceconstraints</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">,</span> <span class="n">C</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="mf">1.25</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">beta</span> <span class="o">&lt;=</span> <span class="mf">0.5</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"The convex formulation requires 0 &lt; beta &lt;= 0.5."</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">Sigma</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">Sigma</span><span class="p">,</span> <span class="n">Sigma</span><span class="o">.</span><span class="n">T</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Sigma must be a symmetric covariance matrix."</span><span class="p">)</span>
+    <span class="c1"># Positive definiteness is required by this Cholesky implementation.</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="n">Sigma</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">z_beta</span> <span class="o">=</span> <span class="n">norm</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">beta</span><span class="p">)</span>
 
-    <span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">xtilde</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">block</span><span class="p">()</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable_list</span><span class="p">(</span><span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">C</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">xtilde</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">variable</span><span class="p">(</span><span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">risky_mean</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">expression</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">mu</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">objective</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">objective</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">risky_mean</span> <span class="o">+</span> <span class="n">R</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">xtilde</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pmo</span><span class="o">.</span><span class="n">maximize</span>
+    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">total_assets</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">xtilde</span> <span class="o">==</span> <span class="n">C</span><span class="p">)</span>
 
-    <span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">objective</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">mu</span> <span class="o">@</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">R</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">xtilde</span>
+    <span class="n">cone_coordinates</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">z_beta</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">B</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">chance_constraint</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span>
+        <span class="n">r</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">risky_mean</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">cone_coordinates</span>
+    <span class="p">)</span>
 
-    <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">chance_constraint</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="c1"># we use the inverse CDF of the standard normal norm.ppf() in the library scipy.stats</span>
-        <span class="k">return</span> <span class="n">norm</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">beta</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">@</span> <span class="p">(</span><span class="n">Sigma</span> <span class="o">@</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">mu</span> <span class="o">@</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span>
-
-    <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">total_assets</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">xtilde</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="o">==</span> <span class="n">C</span>
-
+    <span class="c1"># Ipopt needs a nonzero starting point for the cone's nonlinear representation.</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">chance_constraint</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">risky_mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">variable</span><span class="p">,</span> <span class="n">expression</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">chance_constraint</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">cone_coordinates</span><span class="p">):</span>
+        <span class="n">variable</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">model</span>
 
 
-<span class="n">model</span> <span class="o">=</span> <span class="n">markowitz_chanceconstraints</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">markowitz_chanceconstraints</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">,</span> <span class="n">C</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="n">R</span><span class="p">)</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">])</span>
+<span class="n">risky_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">mu</span> <span class="o">@</span> <span class="n">x</span><span class="p">)</span>
+<span class="n">risky_std</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x</span> <span class="o">@</span> <span class="n">Sigma</span> <span class="o">@</span> <span class="n">x</span><span class="p">))</span>
+<span class="n">shortfall_probability</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">norm</span><span class="o">.</span><span class="n">cdf</span><span class="p">((</span><span class="n">alpha</span> <span class="o">-</span> <span class="n">risky_mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">risky_std</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">risky_std</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">risky_mean</span> <span class="o">&lt;=</span> <span class="n">alpha</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">assert</span> <span class="n">shortfall_probability</span> <span class="o">&lt;=</span> <span class="n">beta</span> <span class="o">+</span> <span class="mf">1e-6</span>
 
 <span class="nb">print</span><span class="p">(</span>
     <span class="sa">f</span><span class="s2">"Solver status: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">, Termination condition: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="si">}</span><span class="s2">"</span>
 <span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Solution: "</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">"xtilde = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">xtilde</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, x_1 = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, x_2 = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, x_3 = </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span>
-<span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Maximum objective value: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Risk-free allocation: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">xtilde</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Risky allocations: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">x</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Maximum expected return: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Risky-return standard deviation: </span><span class="si">{</span><span class="n">risky_std</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Shortfall probability: </span><span class="si">{</span><span class="n">shortfall_probability</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> (limit </span><span class="si">{</span><span class="n">beta</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Solver status: ok, Termination condition: optimal
-Solution: xtilde = 0.070, x_1 = 0.620, x_2 = 0.239, x_3 = 0.071
-Maximum objective value: 1.23
+Risk-free allocation: 0.000000
+Risky allocations: 0.666666, 0.116719, 0.216615
+Maximum expected return: 1.259990
+Risky-return standard deviation: 1.258560
+Shortfall probability: 0.300000 (limit 0.300000)
 </pre></div>
 </div>
 </div>
 </div>
+<p>For the stated data, the optimal allocation is approximately 0.6667, 0.1167 and 0.2166 in the risky assets, with no risk-free holding to the displayed precision. The maximum expected return is about 1.259990 per unit of initial capital. The shortfall probability is 0.30, so the risk limit is binding.</p>
+<p>The earlier variance-based implementation gave an expected return of about 1.233250. Its actual shortfall probability was about 0.296342: it happened to be conservative for this instance, but replacing standard deviation by variance is not a valid general approximation.</p>
 </section>
 </section>
 
