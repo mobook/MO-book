@@ -612,7 +612,9 @@
 <p>Point of attention: An important difference with the first notebook will be the fact that we will eliminate the ‘intercept’ <span class="math notranslate nohighlight">\(b\)</span> of the SVM to keep our equations simple.</p>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Link to this heading">#</a></h2>
-<p>This cell selects and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and ipopt, then sets SOLVER to use the ipopt solver. If run elsewhere, it assumes Pyomo and the Mosek solver have been previously installed and sets SOLVER to use the Mosek solver via the Pyomo SolverFactory. It then verifies that SOLVER is available.</p>
+<p>This notebook uses MOSEK when run locally and installs Ipopt through IDAES on Google Colab. MOSEK uses the cone structure directly; Ipopt solves the equivalent smooth continuous constraints. The dense radial-basis-function model can exhaust the memory of Ipopt’s MA27 linear solver, so the Ipopt path explicitly selects MA57 from the IDAES distribution. If your Ipopt build does not include MA57, select <code class="docutils literal notranslate"><span class="pre">mumps</span></code> instead; it can take longer for this dense model. Another option is to install and license MOSEK and select <code class="docutils literal notranslate"><span class="pre">mosek_direct</span></code>.</p>
+<p>Each model checks solver termination before constructing a classifier. The <a class="reference external" href="https://coin-or.github.io/Ipopt/OPTIONS.html#OPT_linear_solver">Ipopt options guide</a> describes the linear solver setting; the <a class="reference external" href="https://idaes-pse.readthedocs.io/en/stable/tutorials/getting_started/binaries.html">IDAES binary guide</a> describes the available solver installation.</p>
+<p>The IDAES build includes HSL linear solvers: HSL, a collection of Fortran codes for large-scale scientific computation. See <a class="reference external" href="https://www.hsl.rl.ac.uk/">https://www.hsl.rl.ac.uk/</a>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span>
@@ -620,7 +622,7 @@
 <span class="k">if</span> <span class="s1">'google.colab'</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="o">%</span><span class="k">pip</span> install idaes-pse --pre &gt;/dev/null 2&gt;/dev/null
     <span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin<span class="w"> </span>
-    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'PATH'</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">':bin'</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"PATH"</span><span class="p">]</span> <span class="o">+=</span> <span class="n">os</span><span class="o">.</span><span class="n">pathsep</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s2">"bin"</span><span class="p">)</span>
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">"ipopt"</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">"mosek_direct"</span>
@@ -630,6 +632,11 @@
 <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
 
 <span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">"Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available."</span>
+
+<span class="k">if</span> <span class="n">solver</span> <span class="o">==</span> <span class="s2">"ipopt"</span><span class="p">:</span>
+    <span class="c1"># Use MA57 for the dense kernel model and keep the coefficient bounds exact.</span>
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">"linear_solver"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"ma57"</span>
+    <span class="n">SOLVER</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">"bound_relax_factor"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
 </pre></div>
 </div>
 </div>
@@ -648,11 +655,16 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
 
-<span class="c1"># read data set</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
-    <span class="s2">"https://raw.githubusercontent.com/mobook/MO-book/main/datasets/data_banknote_authentication.txt"</span><span class="p">,</span>
-    <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="c1"># Use the repository data locally and the same fixed snapshot on Colab.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">data_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"../../datasets/data_banknote_authentication.txt"</span><span class="p">)</span>
+<span class="n">data_url</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"https://raw.githubusercontent.com/mobook/MO-book/"</span>
+    <span class="s2">"6e636bc8db144fbc17f39e4eb4543508adba85f9/"</span>
+    <span class="s2">"datasets/data_banknote_authentication.txt"</span>
 <span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">data_file</span> <span class="k">if</span> <span class="n">data_file</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="k">else</span> <span class="n">data_url</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"variance"</span><span class="p">,</span> <span class="s2">"skewness"</span><span class="p">,</span> <span class="s2">"curtosis"</span><span class="p">,</span> <span class="s2">"entropy"</span><span class="p">,</span> <span class="s2">"class"</span><span class="p">]</span>
 <span class="n">df</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"Banknotes"</span>
 </pre></div>
@@ -662,11 +674,12 @@
 </section>
 <section id="select-features-and-training-sets">
 <h3>Select features and training sets<a class="headerlink" href="#select-features-and-training-sets" title="Link to this heading">#</a></h3>
-<p>Following customary practices, we divide the data set into a <strong>training set</strong> used to trail the classifier, and a <strong>testing set</strong> that will be used to evaluate the performance of the classifier. In addition, we select two dimensional subset of the features to enable plotting of the results for exposition. Since our definition of a positive outcome corresponds to detecting a genuine banknote, we rescale the “class” feature to have values of 1 for genuine banknotes and -1 for counterfeit banknotes.</p>
+<p>Following customary practices, we divide the data set into a <strong>training set</strong> used to train the classifier, and a <strong>testing set</strong> that will be used to evaluate the performance of the classifier. In addition, we select two dimensional subset of the features to enable plotting of the results for exposition. Since our definition of a positive outcome corresponds to detecting a genuine banknote, we rescale the “class” feature to have values of 1 for genuine banknotes and -1 for counterfeit banknotes.</p>
+<p>We use <code class="docutils literal notranslate"><span class="pre">random_state=0</span></code> so that all formulations are trained and evaluated on the same reproducible split.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create training and validation test sets</span>
-<span class="n">df_train</span><span class="p">,</span> <span class="n">df_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">df_train</span><span class="p">,</span> <span class="n">df_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
 <span class="c1"># select training features</span>
 <span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"variance"</span><span class="p">,</span> <span class="s2">"skewness"</span><span class="p">]</span>
@@ -719,7 +732,7 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/de549641391a265d70f3d6eddc624bf39241bacd6cc00afffe17905c1384a24e.png" src="../../_images/de549641391a265d70f3d6eddc624bf39241bacd6cc00afffe17905c1384a24e.png" />
+<img alt="../../_images/9642e84f1347e0d5f64b78cb67559fcb8e40e8baf214c98a9ac57ee6fb8449cf.png" src="../../_images/9642e84f1347e0d5f64b78cb67559fcb8e40e8baf214c98a9ac57ee6fb8449cf.png" />
 </div>
 </div>
 </section>
@@ -903,7 +916,8 @@ y_i \bar{w}^\top \bar{x}_i &amp; \geq 1 - z_i&amp; \forall i \in 1, 2, \dots, n
     <span class="p">)</span>
 
     <span class="c1"># solve</span>
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="c1"># return svm</span>
     <span class="n">b</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="mi">0</span><span class="p">]()</span>
@@ -919,10 +933,10 @@ y_i \bar{w}^\top \bar{x}_i &amp; \geq 1 - z_i&amp; \forall i \in 1, 2, \dots, n
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>variance    0.546234
-skewness    0.152174
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>variance    0.554456
+skewness    0.151651
 dtype: float64
--0.21435828724315473
+-0.2086569246539999
 </pre></div>
 </div>
 </div>
@@ -984,10 +998,10 @@ dtype: float64
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Matthews correlation coefficient (MCC) = 0.769
-Sensitivity =  91.7%
-Precision =  90.6%
-Accuracy =  89.1%
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Matthews correlation coefficient (MCC) = 0.762
+Sensitivity =  92.4%
+Precision =  87.9%
+Accuracy =  88.4%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1015,30 +1029,31 @@ Accuracy =  89.1%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>155</td>
-      <td>14</td>
+      <td>145</td>
+      <td>12</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>16</td>
-      <td>90</td>
+      <td>20</td>
+      <td>98</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/91ee9792ae3b637778a82f04fd7c7c2ced23bb148c236f27224c17d16f6e0417.png" src="../../_images/91ee9792ae3b637778a82f04fd7c7c2ced23bb148c236f27224c17d16f6e0417.png" />
-<img alt="../../_images/bcca99a57cbfb1c0cc1efc4347e00fe5b774d7e9327e96aa15550ea19cf35294.png" src="../../_images/bcca99a57cbfb1c0cc1efc4347e00fe5b774d7e9327e96aa15550ea19cf35294.png" />
+</div></div><img alt="../../_images/b9dc95ad63a5379b882966907ded352c0a4b64c3b063e248a785d26e5e95734e.png" src="../../_images/b9dc95ad63a5379b882966907ded352c0a4b64c3b063e248a785d26e5e95734e.png" />
+<img alt="../../_images/a2270c6260adc423315aeb8ee305177a50060f7def0a38d86aff37da34507317.png" src="../../_images/a2270c6260adc423315aeb8ee305177a50060f7def0a38d86aff37da34507317.png" />
 </div>
 </div>
 </section>
 <section id="dual-formulation">
 <h3>Dual formulation<a class="headerlink" href="#dual-formulation" title="Link to this heading">#</a></h3>
-<p>As we already know, the dual of our problem shall be given by
-$<span class="math notranslate nohighlight">\(
+<p>As we already know, the dual of our problem shall be given by</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
 \begin{align*}
 \min \quad &amp; \frac{1}{2} \sum_{i=1}^n\sum_{j=1}^n \alpha_i \alpha_j y_i y_j ( \bar{x}_i^\top \bar{x}_j ) -  \sum_{i=1}^n \alpha_i \\
 \text{s.t.}\quad &amp; \alpha_i \in \left[0, \frac{c}{n}\right] &amp; i = 1, \dots, n. \\
 \end{align*}
-\)</span>$</p>
+\end{split}\]</div>
 <p>The symmetric <span class="math notranslate nohighlight">\(n \times n\)</span> <strong>Gram matrix</strong> is defined as</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -1082,14 +1097,14 @@ Then SVM can be expressed as either</p>
 \[
 \begin{align}
 y^{pred} &amp; = \text{sgn}\left( \bar{w}^\top \bar{x} \right)\quad
-\text{where}\quad \bar{w} = \sum_{i\in\cal{SV}} \alpha_i y_i \bar{x}_i 
+\text{where}\quad \bar{w} = \sum_{i\in\mathcal{SV}} \alpha_i y_i \bar{x}_i 
 \end{align}
 \]</div>
 <p>or, more directly, as</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align}
-y^{pred} &amp; =  \text{sgn}\left( \sum_{i\in\cal{SV}} \alpha_i y_i \bar{x}_i^\top \bar{x} \right)
+y^{pred} &amp; =  \text{sgn}\left( \sum_{i\in\mathcal{SV}} \alpha_i y_i \bar{x}_i^\top \bar{x} \right)
 \end{align}
 \]</div>
 <p>The first formulation is a computationally efficient implementation of a linear SVM, and used in the following Pyomo implementation. The second formulation, however, provides additional insight into how an SVM works, and is the basis for important generalizations of SVM including the kernelized SVM discussed below. Remember, we no longer need to derive the value of the primal variable <span class="math notranslate nohighlight">\(b\)</span> because we eliminated its existence by stacking 1’s into the feature vector.</p>
@@ -1125,17 +1140,19 @@ y^{pred} &amp; =  \text{sgn}\left( \sum_{i\in\cal{SV}} \alpha_i y_i \bar{x}_i^\t
     <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">rotated_quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
 
     <span class="c1"># solve</span>
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
-    <span class="c1"># get the support</span>
-    <span class="n">S</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">if</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)]</span>
+    <span class="c1"># Use the same relative tolerance for the classifier and support-vector plot.</span>
+    <span class="n">support_tol</span> <span class="o">=</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">c</span> <span class="o">/</span> <span class="n">n</span>
+    <span class="n">S</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="n">support_tol</span><span class="p">]</span>
 
     <span class="c1"># create and return linear SVM</span>
     <span class="n">w_bar</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">*</span> <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">S</span><span class="p">)</span>
     <span class="n">w</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">w_bar</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">columns</span><span class="p">)})</span>
     <span class="n">b</span> <span class="o">=</span> <span class="n">w_bar</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-    <span class="n">y_support</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mi">1</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)],</span> <span class="n">index</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="n">y_support</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mi">1</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">S</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)],</span> <span class="n">index</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
     <span class="n">scatter_labeled_data</span><span class="p">(</span>
         <span class="n">X</span><span class="p">,</span>
         <span class="n">y_support</span><span class="p">,</span>
@@ -1153,12 +1170,12 @@ y^{pred} &amp; =  \text{sgn}\left( \sum_{i\in\cal{SV}} \alpha_i y_i \bar{x}_i^\t
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>variance    0.546247
-skewness    0.152194
-dtype: float64 -0.21435778397469038
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>variance    0.554456
+skewness    0.151649
+dtype: float64 -0.20865812423723146
 </pre></div>
 </div>
-<img alt="../../_images/5628e9eb2be1cefcb9064788903ce0e762681e6486d7b60435e3d9854c5877e3.png" src="../../_images/5628e9eb2be1cefcb9064788903ce0e762681e6486d7b60435e3d9854c5877e3.png" />
+<img alt="../../_images/cdb78ec44b718b7721ceede308ccd419088c05c4efae4b9c687e82b9a01ffcb0.png" src="../../_images/cdb78ec44b718b7721ceede308ccd419088c05c4efae4b9c687e82b9a01ffcb0.png" />
 </div>
 </div>
 <p>The following cell implements the above conic dual formulation and should obtain exactly the same accuracy results.</p>
@@ -1171,10 +1188,10 @@ dtype: float64 -0.21435778397469038
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Matthews correlation coefficient (MCC) = 0.769
-Sensitivity =  91.7%
-Precision =  90.6%
-Accuracy =  89.1%
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Matthews correlation coefficient (MCC) = 0.762
+Sensitivity =  92.4%
+Precision =  87.9%
+Accuracy =  88.4%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1202,18 +1219,18 @@ Accuracy =  89.1%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>155</td>
-      <td>14</td>
+      <td>145</td>
+      <td>12</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>16</td>
-      <td>90</td>
+      <td>20</td>
+      <td>98</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/91ee9792ae3b637778a82f04fd7c7c2ced23bb148c236f27224c17d16f6e0417.png" src="../../_images/91ee9792ae3b637778a82f04fd7c7c2ced23bb148c236f27224c17d16f6e0417.png" />
-<img alt="../../_images/bcca99a57cbfb1c0cc1efc4347e00fe5b774d7e9327e96aa15550ea19cf35294.png" src="../../_images/bcca99a57cbfb1c0cc1efc4347e00fe5b774d7e9327e96aa15550ea19cf35294.png" />
+</div></div><img alt="../../_images/b9dc95ad63a5379b882966907ded352c0a4b64c3b063e248a785d26e5e95734e.png" src="../../_images/b9dc95ad63a5379b882966907ded352c0a4b64c3b063e248a785d26e5e95734e.png" />
+<img alt="../../_images/a2270c6260adc423315aeb8ee305177a50060f7def0a38d86aff37da34507317.png" src="../../_images/a2270c6260adc423315aeb8ee305177a50060f7def0a38d86aff37da34507317.png" />
 </div>
 </div>
 </section>
@@ -1268,7 +1285,7 @@ y^{pred} = \text{sgn} \left( w^\top \phi(\bar{x}) \right).
 \end{split}\]</div>
 <p>where the resulting classifier is given by</p>
 <div class="math notranslate nohighlight">
-\[y^{pred} = \text{sgn} \left( \sum_{i=1}^n \alpha_iK(\bar{x}_i, \bar{x}) \right)\]</div>
+\[y^{pred} = \text{sgn} \left( \sum_{i=1}^n \alpha_i y_i K(\bar{x}_i, \bar{x}) \right)\]</div>
 <p>We define the <span class="math notranslate nohighlight">\(n\times n\)</span> positive symmetric semi-definite Gram matrix</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -1301,8 +1318,9 @@ G = \begin{bmatrix}
 \end{split}\]</div>
 <p>Summarizing, the essential difference between training the linear and kernelized SVM is the need to compute and factor the Gram matrix. The result will be a set of non-zero coefficients <span class="math notranslate nohighlight">\(\alpha_i &gt; 0\)</span> the define a set of support vectors <span class="math notranslate nohighlight">\(\mathcal{SV}\)</span>. The classifier is then given by</p>
 <div class="math notranslate nohighlight">
-\[y^{pred} = \text{sgn} \left( \sum_{i\in\mathcal{SV}} \alpha_iK(\bar{x}_i, \bar{x}) \right)\]</div>
+\[y^{pred} = \text{sgn} \left( \sum_{i\in\mathcal{SV}} \alpha_i y_i K(\bar{x}_i, \bar{x}) \right)\]</div>
 <p>The following cell implements this model, leaving it to the user to specify the kernel function via a lambda-function argument.</p>
+<p>Numerically, we treat a coefficient as nonzero when it exceeds <code class="docutils literal notranslate"><span class="pre">1e-3</span> <span class="pre">*</span> <span class="pre">c</span> <span class="pre">/</span> <span class="pre">n</span></code>. The same tolerance is used to identify support vectors in the plot and to evaluate the classifier.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">kernelSVMFactory</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">)):</span>
@@ -1344,10 +1362,14 @@ G = \begin{bmatrix}
     <span class="n">m</span><span class="o">.</span><span class="n">q</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">conic</span><span class="o">.</span><span class="n">rotated_quadratic</span><span class="o">.</span><span class="n">as_domain</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
 
     <span class="c1"># solve</span>
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
+    <span class="c1"># Use the same relative tolerance for the classifier and support-vector plot.</span>
+    <span class="n">support_tol</span> <span class="o">=</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">c</span> <span class="o">/</span> <span class="n">n</span>
+    <span class="n">SV</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="n">support_tol</span><span class="p">]</span>
     <span class="n">y_support</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
-        <span class="p">[</span><span class="mi">1</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">c</span> <span class="o">/</span> <span class="n">n</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)],</span> <span class="n">index</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">index</span>
+        <span class="p">[</span><span class="mi">1</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">SV</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)],</span> <span class="n">index</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">index</span>
     <span class="p">)</span>
     <span class="n">scatter_labeled_data</span><span class="p">(</span>
         <span class="n">X</span><span class="p">,</span>
@@ -1356,9 +1378,6 @@ G = \begin{bmatrix}
         <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">"Support Vector"</span><span class="p">,</span> <span class="s2">""</span><span class="p">],</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">"Support Vectors"</span><span class="p">,</span>
     <span class="p">)</span>
-
-    <span class="c1"># get indices of the support vectors</span>
-    <span class="n">SV</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">if</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">1e-3</span><span class="p">)]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">kernelSVM</span><span class="p">(</span><span class="n">Z</span><span class="p">):</span>
         <span class="n">nz</span><span class="p">,</span> <span class="n">pz</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">shape</span>
@@ -1396,9 +1415,9 @@ G = \begin{bmatrix}
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Matthews correlation coefficient (MCC) = 0.762
-Sensitivity =  91.1%
-Precision =  90.6%
-Accuracy =  88.7%
+Sensitivity =  92.4%
+Precision =  87.9%
+Accuracy =  88.4%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1426,19 +1445,19 @@ Accuracy =  88.7%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>154</td>
-      <td>15</td>
+      <td>145</td>
+      <td>12</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>16</td>
-      <td>90</td>
+      <td>20</td>
+      <td>98</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/cdfaf543ebc318e61ba2c1036834b6b90abb7f510d9f864e41848be03660cdfb.png" src="../../_images/cdfaf543ebc318e61ba2c1036834b6b90abb7f510d9f864e41848be03660cdfb.png" />
-<img alt="../../_images/0bf54b987bccbd5a0b6f23829b6f0baa0c6faf3d4c34b57513ff8cfd25f41a43.png" src="../../_images/0bf54b987bccbd5a0b6f23829b6f0baa0c6faf3d4c34b57513ff8cfd25f41a43.png" />
-<img alt="../../_images/395628573790b57626f1871ddc50548e06838566f987d79d035b753f81f95ec4.png" src="../../_images/395628573790b57626f1871ddc50548e06838566f987d79d035b753f81f95ec4.png" />
+</div></div><img alt="../../_images/cdb78ec44b718b7721ceede308ccd419088c05c4efae4b9c687e82b9a01ffcb0.png" src="../../_images/cdb78ec44b718b7721ceede308ccd419088c05c4efae4b9c687e82b9a01ffcb0.png" />
+<img alt="../../_images/b9dc95ad63a5379b882966907ded352c0a4b64c3b063e248a785d26e5e95734e.png" src="../../_images/b9dc95ad63a5379b882966907ded352c0a4b64c3b063e248a785d26e5e95734e.png" />
+<img alt="../../_images/a2270c6260adc423315aeb8ee305177a50060f7def0a38d86aff37da34507317.png" src="../../_images/a2270c6260adc423315aeb8ee305177a50060f7def0a38d86aff37da34507317.png" />
 </div>
 </div>
 </section>
@@ -1460,10 +1479,10 @@ Accuracy =  88.7%
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Matthews correlation coefficient (MCC) = 0.881
-Sensitivity =  92.9%
-Precision =  97.5%
-Accuracy =  94.2%
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Matthews correlation coefficient (MCC) = 0.891
+Sensitivity =  93.0%
+Precision =  97.3%
+Accuracy =  94.5%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1491,27 +1510,28 @@ Accuracy =  94.2%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>157</td>
-      <td>12</td>
+      <td>146</td>
+      <td>11</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
       <td>4</td>
-      <td>102</td>
+      <td>114</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/14f6aa9a793c3dce5bddf3273f053f3e2e1eff087bd31a155b5f3a035566892c.png" src="../../_images/14f6aa9a793c3dce5bddf3273f053f3e2e1eff087bd31a155b5f3a035566892c.png" />
-<img alt="../../_images/f7eed3f1b89e6d9ca0f0a1f45b48c6980a0c870e4b56f582c778a56d7c5b5fcd.png" src="../../_images/f7eed3f1b89e6d9ca0f0a1f45b48c6980a0c870e4b56f582c778a56d7c5b5fcd.png" />
-<img alt="../../_images/ab22319437c315af48eb165e1911f0c23cc187c91e91e3059a9dc78ce8382586.png" src="../../_images/ab22319437c315af48eb165e1911f0c23cc187c91e91e3059a9dc78ce8382586.png" />
+</div></div><img alt="../../_images/a7a2d2a0673b4256549b4134fcaf2f403e70d808208f1692f42bfc219849703a.png" src="../../_images/a7a2d2a0673b4256549b4134fcaf2f403e70d808208f1692f42bfc219849703a.png" />
+<img alt="../../_images/56eb6cdccc25e131bc4e92444901676c4a68ce75be989e54bc934e17a9ddf955.png" src="../../_images/56eb6cdccc25e131bc4e92444901676c4a68ce75be989e54bc934e17a9ddf955.png" />
+<img alt="../../_images/2d73d6087d1b931ce48049390883e8d1e80556f2def0a81ea4ee930daa9205d1.png" src="../../_images/2d73d6087d1b931ce48049390883e8d1e80556f2def0a81ea4ee930daa9205d1.png" />
 </div>
 </div>
 </section>
 <section id="polynomial-kernel">
 <h3>Polynomial kernel<a class="headerlink" href="#polynomial-kernel" title="Link to this heading">#</a></h3>
-<p>Another important kernel function type is the polynomial kernel (which corresponds to including in the feature vector the powers of all featurs up to a certain degree <span class="math notranslate nohighlight">\(d\)</span>).
-$<span class="math notranslate nohighlight">\(K(x, z) = (1 + x^\top z)^d\)</span><span class="math notranslate nohighlight">\(
-Again, the higher the value of \)</span>d<span class="math notranslate nohighlight">\(, the more predictive power we can expect from the corresponding SVM, therefore, we encourage you to try this formulation varying \)</span>d$.</p>
+<p>Another important kernel function type is the polynomial kernel (which corresponds to including in the feature vector the powers of all featurs up to a certain degree <span class="math notranslate nohighlight">\(d\)</span>).</p>
+<div class="math notranslate nohighlight">
+\[K(x, z) = (1 + x^\top z)^d\]</div>
+<p>Increasing <span class="math notranslate nohighlight">\(d\)</span> makes the feature space more flexible, but does not guarantee better predictions on the test set. Try varying <span class="math notranslate nohighlight">\(d\)</span> and compare the resulting performance metrics.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">poly</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">x</span> <span class="o">@</span> <span class="n">z</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span>
@@ -1525,10 +1545,10 @@ Again, the higher the value of \)</span>d<span class="math notranslate nohighlig
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Matthews correlation coefficient (MCC) = 0.438
-Sensitivity =  47.3%
-Precision =  93.0%
-Accuracy =  65.5%
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Matthews correlation coefficient (MCC) = 0.829
+Sensitivity =  94.9%
+Precision =  90.9%
+Accuracy =  91.6%
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1556,19 +1576,19 @@ Accuracy =  65.5%
   <tbody>
     <tr>
       <th>Actual Positive</th>
-      <td>80</td>
-      <td>89</td>
+      <td>149</td>
+      <td>8</td>
     </tr>
     <tr>
       <th>Actual Negative</th>
-      <td>6</td>
-      <td>100</td>
+      <td>15</td>
+      <td>103</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/fe0215308b80c81228506c7606f11f53544e2ddac740f197b97c9cf6f3208967.png" src="../../_images/fe0215308b80c81228506c7606f11f53544e2ddac740f197b97c9cf6f3208967.png" />
-<img alt="../../_images/88a68c8f0f320ed83cf060f0adc5117b83dcb7e464e6d80cc4c60705b5be0176.png" src="../../_images/88a68c8f0f320ed83cf060f0adc5117b83dcb7e464e6d80cc4c60705b5be0176.png" />
-<img alt="../../_images/3447e84d377ad7f46e4e9ca00bf48da96b620a0928e3e9e34b82625357dec810.png" src="../../_images/3447e84d377ad7f46e4e9ca00bf48da96b620a0928e3e9e34b82625357dec810.png" />
+</div></div><img alt="../../_images/a295a7dfe448df0dc2afc136399ffa84e1668360344931a644626ea0ae76c1a3.png" src="../../_images/a295a7dfe448df0dc2afc136399ffa84e1668360344931a644626ea0ae76c1a3.png" />
+<img alt="../../_images/11aa77399581f4e4d2a21c8671ebdddf5010b7e9e923f25710a3b5659a9f4bab.png" src="../../_images/11aa77399581f4e4d2a21c8671ebdddf5010b7e9e923f25710a3b5659a9f4bab.png" />
+<img alt="../../_images/8bc3f903f1453a2a1d8bafa16345bd0f5e52468aeea14226c9811766d3bb778a.png" src="../../_images/8bc3f903f1453a2a1d8bafa16345bd0f5e52468aeea14226c9811766d3bb778a.png" />
 </div>
 </div>
 </section>
