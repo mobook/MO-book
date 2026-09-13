@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Extra Material: Cutting Stock &#8212; Companion code for the book &#34;Hands-On Mathematical Optimization with Python&#34;</title>
+    <title>Extra material: Cutting stock &#8212; Companion code for the book &#34;Hands-On Mathematical Optimization with Python&#34;</title>
   
   
   
@@ -305,7 +305,7 @@
 <li class="toctree-l2"><a class="reference internal" href="03-markowitz-portfolio.html">5.3 Markowitz portfolio optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="04-svm-binary-classification.html">5.4 Support Vector Machines for binary classification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="05-refinery-production.html">Extra material: Refinery production and shadow pricing with CVXPY</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Extra Material: Cutting Stock</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Extra material: Cutting stock</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../06/06.00.html">6. Conic Optimization</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -561,7 +561,7 @@
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Extra Material: Cutting Stock</h1>
+    <h1>Extra material: Cutting stock</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -571,7 +571,7 @@
             </div>
             <nav aria-label="Page">
                 <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-solvers">Preamble: Install Pyomo and solvers</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-formulation">Problem formulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#patterns">Patterns</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-cutting-using-known-patterns">Optimal cutting using known patterns</a></li>
@@ -583,6 +583,7 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-from-jump-documentation-for-column-generation">Example from JuMP documentation for column generation</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-from-wikipedia">Example from Wikipedia</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#woodworking-problem-data-from-google-sheets">Woodworking: Problem data from Google sheets</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#purchase-list">Purchase list</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
@@ -598,27 +599,23 @@
                 <article class="bd-article">
                   
   <section class="tex2jax_ignore mathjax_ignore" id="extra-material-cutting-stock">
-<h1>Extra Material: Cutting Stock<a class="headerlink" href="#extra-material-cutting-stock" title="Link to this heading">#</a></h1>
+<h1>Extra material: Cutting stock<a class="headerlink" href="#extra-material-cutting-stock" title="Link to this heading">#</a></h1>
 <p>The cutting stock problem is familiar to anyone who has cut parts out of stock materials. In the one-dimensional case, the stock materials are available in predetermined lengths and prices. The task is to cut a specific list of parts from the stock materials. The problem is to determine which parts to cut from each piece of stock material to minimize cost. This problem applies broadly to commercial applications, including the allocation of non-physical resources like capital budgeting or resource allocation.</p>
 <p>This notebook presents several models and solution algorithms for the cutting stock problem.</p>
-<section id="preamble-install-pyomo-and-a-solver">
-<h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Link to this heading">#</a></h2>
-<p>This cell selects and verifies a global SOLVER for the notebook. In this notebook, we need both the MILO solver <code class="docutils literal notranslate"><span class="pre">HiGHS</span></code> and the MINLO solver <code class="docutils literal notranslate"><span class="pre">couenne</span></code>. We install the latter using the IDAES module and its extensions, which include the pre-compiled binary for couenne.</p>
+<section id="preamble-install-pyomo-and-solvers">
+<h2>Preamble: Install Pyomo and solvers<a class="headerlink" href="#preamble-install-pyomo-and-solvers" title="Link to this heading">#</a></h2>
+<p>We use the open-source solvers HiGHS for the linear models and SCIP for the bilinear mixed-integer models. On Colab, the following cell installs Pyomo, HiGHS and PySCIPOpt, which provides SCIP through its Python interface. For a local installation, run <code class="docutils literal notranslate"><span class="pre">%pip</span> <span class="pre">install</span> <span class="pre">&quot;pyomo&gt;=6.10.1&quot;</span> <span class="pre">highspy</span> <span class="pre">pyscipopt</span></code> in a notebook first. The <code class="docutils literal notranslate"><span class="pre">scip_direct</span></code> interface avoids a separate solver executable and an IDAES download.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 
-<span class="o">%</span><span class="k">pip</span> install idaes-pse --pre &gt;/dev/null 2&gt;/dev/null
-<span class="o">%</span><span class="k">pip</span> install highspy &gt;/dev/null 2&gt;/dev/null
-<span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin
-
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"PATH"</span><span class="p">]</span> <span class="o">+=</span> <span class="s2">":bin"</span>
-
-<span class="n">MILO_solver</span> <span class="o">=</span> <span class="s2">"appsi_highs"</span>
-<span class="n">MINLO_solver</span> <span class="o">=</span> <span class="s2">"couenne"</span>
+<span class="k">if</span> <span class="s2">"google.colab"</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">%</span><span class="k">pip</span> install -q "pyomo&gt;=6.10.1" highspy pyscipopt
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.environ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyo</span>
 
+<span class="n">MILO_solver</span> <span class="o">=</span> <span class="s2">"appsi_highs"</span>
+<span class="n">MINLO_solver</span> <span class="o">=</span> <span class="s2">"scip_direct"</span>
 <span class="n">MILO_SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">MILO_solver</span><span class="p">)</span>
 <span class="n">MINLO_SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">MINLO_solver</span><span class="p">)</span>
 
@@ -632,7 +629,7 @@
 <section id="problem-formulation">
 <h2>Problem formulation<a class="headerlink" href="#problem-formulation" title="Link to this heading">#</a></h2>
 <p>Consider a set <span class="math notranslate nohighlight">\({S}\)</span> of available stock materials that can be cut to size to produce a set of finished parts. Each stock <span class="math notranslate nohighlight">\(s\in S\)</span> is characterized by a length <span class="math notranslate nohighlight">\(l^S_s\)</span>, a cost <span class="math notranslate nohighlight">\(c_s\)</span> per piece, and is available in unlimited quantity. A customer order is received to product a set of finished products <span class="math notranslate nohighlight">\(F\)</span>. Each finished product <span class="math notranslate nohighlight">\(f\in F\)</span> is specified by a required number <span class="math notranslate nohighlight">\(d_f\)</span> and length <span class="math notranslate nohighlight">\(l^F_f\)</span>.</p>
-<p>The <strong>cutting stock problem</strong> is to find a minimum cost solution to fulfill the customer order from the stock materials. The problem is illustrated is by data for an example given in the original paper by Gilmore and Gamory (1961).</p>
+<p>The <strong>cutting stock problem</strong> is to find a minimum cost solution to fulfill the customer order from the stock materials. The problem is illustrated is by data for an example given in the original paper by Gilmore and Gomory (1961).</p>
 <p><strong>Stocks</strong></p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
@@ -703,7 +700,7 @@
 <section id="patterns">
 <h2>Patterns<a class="headerlink" href="#patterns" title="Link to this heading">#</a></h2>
 <p>One approach to solving this problem is to create a list of all finished parts, a list of stocks for each length, and then use a set of binary decision variables to assign each finished product to a particular piece of stock. This approach will work well for a small problems, but the computational complexity scales much too rapidly with the size of the problem to be practical for business applications.</p>
-<p>To address the issue of computational complexity, in 1961 Gilmore and Gamory introduced an additional data structure for the problem that is now referred to as “patterns”. A pattern is a list of finished parts that can be cut from a particular stock item.</p>
+<p>To address the issue of computational complexity, in 1961 Gilmore and Gomory introduced an additional data structure for the problem that is now referred to as “patterns”. A pattern is a list of finished parts that can be cut from a particular stock item.</p>
 <p>A pattern <span class="math notranslate nohighlight">\(p\)</span> is specified by the stock <span class="math notranslate nohighlight">\(s_p\)</span> assigned to the pattern and integers <span class="math notranslate nohighlight">\(a_{pf}\)</span> that specify how many finished parts of type <span class="math notranslate nohighlight">\(f\)</span> are cut from stock <span class="math notranslate nohighlight">\(s_p\)</span>. A pattern <span class="math notranslate nohighlight">\(p\in P\)</span> is feasible if</p>
 <div class="math notranslate nohighlight">
 \[
@@ -830,21 +827,21 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/fe7b407e870cd5716bccd82140099f0cf7b2b91588475abba3f1e1aaa3933d22.png" src="../../_images/fe7b407e870cd5716bccd82140099f0cf7b2b91588475abba3f1e1aaa3933d22.png" />
+<img alt="../../_images/841dd4d5d2a190e783f37a1767d744aab5abec02c45abe008e217e7c9306ba5d.png" src="../../_images/841dd4d5d2a190e783f37a1767d744aab5abec02c45abe008e217e7c9306ba5d.png" />
 </div>
 </div>
 </section>
 <section id="optimal-cutting-using-known-patterns">
 <h2>Optimal cutting using known patterns<a class="headerlink" href="#optimal-cutting-using-known-patterns" title="Link to this heading">#</a></h2>
 <p>Given a list of patterns, the optimization problem is to compute how many copies of each pattern should be cut to meet the demand for finished parts at minimum cost.</p>
-<p>Let the index <span class="math notranslate nohighlight">\(s_p\)</span> denote the stock specified by pattern <span class="math notranslate nohighlight">\(p\)</span>, and let <span class="math notranslate nohighlight">\(x_{s_p}\)</span> denote the number pieces of stock <span class="math notranslate nohighlight">\(s_p\)</span> is used. For a given list of patterns, the minimum cost optimization problem is a mixed integer linear optimization (MILO) subject to meeting demand constraints for each finished item.</p>
+<p>Let the index <span class="math notranslate nohighlight">\(s_p\)</span> denote the stock specified by pattern <span class="math notranslate nohighlight">\(p\)</span>, and let <span class="math notranslate nohighlight">\(x_p\)</span> denote the number of copies of pattern <span class="math notranslate nohighlight">\(p\)</span> cut from stock <span class="math notranslate nohighlight">\(s_p\)</span>. For a given list of patterns, the minimum cost optimization problem is a mixed integer linear optimization (MILO) subject to meeting demand constraints for each finished item.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
-\min\quad &amp; \sum_{p\in P} c_{s_p} x_{s_p} \\
+\min\quad &amp; \sum_{p\in P} c_{s_p} x_p \\
 \text{s.t.}\quad
-&amp; \sum_{p\in P}a_{pf} x_{s_p} \geq d_f &amp;&amp; \forall f\in F\\
-&amp; x_{s_p}  \in \mathbb{Z}_+ &amp;&amp; \forall p\in P\\
+&amp; \sum_{p\in P}a_{pf} x_p \geq d_f &amp;&amp; \forall f\in F\\
+&amp; x_p  \in \mathbb{Z}_+ &amp;&amp; \forall p\in P\\
 \end{align}
 \end{split}\]</div>
 <p>The following cell is a Pyomo implementation of this optimization model.</p>
@@ -874,9 +871,10 @@
         <span class="n">a</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="n">patterns</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s2">"cuts"</span><span class="p">][</span><span class="n">f</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">}</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s2">"demand"</span><span class="p">]</span>
 
-    <span class="n">MILO_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">MILO_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]())</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span>
 
 
 <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
@@ -888,12 +886,12 @@
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">):</span>
-    <span class="n">k</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">_</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">_</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">]</span>
     <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="p">[</span><span class="n">patterns</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">k</span><span class="p">])</span>
     <span class="n">ticks</span> <span class="o">=</span> <span class="p">[</span>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="n">pattern</span><span class="p">[</span><span class="s1">'stock'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">patterns</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.5</span>
     <span class="p">]</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">ticks</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cost = </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
@@ -905,7 +903,7 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/1dedc38c27afa5d3d2a7df74d1c3c88c9616918bdb2b987391f9f6b30b4fc5bb.png" src="../../_images/1dedc38c27afa5d3d2a7df74d1c3c88c9616918bdb2b987391f9f6b30b4fc5bb.png" />
+<img alt="../../_images/fc8321098c4139ae614294d7a215d76b1d0cfc6ceb30546ba8496ec78db8142b.png" src="../../_images/fc8321098c4139ae614294d7a215d76b1d0cfc6ceb30546ba8496ec78db8142b.png" />
 </div>
 </div>
 </section>
@@ -929,14 +927,17 @@
 <div class="math notranslate nohighlight">
 \[
 \begin{align}
-&amp; x_{p-1} \geq x_{p} &amp;&amp; \forall p\in P, p &gt; 0
+&amp; x_{p-1} \leq x_{p} &amp;&amp; \forall p\in P, p &gt; 0
 \end{align}
 \]</div>
 <p>This is a challenging optimization problem with a cost objective that is bilinear with respect to the the decision variables <span class="math notranslate nohighlight">\(b_{sp}\)</span> and <span class="math notranslate nohighlight">\(x_p\)</span>, and a set of constraints for the demand of finished parts that are bilinear in the decision variables <span class="math notranslate nohighlight">\(a_{fp}\)</span> and <span class="math notranslate nohighlight">\(x_p\)</span>. Because the constraints are a lower bound on a positive sum of bilinear terms, a simple substitution to create rotated quadratic cones fails to produce a convex program.</p>
 <p>The following model is a direct translation of the bilinear optimization model into Pyomo. A solution is attempted using a mixed-integer nonlinear optimization (MINLO) solver.</p>
+<p>Assume all lengths and costs are positive, demands are non-negative integers, and each requested part fits at least one stock. An optimal solution needs no more than <span class="math notranslate nohighlight">\(U=\sum_f d_f\)</span> stock pieces: any used piece that contributes nothing to meeting demand can be removed. We therefore bound each <span class="math notranslate nohighlight">\(x_p\)</span> and their sum by <span class="math notranslate nohighlight">\(U\)</span>. The maximum individual demand is not such a bound. Choosing fewer than <span class="math notranslate nohighlight">\(U\)</span> pattern slots restricts the model; the two-slot example below is a small illustration, not a general choice of <span class="math notranslate nohighlight">\(N_p\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">bilinear_cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">Np</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">finish</span><span class="p">)):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">bilinear_cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">Np</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">Np</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">Np</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">finish</span><span class="p">)</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">stocks</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
@@ -944,7 +945,7 @@
     <span class="n">m</span><span class="o">.</span><span class="n">P</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Np</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 
     <span class="c1"># sum of all finished parts</span>
-    <span class="n">f_total_demand</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s2">"demand"</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">])</span>
+    <span class="n">f_total_demand</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s2">"demand"</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
 
     <span class="c1"># define a with bounded values</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">a_bounds</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
@@ -989,14 +990,15 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">max_patterns</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">f_total_demand</span>
 
-    <span class="n">MINLO_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">MINLO_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="n">cost</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">p</span><span class="p">]())</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">]</span>
     <span class="n">patterns</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">:</span>
         <span class="n">a</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">f</span><span class="p">,</span> <span class="n">p</span><span class="p">]())</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">}</span>
-        <span class="n">patterns</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"stock"</span><span class="p">:</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"cuts"</span><span class="p">:</span> <span class="n">a</span><span class="p">})</span>
+        <span class="n">patterns</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"stock"</span><span class="p">:</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">p</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"cuts"</span><span class="p">:</span> <span class="n">a</span><span class="p">})</span>
 
     <span class="k">return</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span>
 
@@ -1007,7 +1009,10 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/2992a60cf0772a56a7a9d722dda1cfdb8f28a36442f44a80f1774f4641d83982.png" src="../../_images/2992a60cf0772a56a7a9d722dda1cfdb8f28a36442f44a80f1774f4641d83982.png" />
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={'center': 'Cost = 170.0'}&gt;
+</pre></div>
+</div>
+<img alt="../../_images/9e4502f64f84fbbbb2aac402d97e37a09bbebdd082bc179918978d1608896b3c.png" src="../../_images/9e4502f64f84fbbbb2aac402d97e37a09bbebdd082bc179918978d1608896b3c.png" />
 </div>
 </div>
 </section>
@@ -1018,27 +1023,29 @@
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
-\min\quad &amp; \sum_{p\in P} c_{s_p} x_{s_p} + x' \sum_{s\in S} b_s c_s\\
+\min\quad &amp; \sum_{p\in P} c_{s_p} x_p + x' \sum_{s\in S} b'_s c_s\\
 \text{s.t.}\quad
 &amp; \sum_{s\in S}b'_{s} =  1  \\
 &amp; \sum_{f\in F}a'_{f}l^F_f  \leq \sum_{s\in S} b'_{s} l^S_s  \\
-&amp; \sum_{p\in P}a_{fp} x_{s_p}  + a'_f x'\geq d_f &amp;&amp; \forall f\in F\\
-&amp; a'_{f}, x_p  \in \mathbb{Z}_+ &amp;&amp; \forall f\in F,  \forall p\in P \\
+&amp; \sum_{p\in P}a_{fp} x_p  + a'_f x'\geq d_f &amp;&amp; \forall f\in F\\
+&amp; a'_{f}, x_p, x' \in \mathbb{Z}_+ &amp;&amp; \forall f\in F,  \forall p\in P \\
 &amp; b'_{s} \in \mathbb{Z}_2 &amp;&amp; \forall s\in S \\
 \end{align}
 \end{split}\]</div>
 <p>The function <code class="docutils literal notranslate"><span class="pre">generate_pattern_bilinear</span></code> is a direct Pyomo implementation that uses a MINLO solver to create one additional feasible pattern that could be added to the list of known patterns.</p>
+<p>Both the existing pattern counts <span class="math notranslate nohighlight">\(x_p\)</span> and the new count <span class="math notranslate nohighlight">\(x'\)</span> are integers bounded by <span class="math notranslate nohighlight">\(U=\sum_f d_f\)</span>. Keeping these counts integer lets this step improve a cutting plan even after the linear relaxation has converged. With continuous counts, that improvement would already have been exhausted by complete linear-dual pricing. When an incumbent cost is supplied, the function returns <code class="docutils literal notranslate"><span class="pre">None</span></code> unless the additional pattern yields a strictly cheaper integer plan, within a numerical tolerance.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">generate_pattern_bilinear</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">generate_pattern_bilinear</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">incumbent_cost</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">stocks</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">finish</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">P</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">patterns</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 
-    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">xp</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">total_demand</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s2">"demand"</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">total_demand</span><span class="p">))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">xp</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeIntegers</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">total_demand</span><span class="p">))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">a_bounds</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">"length"</span><span class="p">]</span> <span class="o">/</span> <span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s2">"length"</span><span class="p">])</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">]))</span>
@@ -1071,7 +1078,10 @@
             <span class="o">&gt;=</span> <span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s2">"demand"</span><span class="p">]</span>
         <span class="p">)</span>
 
-    <span class="n">MINLO_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">MINLO_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">xp</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.5</span> <span class="ow">or</span> <span class="p">(</span><span class="n">incumbent_cost</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">incumbent_cost</span> <span class="o">-</span> <span class="n">tol</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
 
     <span class="n">new_pattern</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">"stock"</span><span class="p">:</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">bp</span><span class="p">[</span><span class="n">s</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
@@ -1103,7 +1113,7 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{'stock': 'C', 'cuts': {'S': 1, 'M': 1, 'L': 1}}
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{'stock': 'B', 'cuts': {'S': 1, 'M': 0, 'L': 1}}
 </pre></div>
 </div>
 </div>
@@ -1111,14 +1121,14 @@
 </section>
 <section id="pattern-generation-linear-dual">
 <h2>Pattern Generation: Linear Dual<a class="headerlink" href="#pattern-generation-linear-dual" title="Link to this heading">#</a></h2>
-<p>A common approach to pattern generation for stock cutting begins by relaxing the MILO optimization problem with known patterns. The integer variables <span class="math notranslate nohighlight">\(x_{s_p}\)</span> are relaxed to non-negative reals.</p>
+<p>A common approach to pattern generation for stock cutting begins by relaxing the MILO optimization problem with known patterns. The integer variables <span class="math notranslate nohighlight">\(x_p\)</span> are relaxed to non-negative reals.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
-\min\quad &amp; \sum_{p\in P} c_{s_p} x_{s_p} \\
+\min\quad &amp; \sum_{p\in P} c_{s_p} x_p \\
 \text{s.t.}\quad
-&amp; \sum_{p\in P}a_{pf} x_{s_p} \geq d_f &amp;&amp; \forall f\in F\\
-&amp; x_{s_p}  \in \mathbb{R}_+ &amp;&amp; \forall p\in P\\
+&amp; \sum_{p\in P}a_{pf} x_p \geq d_f &amp;&amp; \forall f\in F\\
+&amp; x_p  \in \mathbb{R}_+ &amp;&amp; \forall p\in P\\
 \end{align}
 \end{split}\]</div>
 <p>Let <span class="math notranslate nohighlight">\(\pi_f \geq 0\)</span> be the dual variables associated with the demand constraints. A large positive value <span class="math notranslate nohighlight">\(\pi_f\)</span> suggests a high value for including finished part <span class="math notranslate nohighlight">\(f\)</span> in a new pattern. This motivates a set of dual optimization problems where the objective is to construct a new patterns that maximizes the the marginal value of each stock <span class="math notranslate nohighlight">\(s\in S\)</span>.</p>
@@ -1132,12 +1142,13 @@ V_s = \max\quad &amp; \left(\sum_{f\in F} \pi_{f} a'_{sf}\right) - c_s \\
 \end{align}
 \end{split}\]</div>
 <p>The pattern demonstrating the largest return <span class="math notranslate nohighlight">\(V_s\)</span> is returned as a candidate to add the list of patterns.</p>
+<p>Pricing stops when no stock has <span class="math notranslate nohighlight">\(V_s&gt;0\)</span>, within tolerance. The function returns the improving pattern (or <code class="docutils literal notranslate"><span class="pre">None</span></code>) and a lower bound from the relaxation. To keep the bound valid when pricing stops at a small positive tolerance, the dual prices are scaled down if needed so that no feasible pattern is valued above its stock cost.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.environ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyo</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">generate_pattern_dual</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_pattern_dual</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">stocks</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
@@ -1159,7 +1170,8 @@ V_s = \max\quad &amp; \left(\sum_{f\in F} \pi_{f} a'_{sf}\right) - c_s \\
 
     <span class="c1"># solve and get duals</span>
     <span class="n">m</span><span class="o">.</span><span class="n">dual</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Suffix</span><span class="o">.</span><span class="n">IMPORT</span><span class="p">)</span>
-    <span class="n">MILO_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">MILO_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="c1"># solve for reduced cost for each stock</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Block</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
@@ -1175,14 +1187,19 @@ V_s = \max\quad &amp; \left(\sum_{f\in F} \pi_{f} a'_{sf}\right) - c_s \\
         <span class="k">def</span><span class="w"> </span><span class="nf">stock_length</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
             <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">*</span> <span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s2">"length"</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">"length"</span><span class="p">]</span>
 
-        <span class="n">MILO_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">MILO_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+        <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">b</span>
 
     <span class="n">reduced_value</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">subprob</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">marginal_value</span><span class="p">()</span> <span class="o">-</span> <span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">"cost"</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">]</span>
     <span class="n">s</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)[</span><span class="n">reduced_value</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">reduced_value</span><span class="p">))]</span>
 
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"stock"</span><span class="p">:</span> <span class="n">s</span><span class="p">,</span> <span class="s2">"cuts"</span><span class="p">:</span> <span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">subprob</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">f</span><span class="p">]())</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">}}</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">subprob</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">marginal_value</span><span class="p">()</span> <span class="o">/</span> <span class="n">stocks</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s2">"cost"</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">))</span>
+    <span class="n">lower_bound</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">finish</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s2">"demand"</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">demand</span><span class="p">[</span><span class="n">f</span><span class="p">]]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
+    <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="n">reduced_value</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">tol</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">lower_bound</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"stock"</span><span class="p">:</span> <span class="n">s</span><span class="p">,</span> <span class="s2">"cuts"</span><span class="p">:</span> <span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">subprob</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">f</span><span class="p">]())</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">F</span><span class="p">}},</span> <span class="n">lower_bound</span>
 </pre></div>
 </div>
 </div>
@@ -1207,12 +1224,12 @@ V_s = \max\quad &amp; \left(\sum_{f\in F} \pi_{f} a'_{sf}\right) - c_s \\
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{'stock': 'C', 'cuts': {'S': 1, 'M': 1, 'L': 1}}
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>({'stock': 'C', 'cuts': {'S': 1, 'M': 1, 'L': 1}}, 168.74999999999997)
 </pre></div>
 </div>
 </div>
 </div>
-<p>The following cell compares the time required to generate a new pattern by the two methods for a somewhat larger data set.</p>
+<p>The following cell times one call to each method on a larger data set. These timings illustrate the work involved on the current machine; they are not a solver benchmark, and the two methods solve different subproblems.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">stocks</span> <span class="o">=</span> <span class="p">{</span>
@@ -1245,16 +1262,16 @@ V_s = \max\quad &amp; \left(\sum_{f\in F} \pi_{f} a'_{sf}\right) - c_s \\
 <span class="n">patterns</span> <span class="o">=</span> <span class="n">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Testing generate_patterns_bilinear: "</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
-<span class="o">%</span><span class="k">timeit</span> generate_pattern_bilinear(stocks, finish, patterns)
+<span class="o">%</span><span class="k">timeit</span> -n 1 -r 1 generate_pattern_bilinear(stocks, finish, patterns)
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Testing generate_patterns_dual: "</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
-<span class="o">%</span><span class="k">timeit</span> generate_pattern_dual(stocks, finish, patterns)
+<span class="o">%</span><span class="k">timeit</span> -n 1 -r 1 generate_pattern_dual(stocks, finish, patterns)
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Testing generate_patterns_bilinear: 1.38 s ± 88.4 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
-Testing generate_patterns_dual: 137 ms ± 3.01 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Testing generate_patterns_bilinear: 820 ms ± 0 ns per loop (mean ± std. dev. of 1 run, 1 loop each)
+Testing generate_patterns_dual: 61.7 ms ± 0 ns per loop (mean ± std. dev. of 1 run, 1 loop each)
 </pre></div>
 </div>
 </div>
@@ -1262,44 +1279,43 @@ Testing generate_patterns_dual: 137 ms ± 3.01 ms per loop (mean ± std. dev. of
 </section>
 <section id="a-hybrid-solution-algorithm-using-pattern-generation">
 <h2>A hybrid solution algorithm using pattern generation<a class="headerlink" href="#a-hybrid-solution-algorithm-using-pattern-generation" title="Link to this heading">#</a></h2>
-<p>The following cell incorporates the two methods of pattern generation into a hybrid algorithm to solve the cutting stock problem. The algorithm starts with with <code class="docutils literal notranslate"><span class="pre">make_patterns</span></code> to create an initial list of patterns, then uses the linear dual to adds patterns until no new patterns are found. In phase two of the algorithm, the bilinear model is used to find additional patterns, if any, that may further reduce the objective function. There has been no exhaustive testing or attempt to compare this empirical method with others.</p>
+<p>We start with <code class="docutils literal notranslate"><span class="pre">make_patterns</span></code> and use linear-dual pricing until no improving column remains. Solving the integer model over these patterns gives a feasible cutting plan and an upper bound; the priced relaxation supplies a lower bound. Phase 2 searches for a single additional pattern that strictly reduces the integer cost, repeating while an improvement is found.</p>
+<p>The final plan is optimal over the generated patterns. A gap between its cost and the lower bound can remain: failure to improve by adding one pattern does not rule out improvements requiring several new patterns together. The algorithm reports both bounds instead of claiming that every instance is solved globally.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">):</span>
-    <span class="c1"># Generate initial set of patterns</span>
     <span class="n">patterns</span> <span class="o">=</span> <span class="n">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">patterns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Every requested part must fit at least one stock."</span><span class="p">)</span>
 
-    <span class="c1"># Phase 1: Generate patterns using dual method</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"Phase 1 "</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">"."</span><span class="p">)</span>
-    <span class="n">new_pattern</span> <span class="o">=</span> <span class="n">generate_pattern_dual</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
-    <span class="k">while</span> <span class="n">new_pattern</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">new_pattern</span><span class="p">,</span> <span class="n">lower_bound</span> <span class="o">=</span> <span class="n">generate_pattern_dual</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_pattern</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="k">if</span> <span class="n">new_pattern</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Pricing returned an existing improving pattern; check tolerances."</span><span class="p">)</span>
         <span class="n">patterns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_pattern</span><span class="p">)</span>
-        <span class="n">new_pattern</span> <span class="o">=</span> <span class="n">generate_pattern_dual</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">end</span><span class="o">=</span><span class="s2">"."</span><span class="p">)</span>
-
     <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">" Cost = </span><span class="si">{</span><span class="n">cost</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">" Cost = </span><span class="si">{</span><span class="n">cost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">; LP lower bound = </span><span class="si">{</span><span class="n">lower_bound</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-    <span class="c1"># Phase 2: Generate patterns using bilinear method</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"Phase 2 "</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">"."</span><span class="p">)</span>
-    <span class="n">new_pattern</span> <span class="o">=</span> <span class="n">generate_pattern_bilinear</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
-    <span class="k">while</span> <span class="n">new_pattern</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">new_pattern</span> <span class="o">=</span> <span class="n">generate_pattern_bilinear</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">incumbent_cost</span><span class="o">=</span><span class="n">cost</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_pattern</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="k">if</span> <span class="n">new_pattern</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"An existing pattern cannot improve an optimal restricted model."</span><span class="p">)</span>
         <span class="n">patterns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_pattern</span><span class="p">)</span>
-        <span class="n">new_pattern</span> <span class="o">=</span> <span class="n">generate_pattern_bilinear</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">improved_cost</span> <span class="o">=</span> <span class="n">cut_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">improved_cost</span> <span class="o">&lt;</span> <span class="n">cost</span> <span class="o">-</span> <span class="mf">1e-6</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="n">improved_cost</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">end</span><span class="o">=</span><span class="s2">"."</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">" Cost = </span><span class="si">{</span><span class="n">cost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">; bound gap = </span><span class="si">{</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">cost</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">lower_bound</span><span class="p">)</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-    <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">" Cost = </span><span class="si">{</span><span class="n">cost</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="c1"># Get the indices of non-zero patterns</span>
-    <span class="n">non_zero_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">index</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
-
-    <span class="c1"># Return only the non-zero patterns, their corresponding values, and the cost</span>
-    <span class="k">return</span> <span class="p">(</span>
-        <span class="p">[</span><span class="n">patterns</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">non_zero_indices</span><span class="p">],</span>
-        <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">non_zero_indices</span><span class="p">],</span>
-        <span class="n">cost</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="n">used</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">patterns</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">used</span><span class="p">],</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">used</span><span class="p">],</span> <span class="n">cost</span>
 
 
 <span class="n">stocks</span> <span class="o">=</span> <span class="p">{</span>
@@ -1320,14 +1336,14 @@ Testing generate_patterns_dual: 137 ms ± 3.01 ms per loop (mean ± std. dev. of
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Phase 1 ... Cost = 170.0
-Phase 2 . Cost = 170.0
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Phase 1 ... Cost = 170.00; LP lower bound = 170.000000
+Phase 2 . Cost = 170.00; bound gap = 0.000000
 </pre></div>
 </div>
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={'center': 'Cost = 170.0'}&gt;
 </pre></div>
 </div>
-<img alt="../../_images/a32cafa63d800a567dbf17d3babda1e451c8e5860d62eca0b7d016c630f47599.png" src="../../_images/a32cafa63d800a567dbf17d3babda1e451c8e5860d62eca0b7d016c630f47599.png" />
+<img alt="../../_images/9e4502f64f84fbbbb2aac402d97e37a09bbebdd082bc179918978d1608896b3c.png" src="../../_images/9e4502f64f84fbbbb2aac402d97e37a09bbebdd082bc179918978d1608896b3c.png" />
 </div>
 </div>
 </section>
@@ -1371,14 +1387,14 @@ Phase 2 . Cost = 170.0
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Phase 1 ................. Cost = 334.0
-Phase 2 .. Cost = 334.0
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Phase 1 ................ Cost = 334.00; LP lower bound = 334.000000
+Phase 2 . Cost = 334.00; bound gap = 0.000000
 </pre></div>
 </div>
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={'center': 'Cost = 334.0'}&gt;
 </pre></div>
 </div>
-<img alt="../../_images/20aba17b3f4b00a3ca2c9c880176413914cf52ad4beb274c91064d3d0807b3d9.png" src="../../_images/20aba17b3f4b00a3ca2c9c880176413914cf52ad4beb274c91064d3d0807b3d9.png" />
+<img alt="../../_images/03ebc91a2038a22d9bf80dda45a665af72c8a6adc3c892e2af98a04d0f2effe6.png" src="../../_images/03ebc91a2038a22d9bf80dda45a665af72c8a6adc3c892e2af98a04d0f2effe6.png" />
 </div>
 </div>
 </section>
@@ -1414,14 +1430,14 @@ Phase 2 .. Cost = 334.0
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Phase 1 .......................... Cost = 73.0
-Phase 2 . Cost = 73.0
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Phase 1 ........................... Cost = 73.00; LP lower bound = 72.916667
+Phase 2 . Cost = 73.00; bound gap = 0.083333
 </pre></div>
 </div>
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;Axes: title={'center': 'Cost = 73.0'}&gt;
 </pre></div>
 </div>
-<img alt="../../_images/d919733bde982d3ea73d7928dba490f441bd2353c32759fe819cf059c05c3cc7.png" src="../../_images/d919733bde982d3ea73d7928dba490f441bd2353c32759fe819cf059c05c3cc7.png" />
+<img alt="../../_images/82b38f84cb54383464f105be2e9d4244938a6bb8509e3828a48460a3aba029e8.png" src="../../_images/82b38f84cb54383464f105be2e9d4244938a6bb8509e3828a48460a3aba029e8.png" />
 </div>
 </div>
 </section>
@@ -1431,6 +1447,7 @@ Phase 2 . Cost = 73.0
 <p><img alt="" src="https://www.ana-white.com/sites/default/files/images/diy%202x4%20sectional%20single%20arm%20ana%20white%20dimensions.jpg" />
 Image source: <a class="reference external" href="http://www.ana-white.com">www.ana-white.com</a></p>
 <p>Data source: <a class="reference external" href="https://docs.google.com/spreadsheets/d/1ZX7KJ2kwTGgyqEv_a3LOG0nQSxsc38Ykk53A7vGWAFU/edit#gid=1104632299">https://docs.google.com/spreadsheets/d/1ZX7KJ2kwTGgyqEv_a3LOG0nQSxsc38Ykk53A7vGWAFU/edit#gid=1104632299</a></p>
+<p>This example reads a public sheet at run time; prices and orders may change, so a later run can differ from the saved results. The <code class="docutils literal notranslate"><span class="pre">kerf</span></code> setting is the material lost per cut. We charge one kerf per finished piece, including the last piece on a stock; this is a conservative convention that does not assume an offcut-free final cut.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
@@ -1476,9 +1493,8 @@ Image source: <a class="reference external" href="http://www.ana-white.com">www.
 
 <span class="c1"># read and display stocks</span>
 <span class="n">stocks_df</span> <span class="o">=</span> <span class="n">read_google_sheet</span><span class="p">(</span><span class="n">sheet_id</span><span class="p">,</span> <span class="s2">"stocks"</span><span class="p">)</span>
-<span class="c1"># stocks = stocks.drop(["price"], axis=1)</span>
-<span class="k">if</span> <span class="ow">not</span> <span class="s2">"price"</span> <span class="ow">in</span> <span class="n">stocks_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-    <span class="n">stocks</span><span class="p">[</span><span class="s2">"price"</span><span class="p">]</span> <span class="o">=</span> <span class="n">stocks_df</span><span class="p">[</span><span class="s2">"length"</span><span class="p">]</span>
+<span class="k">if</span> <span class="s2">"price"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stocks_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"The stocks sheet must provide a price for each stock."</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Stocks"</span><span class="p">)</span>
 <span class="n">display</span><span class="p">(</span><span class="n">stocks_df</span><span class="p">)</span>
 </pre></div>
@@ -1701,9 +1717,9 @@ Image source: <a class="reference external" href="http://www.ana-white.com">www.
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">kinds</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">finish_df</span><span class="p">[</span><span class="s2">"kind"</span><span class="p">]))</span>
-
-<span class="n">kerf</span> <span class="o">=</span> <span class="mf">0.25</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">kinds</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">finish_df</span><span class="p">[</span><span class="s2">"kind"</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+<span class="n">kerf</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">settings_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"setting"</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">"kerf"</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">])</span>
+<span class="n">purchase_rows</span> <span class="o">=</span> <span class="p">[]</span>
 
 <span class="k">for</span> <span class="n">kind</span> <span class="ow">in</span> <span class="n">kinds</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Kind = </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -1718,35 +1734,37 @@ Image source: <a class="reference external" href="http://www.ana-white.com">www.
     <span class="n">stocks</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">stocks_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">stocks_df</span><span class="p">[</span><span class="s2">"kind"</span><span class="p">]</span> <span class="o">==</span> <span class="n">kind</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
         <span class="n">stocks</span><span class="p">[</span><span class="n">stocks_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">"length"</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">"length"</span><span class="p">:</span> <span class="n">stocks_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">"length"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">0</span> <span class="o">*</span> <span class="n">kerf</span><span class="p">,</span>
+            <span class="s2">"length"</span><span class="p">:</span> <span class="n">stocks_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">"length"</span><span class="p">],</span>
             <span class="s2">"cost"</span><span class="p">:</span> <span class="n">stocks_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s2">"price"</span><span class="p">],</span>
         <span class="p">}</span>
 
     <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
     <span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">pieces</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">purchase_rows</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"kind"</span><span class="p">:</span> <span class="n">kind</span><span class="p">,</span> <span class="s2">"stock length"</span><span class="p">:</span> <span class="n">pattern</span><span class="p">[</span><span class="s2">"stock"</span><span class="p">],</span> <span class="s2">"pieces"</span><span class="p">:</span> <span class="n">pieces</span><span class="p">})</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Kind = 2x4
-Phase 1 .... Cost = 32.44
-Phase 2 . Cost = 32.44
+Phase 1 ...... Cost = 33.18; LP lower bound = 32.163333
+Phase 2 .. Cost = 32.28; bound gap = 0.116667
 </pre></div>
 </div>
-<img alt="../../_images/52a2b9fa66b239ffa76ccd3570740bdd1be1f0cae16dd03dc04678b9123f69c9.png" src="../../_images/52a2b9fa66b239ffa76ccd3570740bdd1be1f0cae16dd03dc04678b9123f69c9.png" />
+<img alt="../../_images/499e0301b1cda0d45aa1a7ec1726c89c86f741689effc35aec0266ff6a83f5ae.png" src="../../_images/499e0301b1cda0d45aa1a7ec1726c89c86f741689effc35aec0266ff6a83f5ae.png" />
 </div>
 </div>
-<p>Purchase List</p>
+</section>
+<section id="purchase-list">
+<h3>Purchase list<a class="headerlink" href="#purchase-list" title="Link to this heading">#</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">patterns</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s2">"cuts"</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
-<span class="n">df</span><span class="p">[</span><span class="s2">"stock"</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">"stock"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">pivot_table</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">"stock"</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s2">"cuts"</span><span class="p">,</span> <span class="n">aggfunc</span><span class="o">=</span><span class="s2">"sum"</span><span class="p">)</span>
-<span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
-
-<span class="n">df</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">purchase_list</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">purchase_rows</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">"kind"</span><span class="p">,</span> <span class="s2">"stock length"</span><span class="p">],</span> <span class="n">as_index</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="s2">"pieces"</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s2">"kind"</span><span class="p">,</span> <span class="s2">"stock length"</span><span class="p">])</span>
+<span class="p">)</span>
+<span class="n">purchase_list</span>
 </pre></div>
 </div>
 </div>
@@ -1769,25 +1787,23 @@ Phase 2 . Cost = 32.44
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>cuts</th>
-    </tr>
-    <tr>
-      <th>stock</th>
-      <th></th>
+      <th>kind</th>
+      <th>stock length</th>
+      <th>pieces</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th>84</th>
-      <td>2.0</td>
+      <th>0</th>
+      <td>2x4</td>
+      <td>144</td>
+      <td>5</td>
     </tr>
     <tr>
-      <th>144</th>
-      <td>5.0</td>
-    </tr>
-    <tr>
-      <th>168</th>
-      <td>1.0</td>
+      <th>1</th>
+      <td>2x4</td>
+      <td>168</td>
+      <td>2</td>
     </tr>
   </tbody>
 </table>
@@ -1811,7 +1827,7 @@ Phase 2 . Cost = 32.44
 <blockquote>
 <div><p>Delorme, M., Iori, M., &amp; Martello, S. (2016). Bin packing and cutting stock problems: Mathematical models and exact algorithms. European Journal of Operational Research, 255(1), 1-20. [<a class="reference external" href="https://www.sciencedirect.com/science/article/pii/S0377221716302491">sciencedirect</a>]</p>
 </div></blockquote>
-<p>The solution proposed by Gilmore and Gamory has been refined over time and now generally referred to as “column generation”. A number of tutorial implemenations are available, these are representative:</p>
+<p>The solution proposed by Gilmore and Gomory has been refined over time and now generally referred to as “column generation”. A number of tutorial implemenations are available, these are representative:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p><a class="reference external" href="https://www.mathworks.com/help/optim/ug/cutting-stock-problem-based.html">Mathworks/Matlab: Cutting Stock Problem</a></p></li>
@@ -1898,7 +1914,7 @@ Phase 2 . Cost = 32.44
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-solvers">Preamble: Install Pyomo and solvers</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-formulation">Problem formulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#patterns">Patterns</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-cutting-using-known-patterns">Optimal cutting using known patterns</a></li>
@@ -1910,6 +1926,7 @@ Phase 2 . Cost = 32.44
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-from-jump-documentation-for-column-generation">Example from JuMP documentation for column generation</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-from-wikipedia">Example from Wikipedia</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#woodworking-problem-data-from-google-sheets">Woodworking: Problem data from Google sheets</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#purchase-list">Purchase list</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
