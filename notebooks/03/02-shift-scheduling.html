@@ -699,17 +699,18 @@ n_{w} &amp; = \begin{cases}1\quad\text{if worker } w \text{ is needed during the
 \end{align*}
 \]</div>
 <p>where the weight <span class="math notranslate nohighlight">\(\gamma\)</span> is a fixed positive parameter that determines the relative importance of these two measures in a desirable shift schedule.</p>
+<p>In the example we set <span class="math notranslate nohighlight">\(\gamma=0.1\)</span>. Each worker receives the same coefficient, regardless of their identifier. This objective counts workers and weekend workers; changing the order of their names does not change the staffing policy.</p>
 </section>
 <section id="model-constraints">
 <h3>Model constraints<a class="headerlink" href="#model-constraints" title="Link to this heading">#</a></h3>
 <p>Let us now formulate all the constraints using the variables we have created.</p>
 <ul class="simple">
-<li><p>At each day-shift we need to have enough workers to meet staffing requirements:</p></li>
+<li><p>We staff each day-shift exactly at its requirement. Extra assignments can be removed without worsening either term of the objective or violating the rest and hours limits:</p></li>
 </ul>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
-\sum_{w\in\text{ W}} a_{w, d, s} &amp; \geq \text{R}_{d, s} &amp; \forall (d, s) \in \text{T}
+\sum_{w\in\text{ W}} a_{w, d, s} &amp; = \text{R}_{d, s} &amp; \forall (d, s) \in \text{T}
 \end{align*}
 \]</div>
 <ul class="simple">
@@ -757,7 +758,7 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
 <h2>Pyomo implementation<a class="headerlink" href="#pyomo-implementation" title="Link to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">shift_schedule</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">hours</span><span class="o">=</span><span class="mi">40</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">shift_schedule</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">hours</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">"Workforce Shift Scheduling"</span><span class="p">)</span>
 
     <span class="c1"># ordered set of avaiable workers</span>
@@ -789,6 +790,7 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
 
     <span class="c1"># max hours per week per worker</span>
     <span class="n">m</span><span class="o">.</span><span class="n">H</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">mutable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">hours</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">gamma</span><span class="p">,</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">PositiveReals</span><span class="p">)</span>
 
     <span class="c1"># decision variable: a[worker, day, shift] = 1 assigns worker to a time slot</span>
     <span class="n">m</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
@@ -830,14 +832,25 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">minimize_workers</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
-            <span class="n">i</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">n</span><span class="p">[</span><span class="n">worker</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">i</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">e</span><span class="p">[</span><span class="n">worker</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">worker</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">W</span><span class="p">)</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">n</span><span class="p">[</span><span class="n">worker</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">gamma</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">e</span><span class="p">[</span><span class="n">worker</span><span class="p">]</span> <span class="k">for</span> <span class="n">worker</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">W</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">shift_schedule</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span>
-<span class="n">_</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Workers used: </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">n</span><span class="p">[</span><span class="n">w</span><span class="p">]()</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">m</span><span class="o">.</span><span class="n">W</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Weekend workers: </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">e</span><span class="p">[</span><span class="n">w</span><span class="p">]()</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">m</span><span class="o">.</span><span class="n">W</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Objective: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">minimize_workers</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Workers used: 7
+Weekend workers: 5
+Objective: 7.50
 </pre></div>
 </div>
 </div>
@@ -846,6 +859,7 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
 <section id="visualizing-the-solution">
 <h2>Visualizing the solution<a class="headerlink" href="#visualizing-the-solution" title="Link to this heading">#</a></h2>
 <p>Scheduling applications generate a considerable amount of data to be used by the participants. The following cells demonstrate the preparation of charts and reports that can be used to communicate scheduling information to the store management and shift workers.</p>
+<p>The store needs 33 eight-hour assignments. Since each worker can cover at most five, at least seven workers are needed. Saturday alone needs five assignments, and the rest rule allows each worker at most one of Saturday’s three shifts, so at least five weekend workers are needed. A schedule reaching both lower bounds has objective <span class="math notranslate nohighlight">\(7+0.1\times5=7.5\)</span>, certifying optimality for this example. The schedule covers this one week; boundary conditions for a repeating weekly roster would need additional constraints.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
@@ -909,7 +923,7 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/0765f6d168b83e68020c89b9c5fa69bf5ec400cca57ace42835f8db71e420056.png" src="../../_images/0765f6d168b83e68020c89b9c5fa69bf5ec400cca57ace42835f8db71e420056.png" />
+<img alt="../../_images/37ecfcdad95b3b5f5be618b0e15d00ee5f4b03aadfafaf2305561dec567dbf9a.png" src="../../_images/37ecfcdad95b3b5f5be618b0e15d00ee5f4b03aadfafaf2305561dec567dbf9a.png" />
 </div>
 </div>
 </section>
@@ -924,7 +938,7 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
 <span class="n">schedule</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
-    <span class="p">[[</span><span class="n">w</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">W</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">w</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span><span class="p">]()],</span>
+    <span class="p">[[</span><span class="n">w</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">W</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">w</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">],</span>
     <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"worker"</span><span class="p">,</span> <span class="s2">"day"</span><span class="p">,</span> <span class="s2">"shift"</span><span class="p">],</span>
 <span class="p">)</span>
 
@@ -971,200 +985,200 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
   </thead>
   <tbody>
     <tr>
-      <th>23</th>
-      <td>W06</td>
+      <th>24</th>
+      <td>W08</td>
       <td>Mon</td>
       <td>morning</td>
     </tr>
     <tr>
       <th>28</th>
-      <td>W07</td>
+      <td>W09</td>
       <td>Mon</td>
       <td>morning</td>
     </tr>
     <tr>
       <th>9</th>
-      <td>W03</td>
+      <td>W04</td>
       <td>Mon</td>
       <td>evening</td>
     </tr>
     <tr>
-      <th>18</th>
+      <th>14</th>
       <td>W05</td>
       <td>Mon</td>
       <td>evening</td>
     </tr>
     <tr>
-      <th>13</th>
-      <td>W04</td>
+      <th>5</th>
+      <td>W02</td>
       <td>Mon</td>
       <td>night</td>
     </tr>
     <tr>
-      <th>24</th>
-      <td>W06</td>
+      <th>0</th>
+      <td>W01</td>
       <td>Tue</td>
       <td>morning</td>
     </tr>
     <tr>
       <th>29</th>
-      <td>W07</td>
+      <td>W09</td>
       <td>Tue</td>
       <td>morning</td>
     </tr>
     <tr>
-      <th>4</th>
-      <td>W02</td>
-      <td>Tue</td>
-      <td>evening</td>
-    </tr>
-    <tr>
       <th>10</th>
-      <td>W03</td>
+      <td>W04</td>
       <td>Tue</td>
       <td>evening</td>
     </tr>
     <tr>
-      <th>14</th>
-      <td>W04</td>
+      <th>19</th>
+      <td>W06</td>
+      <td>Tue</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>W05</td>
       <td>Tue</td>
       <td>night</td>
     </tr>
     <tr>
-      <th>19</th>
-      <td>W05</td>
+      <th>25</th>
+      <td>W08</td>
       <td>Wed</td>
       <td>morning</td>
     </tr>
     <tr>
       <th>30</th>
-      <td>W07</td>
+      <td>W09</td>
       <td>Wed</td>
       <td>morning</td>
     </tr>
     <tr>
-      <th>0</th>
+      <th>1</th>
       <td>W01</td>
       <td>Wed</td>
       <td>evening</td>
     </tr>
     <tr>
-      <th>25</th>
+      <th>20</th>
       <td>W06</td>
       <td>Wed</td>
       <td>evening</td>
     </tr>
     <tr>
-      <th>15</th>
-      <td>W04</td>
+      <th>6</th>
+      <td>W02</td>
       <td>Wed</td>
       <td>night</td>
     </tr>
     <tr>
-      <th>20</th>
-      <td>W05</td>
+      <th>26</th>
+      <td>W08</td>
       <td>Thu</td>
       <td>morning</td>
     </tr>
     <tr>
       <th>31</th>
-      <td>W07</td>
+      <td>W09</td>
       <td>Thu</td>
       <td>morning</td>
     </tr>
     <tr>
-      <th>5</th>
-      <td>W02</td>
+      <th>2</th>
+      <td>W01</td>
       <td>Thu</td>
       <td>evening</td>
     </tr>
     <tr>
-      <th>26</th>
+      <th>21</th>
       <td>W06</td>
       <td>Thu</td>
       <td>evening</td>
     </tr>
     <tr>
-      <th>1</th>
-      <td>W01</td>
+      <th>16</th>
+      <td>W05</td>
       <td>Thu</td>
       <td>night</td>
     </tr>
     <tr>
-      <th>16</th>
-      <td>W04</td>
-      <td>Fri</td>
-      <td>morning</td>
-    </tr>
-    <tr>
-      <th>21</th>
-      <td>W05</td>
-      <td>Fri</td>
-      <td>morning</td>
-    </tr>
-    <tr>
-      <th>6</th>
+      <th>7</th>
       <td>W02</td>
+      <td>Fri</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>W08</td>
+      <td>Fri</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>W01</td>
       <td>Fri</td>
       <td>evening</td>
     </tr>
     <tr>
       <th>32</th>
-      <td>W07</td>
+      <td>W09</td>
       <td>Fri</td>
       <td>evening</td>
     </tr>
     <tr>
-      <th>27</th>
-      <td>W06</td>
+      <th>11</th>
+      <td>W04</td>
       <td>Fri</td>
       <td>night</td>
     </tr>
     <tr>
-      <th>2</th>
-      <td>W01</td>
-      <td>Sat</td>
-      <td>morning</td>
-    </tr>
-    <tr>
-      <th>22</th>
+      <th>17</th>
       <td>W05</td>
       <td>Sat</td>
       <td>morning</td>
     </tr>
     <tr>
-      <th>7</th>
-      <td>W02</td>
+      <th>22</th>
+      <td>W06</td>
       <td>Sat</td>
-      <td>evening</td>
-    </tr>
-    <tr>
-      <th>17</th>
-      <td>W04</td>
-      <td>Sat</td>
-      <td>evening</td>
-    </tr>
-    <tr>
-      <th>11</th>
-      <td>W03</td>
-      <td>Sat</td>
-      <td>night</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>W01</td>
-      <td>Sun</td>
       <td>morning</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>W01</td>
+      <td>Sat</td>
+      <td>evening</td>
     </tr>
     <tr>
       <th>8</th>
       <td>W02</td>
-      <td>Sun</td>
+      <td>Sat</td>
       <td>evening</td>
     </tr>
     <tr>
       <th>12</th>
-      <td>W03</td>
+      <td>W04</td>
+      <td>Sat</td>
+      <td>night</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>W05</td>
+      <td>Sun</td>
+      <td>morning</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>W06</td>
+      <td>Sun</td>
+      <td>evening</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>W04</td>
       <td>Sun</td>
       <td>night</td>
     </tr>
@@ -1182,7 +1196,7 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
 <span class="n">schedule</span> <span class="o">=</span> <span class="n">schedule</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">"worker"</span><span class="p">,</span> <span class="s2">"day"</span><span class="p">,</span> <span class="s2">"shift"</span><span class="p">])</span>
 
 <span class="c1"># print worker schedules</span>
-<span class="k">for</span> <span class="n">worker</span><span class="p">,</span> <span class="n">worker_schedule</span> <span class="ow">in</span> <span class="n">schedule</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"worker"</span><span class="p">):</span>
+<span class="k">for</span> <span class="n">worker</span><span class="p">,</span> <span class="n">worker_schedule</span> <span class="ow">in</span> <span class="n">schedule</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"worker"</span><span class="p">,</span> <span class="n">observed</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Work schedule for </span><span class="si">{</span><span class="n">worker</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">worker_schedule</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">worker_schedule</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">):</span>
@@ -1195,63 +1209,63 @@ a_{w, d_1,s_1} + a_{w, d_2, s_2} + a_{w, d_3, s_3} \leq 1 \qquad &amp; \forall w
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Work schedule for W01
 worker day   shift
+   W01 Tue morning
    W01 Wed evening
-   W01 Thu   night
-   W01 Sat morning
-   W01 Sun morning
+   W01 Thu evening
+   W01 Fri evening
+   W01 Sat evening
 
 Work schedule for W02
 worker day   shift
-   W02 Tue evening
-   W02 Thu evening
-   W02 Fri evening
+   W02 Mon   night
+   W02 Wed   night
+   W02 Fri morning
    W02 Sat evening
-   W02 Sun evening
 
 Work schedule for W03
-worker day   shift
-   W03 Mon evening
-   W03 Tue evening
-   W03 Sat   night
-   W03 Sun   night
+   no assigned shifts
 
 Work schedule for W04
 worker day   shift
-   W04 Mon   night
-   W04 Tue   night
-   W04 Wed   night
-   W04 Fri morning
-   W04 Sat evening
+   W04 Mon evening
+   W04 Tue evening
+   W04 Fri   night
+   W04 Sat   night
+   W04 Sun   night
 
 Work schedule for W05
 worker day   shift
    W05 Mon evening
-   W05 Wed morning
-   W05 Thu morning
-   W05 Fri morning
+   W05 Tue   night
+   W05 Thu   night
    W05 Sat morning
+   W05 Sun morning
 
 Work schedule for W06
 worker day   shift
-   W06 Mon morning
-   W06 Tue morning
+   W06 Tue evening
    W06 Wed evening
    W06 Thu evening
-   W06 Fri   night
+   W06 Sat morning
+   W06 Sun evening
 
 Work schedule for W07
-worker day   shift
-   W07 Mon morning
-   W07 Tue morning
-   W07 Wed morning
-   W07 Thu morning
-   W07 Fri evening
+   no assigned shifts
 
 Work schedule for W08
-   no assigned shifts
+worker day   shift
+   W08 Mon morning
+   W08 Wed morning
+   W08 Thu morning
+   W08 Fri morning
 
 Work schedule for W09
-   no assigned shifts
+worker day   shift
+   W09 Mon morning
+   W09 Tue morning
+   W09 Wed morning
+   W09 Thu morning
+   W09 Fri evening
 
 Work schedule for W10
    no assigned shifts
@@ -1268,49 +1282,49 @@ Work schedule for W10
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># sort by day, shift, worker</span>
 <span class="n">schedule</span> <span class="o">=</span> <span class="n">schedule</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">"day"</span><span class="p">,</span> <span class="s2">"shift"</span><span class="p">,</span> <span class="s2">"worker"</span><span class="p">])</span>
 
-<span class="k">for</span> <span class="n">day</span><span class="p">,</span> <span class="n">day_schedule</span> <span class="ow">in</span> <span class="n">schedule</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"day"</span><span class="p">):</span>
+<span class="k">for</span> <span class="n">day</span><span class="p">,</span> <span class="n">day_schedule</span> <span class="ow">in</span> <span class="n">schedule</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"day"</span><span class="p">,</span> <span class="n">observed</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Shift schedule for </span><span class="si">{</span><span class="n">day</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">shift</span><span class="p">,</span> <span class="n">shift_schedule</span> <span class="ow">in</span> <span class="n">day_schedule</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"shift"</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">shift</span><span class="p">,</span> <span class="n">shift_rows</span> <span class="ow">in</span> <span class="n">day_schedule</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"shift"</span><span class="p">,</span> <span class="n">observed</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"   </span><span class="si">{</span><span class="n">shift</span><span class="si">}</span><span class="s2"> shift: "</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">worker</span> <span class="k">for</span> <span class="n">worker</span> <span class="ow">in</span> <span class="n">shift_schedule</span><span class="p">[</span><span class="s2">"worker"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">worker</span> <span class="k">for</span> <span class="n">worker</span> <span class="ow">in</span> <span class="n">shift_rows</span><span class="p">[</span><span class="s2">"worker"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">]))</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Shift schedule for Mon
-   morning shift: W06, W07
-   evening shift: W03, W05
-   night shift: W04
+   morning shift: W08, W09
+   evening shift: W04, W05
+   night shift: W02
 
 Shift schedule for Tue
-   morning shift: W06, W07
-   evening shift: W02, W03
-   night shift: W04
+   morning shift: W01, W09
+   evening shift: W04, W06
+   night shift: W05
 
 Shift schedule for Wed
-   morning shift: W05, W07
+   morning shift: W08, W09
    evening shift: W01, W06
-   night shift: W04
+   night shift: W02
 
 Shift schedule for Thu
-   morning shift: W05, W07
-   evening shift: W02, W06
-   night shift: W01
+   morning shift: W08, W09
+   evening shift: W01, W06
+   night shift: W05
 
 Shift schedule for Fri
-   morning shift: W04, W05
-   evening shift: W02, W07
-   night shift: W06
+   morning shift: W02, W08
+   evening shift: W01, W09
+   night shift: W04
 
 Shift schedule for Sat
-   morning shift: W01, W05
-   evening shift: W02, W04
-   night shift: W03
+   morning shift: W05, W06
+   evening shift: W01, W02
+   night shift: W04
 
 Shift schedule for Sun
-   morning shift: W01
-   evening shift: W02
-   night shift: W03
+   morning shift: W05
+   evening shift: W06
+   night shift: W04
 </pre></div>
 </div>
 </div>
