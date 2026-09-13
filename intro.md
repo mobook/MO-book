@@ -28,7 +28,7 @@ We are a group of researchers and educators who came together with a common purp
 
 - Krzysztof Postek, Boston Consulting Group (formerly TU Delft)
 - Alessandro Zocca, VU Amsterdam
-- Joaquim Gromicho, ORTEC and the University of Amsterdam
+- Joaquim Gromicho, University of Amsterdam
 - Jeffrey Kantor, University of Notre Dame
 
 ## Citation
