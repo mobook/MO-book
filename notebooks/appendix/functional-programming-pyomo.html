@@ -582,7 +582,7 @@
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-pyomo-monad">A Pyomo monad</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#import-pyomo-and-solvers">Import Pyomo and solvers</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#wrapping-pyomo-solvers-and-transformations-as-pure-functions">Wrapping Pyomo solvers and transformations as “pure” functions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#wrapping-pyomo-solvers-and-transformations-as-functions">Wrapping Pyomo solvers and transformations as functions</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomomonad"><strong>PyomoMonad</strong></a></li>
 </ul>
 </li>
@@ -592,7 +592,7 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#mathematical-model">Mathematical model</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model-builder">Pyomo model builder</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#executing-a-workflow">Executing a workflow</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#alterntive-syntax">Alterntive syntax</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#alternative-syntax">Alternative syntax</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#composition">Composition</a></li>
 </ul>
 </li>
@@ -792,7 +792,7 @@ GET OFF MY LAWN!
 </section>
 <section id="the-maybe-monad">
 <h3>The <strong>Maybe</strong> monad<a class="headerlink" href="#the-maybe-monad" title="Link to this heading">#</a></h3>
-<p>The following cell shows a Python implementation for a <strong>Maybe</strong> monad. The <strong>Maybe</strong> monad wraps a value the may contain a value. If the result of bind produces an error, the value stored is <code class="docutils literal notranslate"><span class="pre">None</span></code> and a flag is set.</p>
+<p>The following cell implements a simple <strong>Maybe</strong> container for a value that may or may not be present. A successful <code class="docutils literal notranslate"><span class="pre">bind</span></code> wraps the function’s result. If the function raises an exception, <code class="docutils literal notranslate"><span class="pre">bind</span></code> returns a container with <code class="docutils literal notranslate"><span class="pre">value=None</span></code> and <code class="docutils literal notranslate"><span class="pre">contains_value=False</span></code>; later binds pass that failure along without calling their functions. The flag distinguishes a missing value from a successful function that happens to return <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">Maybe</span><span class="p">:</span>
@@ -808,7 +808,7 @@ GET OFF MY LAWN!
             <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">Maybe</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 
-        <span class="k">except</span><span class="p">:</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">Maybe</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -909,35 +909,36 @@ GET OFF MY LAWN!
 </section>
 <section id="a-pyomo-monad">
 <h2>A Pyomo monad<a class="headerlink" href="#a-pyomo-monad" title="Link to this heading">#</a></h2>
-<p>In brief, a monad is a structure that wraps a value inside an object so that it can be passed through a series of functions.</p>
-<p>The functions are assumed to be stateless and without side effect. In other words, given the same input the functions will always the same output. The purpose of the monad is handle situations where a function results in</p>
-<p>for restricting access to a value. The reasons for restricting access are specific to the application. For Pyomo models, for example,</p>
+<p>We can use the same idea to organize a Pyomo workflow. A container holds a model, a status and an optional reporting function. Each <code class="docutils literal notranslate"><span class="pre">bind</span></code> applies one step to the current model and wraps the result. If a step raises an exception, the container records it and skips subsequent steps, so an unsuccessful solve does not flow into a report that expects solution values.</p>
+<p>The implementation has three parts:</p>
 <ul class="simple">
-<li><p>spe that are specific to the scenario. In Pyomo, for example, we ca</p></li>
+<li><p>Solver and transformation wrappers clone the input model before changing it. This leaves the caller’s model intact and makes it easier to reuse the same starting point in several workflows.</p></li>
+<li><p><strong>PyomoMonad</strong> connects these steps and carries the first exception in its <code class="docutils literal notranslate"><span class="pre">status</span></code>. A failed workflow displays that exception when called.</p></li>
+<li><p>Model builders return a <strong>PyomoMonad</strong> with an optional <em>effect</em>: a function that produces a report or plot from the resulting model. Binding performs the model operations; calling the container executes the effect, or returns the model when no effect is supplied.</p></li>
 </ul>
-<p>This first implementation of a Pyomo monad comprises three elements:</p>
-<ul class="simple">
-<li><p>Wrapping Pyomo solvers and transformers as functions. The solvers and transfers clone the model to avoid changes in the state of the model that is passed by reference.</p></li>
-<li><p>A <strong>PyomoMonad</strong> with a unit and bind functions. The monad will “lift” the Pyomo model by adding attributes for status and an effect. The effect is what will executed when the monad is executed.</p></li>
-<li><p>Pyomo models are created by model builders that take problem data and produce a Pyomo model encapsulated in a <strong>PyomoMonad</strong>. The monad can include an optional effect. The effect should produce any desired side effects, such as plots or reports written to files, and return any desired output from the model. The effect is called by call the monad.</p></li>
-</ul>
+<p>Cloning controls mutation of the input model, but does not make a solver mathematically pure: results can depend on solver settings and numerical tolerances, and an external solver may write logs or files. Error capture here covers the bound model-processing steps; an exception raised by the final reporting effect propagates normally.</p>
 <section id="import-pyomo-and-solvers">
 <h3>Import Pyomo and solvers<a class="headerlink" href="#import-pyomo-and-solvers" title="Link to this heading">#</a></h3>
+<p>The examples use the open-source solvers CBC and Ipopt. On Colab we install them through IDAES and add the downloaded binaries to the current session’s search path. For a local run, install Pyomo and make both solver executables available first. The wrapper below checks the selected solver when a workflow uses it.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># for use on Google Colab</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span>
+
 <span class="k">if</span> <span class="s2">"google.colab"</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>-q<span class="w"> </span>idaes-pse
-    <span class="o">!</span>idaes<span class="w"> </span>get-extensions
+    <span class="o">%</span><span class="k">pip</span> install -q pyomo idaes-pse
+    <span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"PATH"</span><span class="p">]</span> <span class="o">+=</span> <span class="n">os</span><span class="o">.</span><span class="n">pathsep</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s2">"bin"</span><span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.environ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyo</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 </pre></div>
 </div>
 </div>
 </div>
 </section>
-<section id="wrapping-pyomo-solvers-and-transformations-as-pure-functions">
-<h3>Wrapping Pyomo solvers and transformations as “pure” functions<a class="headerlink" href="#wrapping-pyomo-solvers-and-transformations-as-pure-functions" title="Link to this heading">#</a></h3>
-<p>Create some “pure” functions for processing Pyomo models. These are</p>
+<section id="wrapping-pyomo-solvers-and-transformations-as-functions">
+<h3>Wrapping Pyomo solvers and transformations as functions<a class="headerlink" href="#wrapping-pyomo-solvers-and-transformations-as-functions" title="Link to this heading">#</a></h3>
+<p>Each wrapper returns a function that accepts a model, clones it, applies the requested operation and returns the clone. With no operation specified, it returns an unchanged clone. The solver wrapper also checks termination before returning a solution; otherwise, the monad captures the failure instead of passing an unsuccessful result to the next step.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># given a string specification, returns a solver created by pyomo.SolverFactory</span>
@@ -947,7 +948,11 @@ GET OFF MY LAWN!
     <span class="k">else</span><span class="p">:</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">_solver</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
             <span class="n">new_model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
-            <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">new_model</span><span class="p">)</span>
+            <span class="n">selected_solver</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">selected_solver</span><span class="o">.</span><span class="n">available</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Solver </span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2"> is not available."</span><span class="p">)</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">selected_solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">new_model</span><span class="p">)</span>
+            <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">new_model</span>
     <span class="k">return</span> <span class="n">_solver</span>
 </pre></div>
@@ -973,7 +978,7 @@ GET OFF MY LAWN!
 </section>
 <section id="pyomomonad">
 <h3><strong>PyomoMonad</strong><a class="headerlink" href="#pyomomonad" title="Link to this heading">#</a></h3>
-<p>The an implementation of a simple Pyomo monad. The monad can bind a functions that operates on a model object. A bound function must return a model object. Errors are captured and added to the status. An effect can be specified that will be the returned by the monad when called as a function. The “&gt;&gt;” operator is overridden to provide a little syntax sugar for representing workflows.</p>
+<p>This class binds functions that accept and return a model. It preserves the reporting effect after a successful step and records the exception after a failed step. Once an error is recorded, later steps are skipped. Calling a successful container runs its effect or returns its model; calling a failed one prints the captured exception. The <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code> operator is overloaded as a compact alternative to <code class="docutils literal notranslate"><span class="pre">.bind(...)</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">PyomoMonad</span><span class="p">:</span>
@@ -1015,7 +1020,7 @@ GET OFF MY LAWN!
             <span class="k">return</span> <span class="n">PyomoMonad</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">effect</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">PyomoMonad</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">value</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="p">),</span> <span class="n">status</span><span class="o">=</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">PyomoMonad</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">value</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">e</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="n">status</span><span class="o">=</span><span class="n">e</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Execute the monad by calling its effect if it exists, or return its value.</span>
@@ -1068,11 +1073,7 @@ GET OFF MY LAWN!
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.environ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyo</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">production_model</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="n">resources</span><span class="p">,</span> <span class="n">processes</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">production_model</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="n">resources</span><span class="p">,</span> <span class="n">processes</span><span class="p">):</span>
 
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
 
@@ -1084,8 +1085,8 @@ GET OFF MY LAWN!
     <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">products</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s2">"demand"</span><span class="p">]))</span>
 
     <span class="c1"># create expressions</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">revenue</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">products</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s1">'price'</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">resources</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="s1">'price'</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">revenue</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">products</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="s1">'price'</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">resources</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="s1">'price'</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">))</span>
 
     <span class="c1"># create objective</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
@@ -1168,11 +1169,11 @@ t_f &amp; = \arg \max_t\  b(t) \\
 &amp; \max\  b(1) \\
 \\
 \text{s.t.}\quad&amp; \frac{da}{dt'} = - t_f k_1 a &amp; a(0) = 1\\
-&amp; \frac{db}{dt'} = t_ff k_1 a - t_f k_2 b &amp; b(0) = 0 \\
+&amp; \frac{db}{dt'} = t_f k_1 a - t_f k_2 b &amp; b(0) = 0 \\
 &amp; t_f \geq 0
 \end{align*}
 \end{split}\]</div>
-<p>where <span class="math notranslate nohighlight">\(t_f\)</span> is now embedded as a parameter within the model, and the integration is now over a fixed interval <span class="math notranslate nohighlight">\(t' \in [0, 1]\)</span>.</p>
+<p>where <span class="math notranslate nohighlight">\(t_f\)</span> is now embedded as a decision variable within the model, and the integration is now over a fixed interval <span class="math notranslate nohighlight">\(t' \in [0, 1]\)</span>.</p>
 </section>
 <section id="pyomo-model-builder">
 <h3>Pyomo model builder<a class="headerlink" href="#pyomo-model-builder" title="Link to this heading">#</a></h3>
@@ -1244,12 +1245,12 @@ t_f &amp; = \arg \max_t\  b(t) \\
 b(tf) = 0.669
 </pre></div>
 </div>
-<img alt="../../_images/e9319d18cc4fca0e7f64fc887b40a9dbc7e7ac5d0d51325c27f69589ee1ee329.png" src="../../_images/e9319d18cc4fca0e7f64fc887b40a9dbc7e7ac5d0d51325c27f69589ee1ee329.png" />
+<img alt="../../_images/7d989165352c13b6366e817bc9a6f13d508d62e4701d87b742962d48a9b35f10.png" src="../../_images/7d989165352c13b6366e817bc9a6f13d508d62e4701d87b742962d48a9b35f10.png" />
 </div>
 </div>
 </section>
-<section id="alterntive-syntax">
-<h3>Alterntive syntax<a class="headerlink" href="#alterntive-syntax" title="Link to this heading">#</a></h3>
+<section id="alternative-syntax">
+<h3>Alternative syntax<a class="headerlink" href="#alternative-syntax" title="Link to this heading">#</a></h3>
 <p>Show how the workflow functions can be composed into a single operation.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1261,10 +1262,10 @@ b(tf) = 0.669
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(0.15767005981401438, 0.8541314382648219)
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(0.15767005981401444, 0.8541314382648227)
 </pre></div>
 </div>
-<img alt="../../_images/66a2d46fef998227b0a4849e00748dda6eeb39ed3a5e6f77fe8fca0f62199d84.png" src="../../_images/66a2d46fef998227b0a4849e00748dda6eeb39ed3a5e6f77fe8fca0f62199d84.png" />
+<img alt="../../_images/827fe38238f879b6a4f65443a4c5046fc84942c367b329c9cdfe1b93de7fd5dc.png" src="../../_images/827fe38238f879b6a4f65443a4c5046fc84942c367b329c9cdfe1b93de7fd5dc.png" />
 </div>
 </div>
 </section>
@@ -1280,10 +1281,10 @@ b(tf) = 0.669
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(4.023594361612317, 0.6687402900841761)
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(4.023594361612316, 0.6687402900841761)
 </pre></div>
 </div>
-<img alt="../../_images/e9319d18cc4fca0e7f64fc887b40a9dbc7e7ac5d0d51325c27f69589ee1ee329.png" src="../../_images/e9319d18cc4fca0e7f64fc887b40a9dbc7e7ac5d0d51325c27f69589ee1ee329.png" />
+<img alt="../../_images/7d989165352c13b6366e817bc9a6f13d508d62e4701d87b742962d48a9b35f10.png" src="../../_images/7d989165352c13b6366e817bc9a6f13d508d62e4701d87b742962d48a9b35f10.png" />
 </div>
 </div>
 </section>
@@ -1367,7 +1368,7 @@ b(tf) = 0.669
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-pyomo-monad">A Pyomo monad</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#import-pyomo-and-solvers">Import Pyomo and solvers</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#wrapping-pyomo-solvers-and-transformations-as-pure-functions">Wrapping Pyomo solvers and transformations as “pure” functions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#wrapping-pyomo-solvers-and-transformations-as-functions">Wrapping Pyomo solvers and transformations as functions</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomomonad"><strong>PyomoMonad</strong></a></li>
 </ul>
 </li>
@@ -1377,7 +1378,7 @@ b(tf) = 0.669
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#mathematical-model">Mathematical model</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-model-builder">Pyomo model builder</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#executing-a-workflow">Executing a workflow</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#alterntive-syntax">Alterntive syntax</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#alternative-syntax">Alternative syntax</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#composition">Composition</a></li>
 </ul>
 </li>
