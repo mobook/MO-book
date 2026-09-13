@@ -601,18 +601,17 @@
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span>
 
-<span class="k">if</span> <span class="s1">'google.colab'</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">%</span><span class="k">pip</span> install idaes-pse --pre &gt;/dev/null 2&gt;/dev/null
-    <span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin<span class="w"> </span>
-    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'PATH'</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">':bin'</span>
+<span class="k">if</span> <span class="s2">"google.colab"</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">%</span><span class="k">pip</span> install -q pyomo idaes-pse yfinance
+    <span class="o">!</span>idaes<span class="w"> </span>get-extensions<span class="w"> </span>--to<span class="w"> </span>./bin
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"PATH"</span><span class="p">]</span> <span class="o">+=</span> <span class="n">os</span><span class="o">.</span><span class="n">pathsep</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s2">"bin"</span><span class="p">)</span>
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">"ipopt"</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">"mosek_direct"</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.kernel</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pmo</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.environ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyo</span> 
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.environ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyo</span>
 <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
-
 <span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">"Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available."</span>
 </pre></div>
 </div>
@@ -622,14 +621,8 @@
 <h2>Financial Data<a class="headerlink" href="#financial-data" title="Link to this heading">#</a></h2>
 <p>We begin by reading historical prices for a selected set of trading symbols using <a class="reference external" href="https://github.com/ranaroussi/yfinance">yfinance</a>.</p>
 <p>While it would be interesting to include an international selection of financial indices and assets, differences in trading and bank holidays would involve more elaborate coding. For that reason, the following cell has been restricted to indices and assets trading in U.S. markets.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># run this cell to install yfinance</span>
-<span class="o">!</span>pip<span class="w"> </span>install<span class="w"> </span>yfinance<span class="w"> </span>--upgrade<span class="w"> </span>-q
-</pre></div>
-</div>
-</div>
-</div>
+<p>For the saved example we use 1 January 2023 through 31 December 2025; the download’s end date is exclusive. Set <code class="docutils literal notranslate"><span class="pre">USE_CURRENT_WINDOW</span></code> to true to use the most recent three years instead. These are in-sample portfolio calculations, not an out-of-sample performance test. Even for fixed dates, adjusted historical prices can change at the provider.</p>
+<p>We request <code class="docutils literal notranslate"><span class="pre">Adj</span> <span class="pre">Close</span></code> explicitly with <code class="docutils literal notranslate"><span class="pre">auto_adjust=False</span></code>, validate every requested series, and stop on missing or invalid prices rather than filling gaps or silently dropping dates. The download remains in memory and its provenance is printed below. Install <code class="docutils literal notranslate"><span class="pre">yfinance</span></code> locally with <code class="docutils literal notranslate"><span class="pre">%pip</span> <span class="pre">install</span> <span class="pre">yfinance</span></code> if needed; the Colab preamble installs it automatically.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
@@ -638,7 +631,59 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">yfinance</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">yf</span>
 
-<span class="c1"># symbols as used by Yahoo Finance</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_prices</span><span class="p">(</span><span class="n">prices</span><span class="p">,</span> <span class="n">tickers</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">min_observations</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Check the common price table before calculating returns; never fill gaps."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">tickers</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">tickers</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">tickers</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Request a nonempty list of distinct tickers."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prices</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="ow">or</span> <span class="n">prices</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"No prices returned. Check the dates, tickers and connection."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">prices</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">has_duplicates</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"The price table has duplicate ticker columns."</span><span class="p">)</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">tickers</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">prices</span><span class="o">.</span><span class="n">columns</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Missing requested tickers: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">)</span> <span class="ow">or</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">hasnans</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Prices need valid trading dates as a DatetimeIndex."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">has_duplicates</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">is_monotonic_increasing</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Trading dates must be unique and in increasing order."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tz</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Use daily trading dates without a time zone."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+            <span class="o">&lt;=</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">end</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Prices fall outside the requested [start, end) window."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">prices</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">min_observations</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Need at least </span><span class="si">{</span><span class="n">min_observations</span><span class="si">}</span><span class="s2"> price observations; "</span>
+                         <span class="sa">f</span><span class="s2">"received </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">prices</span><span class="p">)</span><span class="si">}</span><span class="s2">. Choose a longer window."</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">prices</span> <span class="o">=</span> <span class="n">prices</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">tickers</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Every requested price must be numeric."</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+    <span class="n">invalid</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">prices</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">prices</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">invalid</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">invalid</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">dates</span> <span class="o">=</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">invalid</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">'%Y-%m-</span><span class="si">%d</span><span class="s1">'</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Missing or invalid prices by ticker: "</span>
+                         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">counts</span><span class="p">[</span><span class="n">counts</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="si">}</span><span class="s2">; "</span>
+                         <span class="sa">f</span><span class="s2">"first affected dates: </span><span class="si">{</span><span class="n">dates</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s2">. No gaps were filled."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">prices</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">download_prices</span><span class="p">(</span><span class="n">tickers</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Download adjusted closes into memory and validate the result."""</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="n">yf</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">tickers</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">auto_adjust</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">keepna</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">threads</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">group_by</span><span class="o">=</span><span class="s1">'column'</span><span class="p">,</span> <span class="n">multi_level_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">raw</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">raw</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="s1">'Adj Close'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">raw</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"No adjusted closing prices returned. Check the "</span>
+                         <span class="s2">"connection, dates and tickers, then retry."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">validate_prices</span><span class="p">(</span><span class="n">raw</span><span class="p">[</span><span class="s1">'Adj Close'</span><span class="p">],</span> <span class="n">tickers</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># symbols as used by Yahoo Finance</span>
 <span class="n">symbols</span> <span class="o">=</span> <span class="p">{</span>
     <span class="c1"># selected indices</span>
     <span class="s2">"^GSPC"</span><span class="p">:</span> <span class="s2">"S&amp;P 500"</span><span class="p">,</span>
@@ -654,34 +699,39 @@
     <span class="s2">"CVX"</span><span class="p">:</span> <span class="s2">"Chevron"</span><span class="p">,</span>
     <span class="s2">"JPM"</span><span class="p">:</span> <span class="s2">"JPMorgan Chase"</span><span class="p">,</span>
     <span class="s2">"MCD"</span><span class="p">:</span> <span class="s2">"McDonald's"</span><span class="p">,</span>
-    <span class="s2">"MMM"</span><span class="p">:</span> <span class="s2">"3 M"</span><span class="p">,</span>
+    <span class="s2">"MMM"</span><span class="p">:</span> <span class="s2">"3M"</span><span class="p">,</span>
     <span class="s2">"MSFT"</span><span class="p">:</span> <span class="s2">"Microsoft"</span><span class="p">,</span>
-    <span class="s2">"PG"</span><span class="p">:</span> <span class="s2">"Proctor &amp; Gamble"</span><span class="p">,</span>
+    <span class="s2">"PG"</span><span class="p">:</span> <span class="s2">"Procter &amp; Gamble"</span><span class="p">,</span>
     <span class="s2">"XOM"</span><span class="p">:</span> <span class="s2">"ExxonMobil"</span><span class="p">,</span>
 <span class="p">}</span>
 
-<span class="c1"># years of testing and training data</span>
-<span class="n">n_test</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">n_train</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">USE_CURRENT_WINDOW</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2023</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2026</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">USE_CURRENT_WINDOW</span><span class="p">:</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">3</span> <span class="o">*</span> <span class="mi">365</span><span class="p">)</span>
 
-<span class="c1"># get today's date</span>
-<span class="n">today</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+<span class="n">S</span> <span class="o">=</span> <span class="n">download_prices</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">symbols</span><span class="p">),</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+<span class="n">retrieved_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="n">timespec</span><span class="o">=</span><span class="s2">"seconds"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Yahoo Finance via yfinance </span><span class="si">{</span><span class="n">yf</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">; retrieved </span><span class="si">{</span><span class="n">retrieved_at</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Requested window: </span><span class="si">{</span><span class="n">start</span><span class="si">}</span><span class="s2"> &lt;= date &lt; </span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Returned window: </span><span class="si">{</span><span class="n">S</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">date</span><span class="p">()</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">S</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">date</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Series (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Price field: Adj Close; auto_adjust=False; no missing prices filled or removed"</span><span class="p">)</span>
 
-<span class="c1"># training data dates</span>
-<span class="n">end</span> <span class="o">=</span> <span class="n">today</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">n_test</span> <span class="o">*</span> <span class="mi">365</span><span class="p">))</span>
-<span class="n">start</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="nb">int</span><span class="p">((</span><span class="n">n_test</span> <span class="o">+</span> <span class="n">n_train</span><span class="p">)</span> <span class="o">*</span> <span class="mi">365</span><span class="p">))</span>
-
-<span class="c1"># get training data</span>
-<span class="n">S</span> <span class="o">=</span> <span class="n">yf</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">symbols</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">)[</span><span class="s2">"Adj Close"</span><span class="p">]</span>
-
-<span class="c1"># compute gross returns</span>
-<span class="n">R</span> <span class="o">=</span> <span class="n">S</span> <span class="o">/</span> <span class="n">S</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">R</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># The first date has no preceding observation; all subsequent gross returns are retained.</span>
+<span class="n">R</span> <span class="o">=</span> <span class="p">(</span><span class="n">S</span> <span class="o">/</span> <span class="n">S</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Observations: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">S</span><span class="p">)</span><span class="si">}</span><span class="s2"> prices and </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">R</span><span class="p">)</span><span class="si">}</span><span class="s2"> gross returns per series"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[*********************100%%**********************]  16 of 16 completed
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Yahoo Finance via yfinance 1.7.0; retrieved 2026-09-13T17:28:09+00:00
+Requested window: 2023-01-01 &lt;= date &lt; 2026-01-01
+Returned window: 2023-01-03 to 2025-12-31
+Series (16): ^GSPC, ^IXIC, ^DJI, ^RUT, AXP, AMGN, AAPL, BA, CAT, CVX, JPM, MCD, MMM, MSFT, PG, XOM
+Price field: Adj Close; auto_adjust=False; no missing prices filled or removed
+Observations: 752 prices and 751 gross returns per series
 </pre></div>
 </div>
 </div>
@@ -698,7 +748,7 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/cbb574c8ecff7fb561411dd726d16f6c82b0fbeff2d759cb61443d99bccf9f17.png" src="../../_images/cbb574c8ecff7fb561411dd726d16f6c82b0fbeff2d759cb61443d99bccf9f17.png" />
+<img alt="../../_images/a93a4dc20d3b1c6c1e3ed63f9403a0d25f30bb1265048800805cf7d1ff151add.png" src="../../_images/a93a4dc20d3b1c6c1e3ed63f9403a0d25f30bb1265048800805cf7d1ff151add.png" />
 </div>
 </div>
 </section>
@@ -749,7 +799,7 @@
 \max_{w_n, q_t, u_t}\quad &amp; \frac{1}{T} \sum_{t\in T} q_t \\
 \text{s.t.}\quad 
 &amp; \frac{1}{T} \sum_{t\in T} u_t \leq R_f^{-\lambda} \\
-&amp; (u_t, 1, \lambda q_t) \in K_{exp} &amp; \forall t\in T \\
+&amp; (u_t, 1, -\lambda q_t) \in K_{exp} &amp; \forall t\in T \\
 &amp; (R_f + \sum_{n\in N}w_n (R_{t,n} - R_f), 1, q_t) \in K_{exp} &amp; \forall t \in T \\
 &amp; \sum_{n\in N} w_n \leq E_M \\
 &amp; w_n \geq 0 &amp; \forall n \in N \\
@@ -805,14 +855,15 @@
     <span class="c1"># equity multiplier constraint</span>
     <span class="n">m</span><span class="o">.</span><span class="n">w_sum</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">EM</span><span class="p">)</span>
 
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">kelly_report</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
     <span class="n">s</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"""</span>
-<span class="s2">Risk Free Return = </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">252</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Rf</span><span class="p">))</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">:</span><span class="s2">0.2f</span><span class="si">}</span>
+<span class="s2">Risk Free Return = </span><span class="si">{</span><span class="mi">100</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">252</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Rf</span><span class="p">))</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="si">:</span><span class="s2">0.2f</span><span class="si">}</span><span class="s2"> %</span>
 <span class="s2">Equity Multiplier Limit = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">EM</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span>
 <span class="s2">Risk Aversion = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">lambd</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span>
 
@@ -829,7 +880,7 @@
     <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="n">m</span><span class="o">.</span><span class="n">R</span><span class="p">[</span><span class="n">t</span><span class="p">]()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">]),</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"Kelly Portfolio"</span><span class="p">])</span>
     <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span>
 
-    <span class="n">fix</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
     <span class="n">S</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
         <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">logy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Normalized Prices"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.4</span>
     <span class="p">)</span>
@@ -848,7 +899,7 @@
 
 
 <span class="c1"># parameter values</span>
-<span class="n">Rf</span> <span class="o">=</span> <span class="n">Rf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="mi">252</span><span class="p">)</span>
+<span class="n">Rf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="mi">252</span><span class="p">)</span>
 <span class="n">EM</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="n">lambd</span> <span class="o">=</span> <span class="mi">10</span>
 
@@ -858,52 +909,52 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Risk Free Return = 0.00
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Risk Free Return = 0.00 %
 Equity Multiplier Limit = 1.00000
 Risk Aversion = 10.00000
 
 Portfolio
-AAPL     Apple                   44.79 %
-AMGN     Amgen                    0.00 %
-AXP      American Express         0.00 %
-BA       Boeing                   0.00 %
-CAT      Caterpillar              0.00 %
-CVX      Chevron                  0.00 %
-JPM      JPMorgan Chase           0.00 %
-MCD      McDonald's               0.00 %
-MMM      3 M                      0.00 %
-MSFT     Microsoft                0.00 %
-PG       Proctor &amp; Gamble         0.00 %
-XOM      ExxonMobil              17.49 %
-^DJI     Dow Jones Industrial     0.00 %
 ^GSPC    S&amp;P 500                  0.00 %
 ^IXIC    Nasdaq                   0.00 %
+^DJI     Dow Jones Industrial     0.00 %
 ^RUT     Russell 2000             0.00 %
-         Risk Free               37.72 %
+AXP      American Express        49.52 %
+AMGN     Amgen                    0.00 %
+AAPL     Apple                    0.00 %
+BA       Boeing                   0.00 %
+CAT      Caterpillar             26.62 %
+CVX      Chevron                  0.00 %
+JPM      JPMorgan Chase          23.86 %
+MCD      McDonald's               0.00 %
+MMM      3M                       0.00 %
+MSFT     Microsoft                0.00 %
+PG       Procter &amp; Gamble         0.00 %
+XOM      ExxonMobil               0.00 %
+         Risk Free                0.00 %
 
-Annualized return = 21.49 %
+Annualized return = 38.73 %
 
-2022-10-21 00:00:00 
+2025-12-31 00:00:00 
 
-AAPL  247.190366
-AMGN  135.564623
-AXP   125.480615
-BA    41.500638
-CAT   152.966799
-CVX   170.056351
-JPM   107.132849
-MCD   139.303171
-MMM   80.247408
-MSFT  178.071398
-PG    110.924581
-XOM   183.324833
-^DJI  115.955780
-^GSPC 124.664067
-^IXIC 132.665347
-^RUT  112.512189
+^GSPC 179.007573
+^IXIC 223.760797
+^DJI  145.046930
+^RUT  141.764289
+AXP   261.017809
+AMGN  137.681482
+AAPL  220.645511
+BA    111.121345
+CAT   252.404372
+CVX   99.362889
+JPM   256.764929
+MCD   123.932307
+MMM   174.786039
+MSFT  206.687876
+PG    101.989499
+XOM   125.262423
 </pre></div>
 </div>
-<img alt="../../_images/419aa1084b1b8a0007ef4cfd0f3ca3b2bf851eacd3788844269879b46f3fbe5c.png" src="../../_images/419aa1084b1b8a0007ef4cfd0f3ca3b2bf851eacd3788844269879b46f3fbe5c.png" />
+<img alt="../../_images/57be3abf60ab0c0991a3d305ada173b0814599b233d5d81b19552d5a54643cfb.png" src="../../_images/57be3abf60ab0c0991a3d305ada173b0814599b233d5d81b19552d5a54643cfb.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -930,10 +981,14 @@ XOM   183.324833
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
-      <th></th>
-      <th>AAPL</th>
-      <th>AMGN</th>
+      <th>Ticker</th>
+      <th>^GSPC</th>
+      <th>^IXIC</th>
+      <th>^DJI</th>
+      <th>^RUT</th>
       <th>AXP</th>
+      <th>AMGN</th>
+      <th>AAPL</th>
       <th>BA</th>
       <th>CAT</th>
       <th>CVX</th>
@@ -943,10 +998,6 @@ XOM   183.324833
       <th>MSFT</th>
       <th>PG</th>
       <th>XOM</th>
-      <th>^DJI</th>
-      <th>^GSPC</th>
-      <th>^IXIC</th>
-      <th>^RUT</th>
     </tr>
     <tr>
       <th>Date</th>
@@ -970,99 +1021,99 @@ XOM   183.324833
   </thead>
   <tbody>
     <tr>
-      <th>2019-10-24</th>
-      <td>59.226212</td>
-      <td>179.793304</td>
-      <td>109.976357</td>
-      <td>340.524902</td>
-      <td>121.859108</td>
-      <td>98.259621</td>
-      <td>110.789543</td>
-      <td>178.749512</td>
-      <td>137.810425</td>
-      <td>134.666946</td>
-      <td>113.046753</td>
-      <td>55.898674</td>
-      <td>26805.529297</td>
-      <td>3010.290039</td>
-      <td>8185.799805</td>
-      <td>1548.489990</td>
+      <th>2023-01-03</th>
+      <td>3824.139893</td>
+      <td>10386.980469</td>
+      <td>33136.371094</td>
+      <td>1750.729980</td>
+      <td>140.588959</td>
+      <td>232.962982</td>
+      <td>122.876740</td>
+      <td>195.389999</td>
+      <td>225.586624</td>
+      <td>149.220352</td>
+      <td>123.735184</td>
+      <td>241.869232</td>
+      <td>90.323952</td>
+      <td>232.510559</td>
+      <td>137.454971</td>
+      <td>94.180977</td>
     </tr>
     <tr>
-      <th>2019-10-25</th>
-      <td>59.955654</td>
-      <td>179.784424</td>
-      <td>111.724091</td>
-      <td>335.860046</td>
-      <td>127.212341</td>
-      <td>99.170517</td>
-      <td>111.675674</td>
-      <td>177.463715</td>
-      <td>141.385712</td>
-      <td>135.427185</td>
-      <td>111.651657</td>
-      <td>56.028133</td>
-      <td>26958.060547</td>
-      <td>3022.550049</td>
-      <td>8243.120117</td>
-      <td>1558.709961</td>
+      <th>2023-01-04</th>
+      <td>3852.969971</td>
+      <td>10458.759766</td>
+      <td>33269.769531</td>
+      <td>1772.540039</td>
+      <td>143.857147</td>
+      <td>235.402588</td>
+      <td>124.144135</td>
+      <td>203.639999</td>
+      <td>227.928619</td>
+      <td>147.633728</td>
+      <td>124.889023</td>
+      <td>241.924088</td>
+      <td>92.300491</td>
+      <td>222.339767</td>
+      <td>138.053482</td>
+      <td>94.455093</td>
     </tr>
     <tr>
-      <th>2019-10-28</th>
-      <td>60.556232</td>
-      <td>181.519867</td>
-      <td>112.026421</td>
-      <td>336.897766</td>
-      <td>127.512772</td>
-      <td>99.011734</td>
-      <td>112.101013</td>
-      <td>174.883026</td>
-      <td>143.913925</td>
-      <td>138.756805</td>
-      <td>111.860023</td>
-      <td>55.534607</td>
-      <td>27090.720703</td>
-      <td>3039.419922</td>
-      <td>8325.990234</td>
-      <td>1571.930054</td>
+      <th>2023-01-05</th>
+      <td>3808.100098</td>
+      <td>10305.240234</td>
+      <td>32930.078125</td>
+      <td>1753.189941</td>
+      <td>140.414612</td>
+      <td>237.601776</td>
+      <td>122.827606</td>
+      <td>204.990005</td>
+      <td>226.908722</td>
+      <td>150.292389</td>
+      <td>124.861343</td>
+      <td>239.883606</td>
+      <td>90.685333</td>
+      <td>215.750137</td>
+      <td>136.339493</td>
+      <td>96.568459</td>
     </tr>
     <tr>
-      <th>2019-10-29</th>
-      <td>59.155693</td>
-      <td>185.043839</td>
-      <td>110.930519</td>
-      <td>344.853729</td>
-      <td>128.668976</td>
-      <td>98.719246</td>
-      <td>112.030106</td>
-      <td>175.649017</td>
-      <td>143.701126</td>
-      <td>137.448059</td>
-      <td>111.968727</td>
-      <td>55.372787</td>
-      <td>27071.460938</td>
-      <td>3036.889893</td>
-      <td>8276.849609</td>
-      <td>1577.069946</td>
+      <th>2023-01-06</th>
+      <td>3895.080078</td>
+      <td>10569.290039</td>
+      <td>33630.609375</td>
+      <td>1792.800049</td>
+      <td>144.000977</td>
+      <td>245.027344</td>
+      <td>127.346947</td>
+      <td>213.000000</td>
+      <td>235.011246</td>
+      <td>151.424484</td>
+      <td>127.250648</td>
+      <td>246.572449</td>
+      <td>93.458405</td>
+      <td>218.292831</td>
+      <td>139.586136</td>
+      <td>97.735634</td>
     </tr>
     <tr>
-      <th>2019-10-30</th>
-      <td>59.148396</td>
-      <td>186.717285</td>
-      <td>111.544601</td>
-      <td>342.017273</td>
-      <td>127.767677</td>
-      <td>97.240089</td>
-      <td>111.409836</td>
-      <td>179.542816</td>
-      <td>143.326614</td>
-      <td>139.160965</td>
-      <td>113.182632</td>
-      <td>54.790260</td>
-      <td>27186.689453</td>
-      <td>3046.770020</td>
-      <td>8303.980469</td>
-      <td>1572.849976</td>
+      <th>2023-01-09</th>
+      <td>3892.090088</td>
+      <td>10635.650391</td>
+      <td>33517.648438</td>
+      <td>1795.910034</td>
+      <td>144.221512</td>
+      <td>240.504303</td>
+      <td>127.867661</td>
+      <td>208.570007</td>
+      <td>232.895889</td>
+      <td>150.240952</td>
+      <td>126.724808</td>
+      <td>244.541061</td>
+      <td>93.510025</td>
+      <td>220.418213</td>
+      <td>137.881134</td>
+      <td>95.914101</td>
     </tr>
   </tbody>
 </table>
@@ -1093,7 +1144,7 @@ XOM   183.324833
     <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">lambd</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">results</span><span class="p">],</span> <span class="p">[[</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">n</span><span class="p">]()</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">R</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
 <span class="p">)</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"weights"</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"risk aversion $\lambda$"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">"risk aversion $\lambda$"</span><span class="p">)</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="n">symbols</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">N</span><span class="p">],</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">1.05</span><span class="p">,</span> <span class="mf">1.05</span><span class="p">))</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">EM</span><span class="p">)</span>
@@ -1103,7 +1154,7 @@ XOM   183.324833
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/6620c2e84dc8c9e6433afbe4e6ca1527124d97219cf9212d0592821281e53239.png" src="../../_images/6620c2e84dc8c9e6433afbe4e6ca1527124d97219cf9212d0592821281e53239.png" />
+<img alt="../../_images/36e6387d25a10e43702d3e392217c984db1226ee88b530b59e9f0d0533f8d687.png" src="../../_images/36e6387d25a10e43702d3e392217c984db1226ee88b530b59e9f0d0533f8d687.png" />
 </div>
 </div>
 </section>
@@ -1141,7 +1192,7 @@ XOM   183.324833
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/42650f56aedb2e4d2c86bed12b565fceab94b01f9344631cfe059669bd105925.png" src="../../_images/42650f56aedb2e4d2c86bed12b565fceab94b01f9344631cfe059669bd105925.png" />
+<img alt="../../_images/c28a1fcf41e8aa90891ca16ed1e5197afceccdeec067770ec738d4a734845158.png" src="../../_images/c28a1fcf41e8aa90891ca16ed1e5197afceccdeec067770ec738d4a734845158.png" />
 </div>
 </div>
 </section>
@@ -1178,7 +1229,7 @@ XOM   183.324833
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/5f741b1b160986e92bc75a6885ce141604afcac1aa13a1975d99d90859270013.png" src="../../_images/5f741b1b160986e92bc75a6885ce141604afcac1aa13a1975d99d90859270013.png" />
+<img alt="../../_images/638ada169beb46eb5e543ded418a71e2ec31ee7cb03823c6262cf17614bb84a3.png" src="../../_images/638ada169beb46eb5e543ded418a71e2ec31ee7cb03823c6262cf17614bb84a3.png" />
 </div>
 </div>
 </section>
