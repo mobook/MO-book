@@ -1,6 +1,7 @@
 # Appendix: Working with Pyomo
 
-The appendix includes notebooks outline a style guide to be used when writing Pyomo models, and specific programming styles demonstrating how to integrate Pyomo into an optimization workflow or project.
+The appendix introduces the solvers used in the book, provides a Pyomo style guide, and demonstrates programming styles for integrating Pyomo into an optimization workflow or project.
 
-- [Pyomo Style Guide](../appendix/pyomo-style-guide-update.ipynb)
-- [Functional Programming with Pyomo](../appendix/functional-programming-pyomo.ipynb)
+- [Solvers used in this book](installing-pyomo-and-solvers.ipynb)
+- [Pyomo Style Guide](pyomo-style-guide-update.ipynb)
+- [Functional Programming with Pyomo](functional-programming-pyomo.ipynb)
