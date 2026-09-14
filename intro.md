@@ -12,11 +12,19 @@ This book introduces the concepts and tools of mathematical optimization with ex
 
 ## Getting started
 
-The notebooks in this repository make extensive use of [Pyomo](https://en.wikipedia.org/wiki/Pyomo) which is a complete and versatile mathematical optimization package for the Python ecosystem. Pyomo provides a means to build models for optimization using the concepts of decision variables, constraints, and objectives from mathematical optimization, then transform and generate solutions using open source or commercial solvers.
+These notebooks use **Pyomo** to describe optimization models and a **solver** to compute their solutions. HiGHS is the open-source solver used in most linear and mixed-integer linear examples.
 
-All notebooks in this repository can be opened and run in Google Colab. A launch icon appearing at the top of a page (look for the rocket) indicates the notebook can be opened as an executable document. Selecting Colab will reopen the notebook in Google Colab. Cells inside the notebooks will perform any necessary installations of Pyomo and solvers needed to execute the code within the notebook.
+You can work locally in Jupyter or open a notebook in Google Colab using the rocket icon at the top of its page. To install Pyomo and HiGHS from a notebook code cell, run:
 
-Start your journey with the [first chapter](/notebooks/01/01.00.md)!
+```ipython
+%pip install pyomo highspy
+```
+
+`%pip` installs into the current notebook kernel's environment. From a terminal, use `python -m pip install pyomo highspy` instead.
+
+Follow each notebook's preamble for additional packages or solvers. The runnable [Solvers used in this book](notebooks/appendix/installing-pyomo-and-solvers.ipynb) appendix provides a quick installation check, explains solver choices and Colab setup, and covers open-source license terms, free commercial editions and academic access.
+
+Start your journey with the [first chapter](notebooks/01/01.00.md)!
 
 ## Help us
 
