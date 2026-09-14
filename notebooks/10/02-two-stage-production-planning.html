@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>10.2 Two-stage production planning using constraint and column generation &#8212; Companion code for the book &#34;Hands-On Mathematical Optimization with Python&#34;</title>
+    <title>10.2 Two-stage production planning using column-and-constraint generation &#8212; Companion code for the book &#34;Hands-On Mathematical Optimization with Python&#34;</title>
   
   
   
@@ -336,7 +336,7 @@
 </details></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="10.00.html">10. Two-Stage Problems</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="01-aircraft-seat-allocation.html">10.1 Aircraft seat allocation problem</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">10.2 Two-stage production planning using constraint and column generation</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">10.2 Two-stage production planning using column-and-constraint generation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="03-opf-linear-decision-rule.html">10.3 Optimal power flow problem with recourse actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="04-farmer-problem.html">Extra: The farmer’s problem and its variants</a></li>
 <li class="toctree-l2"><a class="reference internal" href="05-opf-wind-curtailment.html">Extra: Two-stage energy dispatch optimization with wind curtailment</a></li>
@@ -561,7 +561,7 @@
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>10.2 Two-stage production planning using constraint and column generation</h1>
+    <h1>10.2 Two-stage production planning using column-and-constraint generation</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -577,9 +577,9 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#two-stage-problem-formulation">Two-stage problem formulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solving-the-robust-problem-using-sampled-scenarios">Solving the robust problem using sampled scenarios</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-average-case-optimization-using-saa">The average-case optimization using SAA</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#constraint-and-column-generation-for-the-robust-solution">Constraint and column generation for the robust solution</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#column-and-constraint-generation-for-the-robust-solution">Column-and-constraint generation for the robust solution</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bounding-the-dual-variables-and-encoding-the-budget">Bounding the dual variables and encoding the budget</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#running-constraint-and-column-generation">Running constraint and column generation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#running-column-and-constraint-generation">Running column-and-constraint generation</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bibliographic-notes">Bibliographic Notes</a></li>
@@ -594,16 +594,16 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="two-stage-production-planning-using-constraint-and-column-generation">
-<span id="index-6"></span><span id="index-5"></span><span id="index-4"></span><span id="index-3"></span><span id="index-2"></span><span id="index-1"></span><span id="index-0"></span><h1>10.2 Two-stage production planning using constraint and column generation<a class="headerlink" href="#two-stage-production-planning-using-constraint-and-column-generation" title="Link to this heading">#</a></h1>
+  <section class="tex2jax_ignore mathjax_ignore" id="two-stage-production-planning-using-column-and-constraint-generation">
+<span id="index-6"></span><span id="index-5"></span><span id="index-4"></span><span id="index-3"></span><span id="index-2"></span><span id="index-1"></span><span id="index-0"></span><h1>10.2 Two-stage production planning using column-and-constraint generation<a class="headerlink" href="#two-stage-production-planning-using-column-and-constraint-generation" title="Link to this heading">#</a></h1>
 <p>The purpose of this notebook is to demonstrate a range of techniques for two-stage optimization (robust and stochastic) using a range of techniques:</p>
 <ul class="simple">
-<li><p>Robust Optimization (including Constraint and Column Generation)</p></li>
+<li><p>Robust Optimization (including Column-and-Constraint Generation)</p></li>
 <li><p>Stochastic Optimization (including the SAA method)</p></li>
 </ul>
 <section id="preamble-install-pyomo-highs-and-scip">
 <h2>Preamble: install Pyomo, HiGHS and SCIP<a class="headerlink" href="#preamble-install-pyomo-highs-and-scip" title="Link to this heading">#</a></h2>
-<p>The linear models in this notebook use Pyomo and HiGHS. The final constraint and column generation section also uses SCIP through PySCIPOpt to solve a nonconvex worst-case subproblem globally. This extra solver is needed because uncertainty affects the recourse coefficients as well as the right-hand side.</p>
+<p>The linear models in this notebook use Pyomo and HiGHS. The final column-and-constraint generation section also uses SCIP through PySCIPOpt to solve a nonconvex worst-case subproblem globally. This extra solver is needed because uncertainty affects the recourse coefficients as well as the right-hand side.</p>
 <p>On Google Colab the following cell installs the packages. For a local environment, install them first with <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pyomo</span> <span class="pre">highspy</span> <span class="pre">pyscipopt</span></code>. Supported PySCIPOpt binary packages include SCIP; see the <a class="reference external" href="https://pyscipopt.readthedocs.io/en/stable/install.html">installation guide</a>. A local nonlinear solver alone would not provide the global lower bounds used in the stopping test.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -702,7 +702,7 @@ P_V &amp; = 210 - 50(1+z_A) - 40(1+z_B) - 90 \\
 \[
 \max_{x\geq 0}\; -10x + \min_{z\in Z} Q(x,z),
 \]</div>
-<p>where the same budgeted set is used throughout the notebook:</p>
+<p>where <span class="math notranslate nohighlight">\(z=(z_A,z_B,z_D)\)</span> and the same budgeted set is used throughout the notebook:</p>
 <div class="math notranslate nohighlight">
 \[
 Z=\left\{z:\ |z_A|\leq0.15,\ |z_B|\leq0.25,\ |z_D|\leq0.25,
@@ -713,12 +713,12 @@ Z=\left\{z:\ |z_A|\leq0.15,\ |z_B|\leq0.25,\ |z_D|\leq0.25,
 \[\begin{split}
 \begin{aligned}
 Q(x,z)=\max\quad &amp; y_3\\
-\text{s.t.}\quad &amp; (140-50z_A-80z_B)y_1+(120-50z_A-40z_B)y_2\geq y_3\\
-&amp;y_1\geq20(1+z_D) &amp;&amp;\text{(preorders)}\\
+\text{s.t.}\quad &amp; (140-50z_A-80z_B)y_1+(120-50z_A-40z_B)y_2\geq y_3 &amp;&amp;\text{(sales revenue minus labour costs)}\\
+&amp;y_1\geq20(1+z_D) &amp;&amp;\text{(pre-production orders)}\\
+&amp;y_1\leq40 &amp;&amp;\text{(maximum demand for U)}\\
 &amp;(1+z_A)(y_1+y_2)\leq80 &amp;&amp;\text{(labor A)}\\
 &amp;(1+z_B)(2y_1+y_2)\leq100 &amp;&amp;\text{(labor B)}\\
 &amp;10y_1+9y_2\leq x &amp;&amp;\text{(raw materials)}\\
-&amp;y_1\leq40 &amp;&amp;\text{(maximum demand for U)}\\
 &amp;y_1,y_2,y_3\geq0.
 \end{aligned}
 \end{split}\]</div>
@@ -729,18 +729,17 @@ c=(-10),\qquad q=(0,0,1)^\top,
 \]</div>
 <div class="math notranslate nohighlight">
 \[\begin{split}
-R(z)=\begin{pmatrix}0\\0\\0\\0\\-1\\0\end{pmatrix},\quad
+R(z)=\begin{pmatrix}0\\0\\0\\0\\0\\-1\end{pmatrix},\quad
 S(z)=\begin{pmatrix}
 -(140-50z_A-80z_B)&amp;-(120-50z_A-40z_B)&amp;1\\
 -1&amp;0&amp;0\\
+1&amp;0&amp;0\\
 1+z_A&amp;1+z_A&amp;0\\
 2(1+z_B)&amp;1+z_B&amp;0\\
-10&amp;9&amp;0\\
-1&amp;0&amp;0
+10&amp;9&amp;0
 \end{pmatrix},\quad
-t(z)=\begin{pmatrix}0\\-20(1+z_D)\\80\\100\\0\\40\end{pmatrix}.
+t(z)=\begin{pmatrix}0\\-20(1+z_D)\\40\\80\\100\\0\end{pmatrix}.
 \end{split}\]</div>
-<p>For feasibility under every <span class="math notranslate nohighlight">\(z\in Z\)</span>, we need <span class="math notranslate nohighlight">\(x\geq250\)</span>: the possible 25 preorders require 250 units of material. This is also sufficient for recourse feasibility, since producing only those preorders respects both labor capacities and the upper demand limit. We will use this bound in the continuous-set robust algorithm. The earlier nominal and sampled models only enforce their stated scenarios.</p>
 </section>
 <section id="solving-the-robust-problem-using-sampled-scenarios">
 <h2>Solving the robust problem using sampled scenarios<a class="headerlink" href="#solving-the-robust-problem-using-sampled-scenarios" title="Link to this heading">#</a></h2>
@@ -1179,9 +1178,11 @@ Solving for the worst-case with optimal-average first-stage decision x = 647.158
 </div>
 <p>What we observe is a very typical pattern: the robust solution’s ‘range’ of values is narrower, both in the best- and worst-situation sense, it gives thus stabler profit relations. This comes, however, at the expense of having a worse performance in an ‘average’ scenario. You can expect to observe this kind of phenomenon very often whenever you need to solve a problem under uncertainty and are unsure whether the worst-case or average-case performance should be optimized for. The degree of tradeoff can help you then make the right decision.</p>
 </section>
-<section id="constraint-and-column-generation-for-the-robust-solution">
-<h2>Constraint and column generation for the robust solution<a class="headerlink" href="#constraint-and-column-generation-for-the-robust-solution" title="Link to this heading">#</a></h2>
-<p>Constraint and column generation (CCG) alternates a master problem with a worst-case subproblem. The master is the sampled max-min model above, starting from the nominal scenario, with the additional recourse-feasibility bound <span class="math notranslate nohighlight">\(x\geq250\)</span>. Each new scenario adds its production variables and constraints. Because the master considers only a subset of <span class="math notranslate nohighlight">\(Z\)</span>, its optimal profit is an <strong>upper bound</strong> on the continuous-set robust optimum.</p>
+<section id="column-and-constraint-generation-for-the-robust-solution">
+<h2>Column-and-constraint generation for the robust solution<a class="headerlink" href="#column-and-constraint-generation-for-the-robust-solution" title="Link to this heading">#</a></h2>
+<p>Column-and-constraint generation (CCG) alternates a master problem with a worst-case subproblem. The master is the sampled max-min model above, starting from the nominal scenario. Each new scenario adds its production variables and constraints. Because the master considers only a subset of <span class="math notranslate nohighlight">\(Z\)</span>, its optimal profit is an <strong>upper bound</strong> on the continuous-set robust optimum.</p>
+<p>The finite-scenario master also uses <span class="math notranslate nohighlight">\(x\geq250\)</span>. Feasibility for every <span class="math notranslate nohighlight">\(z\in Z\)</span> already implies this bound: a possible 25 preorders require 250 units of material. Conversely, producing only the required preorders respects both labor capacities and the upper demand limit, so the bound ensures feasible recourse throughout <span class="math notranslate nohighlight">\(Z\)</span>. The nominal and sampled models only enforce their stated scenarios and need not imply the same bound.</p>
+<p>This is an algorithmic choice: adding the bound to the master preserves all feasible decisions of the full robust problem and ensures that every candidate order has feasible recourse. It allows the algorithm below to use a worst-case profit subproblem without a separate feasibility subproblem.</p>
 <p>For the master’s order <span class="math notranslate nohighlight">\(\bar x\)</span>, the subproblem must compute</p>
 <div class="math notranslate nohighlight">
 \[
@@ -1308,8 +1309,8 @@ W(\bar x)=\min_{z,\lambda}\quad
 </div>
 </div>
 </section>
-<section id="running-constraint-and-column-generation">
-<h3>Running constraint and column generation<a class="headerlink" href="#running-constraint-and-column-generation" title="Link to this heading">#</a></h3>
+<section id="running-column-and-constraint-generation">
+<h3>Running column-and-constraint generation<a class="headerlink" href="#running-column-and-constraint-generation" title="Link to this heading">#</a></h3>
 <p>Each iteration solves the linear master, globally checks its ordering decision, and adds the worst-case scenario if the profit bounds have not met. All profit bounds below include the cost of the ordered material. The displayed gap is an absolute difference in euros, interpreted within the solvers’ numerical feasibility tolerances.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1527,9 +1528,9 @@ Master solves: 3; added scenarios: 2
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#two-stage-problem-formulation">Two-stage problem formulation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solving-the-robust-problem-using-sampled-scenarios">Solving the robust problem using sampled scenarios</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-average-case-optimization-using-saa">The average-case optimization using SAA</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#constraint-and-column-generation-for-the-robust-solution">Constraint and column generation for the robust solution</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#column-and-constraint-generation-for-the-robust-solution">Column-and-constraint generation for the robust solution</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#bounding-the-dual-variables-and-encoding-the-budget">Bounding the dual variables and encoding the budget</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#running-constraint-and-column-generation">Running constraint and column generation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#running-column-and-constraint-generation">Running column-and-constraint generation</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bibliographic-notes">Bibliographic Notes</a></li>
