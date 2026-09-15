@@ -594,7 +594,7 @@
 <p>This is a simple linear optimization problem in six variables, but with four equality constraints it allows for a graphical explanation of some unusually large shadow prices for manufacturing capacity. The notebook presents also contrasts Pyomo with CVXPY modeling.</p>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Link to this heading">#</a></h2>
-<p>The following cell sets and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and the HiGHS solver, while, if run elsewhere, it assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGHS as solver via the appsi module and a test is performed to verify that it is available. The solver interface is stored in a global object <code class="docutils literal notranslate"><span class="pre">SOLVER</span></code> for later use.</p>
+<p>The following cell sets and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and the HiGHS solver, while, if run elsewhere, it assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGHS as solver via the appsi module and a test is performed to verify that it is available. The solver interface is stored in a global object <code class="docutils literal notranslate"><span class="pre">SOLVER</span></code> for later use. The comparison below also uses CVXPY; install it locally with <code class="docutils literal notranslate"><span class="pre">%pip</span> <span class="pre">install</span> <span class="pre">cvxpy</span></code> if needed.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
@@ -615,7 +615,8 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">pip</span> install -q cvxpy
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="s1">'google.colab'</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="o">%</span><span class="k">pip</span> install -q cvxpy
 </pre></div>
 </div>
 </div>
@@ -843,13 +844,14 @@
     <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">products</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="s2">"capacity"</span><span class="p">]</span>
 
 
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">(),</span> <span class="mi">3</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>860275.832
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>860275.862
 </pre></div>
 </div>
 </div>
@@ -859,7 +861,7 @@
 <h2>CVXPY Model<a class="headerlink" href="#cvxpy-model" title="Link to this heading">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">CVXPY</span></code> library for disciplined convex optimization is tightly integrated with <code class="docutils literal notranslate"><span class="pre">numpy</span></code>, the standard Python library for the numerical linear algebra. For example, where <code class="docutils literal notranslate"><span class="pre">Pyomo</span></code> uses explicit indexing in constraints, summations, and other objects, <code class="docutils literal notranslate"><span class="pre">CVXPY</span></code> uses the implicit indexing implied when doing matrix and vector operations.</p>
 <p>Another sharp contrast with <code class="docutils literal notranslate"><span class="pre">Pyomo</span></code> is that <code class="docutils literal notranslate"><span class="pre">CXVPY</span></code> has no specific object to describe a set,or to define a objects variables or other modeling objects over arbitrary sets. <code class="docutils literal notranslate"><span class="pre">CVXPY</span></code> instead uses the zero-based indexing familiar to Python users.</p>
-<p>The following cell demonstrates these differences by presenting a <code class="docutils literal notranslate"><span class="pre">CVXPY</span></code> model for the small refinery example.</p>
+<p>The following cell demonstrates these differences by presenting a <code class="docutils literal notranslate"><span class="pre">CVXPY</span></code> model for the small refinery example. Both implementations use the open-source HiGHS solver installed in the preamble.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># decision variables</span>
@@ -881,12 +883,15 @@
 
 <span class="c1"># solution</span>
 <span class="n">problem</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">Problem</span><span class="p">(</span><span class="n">objective</span><span class="p">,</span> <span class="n">constraints</span><span class="p">)</span>
-<span class="n">problem</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="n">problem</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">HIGHS</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">problem</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="n">cp</span><span class="o">.</span><span class="n">OPTIMAL</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"CVXPY solve did not terminate optimally: </span><span class="si">{</span><span class="n">problem</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">problem</span><span class="o">.</span><span class="n">value</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>860275.8620663473
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>np.float64(860275.8620689656)
 </pre></div>
 </div>
 </div>
@@ -896,7 +901,7 @@
 <h2>Crude oil feed results<a class="headerlink" href="#crude-oil-feed-results" title="Link to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results_crudes</span> <span class="o">=</span> <span class="n">crudes</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results_crudes</span> <span class="o">=</span> <span class="n">crudes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="n">results_crudes</span><span class="p">[</span><span class="s2">"consumption"</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">value</span>
 <span class="n">results_crudes</span><span class="p">[</span><span class="s2">"shadow price"</span><span class="p">]</span> <span class="o">=</span> <span class="n">feeds</span><span class="o">.</span><span class="n">dual_value</span>
 
@@ -956,7 +961,7 @@
 <h2>Refinery production results<a class="headerlink" href="#refinery-production-results" title="Link to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results_products</span> <span class="o">=</span> <span class="n">products</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results_products</span> <span class="o">=</span> <span class="n">products</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="n">results_products</span><span class="p">[</span><span class="s2">"production"</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">value</span>
 <span class="n">results_products</span><span class="p">[</span><span class="s2">"unused capacity"</span><span class="p">]</span> <span class="o">=</span> <span class="n">products</span><span class="p">[</span><span class="s2">"capacity"</span><span class="p">]</span> <span class="o">-</span> <span class="n">y</span><span class="o">.</span><span class="n">value</span>
 <span class="n">results_products</span><span class="p">[</span><span class="s2">"shadow price"</span><span class="p">]</span> <span class="o">=</span> <span class="n">capacity</span><span class="o">.</span><span class="n">dual_value</span>
@@ -1040,15 +1045,15 @@
 <span class="n">ylim</span> <span class="o">=</span> <span class="mi">24000</span>
 <span class="n">xlim</span> <span class="o">=</span> <span class="mi">32000</span>
 
-<span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">crudes</span><span class="p">[</span><span class="s2">"available"</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Crude 1"</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">crudes</span><span class="p">[</span><span class="s2">"available"</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Crude 2"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">crudes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">"crude 1"</span><span class="p">,</span> <span class="s2">"available"</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Crude 1"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">crudes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">"crude 2"</span><span class="p">,</span> <span class="s2">"available"</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Crude 2"</span><span class="p">)</span>
 
 <span class="n">xplot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">xlim</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">products</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
-    <span class="n">b</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">products</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">product</span><span class="p">,</span> <span class="s2">"capacity"</span><span class="p">]</span> <span class="o">/</span> <span class="n">yields</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="o">-</span><span class="n">yields</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">yields</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">line</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">m</span> <span class="o">*</span> <span class="n">xplot</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">product</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">m</span> <span class="o">*</span> <span class="n">xplot</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span> <span class="mi">30000</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">(),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">products</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">product</span><span class="p">,</span> <span class="s2">"capacity"</span><span class="p">]</span> <span class="o">/</span> <span class="n">yields</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">"crude 2"</span><span class="p">,</span> <span class="n">product</span><span class="p">]</span>
+    <span class="n">slope</span> <span class="o">=</span> <span class="o">-</span><span class="n">yields</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">"crude 1"</span><span class="p">,</span> <span class="n">product</span><span class="p">]</span> <span class="o">/</span> <span class="n">yields</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">"crude 2"</span><span class="p">,</span> <span class="n">product</span><span class="p">]</span>
+    <span class="n">line</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">xplot</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">product</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">xplot</span><span class="p">,</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">xplot</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span> <span class="mi">30000</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">(),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">"ro"</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"max profit"</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Feasible operating regime"</span><span class="p">)</span>
@@ -1064,7 +1069,7 @@
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(0.0, 24000.0)
 </pre></div>
 </div>
-<img alt="../../_images/2c81263e9a02707bbb65a4ea668c102afcb91ba1a3f81c249c7d8bbbb86ac57b.png" src="../../_images/2c81263e9a02707bbb65a4ea668c102afcb91ba1a3f81c249c7d8bbbb86ac57b.png" />
+<img alt="../../_images/543786d7aa5026d521edfdc4ee2e29afd1d11a39e38420494f2c71f68b8bd1da.png" src="../../_images/543786d7aa5026d521edfdc4ee2e29afd1d11a39e38420494f2c71f68b8bd1da.png" />
 </div>
 </div>
 </section>
