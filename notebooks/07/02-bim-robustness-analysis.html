@@ -574,7 +574,7 @@
                 <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#actual-performance-of-the-robust-solution">Actual performance of the robust solution</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#actual-performance-of-the-nominal-solution">Actual performance of the nominal solution</a></li>
 </ul>
             </nav>
         </div>
@@ -612,7 +612,7 @@
 </section>
 <section id="problem-description">
 <h2>Problem description<a class="headerlink" href="#problem-description" title="Link to this heading">#</a></h2>
-<p>This example is a continuation of the BIM chip production problem illustrated <a class="reference internal" href="../02/01-bim.html"><span class="std std-doc">here</span></a>. Recall hat BIM produces logic and memory chips using copper, silicon, germanium, and plastic and that each chip requires the following quantities of raw materials:</p>
+<p>This example is a continuation of the BIM chip production problem illustrated <a class="reference internal" href="../02/07-bim-demand-forecast.html"><span class="std std-doc">here</span></a>. Recall that BIM produces logic and memory chips using copper, silicon, germanium, and plastic and that each chip requires the following quantities of raw materials:</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head text-left"><p>chip</p></th>
@@ -624,13 +624,13 @@
 </thead>
 <tbody>
 <tr class="row-even"><td class="text-left"><p>logic</p></td>
-<td class="text-right"><p>0.4</p></td>
+<td class="text-right"><p>4</p></td>
 <td class="text-right"><p>1</p></td>
 <td class="text-right"><p>-</p></td>
 <td class="text-right"><p>1</p></td>
 </tr>
 <tr class="row-odd"><td class="text-left"><p>memory</p></td>
-<td class="text-right"><p>0.2</p></td>
+<td class="text-right"><p>2</p></td>
 <td class="text-right"><p>-</p></td>
 <td class="text-right"><p>1</p></td>
 <td class="text-right"><p>1</p></td>
@@ -698,7 +698,7 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td class="text-right"><p>480</p></td>
+<tr class="row-even"><td class="text-right"><p>4800</p></td>
 <td class="text-right"><p>1000</p></td>
 <td class="text-right"><p>1500</p></td>
 <td class="text-right"><p>1750</p></td>
@@ -716,7 +716,7 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td class="text-right"><p>200</p></td>
+<tr class="row-even"><td class="text-right"><p>2000</p></td>
 <td class="text-right"><p>500</p></td>
 <td class="text-right"><p>500</p></td>
 <td class="text-right"><p>1000</p></td>
@@ -802,7 +802,7 @@
 </tbody>
 </table>
 </div>
-<p>The inventory is limited by a capacity of a total of 9000 units per month, regardless of the type of material of products in stock. The holding costs of the inventory are 0.05 per unit per month regardless of the material type. Due to budget constraints, BIM cannot spend more than 5000 per month on acquisition.</p>
+<p>The inventory is limited by a capacity of a total of 9000 units per month, regardless of the type of material of products in stock. The holding costs of the inventory are 0.05 per unit per month regardless of the material type. Due to budget constraints, BIM cannot spend more than 2500 per month on acquisition.</p>
 <p>BIM aims at minimizing the acquisition and holding costs of the materials while meeting the required quantities for production. The production is made to order, meaning that no inventory of chips is kept.</p>
 <p>Let us model the material acquisition planning and solve it optimally based on the forecasted chip demand above.</p>
 <div class="cell docutils container">
@@ -1062,7 +1062,7 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">ShowTableOfPyomoVariables</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span>
         <span class="p">[[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">J</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">I</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">I</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">J</span>
-    <span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">BIMProductAcquisitionAndInventory</span><span class="p">(</span><span class="n">problem_data</span><span class="p">):</span>
@@ -1090,11 +1090,11 @@
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">pi</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">acquisition_price</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="n">t</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">acquisition_price</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">h</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="k">return</span> <span class="mf">0.05</span>  <span class="c1"># the holding cost</span>
+        <span class="k">return</span> <span class="n">problem_data</span><span class="p">[</span><span class="s2">"inventory_cost"</span><span class="p">]</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">delta</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
@@ -1136,15 +1136,16 @@
 
 <span class="n">problem_data</span> <span class="o">=</span> <span class="n">initialize_problem_data</span><span class="p">()</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">BIMProductAcquisitionAndInventory</span><span class="p">(</span><span class="n">problem_data</span><span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The optimal solution yields a total cost of </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">total_cost</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="n">problem_data</span><span class="p">[</span><span class="s2">"purchases"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ShowTableOfPyomoVariables</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
 <span class="n">problem_data</span><span class="p">[</span><span class="s2">"stock"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ShowTableOfPyomoVariables</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
 
-<span class="n">display</span><span class="p">(</span><span class="n">problem_data</span><span class="p">[</span><span class="s2">"purchases"</span><span class="p">])</span>
-<span class="n">display</span><span class="p">(</span><span class="n">problem_data</span><span class="p">[</span><span class="s2">"stock"</span><span class="p">])</span>
+<span class="n">display</span><span class="p">(</span><span class="n">problem_data</span><span class="p">[</span><span class="s2">"purchases"</span><span class="p">]</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">display</span><span class="p">(</span><span class="n">problem_data</span><span class="p">[</span><span class="s2">"stock"</span><span class="p">]</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -1345,9 +1346,9 @@
 </div></div></div>
 </div>
 </section>
-<section id="actual-performance-of-the-robust-solution">
-<h2>Actual performance of the robust solution<a class="headerlink" href="#actual-performance-of-the-robust-solution" title="Link to this heading">#</a></h2>
-<p>We now perform a stochastic simulation to assess the performance of the robust solutions that we found earlier.</p>
+<section id="actual-performance-of-the-nominal-solution">
+<h2>Actual performance of the nominal solution<a class="headerlink" href="#actual-performance-of-the-nominal-solution" title="Link to this heading">#</a></h2>
+<p>We now perform a stochastic simulation to assess the performance of the nominal solutions that we found earlier.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">minimize_missed_demand_in_period</span><span class="p">(</span>
@@ -1387,7 +1388,8 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">total_unmet</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">)</span>
 
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="c1"># update inventory</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">:</span>
@@ -1406,7 +1408,7 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">simulation_per_trajectory</span><span class="p">(</span><span class="n">purchases</span><span class="p">,</span> <span class="n">existing</span><span class="p">,</span> <span class="n">demand_chips</span><span class="p">,</span> <span class="n">use</span><span class="p">):</span>
     <span class="c1"># Set up the table to store inventory evolution</span>
-    <span class="n">inventory</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">purchases</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">purchases</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">inventory</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">purchases</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">purchases</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
     <span class="n">inventory</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
         <span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">existing</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">existing</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"existing"</span><span class="p">]),</span> <span class="n">inventory</span><span class="p">],</span>
         <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
@@ -1433,11 +1435,11 @@
 
     <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
-        <span class="n">perturbed_demand</span> <span class="o">=</span> <span class="n">problem_data</span><span class="p">[</span><span class="s2">"demand_chips_simulation"</span><span class="p">]</span><span class="o">.</span><span class="n">applymap</span><span class="p">(</span>
+        <span class="n">perturbed_demand</span> <span class="o">=</span> <span class="n">problem_data</span><span class="p">[</span><span class="s2">"demand_chips_simulation"</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
             <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">rho</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">()))</span>
         <span class="p">)</span>
         <span class="n">inv</span><span class="p">,</span> <span class="n">md</span> <span class="o">=</span> <span class="n">simulation_per_trajectory</span><span class="p">(</span>
-            <span class="n">problem_data</span><span class="p">[</span><span class="s2">"purchases"</span><span class="p">],</span> <span class="n">problem_data</span><span class="p">[</span><span class="s2">"existing"</span><span class="p">],</span> <span class="n">perturbed_demand</span><span class="p">,</span> <span class="n">use</span>
+            <span class="n">problem_data</span><span class="p">[</span><span class="s2">"purchases"</span><span class="p">],</span> <span class="n">problem_data</span><span class="p">[</span><span class="s2">"existing"</span><span class="p">],</span> <span class="n">perturbed_demand</span><span class="p">,</span> <span class="n">problem_data</span><span class="p">[</span><span class="s2">"use"</span><span class="p">]</span>
         <span class="p">)</span>
         <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"inventory"</span><span class="p">:</span> <span class="n">inv</span><span class="p">,</span> <span class="s2">"missing_demand"</span><span class="p">:</span> <span class="n">md</span><span class="p">})</span>
 
@@ -1454,7 +1456,7 @@
     <span class="k">return</span> <span class="p">{</span><span class="s2">"MissingDemand"</span><span class="p">:</span> <span class="n">MissingDemand</span><span class="p">,</span> <span class="s2">"InventoryEvolution"</span><span class="p">:</span> <span class="n">InventoryEvolution</span><span class="p">}</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">report</span><span class="p">(</span><span class="n">MissingDemand</span><span class="p">,</span> <span class="n">InventoryEvolution</span><span class="p">,</span> <span class="n">problem_data</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">report</span><span class="p">(</span><span class="n">MissingDemand</span><span class="p">,</span> <span class="n">InventoryEvolution</span><span class="p">,</span> <span class="n">problem_data</span><span class="p">,</span> <span class="n">rho</span><span class="p">):</span>
     <span class="c1"># list to store DFs with per-group computed quantiles at various levels</span>
     <span class="n">average_missed_demand</span> <span class="o">=</span> <span class="n">MissingDemand</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
 
@@ -1497,7 +1499,7 @@
     <span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Simulated realized inventory cost: </span><span class="si">{</span><span class="n">realized_inv_cost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">"Simulated average missed demand for logic chips is </span><span class="si">{</span><span class="n">MissingDemand</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> and for memory chips is </span><span class="si">{</span><span class="n">MissingDemand</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"Simulated average missed demand for logic chips is </span><span class="si">{</span><span class="n">MissingDemand</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'logic'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> and for memory chips is </span><span class="si">{</span><span class="n">MissingDemand</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'memory'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
     <span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span>
         <span class="s2">"Plot of missed chips demand over time under "</span>
@@ -1517,7 +1519,8 @@
 
 <span class="n">problem_data</span><span class="p">[</span><span class="s2">"demand_chips_ref"</span><span class="p">]</span> <span class="o">=</span> <span class="n">demand_chips</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">BIMProductAcquisitionAndInventory</span><span class="p">(</span><span class="n">problem_data</span><span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
 <span class="n">problem_data</span><span class="p">[</span><span class="s2">"purchases"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ShowTableOfPyomoVariables</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
 <span class="n">problem_data</span><span class="p">[</span><span class="s2">"stock"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ShowTableOfPyomoVariables</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
@@ -1530,7 +1533,7 @@
 <p>The simulation results report a sllighly higher inventory cost and a nonzero amount of missed chip demand.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">report</span><span class="p">(</span><span class="n">SimResults</span><span class="p">[</span><span class="s2">"MissingDemand"</span><span class="p">],</span> <span class="n">SimResults</span><span class="p">[</span><span class="s2">"InventoryEvolution"</span><span class="p">],</span> <span class="n">problem_data</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">report</span><span class="p">(</span><span class="n">SimResults</span><span class="p">[</span><span class="s2">"MissingDemand"</span><span class="p">],</span> <span class="n">SimResults</span><span class="p">[</span><span class="s2">"InventoryEvolution"</span><span class="p">],</span> <span class="n">problem_data</span><span class="p">,</span> <span class="n">rho</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1538,13 +1541,13 @@
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Purchasing cost: 20309.77
 Theoretical inventory cost: 3270.57
 
-Simulated realized inventory cost: 3309.54
-Simulated average missed demand for logic chips is 4.543 and for memory chips is 13.154
+Simulated realized inventory cost: 3313.86
+Simulated average missed demand for logic chips is 16.360 and for memory chips is 0.000
 
 Plot of missed chips demand over time under 8.0% uncertainty
 </pre></div>
 </div>
-<img alt="../../_images/4c6f7364d87314f75c3f562ddd499f1de626c6fba0967e9571a61ebd84fb6c24.png" src="../../_images/4c6f7364d87314f75c3f562ddd499f1de626c6fba0967e9571a61ebd84fb6c24.png" />
+<img alt="../../_images/13d2c12a8cf7376a21026420974d71e4b01341f1669240ca48100cefd56c828d.png" src="../../_images/13d2c12a8cf7376a21026420974d71e4b01341f1669240ca48100cefd56c828d.png" />
 </div>
 </div>
 </section>
@@ -1618,7 +1621,7 @@ Plot of missed chips demand over time under 8.0% uncertainty
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-description">Problem description</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#actual-performance-of-the-robust-solution">Actual performance of the robust solution</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#actual-performance-of-the-nominal-solution">Actual performance of the nominal solution</a></li>
 </ul>
   </nav></div>
 
