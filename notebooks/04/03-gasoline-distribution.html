@@ -581,7 +581,7 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-display-method">Pyomo <code class="docutils literal notranslate"><span class="pre">.display()</span></code> method</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#manually-formatted-reports">Manually formatted reports</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pandas">Pandas</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#graphviz">Graphviz</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#network-diagram">Network diagram</a></li>
 </ul>
 </li>
 </ul>
@@ -601,13 +601,14 @@
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Link to this heading">#</a></h2>
 <p>The following cell sets and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and the HiGHS solver, while, if run elsewhere, it assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGHS as solver via the appsi module and a test is performed to verify that it is available. The solver interface is stored in a global object <code class="docutils literal notranslate"><span class="pre">SOLVER</span></code> for later use.</p>
+<p>The final network diagram uses NetworkX and matplotlib. On a local installation, install these Python packages if needed.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
  
 <span class="k">if</span> <span class="s1">'google.colab'</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
     <span class="o">%</span><span class="k">pip</span> install pyomo &gt;/dev/null 2&gt;/dev/null
-    <span class="o">%</span><span class="k">pip</span> install highspy &gt;/dev/null 2&gt;/dev/null
+    <span class="o">%</span><span class="k">pip</span> install highspy networkx &gt;/dev/null 2&gt;/dev/null
  
 <span class="n">solver</span> <span class="o">=</span> <span class="s1">'appsi_highs'</span>
  
@@ -628,7 +629,7 @@
 <li><p>Pyomo <code class="docutils literal notranslate"><span class="pre">.display()</span></code> method for Pyomo objects</p></li>
 <li><p>Manually formatted reports</p></li>
 <li><p>Pandas</p></li>
-<li><p>Graphviz for display of results as a directed graph.</p></li>
+<li><p>NetworkX for display of results as a directed graph.</p></li>
 </ul>
 </li>
 </ul>
@@ -668,7 +669,7 @@
 <td class="text-center"><p>-</p></td>
 </tr>
 <tr class="row-odd"><td class="text-left"><p>Dan</p></td>
-<td class="text-right"><p>80,000</p></td>
+<td class="text-right"><p>20,000</p></td>
 <td class="text-center"><p>8.75</p></td>
 <td class="text-center"><p>9.3</p></td>
 <td class="text-center"><p>8.0</p></td>
@@ -713,7 +714,7 @@
 <h2>Model 1: Minimize total delivery cost<a class="headerlink" href="#model-1-minimize-total-delivery-cost" title="Link to this heading">#</a></h2>
 <p>The first optimization model aims to minimize the total cost of delivery to all franchise owners.</p>
 <p>We introduce the decision variables <span class="math notranslate nohighlight">\(x_{d, s} \geq 0\)</span>, where subscript <span class="math notranslate nohighlight">\(d \in 1, \dots, n_d\)</span> refers to the destination of the delivery and subscript <span class="math notranslate nohighlight">\(s \in 1, \dots, n_s\)</span> to the source. The value of <span class="math notranslate nohighlight">\(x_{d,s}\)</span> is the volume of gasoline shipped to destination <span class="math notranslate nohighlight">\(d\)</span> from source <span class="math notranslate nohighlight">\(s\)</span>.</p>
-<p>Given the cost rate <span class="math notranslate nohighlight">\(r_{d, s}\)</span> for delivering one unit of gasoline from <span class="math notranslate nohighlight">\(d\)</span> to <span class="math notranslate nohighlight">\(s\)</span>, the objective is to minimize the total cost of transporting gasoline from the sources to the destinations subject to meeting the demand requirements, <span class="math notranslate nohighlight">\(D_d\)</span>, at all destinations, and satisfying the supply constraints, <span class="math notranslate nohighlight">\(S_s\)</span>, at all sources.</p>
+<p>Given the cost rate <span class="math notranslate nohighlight">\(r_{d, s}\)</span> for delivering one unit of gasoline from <span class="math notranslate nohighlight">\(s\)</span> to <span class="math notranslate nohighlight">\(d\)</span>, the objective is to minimize the total cost of transporting gasoline from the sources to the destinations subject to meeting the demand requirements, <span class="math notranslate nohighlight">\(D_d\)</span>, at all destinations, and satisfying the supply constraints, <span class="math notranslate nohighlight">\(S_s\)</span>, at all sources.</p>
 <p>In mathematical terms, we can write the full problem as</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -1000,7 +1001,8 @@
 
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">transport</span><span class="p">(</span><span class="n">supply</span><span class="p">,</span> <span class="n">demand</span><span class="p">,</span> <span class="n">rates</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">solve_results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">solve_results</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
     <span class="p">{</span><span class="n">dst</span><span class="p">:</span> <span class="p">{</span><span class="n">src</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">]())</span> <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">}</span> <span class="k">for</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">}</span>
 <span class="p">)</span><span class="o">.</span><span class="n">T</span>
@@ -1095,12 +1097,12 @@ New delivery costs = $26113.50
     <tr>
       <th>Dan</th>
       <td>0</td>
-      <td>20000</td>
       <td>0</td>
+      <td>20000</td>
       <td>1750.0</td>
-      <td>1600.0</td>
-      <td>150.0</td>
-      <td>8.00</td>
+      <td>1750.0</td>
+      <td>0.0</td>
+      <td>8.75</td>
       <td>8.75</td>
     </tr>
     <tr>
@@ -1128,12 +1130,12 @@ New delivery costs = $26113.50
     <tr>
       <th>Grace</th>
       <td>0</td>
-      <td>60000</td>
-      <td>20000</td>
+      <td>80000</td>
+      <td>0</td>
       <td>7000.0</td>
-      <td>6550.0</td>
-      <td>450.0</td>
-      <td>8.19</td>
+      <td>6400.0</td>
+      <td>600.0</td>
+      <td>8.00</td>
       <td>8.75</td>
     </tr>
     <tr>
@@ -1149,7 +1151,7 @@ New delivery costs = $26113.50
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/98ab93bd8361c7d84f3180808803d4b21d0cca066c8db29f83ae3012feadff2c.png" src="../../_images/98ab93bd8361c7d84f3180808803d4b21d0cca066c8db29f83ae3012feadff2c.png" />
+</div></div><img alt="../../_images/b06c87789cac28762e35b74b14e46e561c72a6b313ff374ea5f28495163df995.png" src="../../_images/b06c87789cac28762e35b74b14e46e561c72a6b313ff374ea5f28495163df995.png" />
 </div>
 </div>
 </section>
@@ -1163,11 +1165,12 @@ New delivery costs = $26113.50
     \min \quad &amp; \rho \\
     \text{s.t.} \quad &amp;\sum_{s=1}^{n_s} x_{d, s}  = D_d &amp; \forall \, d = 1, \dots, n_d &amp; \quad \text{(demand constraints)}\\
     &amp; \sum_{d=1}^{n_d} x_{d, s}  \leq S_s &amp; \forall \, s =  1, \dots, n_s &amp; \quad \text{(supply constraints)}\\
-    &amp; \sum_{s=1}^{n_s} r_{d, s} x_{d, s} \leq \rho D_d &amp; \forall d = 1, \dots, n_d &amp; \quad \text{(common cost rate)}\\
+    &amp; \sum_{s=1}^{n_s} r_{d, s} x_{d, s} = \rho D_d &amp; \forall d = 1, \dots, n_d &amp; \quad \text{(common cost rate)}\\
     &amp; x_{d, s} \geq 0 &amp; \forall \, d = 1, \dots, n_d, \, s = 1, \dots, n_s.
 \end{align*}
 \end{split}\]</div>
 <p>The following Pyomo model implements this formulation.</p>
+<p>The savings chart below has zero-height bars: the common rate remains 8.75 cents per gallon, so every franchise saves $0. This is a model result, not a missing figure. Emma and Fujita have no cheaper supplier; requiring the same direct delivery-cost rate for everyone prevents the group from reducing that rate. Model 3 instead shares the total cost across franchises.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">transport_v2</span><span class="p">(</span><span class="n">supply</span><span class="p">,</span> <span class="n">demand</span><span class="p">,</span> <span class="n">rates</span><span class="p">):</span>
@@ -1221,7 +1224,8 @@ New delivery costs = $26113.50
 
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">transport_v2</span><span class="p">(</span><span class="n">supply</span><span class="p">,</span> <span class="n">demand</span><span class="p">,</span> <span class="n">rates</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">solve_results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">solve_results</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span>
     <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
         <span class="p">{</span><span class="n">dst</span><span class="p">:</span> <span class="p">{</span><span class="n">src</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">]()</span> <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">}</span> <span class="k">for</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">}</span>
@@ -1244,7 +1248,14 @@ New delivery costs = $26113.50
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"New delivery costs = $</span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">total_cost</span><span class="p">(),</span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="n">display</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
-<span class="n">results</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s2">"savings"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"bar"</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s2">"savings"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"bar"</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Model 2: delivery-cost savings by franchise"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Savings (dollars)"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">results</span><span class="p">[</span><span class="s2">"savings"</span><span class="p">]</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="s2">"All franchises save $0"</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
+            <span class="n">ha</span><span class="o">=</span><span class="s2">"center"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -1285,25 +1296,25 @@ New delivery costs = $27387.5
   <tbody>
     <tr>
       <th>Alice</th>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>30000.0</td>
+      <td>16912.0</td>
+      <td>5248.6</td>
+      <td>7839.4</td>
       <td>2625.0</td>
       <td>2625.0</td>
       <td>0.0</td>
       <td>8.75</td>
-      <td>0.0</td>
+      <td>-0.0</td>
     </tr>
     <tr>
       <th>Badri</th>
+      <td>33333.3</td>
+      <td>6666.7</td>
       <td>0.0</td>
-      <td>0.0</td>
-      <td>40000.0</td>
       <td>3500.0</td>
       <td>3500.0</td>
       <td>0.0</td>
       <td>8.75</td>
-      <td>0.0</td>
+      <td>-0.0</td>
     </tr>
     <tr>
       <th>Cara</th>
@@ -1314,7 +1325,7 @@ New delivery costs = $27387.5
       <td>4375.0</td>
       <td>0.0</td>
       <td>8.75</td>
-      <td>0.0</td>
+      <td>-0.0</td>
     </tr>
     <tr>
       <th>Dan</th>
@@ -1325,18 +1336,18 @@ New delivery costs = $27387.5
       <td>1750.0</td>
       <td>0.0</td>
       <td>8.75</td>
-      <td>0.0</td>
+      <td>-0.0</td>
     </tr>
     <tr>
       <th>Emma</th>
       <td>0.0</td>
-      <td>0.0</td>
+      <td>-0.0</td>
       <td>30000.0</td>
       <td>2625.0</td>
       <td>2625.0</td>
       <td>0.0</td>
       <td>8.75</td>
-      <td>0.0</td>
+      <td>-0.0</td>
     </tr>
     <tr>
       <th>Fujita</th>
@@ -1358,22 +1369,22 @@ New delivery costs = $27387.5
       <td>7000.0</td>
       <td>0.0</td>
       <td>8.75</td>
-      <td>0.0</td>
+      <td>-0.0</td>
     </tr>
     <tr>
       <th>Helen</th>
-      <td>0.0</td>
+      <td>-0.0</td>
       <td>0.0</td>
       <td>18000.0</td>
       <td>1575.0</td>
       <td>1575.0</td>
       <td>0.0</td>
       <td>8.75</td>
-      <td>0.0</td>
+      <td>-0.0</td>
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/50ec4a19840420dc3d3aecb825aa3214cbfa7081877adee3b8ad89bf91985bca.png" src="../../_images/50ec4a19840420dc3d3aecb825aa3214cbfa7081877adee3b8ad89bf91985bca.png" />
+</div></div><img alt="../../_images/1584aea72e628af009484cad64c7dac6263ec630ff80dc2eb7058d2c1f31f5f2.png" src="../../_images/1584aea72e628af009484cad64c7dac6263ec630ff80dc2eb7058d2c1f31f5f2.png" />
 </div>
 </div>
 </section>
@@ -1389,7 +1400,7 @@ New delivery costs = $27387.5
     \min \quad &amp; \sum_{d=1}^{n_d} \sum_{s=1}^{n_s} r_{d, s} x_{d, s} \\
     \text{s.t.} \quad &amp;\sum_{s=1}^{n_s} x_{d, s}  = D_d &amp; \forall \, d= 1, \dots, n_d &amp; \quad \text{(demand constraints)}\\
     &amp; \sum_{d=1}^{n_d} x_{d, s}  \leq S_s &amp; \forall \, s = 1, \dots, n_s &amp; \quad \text{(supply constraints)}\\
-    &amp; \sum_{s=1}^{n_s} r_{d, s} x_{d, s} = \rho D_d &amp; \forall d= 1, \dots, n_d &amp; \quad \text{(uniform cost sharing rate)}\\
+    &amp; \sum_{d=1}^{n_d} \sum_{s=1}^{n_s} r_{d, s} x_{d, s} = \rho \sum_{d=1}^{n_d} D_d &amp; &amp; \quad \text{(shared delivery costs)}\\
     &amp; x_{d, s} \geq 0 &amp; \forall \, d = 1, \dots, n_d, \, s = 1, \dots, n_s.
 \end{align*}
 \end{split}\]</div>
@@ -1444,7 +1455,8 @@ New delivery costs = $27387.5
 
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">transport_v3</span><span class="p">(</span><span class="n">supply</span><span class="p">,</span> <span class="n">demand</span><span class="p">,</span> <span class="n">rates</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">solve_results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">solve_results</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span>
     <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
         <span class="p">{</span><span class="n">dst</span><span class="p">:</span> <span class="p">{</span><span class="n">src</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">]()</span> <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">}</span> <span class="k">for</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">}</span>
@@ -1542,8 +1554,8 @@ New delivery costs = $26113.50
     <tr>
       <th>Dan</th>
       <td>0.0</td>
+      <td>-0.0</td>
       <td>20000.0</td>
-      <td>0.0</td>
       <td>1750.0</td>
       <td>1668.6</td>
       <td>81.4</td>
@@ -1575,8 +1587,8 @@ New delivery costs = $26113.50
     <tr>
       <th>Grace</th>
       <td>0.0</td>
-      <td>60000.0</td>
-      <td>20000.0</td>
+      <td>80000.0</td>
+      <td>0.0</td>
       <td>7000.0</td>
       <td>6674.4</td>
       <td>325.6</td>
@@ -1596,7 +1608,7 @@ New delivery costs = $26113.50
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/f859de7d78ebccfd6dd6b4f485fae86ce571d705bbaf85dfdeb4f2c3e47c85eb.png" src="../../_images/f859de7d78ebccfd6dd6b4f485fae86ce571d705bbaf85dfdeb4f2c3e47c85eb.png" />
+</div></div><img alt="../../_images/98976c00202ae6577ecd6cfe4085a27a207d701747aac2330cb147556ff64bfd.png" src="../../_images/98976c00202ae6577ecd6cfe4085a27a207d701747aac2330cb147556ff64bfd.png" />
 </div>
 </div>
 </section>
@@ -1616,8 +1628,10 @@ New delivery costs = $26113.50
 <span class="n">model3_results</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s2">"savings"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"bar"</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">"r"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
 <span class="n">model3_results</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s2">"savings"</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">"o"</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">"r"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s2">"Model 1"</span><span class="p">,</span> <span class="s2">"Model 3"</span><span class="p">])</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">470</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Delivery costs by franchise"</span><span class="p">)</span>
+<span class="n">max_savings</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">model1_results</span><span class="p">[</span><span class="s2">"savings"</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">model3_results</span><span class="p">[</span><span class="s2">"savings"</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">1.1</span> <span class="o">*</span> <span class="n">max_savings</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Delivery-cost savings by franchise"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Savings (dollars)"</span><span class="p">)</span>
 
 <span class="n">model1_results</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="p">[</span><span class="s2">"contract rate"</span><span class="p">],</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"bar"</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">"g"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
 <span class="n">model1_results</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="s2">"contract rate"</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">"o"</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">"g"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
@@ -1632,7 +1646,7 @@ New delivery costs = $26113.50
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/47887ea045828ae0d35ed80594a5feeb881571ee6c18223cc66eddc73637a204.png" src="../../_images/47887ea045828ae0d35ed80594a5feeb881571ee6c18223cc66eddc73637a204.png" />
+<img alt="../../_images/9c77caad228961a2e6d16eb7c6a9570c9193d2e54ab4640627f3b771fb6eee3e.png" src="../../_images/9c77caad228961a2e6d16eb7c6a9570c9193d2e54ab4640627f3b771fb6eee3e.png" />
 </div>
 </div>
 </section>
@@ -1670,7 +1684,7 @@ DESTINATIONS : Size=1, Index=None, Ordered=Insertion
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Rates : Size=24, Index=Rates_index, Domain=Any, Default=None, Mutable=False
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Rates : Size=24, Index=DESTINATIONS*SOURCES, Domain=Any, Default=None, Mutable=False
     Key                            : Value
      ('Alice', 'Current Supplier') :              0.0875
            ('Alice', 'Terminal A') :               0.083
@@ -1731,9 +1745,9 @@ DESTINATIONS : Size=1, Index=None, Ordered=Insertion
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>shipped_from_source : Size=3
     Key              : Value
-    Current Supplier : 133000.0
           Terminal A : 100000.0
           Terminal B :  80000.0
+    Current Supplier : 133000.0
 </pre></div>
 </div>
 </div>
@@ -1764,9 +1778,9 @@ DESTINATIONS : Size=1, Index=None, Ordered=Insertion
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>supply_constraint : Size=3
     Key              : Lower : Body     : Upper
-    Current Supplier :  None : 133000.0 : 500000.0
           Terminal A :  None : 100000.0 : 100000.0
           Terminal B :  None :  80000.0 :  80000.0
+    Current Supplier :  None : 133000.0 : 500000.0
 demand_constraint : Size=8
     Key    : Lower   : Body    : Upper
      Alice : 30000.0 : 30000.0 : 30000.0
@@ -1789,7 +1803,7 @@ demand_constraint : Size=8
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>x : Size=24, Index=x_index
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>x : Size=24, Index=DESTINATIONS*SOURCES
     Key                            : Lower : Value   : Upper : Fixed : Stale : Domain
      ('Alice', 'Current Supplier') :     0 :     0.0 :  None : False : False : NonNegativeReals
            ('Alice', 'Terminal A') :     0 : 30000.0 :  None : False : False : NonNegativeReals
@@ -1800,18 +1814,18 @@ demand_constraint : Size=8
       ('Cara', 'Current Supplier') :     0 : 38000.0 :  None : False : False : NonNegativeReals
             ('Cara', 'Terminal A') :     0 : 12000.0 :  None : False : False : NonNegativeReals
             ('Cara', 'Terminal B') :     0 :     0.0 :  None : False : False : NonNegativeReals
-       ('Dan', 'Current Supplier') :     0 :     0.0 :  None : False : False : NonNegativeReals
+       ('Dan', 'Current Supplier') :     0 : 20000.0 :  None : False : False : NonNegativeReals
              ('Dan', 'Terminal A') :     0 :     0.0 :  None : False : False : NonNegativeReals
-             ('Dan', 'Terminal B') :     0 : 20000.0 :  None : False : False : NonNegativeReals
+             ('Dan', 'Terminal B') :     0 :    -0.0 :  None : False : False : NonNegativeReals
       ('Emma', 'Current Supplier') :     0 : 30000.0 :  None : False : False : NonNegativeReals
             ('Emma', 'Terminal A') :     0 :     0.0 :  None : False : False : NonNegativeReals
             ('Emma', 'Terminal B') :     0 :     0.0 :  None : False : False : NonNegativeReals
     ('Fujita', 'Current Supplier') :     0 : 45000.0 :  None : False : False : NonNegativeReals
           ('Fujita', 'Terminal A') :     0 :     0.0 :  None : False : False : NonNegativeReals
           ('Fujita', 'Terminal B') :     0 :     0.0 :  None : False : False : NonNegativeReals
-     ('Grace', 'Current Supplier') :     0 : 20000.0 :  None : False : False : NonNegativeReals
+     ('Grace', 'Current Supplier') :     0 :     0.0 :  None : False : False : NonNegativeReals
            ('Grace', 'Terminal A') :     0 :     0.0 :  None : False : False : NonNegativeReals
-           ('Grace', 'Terminal B') :     0 : 60000.0 :  None : False : False : NonNegativeReals
+           ('Grace', 'Terminal B') :     0 : 80000.0 :  None : False : False : NonNegativeReals
      ('Helen', 'Current Supplier') :     0 :     0.0 :  None : False : False : NonNegativeReals
            ('Helen', 'Terminal A') :     0 : 18000.0 :  None : False : False : NonNegativeReals
            ('Helen', 'Terminal B') :     0 :     0.0 :  None : False : False : NonNegativeReals
@@ -1858,7 +1872,7 @@ cost = 26113.5
 Constraint: supply_constraint
 Terminal A      100000     -0.00
 Terminal B       80000     -0.01
-Current Supplier    133000      0.00
+Current Supplier    133000     -0.00
 
 Constraint: demand_constraint
 Alice            30000      0.09
@@ -1883,19 +1897,19 @@ Terminal A   -&gt; Helen            18000
 Terminal B   -&gt; Alice                0
 Terminal B   -&gt; Badri                0
 Terminal B   -&gt; Cara                 0
-Terminal B   -&gt; Dan              20000
+Terminal B   -&gt; Dan                 -0
 Terminal B   -&gt; Emma                 0
 Terminal B   -&gt; Fujita               0
-Terminal B   -&gt; Grace            60000
+Terminal B   -&gt; Grace            80000
 Terminal B   -&gt; Helen                0
 
 Current Supplier -&gt; Alice                0
 Current Supplier -&gt; Badri                0
 Current Supplier -&gt; Cara             38000
-Current Supplier -&gt; Dan                  0
+Current Supplier -&gt; Dan              20000
 Current Supplier -&gt; Emma             30000
 Current Supplier -&gt; Fujita           45000
-Current Supplier -&gt; Grace            20000
+Current Supplier -&gt; Grace                0
 Current Supplier -&gt; Helen                0
 </pre></div>
 </div>
@@ -1984,7 +1998,7 @@ Current Supplier -&gt; Helen                0
       <th>Current Supplier</th>
       <td>500000.0</td>
       <td>133000.0</td>
-      <td>0.0000</td>
+      <td>-0.0000</td>
     </tr>
   </tbody>
 </table>
@@ -2107,8 +2121,8 @@ Current Supplier -&gt; Helen                0
     <tr>
       <th>Dan</th>
       <td>0.0</td>
+      <td>-0.0</td>
       <td>20000.0</td>
-      <td>0.0</td>
     </tr>
     <tr>
       <th>Emma</th>
@@ -2125,8 +2139,8 @@ Current Supplier -&gt; Helen                0
     <tr>
       <th>Grace</th>
       <td>0.0</td>
-      <td>60000.0</td>
-      <td>20000.0</td>
+      <td>80000.0</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>Helen</th>
@@ -2136,55 +2150,64 @@ Current Supplier -&gt; Helen                0
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/af2d6ffb05a0789e8f8c5abe8f69f66c2c62f3b23009b4e8b66c8d16b7313ae3.png" src="../../_images/af2d6ffb05a0789e8f8c5abe8f69f66c2c62f3b23009b4e8b66c8d16b7313ae3.png" />
+</div></div><img alt="../../_images/162d749d94a590b894190186ee6a1e2a6727650ff233e8f83d15d2ffc327b5c3.png" src="../../_images/162d749d94a590b894190186ee6a1e2a6727650ff233e8f83d15d2ffc327b5c3.png" />
 </div>
 </div>
 </section>
-<section id="graphviz">
-<h3>Graphviz<a class="headerlink" href="#graphviz" title="Link to this heading">#</a></h3>
-<p>The <code class="docutils literal notranslate"><span class="pre">graphviz</span></code> utility is a collection of tools for visually graphs and directed graphs.</p>
+<section id="network-diagram">
+<h3>Network diagram<a class="headerlink" href="#network-diagram" title="Link to this heading">#</a></h3>
+<p>NetworkX and matplotlib show the deliveries, rates and marginal values without requiring a separate graph-layout executable. Only positive shipments are drawn. Rates are in cents per gallon; marginal values are in dollars per gallon.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">graphviz</span><span class="w"> </span><span class="kn">import</span> <span class="n">Digraph</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
 
-<span class="n">dot</span> <span class="o">=</span> <span class="n">Digraph</span><span class="p">(</span>
-    <span class="n">node_attr</span><span class="o">=</span><span class="p">{</span><span class="s2">"fontsize"</span><span class="p">:</span> <span class="s2">"10"</span><span class="p">,</span> <span class="s2">"shape"</span><span class="p">:</span> <span class="s2">"rectangle"</span><span class="p">,</span> <span class="s2">"style"</span><span class="p">:</span> <span class="s2">"filled"</span><span class="p">},</span>
-    <span class="n">edge_attr</span><span class="o">=</span><span class="p">{</span><span class="s2">"fontsize"</span><span class="p">:</span> <span class="s2">"10"</span><span class="p">},</span>
-<span class="p">)</span>
-
+<span class="n">network</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">()</span>
+<span class="n">node_labels</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">:</span>
-    <span class="n">label</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">network</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+    <span class="n">node_labels</span><span class="p">[</span><span class="n">src</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2">"</span>
-        <span class="o">+</span> <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">supply = </span><span class="si">{</span><span class="n">supply</span><span class="p">[</span><span class="n">src</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
-        <span class="o">+</span> <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">shipped = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">supply_constraint</span><span class="p">[</span><span class="n">src</span><span class="p">]()</span><span class="si">}</span><span class="s2">"</span>
-        <span class="o">+</span> <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">sens  = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">supply_constraint</span><span class="p">[</span><span class="n">src</span><span class="p">]]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">supply = </span><span class="si">{</span><span class="n">supply</span><span class="p">[</span><span class="n">src</span><span class="p">]</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">shipped = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">shipped_from_source</span><span class="p">[</span><span class="n">src</span><span class="p">]()</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">marginal value = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">supply_constraint</span><span class="p">[</span><span class="n">src</span><span class="p">]]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
-    <span class="n">dot</span><span class="o">.</span><span class="n">node</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">fillcolor</span><span class="o">=</span><span class="s2">"lightblue"</span><span class="p">)</span>
-
 <span class="k">for</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">:</span>
-    <span class="n">label</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">network</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span>
+    <span class="n">node_labels</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dst</span><span class="si">}</span><span class="s2">"</span>
-        <span class="o">+</span> <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">demand = </span><span class="si">{</span><span class="n">demand</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
-        <span class="o">+</span> <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">shipped = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">demand_constraint</span><span class="p">[</span><span class="n">dst</span><span class="p">]()</span><span class="si">}</span><span class="s2">"</span>
-        <span class="o">+</span> <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">sens  = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">demand_constraint</span><span class="p">[</span><span class="n">dst</span><span class="p">]]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">demand = </span><span class="si">{</span><span class="n">demand</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">shipped = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">shipped_to_destination</span><span class="p">[</span><span class="n">dst</span><span class="p">]()</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">marginal cost = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">demand_constraint</span><span class="p">[</span><span class="n">dst</span><span class="p">]]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
-    <span class="n">dot</span><span class="o">.</span><span class="n">node</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">fillcolor</span><span class="o">=</span><span class="s2">"gold"</span><span class="p">)</span>
-
+<span class="n">edge_labels</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">:</span>
     <span class="k">for</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">dot</span><span class="o">.</span><span class="n">edge</span><span class="p">(</span>
-                <span class="n">src</span><span class="p">,</span>
-                <span class="n">dst</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">"rate = </span><span class="si">{</span><span class="n">rates</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">dst</span><span class="p">,</span><span class="w"> </span><span class="n">src</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">shipped = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">dst</span><span class="p">,</span><span class="w"> </span><span class="n">src</span><span class="p">]()</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="n">shipped</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">]()</span>
+        <span class="k">if</span> <span class="n">shipped</span> <span class="o">&gt;</span> <span class="mf">1e-6</span><span class="p">:</span>
+            <span class="n">network</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
+            <span class="n">edge_labels</span><span class="p">[</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">rates</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">dst</span><span class="p">,</span><span class="w"> </span><span class="n">src</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> cents/gal; </span><span class="si">{</span><span class="n">shipped</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2"> gal"</span>
 
-<span class="n">display</span><span class="p">(</span><span class="n">dot</span><span class="p">)</span>
+<span class="n">positions</span> <span class="o">=</span> <span class="p">{</span><span class="n">src</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span> <span class="o">-</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">src</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">)}</span>
+<span class="n">positions</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">dst</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">7</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dst</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">)})</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+<span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx_edges</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">arrowsize</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span>
+                       <span class="n">node_size</span><span class="o">=</span><span class="mi">2500</span><span class="p">,</span> <span class="n">edge_color</span><span class="o">=</span><span class="s2">"gray"</span><span class="p">)</span>
+<span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx_edge_labels</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">edge_labels</span><span class="o">=</span><span class="n">edge_labels</span><span class="p">,</span>
+                            <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">font_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">label_pos</span><span class="o">=</span><span class="mf">0.55</span><span class="p">,</span> <span class="n">rotate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">positions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">color</span> <span class="o">=</span> <span class="s2">"lightblue"</span> <span class="k">if</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span> <span class="k">else</span> <span class="s2">"gold"</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">*</span><span class="n">xy</span><span class="p">,</span> <span class="n">node_labels</span><span class="p">[</span><span class="n">node</span><span class="p">],</span> <span class="n">ha</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span>
+            <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">boxstyle</span><span class="o">=</span><span class="s2">"round,pad=0.5"</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"gray"</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="mf">0.65</span><span class="p">,</span> <span class="mf">2.65</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">7.7</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/4cf03a10538e7518e058b3d9435174e177a3d404163772d73bf74d8d1f58eadb.svg" src="../../_images/4cf03a10538e7518e058b3d9435174e177a3d404163772d73bf74d8d1f58eadb.svg" />
+<img alt="../../_images/3e19eda9e8cb7f0e043186b87b2dcb48e66bdcab2ccd36349b1c2f45ac34af6c.png" src="../../_images/3e19eda9e8cb7f0e043186b87b2dcb48e66bdcab2ccd36349b1c2f45ac34af6c.png" />
 </div>
 </div>
 </section>
@@ -2268,7 +2291,7 @@ Current Supplier -&gt; Helen                0
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-display-method">Pyomo <code class="docutils literal notranslate"><span class="pre">.display()</span></code> method</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#manually-formatted-reports">Manually formatted reports</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pandas">Pandas</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#graphviz">Graphviz</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#network-diagram">Network diagram</a></li>
 </ul>
 </li>
 </ul>

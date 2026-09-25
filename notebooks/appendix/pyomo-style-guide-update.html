@@ -583,7 +583,18 @@
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#constraints-and-objective">Constraints and Objective</a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#prefer-pyo-constraint-to-pyo-constraintlist">Prefer <code class="docutils literal notranslate"><span class="pre">pyo.Constraint</span></code> to <code class="docutils literal notranslate"><span class="pre">pyo.ConstraintList</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#use-decorators-to-improve-readability">Use decorators to improve readability</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#use-decorators-to-improve-readability">Use decorators to improve readability</a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#first-what-does-python-s-mean">First: what does Python’s <code class="docutils literal notranslate"><span class="pre">@</span></code> mean?</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#a-complete-indexed-constraint-example">A complete indexed-constraint example</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#scalar-constraints-objectives-and-expressions">Scalar constraints, objectives and expressions</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#several-index-sets-and-conditional-constraints">Several index sets and conditional constraints</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#inspecting-and-debugging-the-result">Inspecting and debugging the result</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#rules-for-indexed-bounds-the-same-idea-a-different-keyword">Rules for indexed bounds: the same idea, a different keyword</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#blocks-a-rule-builds-a-group-of-components">Blocks: a rule builds a group of components</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#parameters-and-the-different-meanings-of-a-rule-s-return-value">Parameters and the different meanings of a rule’s return value</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#where-to-see-these-patterns-in-the-book">Where to see these patterns in the book</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -733,39 +744,324 @@ Production code usually omits exploratory validation steps but still benefits fr
 </section>
 <section id="use-decorators-to-improve-readability">
 <h4>Use decorators to improve readability<a class="headerlink" href="#use-decorators-to-improve-readability" title="Link to this heading">#</a></h4>
-<p>Indexed Pyomo constraints are constructed by a rule.  When constraints are specified with <code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code>, rules are normally named by adding <code class="docutils literal notranslate"><span class="pre">_rule</span></code> as a suffix to the name of the associated constraint. For example, assuming model <code class="docutils literal notranslate"><span class="pre">m</span></code>  and the associated sets, parameters, and variables have been previously defined,</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">new_constraint_rule</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-  <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">ub</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
-<span class="n">m</span><span class="o">.</span><span class="n">new_constraint</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="n">new_constraint_rule</span><span class="p">)</span>
+<p>Pyomo supports both explicit component declarations with <code class="docutils literal notranslate"><span class="pre">rule=</span></code> and Python’s
+decorator notation. Both can construct the same optimization model. Decorators
+keep the rule beside its declaration and avoid repeating a component’s name.
+They do not change the mathematical problem or the algorithm used by a solver.</p>
+<section id="first-what-does-python-s-mean">
+<h5>First: what does Python’s <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> mean?<a class="headerlink" href="#first-what-does-python-s-mean" title="Link to this heading">#</a></h5>
+<p>A decorator is a callable applied to the function defined immediately below it.
+In ordinary Python, these two patterns have the same effect:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@decorate</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rule</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
 </pre></div>
 </div>
-<p>A recent addition to Pyomo is the use of Python decorators to create some modeling objects, including parameters, constraints, objectives, disjunctions, and blocks. Using decorators, the above example is written as</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">new_constraint_rule</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-  <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">ub</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">rule</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="n">rule</span> <span class="o">=</span> <span class="n">decorate</span><span class="p">(</span><span class="n">rule</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The use of decorators improves readability and maintainability. Decorators eliminate the need for the <code class="docutils literal notranslate"><span class="pre">rule</span></code> keyword, requires the name of the constraint in one rather than three places.</p>
-<p>The decorator syntax is straightforward for objectives and simple constraints. For Python users unfamiliar with decorators, decorators can be described as a way to ‘tag’ functions that are to be incorporated into the Pyomo model. Indices and keywords are used modify the extend to the bahavior of the decorator.</p>
+<p>Here <code class="docutils literal notranslate"><span class="pre">decorate</span></code> is a placeholder for a previously defined callable. With
+<code class="docutils literal notranslate"><span class="pre">&#64;factory(options)</span></code>, Python first evaluates <code class="docutils literal notranslate"><span class="pre">factory(options)</span></code> to obtain the
+decorator, then applies it to the new function. A decorator need not wrap or
+change the function: it can register it elsewhere and return it unchanged.
+That is the pattern used by Pyomo’s model-component decorators.</p>
+</section>
+<section id="a-complete-indexed-constraint-example">
+<h5>A complete indexed-constraint example<a class="headerlink" href="#a-complete-indexed-constraint-example" title="Link to this heading">#</a></h5>
+<p>Run this setup before either of the two alternatives below:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.environ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyo</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="p">[</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">])</span>
+<span class="n">model</span><span class="o">.</span><span class="n">ub</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">:</span> <span class="mi">7</span><span class="p">})</span>
+<span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Alternative 1: an explicit rule.</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">capacity_rule</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">ub</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">capacity</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="n">capacity_rule</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Alternative 2: a decorator.</strong> Start from the setup again; do not execute both
+alternatives on the same model.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">capacity</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">ub</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Both create <code class="docutils literal notranslate"><span class="pre">model.capacity[&quot;A&quot;]</span></code> and <code class="docutils literal notranslate"><span class="pre">model.capacity[&quot;B&quot;]</span></code>, representing
+<code class="docutils literal notranslate"><span class="pre">x[A]</span> <span class="pre">&lt;=</span> <span class="pre">4</span></code> and <code class="docutils literal notranslate"><span class="pre">x[B]</span> <span class="pre">&lt;=</span> <span class="pre">7</span></code>. Notice the names: the explicit form chooses the
+component name on the left of <code class="docutils literal notranslate"><span class="pre">=</span></code>, whereas the decorator uses the function’s
+name. Calling the decorated function <code class="docutils literal notranslate"><span class="pre">capacity_rule</span></code> would create
+<code class="docutils literal notranslate"><span class="pre">model.capacity_rule</span></code>, not <code class="docutils literal notranslate"><span class="pre">model.capacity</span></code>.</p>
+<p>Read the decorator example in four steps:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">model.Constraint(model.S)</span></code> obtains a decorator attached to this model and
+passes <code class="docutils literal notranslate"><span class="pre">model.S</span></code> as the constraint’s index set.</p></li>
+<li><p>Python defines the function <code class="docutils literal notranslate"><span class="pre">capacity</span></code> and passes it to that decorator.</p></li>
+<li><p>Pyomo constructs a <code class="docutils literal notranslate"><span class="pre">Constraint</span></code> with <code class="docutils literal notranslate"><span class="pre">rule=capacity</span></code> and attaches it to
+<code class="docutils literal notranslate"><span class="pre">model</span></code> under the name <code class="docutils literal notranslate"><span class="pre">capacity</span></code>.</p></li>
+<li><p>For this concrete model, construction calls the rule once for each index,
+passing the model and that index. The returned relations become constraints.</p></li>
+</ol>
+<p>The argument <code class="docutils literal notranslate"><span class="pre">m</span></code> is a local parameter receiving the model (or block) that owns
+the component. Its name is your choice; it is not a special keyword. Use it
+consistently inside the rule so the rule refers to the object Pyomo passes in.
+The outside name <code class="docutils literal notranslate"><span class="pre">model</span></code> identifies the object receiving the component.</p>
+<p>Pyomo returns the original function from this decorator: <code class="docutils literal notranslate"><span class="pre">capacity</span></code> remains a
+Python function, while <code class="docutils literal notranslate"><span class="pre">model.capacity</span></code> is the constraint component. You normally
+work with the latter after construction. No solver is called by the decorator.
+For an <code class="docutils literal notranslate"><span class="pre">AbstractModel</span></code>, rules are evaluated when a concrete instance is created.</p>
+</section>
+<section id="scalar-constraints-objectives-and-expressions">
+<h5>Scalar constraints, objectives and expressions<a class="headerlink" href="#scalar-constraints-objectives-and-expressions" title="Link to this heading">#</a></h5>
+<p>The parentheses are needed even when there is no index set. Continuing with
+either indexed-constraint alternative above:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">demand_constraint</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-  <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span> <span class="o">&lt;=</span> <span class="mi">40</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">total_limit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">8</span>
+
+<span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">revenue</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="s2">"A"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="s2">"B"</span><span class="p">]</span>
 
 <span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-  <span class="k">return</span> <span class="mi">3</span><span class="o">*</span><span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="mi">4</span><span class="o">*</span><span class="n">model</span><span class="o">.</span><span class="n">y</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">revenue</span>
 </pre></div>
 </div>
-<p>Indices are also included in the decorator for indexed objects.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">capacity_constraint</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">src</span><span class="p">):</span>
-  <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">ship</span><span class="p">[</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">]</span> <span class="k">for</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">capacity</span><span class="p">[</span><span class="n">src</span><span class="p">]</span>
+<p>These create <code class="docutils literal notranslate"><span class="pre">model.total_limit</span></code>, <code class="docutils literal notranslate"><span class="pre">model.revenue</span></code> and <code class="docutils literal notranslate"><span class="pre">model.profit</span></code>.
+<code class="docutils literal notranslate"><span class="pre">sense=pyo.maximize</span></code> is passed to the objective constructor; it is not an
+argument to <code class="docutils literal notranslate"><span class="pre">profit</span></code>. Without it, the objective defaults to minimization.
+An expression names a formula; it neither constrains nor optimizes that formula
+by itself. Short scalar declarations can also be clear without a rule:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># An alternative to the total_limit decorator, not an additional declaration:</span>
+<span class="n">model</span><span class="o">.</span><span class="n">total_limit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">8</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="several-index-sets-and-conditional-constraints">
+<h5>Several index sets and conditional constraints<a class="headerlink" href="#several-index-sets-and-conditional-constraints" title="Link to this heading">#</a></h5>
+<p>In a transportation model, a rule over two one-dimensional sets receives the
+owning model followed by a source and a destination. This is a separate,
+self-contained example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transport</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+<span class="n">transport</span><span class="o">.</span><span class="n">SOURCES</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="p">[</span><span class="s2">"factory"</span><span class="p">])</span>
+<span class="n">transport</span><span class="o">.</span><span class="n">DESTINATIONS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="p">[</span><span class="s2">"shop"</span><span class="p">,</span> <span class="s2">"depot"</span><span class="p">])</span>
+<span class="n">transport</span><span class="o">.</span><span class="n">ship</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span>
+    <span class="n">transport</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">,</span> <span class="n">transport</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">transport</span><span class="o">.</span><span class="n">capacity</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">transport</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="p">{</span><span class="s2">"factory"</span><span class="p">:</span> <span class="mi">10</span><span class="p">})</span>
+<span class="n">transport</span><span class="o">.</span><span class="n">demand</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
+    <span class="n">transport</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="p">{</span><span class="s2">"shop"</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="s2">"depot"</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+<span class="p">)</span>
 
-<span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">demand_constraint</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">dst</span><span class="p">):</span>
-  <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">ship</span><span class="p">[</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">]</span> <span class="k">for</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">demand</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span>
+<span class="nd">@transport</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">transport</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">supply_limit</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">src</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">ship</span><span class="p">[</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">]</span> <span class="k">for</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">capacity</span><span class="p">[</span><span class="n">src</span><span class="p">]</span>
+
+<span class="nd">@transport</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">transport</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">meet_demand</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">dst</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">ship</span><span class="p">[</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">]</span> <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">demand</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span>
+
+<span class="nd">@transport</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">transport</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">,</span> <span class="n">transport</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">route_limit</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">dst</span> <span class="o">==</span> <span class="s2">"depot"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="o">.</span><span class="n">Skip</span>
+    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">ship</span><span class="p">[</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">8</span>
 </pre></div>
 </div>
+<p>The last rule is called for each source-destination pair, but creates no
+constraint for the depot. <code class="docutils literal notranslate"><span class="pre">Constraint.Skip</span></code> is a sentinel: return it without
+parentheses. Every branch must return a relation or an appropriate Pyomo
+sentinel; falling off the end returns <code class="docutils literal notranslate"><span class="pre">None</span></code>, which is not a valid constraint.
+For tuple-valued index sets, flattened index entries may contribute several
+arguments to the rule; its signature must match the index structure.</p>
+<p>Here demand is a minimum service requirement, hence <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>. Use <code class="docutils literal notranslate"><span class="pre">==</span></code> for exact
+delivery or <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code> for a sales cap. Decorator syntax does not determine the
+inequality direction. Similarly, the <code class="docutils literal notranslate"><span class="pre">if</span></code> above tests known data. A Python
+<code class="docutils literal notranslate"><span class="pre">if</span></code> involving an unknown decision variable cannot express a solver’s choice;
+use an appropriate algebraic or disjunctive formulation instead.</p>
+</section>
+<section id="inspecting-and-debugging-the-result">
+<h5>Inspecting and debugging the result<a class="headerlink" href="#inspecting-and-debugging-the-result" title="Link to this heading">#</a></h5>
+<p>After running the first example and its scalar extensions, inspect the model:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">capacity</span><span class="o">.</span><span class="n">pprint</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">capacity</span><span class="p">[</span><span class="s2">"A"</span><span class="p">]</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">profit</span><span class="o">.</span><span class="n">expr</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">component_map</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>The last line lists <code class="docutils literal notranslate"><span class="pre">capacity</span></code> and <code class="docutils literal notranslate"><span class="pre">total_limit</span></code>. This inspects construction;
+decision values are still unset until assigned or obtained from a successful
+solve. Evaluate a solution with <code class="docutils literal notranslate"><span class="pre">pyo.value(model.profit)</span></code> only after checking
+solver termination.</p>
+<p>Common mistakes to check are:</p>
+<ul class="simple">
+<li><p>Write <code class="docutils literal notranslate"><span class="pre">&#64;model.Constraint(...)</span></code> on a model or block instance, not
+<code class="docutils literal notranslate"><span class="pre">&#64;pyo.Constraint(...)</span></code>. The latter is the component class constructor.</p></li>
+<li><p>Pass the function itself with <code class="docutils literal notranslate"><span class="pre">rule=capacity_rule</span></code>, not its result with
+<code class="docutils literal notranslate"><span class="pre">rule=capacity_rule()</span></code>.</p></li>
+<li><p>Match the rule arguments to the index sets and return a valid expression.</p></li>
+<li><p>Give components distinct names. Rerunning a declaration on the same model
+can replace a component; rerun the model-building setup for a clean example.</p></li>
+<li><p>Define referenced sets, parameters and variables before constructing rules
+on a concrete model. Rules build symbolic expressions; they are not callbacks
+that the solver repeatedly executes during optimization.</p></li>
+</ul>
+<p>Both styles are supported. Prefer decorators when they make the model easier
+to read; use explicit <code class="docutils literal notranslate"><span class="pre">rule=</span></code> when attaching an existing reusable function or
+when it better fits the surrounding code. Other components also support
+decorators, but their rule return values and constructor options differ.</p>
+</section>
+<section id="rules-for-indexed-bounds-the-same-idea-a-different-keyword">
+<h5>Rules for indexed bounds: the same idea, a different keyword<a class="headerlink" href="#rules-for-indexed-bounds-the-same-idea-a-different-keyword" title="Link to this heading">#</a></h5>
+<p>A rule is simply a callable that Pyomo invokes with the appropriate arguments.
+It need not be decorated. In particular, a variable’s <code class="docutils literal notranslate"><span class="pre">bounds=</span></code> callback returns
+a pair <code class="docutils literal notranslate"><span class="pre">(lower_bound,</span> <span class="pre">upper_bound)</span></code>, rather than a constraint relation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">bounded</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+<span class="n">bounded</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="p">[</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">])</span>
+<span class="n">bounded</span><span class="o">.</span><span class="n">limit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">bounded</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">:</span> <span class="mi">7</span><span class="p">})</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">variable_bounds</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">limit</span><span class="p">[</span><span class="n">s</span><span class="p">])</span>
+
+<span class="n">bounded</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounded</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="n">variable_bounds</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Thus <code class="docutils literal notranslate"><span class="pre">bounded.x[&quot;A&quot;].bounds</span></code> is <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">4)</span></code> and the bounds for <code class="docutils literal notranslate"><span class="pre">B</span></code> are <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">7)</span></code>.
+An anonymous function is a shorter alternative for a small rule:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Alternative to the preceding x declaration, on a fresh setup:</span>
+<span class="n">bounded</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounded</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">limit</span><span class="p">[</span><span class="n">s</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">m,</span> <span class="pre">s:</span> <span class="pre">...</span></code> defines a function; it is not a decorator. Both named and
+anonymous callbacks are passed without calling them. Use <code class="docutils literal notranslate"><span class="pre">None</span></code> for a missing
+bound. Bounds must not depend on unfixed decision variables: a relationship
+such as <code class="docutils literal notranslate"><span class="pre">x[s]</span> <span class="pre">&lt;=</span> <span class="pre">y[s]</span></code> belongs in a constraint. For known limits on a single
+variable, bounds usually express the intent more directly than extra constraints.</p>
+<p>The callback runs during variable construction, not at each solver iteration.
+It may return expressions involving mutable parameters, which can subsequently
+change value. Calling <code class="docutils literal notranslate"><span class="pre">pyo.value()</span></code> inside it instead would capture a number;
+changing the parameter later would not update that captured number. Re-executing
+the Python callback and evaluating a stored bound expression are different things.</p>
+</section>
+<section id="blocks-a-rule-builds-a-group-of-components">
+<h5>Blocks: a rule builds a group of components<a class="headerlink" href="#blocks-a-rule-builds-a-group-of-components" title="Link to this heading">#</a></h5>
+<p>A block groups related variables, constraints and expressions. For a block
+decorator, the first rule argument is the <strong>new block being constructed</strong>, not
+its parent model. An indexed block has one such object per index:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">plant</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+<span class="n">plant</span><span class="o">.</span><span class="n">PERIODS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">plant</span><span class="o">.</span><span class="n">limit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">plant</span><span class="o">.</span><span class="n">PERIODS</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mi">7</span><span class="p">})</span>
+
+<span class="nd">@plant</span><span class="o">.</span><span class="n">Block</span><span class="p">(</span><span class="n">plant</span><span class="o">.</span><span class="n">PERIODS</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">period</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+    <span class="n">parent</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span>
+    <span class="n">b</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+
+    <span class="nd">@b</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">capacity</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">local</span><span class="o">.</span><span class="n">x</span> <span class="o">&lt;=</span> <span class="n">parent</span><span class="o">.</span><span class="n">limit</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+
+    <span class="nd">@b</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cost</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">local</span><span class="o">.</span><span class="n">x</span>
+</pre></div>
+</div>
+<p>The resulting names include <code class="docutils literal notranslate"><span class="pre">plant.period[1].x</span></code>,
+<code class="docutils literal notranslate"><span class="pre">plant.period[1].capacity</span></code> and <code class="docutils literal notranslate"><span class="pre">plant.period[2].cost</span></code>. Here <code class="docutils literal notranslate"><span class="pre">b.parent_block()</span></code>
+finds the immediate containing block, while <code class="docutils literal notranslate"><span class="pre">b.model()</span></code> finds the root model;
+they coincide in this example but need not coincide in a nested hierarchy.
+The nested constraint’s first argument receives the same local block that
+owns that constraint.</p>
+<p>Unlike a constraint rule, this block rule populates the block and needs no
+return statement. The explicit alternative is to define the same function
+without the decorator and use
+<code class="docutils literal notranslate"><span class="pre">plant.period</span> <span class="pre">=</span> <span class="pre">pyo.Block(plant.PERIODS,</span> <span class="pre">rule=period)</span></code>.
+A block is organizational: it does not automatically decompose the optimization
+problem or solve each period independently.</p>
+</section>
+<section id="parameters-and-the-different-meanings-of-a-rule-s-return-value">
+<h5>Parameters and the different meanings of a rule’s return value<a class="headerlink" href="#parameters-and-the-different-meanings-of-a-rule-s-return-value" title="Link to this heading">#</a></h5>
+<p>For a parameter, a decorated function supplies initial data. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@plant</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">plant</span><span class="o">.</span><span class="n">PERIODS</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">unit_cost</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">t</span>
+</pre></div>
+</div>
+<p>The explicit equivalent uses <code class="docutils literal notranslate"><span class="pre">initialize=</span></code>, not <code class="docutils literal notranslate"><span class="pre">rule=</span></code>:
+<code class="docutils literal notranslate"><span class="pre">plant.unit_cost</span> <span class="pre">=</span> <span class="pre">pyo.Param(plant.PERIODS,</span> <span class="pre">initialize=unit_cost)</span></code> on a fresh
+setup without the decorated declaration. Pyomo adapts the decorator’s rule
+to parameter initialization. It is therefore useful to distinguish the
+general callback idea from the constructor keyword appropriate to each component.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Purpose</p></th>
+<th class="head"><p>Typical declaration</p></th>
+<th class="head"><p>What the callable does</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Indexed constraint</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&#64;m.Constraint(m.S)</span></code> or <code class="docutils literal notranslate"><span class="pre">Constraint(m.S,</span> <span class="pre">rule=f)</span></code></p></td>
+<td><p>Returns a relation, a bound-expression tuple, or a constraint sentinel.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Objective</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&#64;m.Objective()</span></code> or <code class="docutils literal notranslate"><span class="pre">Objective(rule=f)</span></code></p></td>
+<td><p>Returns the expression to optimize.</p></td>
+</tr>
+<tr class="row-even"><td><p>Named expression</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&#64;m.Expression(m.S)</span></code> or <code class="docutils literal notranslate"><span class="pre">Expression(m.S,</span> <span class="pre">rule=f)</span></code></p></td>
+<td><p>Returns a symbolic expression.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Parameter data</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&#64;m.Param(m.S)</span></code> or <code class="docutils literal notranslate"><span class="pre">Param(m.S,</span> <span class="pre">initialize=f)</span></code></p></td>
+<td><p>Returns an initial parameter value.</p></td>
+</tr>
+<tr class="row-even"><td><p>Group of components</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&#64;m.Block(m.S)</span></code> or <code class="docutils literal notranslate"><span class="pre">Block(m.S,</span> <span class="pre">rule=f)</span></code></p></td>
+<td><p>Populates each new block with components.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Variable bounds</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Var(m.S,</span> <span class="pre">bounds=f)</span></code></p></td>
+<td><p>Returns a lower/upper bound pair; no component decorator is needed.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="where-to-see-these-patterns-in-the-book">
+<h5>Where to see these patterns in the book<a class="headerlink" href="#where-to-see-these-patterns-in-the-book" title="Link to this heading">#</a></h5>
+<ul class="simple">
+<li><p><a class="reference internal" href="../01/02-production-planning-basic.html"><span class="std std-doc">1.2 A basic Pyomo model</span></a>:
+start with scalar objective and constraint decorators in Steps 5 and 6.</p></li>
+<li><p><a class="reference internal" href="../01/03-production-planning-advanced.html"><span class="std std-doc">1.3 A data-driven Pyomo model</span></a>:
+compare the indexed <code class="docutils literal notranslate"><span class="pre">Param</span></code> decorators, the <code class="docutils literal notranslate"><span class="pre">bounds=lambda</span> <span class="pre">...</span></code> declarations
+for resources and products, and the <code class="docutils literal notranslate"><span class="pre">materials_used</span></code> constraint indexed by
+resources. They illustrate three different uses of callbacks in one model.</p></li>
+<li><p><a class="reference internal" href="../03/07-bim-production-revisited.html"><span class="std std-doc">3.7 BIM production revisited</span></a>:
+the block formulation groups decisions by period with <code class="docutils literal notranslate"><span class="pre">&#64;m.Block(m.T)</span></code>;
+look for the nested <code class="docutils literal notranslate"><span class="pre">&#64;b.Constraint</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;b.Expression</span></code> declarations.</p></li>
+<li><p><a class="reference internal" href="../05/01-milk-pooling.html"><span class="std std-doc">5.1 Milk pooling and blending</span></a>:
+<code class="docutils literal notranslate"><span class="pre">&#64;m.Block(m.C)</span></code> and <code class="docutils literal notranslate"><span class="pre">mccormick(b,</span> <span class="pre">c)</span></code> create a group of McCormick constraints
+for each customer. This is a concrete use of the block argument and <code class="docutils literal notranslate"><span class="pre">b.model()</span></code>.</p></li>
+<li><p><a class="reference internal" href="functional-programming-pyomo.html"><span class="std std-doc">Functional Programming with Pyomo</span></a>:
+the production-model example combines bounds callbacks and indexed constraints
+inside a model-building function, making repeated model construction explicit.</p></li>
+</ul>
+<p>For the underlying Python semantics, see the <a class="reference external" href="https://docs.python.org/3/reference/compound_stmts.html#function-definitions">Python reference on function
+definitions</a>.
+For the component rules, see Pyomo’s <a class="reference external" href="https://pyomo.readthedocs.io/en/stable/explanation/modeling/math_programming/constraints.html">constraints</a>
+and <a class="reference external" href="https://pyomo.readthedocs.io/en/stable/explanation/modeling/math_programming/objectives.html">objectives</a>
+documentation. The introduction in <a class="reference internal" href="../01/02-production-planning-basic.html#step-5-objective"><span class="std std-ref">Section 1.2</span></a>
+provides a shorter first encounter.</p>
+</section>
 </section>
 </section>
 </section>
@@ -1097,7 +1393,18 @@ x + 2y &amp; \leq 15 \\
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#constraints-and-objective">Constraints and Objective</a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#prefer-pyo-constraint-to-pyo-constraintlist">Prefer <code class="docutils literal notranslate"><span class="pre">pyo.Constraint</span></code> to <code class="docutils literal notranslate"><span class="pre">pyo.ConstraintList</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#use-decorators-to-improve-readability">Use decorators to improve readability</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#use-decorators-to-improve-readability">Use decorators to improve readability</a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#first-what-does-python-s-mean">First: what does Python’s <code class="docutils literal notranslate"><span class="pre">@</span></code> mean?</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#a-complete-indexed-constraint-example">A complete indexed-constraint example</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#scalar-constraints-objectives-and-expressions">Scalar constraints, objectives and expressions</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#several-index-sets-and-conditional-constraints">Several index sets and conditional constraints</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#inspecting-and-debugging-the-result">Inspecting and debugging the result</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#rules-for-indexed-bounds-the-same-idea-a-different-keyword">Rules for indexed bounds: the same idea, a different keyword</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#blocks-a-rule-builds-a-group-of-components">Blocks: a rule builds a group of components</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#parameters-and-the-different-meanings-of-a-rule-s-return-value">Parameters and the different meanings of a rule’s return value</a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#where-to-see-these-patterns-in-the-book">Where to see these patterns in the book</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

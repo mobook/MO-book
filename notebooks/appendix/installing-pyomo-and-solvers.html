@@ -85,6 +85,8 @@
                 gtag('config', 'G-DVQ7NZ8CYZ');
             </script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/appendix/installing-pyomo-and-solvers';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -568,12 +570,16 @@
             </div>
             <nav aria-label="Page">
                 <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-guide-to-the-solvers">A guide to the solvers</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling-tools-solvers-and-interfaces">Modeling tools, solvers and interfaces</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling-tools-solvers-and-interfaces">Modeling tools, solvers and interfaces</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solver-choices-and-notebook-map">Solver choices and notebook map</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#solvers-selected-in-the-notebooks">Solvers selected in the notebooks</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#continuous-quadratic-and-conic-examples">Continuous quadratic and conic examples</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#other-solvers-mentioned-in-this-guide">Other solvers mentioned in this guide</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#why-can-a-nonlinear-solver-solve-a-convex-model">Why can a nonlinear solver solve a convex model?</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-the-book-uses-these-choices">How the book uses these choices</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#licenses-and-academic-access">Licenses and academic access</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#open-source-terms">Open-source terms</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#commercial-solvers-community-trial-and-academic-access">Commercial solvers: community, trial and academic access</a></li>
@@ -606,55 +612,121 @@
 </div>
 <p>This provides the solver setup for most examples in chapters 1–4, 7, 9 and 10, and the linear parts of chapters 5 and 8. Specific examples need additional solvers, as shown below; their preambles also identify other Python packages they use. The choice follows the mathematical formulation: changing a solver name cannot make an incompatible formulation solvable.</p>
 <p>Use <strong>Run all</strong> to execute the setup and integer-solution check below. This notebook needs no commercial solver license.</p>
-<section id="a-guide-to-the-solvers">
-<h2>A guide to the solvers<a class="headerlink" href="#a-guide-to-the-solvers" title="Link to this heading">#</a></h2>
-<p><strong>LO</strong> means linear optimization, and <strong>MILO</strong> means mixed-integer linear optimization: some decisions must be integer or binary. Solver documentation commonly calls these LP and MILP. The table lists the problem classes relevant to this book.</p>
+<section id="modeling-tools-solvers-and-interfaces">
+<h2>Modeling tools, solvers and interfaces<a class="headerlink" href="#modeling-tools-solvers-and-interfaces" title="Link to this heading">#</a></h2>
+<p><strong>Pyomo</strong> describes the variables, objective and constraints; a <strong>solver</strong> computes a solution. For setup instructions, see the <a class="reference external" href="https://www.pyomo.org/installation">Pyomo installation guide</a>. The package <code class="docutils literal notranslate"><span class="pre">highspy</span></code> supplies HiGHS’s Python interface.</p>
+<p><strong>CVXPY</strong> is another modeling tool, used in the refinery example. It also calls a solver underneath. Its <a class="reference external" href="https://www.cvxpy.org/tutorial/solvers/index.html">solver guide</a> shows how to select that solver and inspect the results.</p>
+<p>Names such as <code class="docutils literal notranslate"><span class="pre">appsi_highs</span></code>, <code class="docutils literal notranslate"><span class="pre">mosek_direct</span></code> and <code class="docutils literal notranslate"><span class="pre">gurobi_persistent</span></code> identify <strong>Pyomo interfaces</strong>: the connections through which Pyomo sends a model to a solver and retrieves its results. An interface determines which solver features are accessible from that code.</p>
+</section>
+<section id="solver-choices-and-notebook-map">
+<h2>Solver choices and notebook map<a class="headerlink" href="#solver-choices-and-notebook-map" title="Link to this heading">#</a></h2>
+<p>Choosing a solver starts with understanding the model. Are its expressions linear? Do some decisions have to be integer? Is the continuous problem convex, and can its structure be expressed with cones? Sometimes a suitable formulation removes the need for integer optimization: with a totally unimodular constraint matrix, integral right-hand sides and integral bounds, a linear relaxation can have an integral optimal vertex. <a class="reference internal" href="../07/01-fleet-assignment.html"><span class="std std-doc">Fleet assignment (§7.1)</span></a> discusses this possibility. In other models, such as installation decisions in <a class="reference internal" href="../06/04-building-insulation.html"><span class="std std-doc">building insulation (§6.4)</span></a>, the solver needs to enforce the binary choices. Formulation and solver selection therefore inform each other: expressing useful structure can make more algorithms available while preserving the intended decisions.</p>
+<p><strong>LO</strong> means linear optimization; <strong>MILO</strong> means mixed-integer linear optimization. The classes below describe how the book uses each solver, rather than listing every feature the software offers. A selected solver and its Python interface are separate choices: callbacks, solver options and explicit cone components can require a particular interface.</p>
+<section id="solvers-selected-in-the-notebooks">
+<h3>Solvers selected in the notebooks<a class="headerlink" href="#solvers-selected-in-the-notebooks" title="Link to this heading">#</a></h3>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Solver</p></th>
-<th class="head"><p>Problem classes</p></th>
-<th class="head"><p>Where used in the book</p></th>
+<th class="head"><p>Role in these examples</p></th>
+<th class="head"><p>Where to see it</p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><a class="reference external" href="https://highs.dev/">HiGHS</a></p></td>
-<td><p>LO and MILO</p></td>
-<td><p>Most linear examples; linear subproblems throughout the book</p></td>
+<td><p>LO and MILO; also the linear master and subproblems in several decomposition methods</p></td>
+<td><p><a class="reference internal" href="../01/02-production-planning-basic.html"><span class="std std-doc">Production planning (§1.2)</span></a>, <a class="reference internal" href="../03/02-shift-scheduling.html"><span class="std std-doc">shift scheduling (§3.2)</span></a>, <a class="reference internal" href="../04/02-mincost-flow.html"><span class="std std-doc">minimum-cost flow (§4.2)</span></a>, <a class="reference internal" href="../09/04-economic-dispatch.html"><span class="std std-doc">economic dispatch (§9.4)</span></a>, and both the Pyomo and CVXPY models in the <a class="reference internal" href="../05/05-refinery-production.html"><span class="std std-doc">refinery extra</span></a>. The usual Pyomo interface is <code class="docutils literal notranslate"><span class="pre">appsi_highs</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://coin-or.github.io/Ipopt/">Ipopt</a></p></td>
-<td><p>Smooth continuous nonlinear optimization</p></td>
-<td><p>Milk pooling and the dynamic-model appendix example; continuous Colab alternatives to MOSEK</p></td>
+<td><p>Smooth continuous nonlinear optimization; a local method for nonconvex models</p></td>
+<td><p><a class="reference internal" href="../05/01-milk-pooling.html"><span class="std std-doc">Milk pooling (§5.1)</span></a> and the discretized dynamic model in <a class="reference internal" href="functional-programming-pyomo.html"><span class="std std-doc">Functional programming with Pyomo</span></a>. It is also the Colab selection for the continuous quadratic and conic examples listed below. The interface is <code class="docutils literal notranslate"><span class="pre">ipopt</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://www.mosek.com/">MOSEK</a></p></td>
-<td><p>Convex quadratic and conic optimization, including mixed-integer conic models</p></td>
-<td><p>§§5.2–5.4, chapter 6 except §6.4, and §9.1 when run locally; their Colab preambles substitute Ipopt. Optional comparisons in §§6.4 and 8.1</p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://www.scipopt.org/doc/html/WHATPROBLEMS.php">SCIP</a></p></td>
+<td><p>Nonlinear optimization with or without integer decisions, including global bounds for nonconvex subproblems</p></td>
+<td><p><a class="reference internal" href="../06/04-building-insulation.html"><span class="std std-doc">Building insulation (§6.4)</span></a>, <a class="reference internal" href="../08/01-bim-robust-optimization.html"><span class="std std-doc">robust BIM (§8.1)</span></a> and the nonlinear pattern-improvement models in <a class="reference internal" href="../05/06-cutting-stock.html"><span class="std std-doc">cutting stock</span></a> use <code class="docutils literal notranslate"><span class="pre">scip_direct</span></code> through PySCIPOpt. <a class="reference internal" href="../10/02-two-stage-production-planning.html"><span class="std std-doc">Two-stage production (§10.2)</span></a> uses PySCIPOpt directly for its continuous, nonconvex worst-case subproblem. HiGHS handles the linear parts of these examples where needed.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://www.scipopt.org/">SCIP</a></p></td>
-<td><p>Linear and nonlinear optimization, including mixed-integer and nonconvex models</p></td>
-<td><p>Building insulation (§6.4), robust BIM (§8.1), cutting stock and the global worst-case subproblem in §10.2</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.mosek.com/latest/intro/overview.html">MOSEK</a></p></td>
+<td><p>Convex quadratic and conic optimization; mixed-integer conic optimization in optional comparisons</p></td>
+<td><p>The local selection for the continuous examples below. <a class="reference internal" href="../06/04-building-insulation.html"><span class="std std-doc">§6.4</span></a> and <a class="reference internal" href="../08/01-bim-robust-optimization.html"><span class="std std-doc">§8.1</span></a> retain optional MOSEK conic comparisons, switched off by default. The usual interface is <code class="docutils literal notranslate"><span class="pre">mosek_direct</span></code>; §5.4 uses <code class="docutils literal notranslate"><span class="pre">mosek</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://www.gurobi.com/">Gurobi</a></p></td>
-<td><p>LO, MILO and quadratic optimization, including nonconvex quadratic models</p></td>
-<td><p>Facility location, dinner seating and traveling salesman</p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://coin-or.github.io/Cbc/intro.html">CBC</a></p></td>
+<td><p>LO and MILO through the <code class="docutils literal notranslate"><span class="pre">cbc</span></code> executable interface</p></td>
+<td><p>A production model in <a class="reference internal" href="functional-programming-pyomo.html"><span class="std std-doc">Functional programming with Pyomo</span></a>, the CBC demonstration and Colab benchmarks in <a class="reference internal" href="../03/06-facility-location.html"><span class="std std-doc">facility location (§3.6)</span></a>, and the solver comparison in <a class="reference internal" href="../04/01-dinner-seat-allocation.html"><span class="std std-doc">dinner seating (§4.1)</span></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://coin-or.github.io/Cbc/intro.html">CBC</a></p></td>
-<td><p>LO and MILO</p></td>
-<td><p>Facility location, dinner seating and the functional-programming appendix</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.gurobi.com/projects/optimizer/en/current/concepts/modeling/constraints.html">Gurobi</a></p></td>
+<td><p>LO/MILO comparisons and persistent-model/callback examples</p></td>
+<td><p><a class="reference internal" href="../03/06-facility-location.html"><span class="std std-doc">Facility location (§3.6)</span></a> and <a class="reference internal" href="../04/01-dinner-seat-allocation.html"><span class="std std-doc">dinner seating (§4.1)</span></a> use <code class="docutils literal notranslate"><span class="pre">gurobi_direct</span></code>; the <a class="reference internal" href="../04/08-traveling-salesman-problem.html"><span class="std std-doc">traveling-salesman extra</span></a> uses <code class="docutils literal notranslate"><span class="pre">gurobi_persistent</span></code> alongside HiGHS. Gurobi is required for those persistent-interface sections.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://www.ibm.com/products/ilog-cplex-optimization-studio">CPLEX</a> and <a class="reference external" href="https://www.fico.com/en/products/fico-xpress">Xpress</a></p></td>
-<td><p>LO and MILO in the examples here</p></td>
-<td><p>Facility-location comparisons</p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://www.ibm.com/docs/en/icos/22.1.0?topic=cplex-types-problems-solved">CPLEX</a></p></td>
+<td><p>LO/MILO solver comparisons</p></td>
+<td><p><a class="reference internal" href="../03/06-facility-location.html"><span class="std std-doc">Facility location (§3.6)</span></a>, through <code class="docutils literal notranslate"><span class="pre">cplex_direct</span></code>. Its local benchmark selects CPLEX and Gurobi.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/fico-xpress/xpress-training/blob/main/python/md/python-full-course.md">Xpress</a></p></td>
+<td><p>LO/MILO solver comparisons</p></td>
+<td><p>The comparison over available solvers in <a class="reference internal" href="../03/06-facility-location.html"><span class="std std-doc">facility location (§3.6)</span></a>, through <code class="docutils literal notranslate"><span class="pre">xpress_direct</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>HiGHS, Ipopt, SCIP and CBC are open-source solvers. MOSEK, Gurobi, CPLEX and Xpress are commercial, proprietary products, even when a particular license is free of charge. The licensing section below explains the distinction.</p>
-<p><strong>What about GLPK?</strong> The <a class="reference external" href="https://www.gnu.org/software/glpk/">GNU Linear Programming Kit</a> is another open-source LO/MILO solver, mentioned among the alternatives in §1.2. The examples here generally select HiGHS. For a compatible linear model, Pyomo can use <code class="docutils literal notranslate"><span class="pre">pyo.SolverFactory(&quot;glpk&quot;)</span></code> after the separate <code class="docutils literal notranslate"><span class="pre">glpsol</span></code> executable is installed and available on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>. This changes the solver interface, so check any solver-specific options too.</p>
-<section id="modeling-tools-solvers-and-interfaces">
-<h3>Modeling tools, solvers and interfaces<a class="headerlink" href="#modeling-tools-solvers-and-interfaces" title="Link to this heading">#</a></h3>
-<p><strong>Pyomo</strong> describes the variables, objective and constraints; a <strong>solver</strong> computes a solution. For setup instructions, see the <a class="reference external" href="https://www.pyomo.org/installation">Pyomo installation guide</a>. The package <code class="docutils literal notranslate"><span class="pre">highspy</span></code> supplies HiGHS’s Python interface.</p>
-<p><strong>CVXPY</strong> is another modeling tool, used in the refinery example. It also calls a solver underneath. Its <a class="reference external" href="https://www.cvxpy.org/tutorial/solvers/index.html">solver guide</a> shows how to select that solver and inspect the results.</p>
-<p>Names such as <code class="docutils literal notranslate"><span class="pre">appsi_highs</span></code>, <code class="docutils literal notranslate"><span class="pre">mosek_direct</span></code> and <code class="docutils literal notranslate"><span class="pre">gurobi_persistent</span></code> identify <strong>Pyomo interfaces</strong>: the connections through which Pyomo sends a model to a solver and retrieves its results. An interface determines which solver features are accessible from that code.</p>
+<p>HiGHS, Ipopt, SCIP and CBC are open source; MOSEK, Gurobi, CPLEX and Xpress are commercial products. See the <a class="reference internal" href="#licenses-and-academic-access"><span class="std std-ref">license and academic-access guidance</span></a> for their terms and the available no-cost routes.</p>
+<section id="continuous-quadratic-and-conic-examples">
+<h4>Continuous quadratic and conic examples<a class="headerlink" href="#continuous-quadratic-and-conic-examples" title="Link to this heading">#</a></h4>
+<p>These notebooks select <strong>MOSEK when run locally</strong> and <strong>Ipopt on Colab</strong>. MOSEK can use explicit cone structure; Ipopt receives continuous nonlinear expressions. This distinction concerns the formulation and algorithm, even when both solve the same convex problem.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Notebooks</p></th>
+<th class="head"><p>Structure and setup</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="../05/02-ols-regression.html"><span class="std std-doc">OLS regression (§5.2)</span></a>, <a class="reference internal" href="../05/03-markowitz-portfolio.html"><span class="std std-doc">Markowitz portfolio (§5.3)</span></a>, <a class="reference internal" href="../05/04-svm-binary-classification.html"><span class="std std-doc">binary SVM (§5.4)</span></a></p></td>
+<td><p>Quadratic models use MOSEK/Ipopt. §§5.2 and 5.4 also use HiGHS for their linear formulations.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../06/01-economic-order-quantity.html"><span class="std std-doc">Economic order quantity (§6.1)</span></a></p></td>
+<td><p>Continuous conic reformulations of reciprocal order and inventory costs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../06/02-kelly-criterion.html"><span class="std std-doc">Kelly criterion (§6.2)</span></a>, <a class="reference internal" href="../06/06-investment-wheel.html"><span class="std std-doc">investment wheel</span></a>, <a class="reference internal" href="../06/07-optimal-growth-portfolios.html"><span class="std std-doc">optimal growth portfolios</span></a></p></td>
+<td><p>Continuous models using exponential cones or their nonlinear expressions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../06/03-markowitz-portfolio-revisited.html"><span class="std std-doc">Markowitz revisited (§6.3)</span></a>, <a class="reference internal" href="../09/01-markowitz-portfolio-with-chance-constraint.html"><span class="std std-doc">chance-constrained portfolio (§9.1)</span></a></p></td>
+<td><p>Quadratic/conic formulations of portfolio risk.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../06/05-svm-conic.html"><span class="std std-doc">Conic SVM extra</span></a></p></td>
+<td><p>The Ipopt path explicitly selects MA57 for the dense kernel model. MA57 is an internal linear-equation solver, not a separate solver for the optimization model; see <a class="reference external" href="https://coin-or.github.io/Ipopt/OPTIONS.html#OPT_linear_solver">Ipopt’s linear-solver options</a>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The binary layer choices in §6.4 follow the SCIP route described above, with the optional MOSEK comparison at the end of that notebook. They are not part of the continuous Ipopt selection in this table.</p>
+<p><strong>CVXPY is a modeling tool.</strong> In the refinery example, <code class="docutils literal notranslate"><span class="pre">problem.solve(solver=cp.HIGHS)</span></code> selects HiGHS explicitly. Installing CVXPY adds another way to express the model; it does not introduce a different optimization algorithm into that comparison.</p>
+</section>
+</section>
+<section id="other-solvers-mentioned-in-this-guide">
+<h3>Other solvers mentioned in this guide<a class="headerlink" href="#other-solvers-mentioned-in-this-guide" title="Link to this heading">#</a></h3>
+<p>The following solvers are not selected by the current example code. They are included to explain alternatives a reader may encounter, including tools supplied with solver distributions. The applications in the final column are suggestions based on the mathematical problem class, not additional implementations or tested replacements in these notebooks.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Solver</p></th>
+<th class="head"><p>Applicable problem classes</p></th>
+<th class="head"><p>A relevant application in the book</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://www.gnu.org/software/glpk/">GLPK</a></p></td>
+<td><p>LO and MILO</p></td>
+<td><p>An alternative for linear production planning such as <a class="reference internal" href="../01/02-production-planning-basic.html"><span class="std std-doc">§1.2</span></a>, network-flow models such as <a class="reference internal" href="../04/02-mincost-flow.html"><span class="std std-doc">§4.2</span></a>, or linear integer scheduling such as <a class="reference internal" href="../03/02-shift-scheduling.html"><span class="std std-doc">§3.2</span></a>. Pyomo’s <code class="docutils literal notranslate"><span class="pre">glpk</span></code> interface requires the separate <code class="docutils literal notranslate"><span class="pre">glpsol</span></code> executable.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://coin-or.github.io/Bonmin/Intro.html">Bonmin</a></p></td>
+<td><p>Smooth convex mixed-integer nonlinear optimization; its nonconvex use is heuristic</p></td>
+<td><p>A possible comparison for <a class="reference internal" href="../06/04-building-insulation.html"><span class="std std-doc">multilayer insulation (§6.4)</span></a>, retaining binary installation decisions and expressing the thermal constraint in convex form, for example <span class="math notranslate nohighlight">\(U \geq 1/R\)</span> with <span class="math notranslate nohighlight">\(R&gt;0\)</span>. Simply passing the existing bilinear expression to Bonmin would not establish the convexity assumptions used by its algorithms.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://www.coin-or.org/Couenne/">Couenne</a></p></td>
+<td><p>Global optimization of supported nonconvex nonlinear models, including mixed-integer models</p></td>
+<td><p>The bilinear pattern-improvement problems in <a class="reference internal" href="../05/06-cutting-stock.html"><span class="std std-doc">cutting stock</span></a>, or a global-solution comparison for the nonconvex pooling model in <a class="reference internal" href="../05/01-milk-pooling.html"><span class="std std-doc">§5.1</span></a>. Cutting stock selects SCIP; pooling uses Ipopt to illustrate local nonlinear optimization.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Trying an alternative means matching the model representation, interface and options, then checking feasibility and termination. For a global method, inspect the incumbent and bound or gap as well. A solver’s mathematical scope does not establish that a particular binary distribution, notebook setup or callback implementation will work unchanged.</p>
 </section>
 <section id="why-can-a-nonlinear-solver-solve-a-convex-model">
 <h3>Why can a nonlinear solver solve a convex model?<a class="headerlink" href="#why-can-a-nonlinear-solver-solve-a-convex-model" title="Link to this heading">#</a></h3>
@@ -662,15 +734,6 @@
 <p>A conic solver such as MOSEK instead receives the cone structure explicitly. Expressing a model in conic form lets its algorithms use that structure. This is why chapter 6 revisits problems that can also be written as nonlinear models.</p>
 <p>Integer decisions need a solver that enforces them. A binary variable represents a yes/no choice; allowing a value such as 0.3 produces a continuous relaxation with different feasible decisions. Ipopt solves continuous problems, so integer choices require a mixed-integer solver.</p>
 </section>
-</section>
-<section id="how-the-book-uses-these-choices">
-<h2>How the book uses these choices<a class="headerlink" href="#how-the-book-uses-these-choices" title="Link to this heading">#</a></h2>
-<p><strong>HiGHS</strong> supports the progression from production planning to scheduling, networks and uncertainty. It also solves the binary scenario-selection model in <a class="reference external" href="https://mobook.github.io/MO-book/notebooks/09/04-economic-dispatch.html">§9.4 economic dispatch</a>. In the chapter-3 disjunctive examples, Pyomo first transforms the model into MILO form for HiGHS.</p>
-<p><strong>Ipopt</strong> introduces local nonlinear optimization in <a class="reference external" href="https://mobook.github.io/MO-book/notebooks/05/01-milk-pooling.html">milk pooling</a>. Different starting points can lead to different solutions, illustrating the role of nonconvexity. It also handles the dynamic example in the appendix and serves as the Colab alternative for the continuous quadratic and conic examples described below.</p>
-<p><strong>MOSEK</strong> handles the quadratic and conic formulations used for regression, portfolios, classifiers and insulation. Chapter 6 often uses Pyomo’s <code class="docutils literal notranslate"><span class="pre">kernel</span></code> interface, which provides explicit components for cones. The preambles for the continuous examples substitute Ipopt on Colab. In <a class="reference external" href="https://mobook.github.io/MO-book/notebooks/06/04-building-insulation.html">§6.4 building insulation</a>, SCIP solves the main examples both locally and on Colab, including the binary layer choices. An optional MOSEK comparison solves the same models in explicit conic form. <a class="reference external" href="https://mobook.github.io/MO-book/notebooks/08/01-bim-robust-optimization.html">§8.1 robust BIM</a> also offers an optional MOSEK comparison. Ipopt cannot enforce integer choices.</p>
-<p><strong>SCIP</strong> solves the nonlinear models in building insulation and robust BIM, and the bilinear mixed-integer models in the <a class="reference external" href="https://mobook.github.io/MO-book/notebooks/05/06-cutting-stock.html">cutting-stock extra</a>, through Pyomo’s <code class="docutils literal notranslate"><span class="pre">scip_direct</span></code> interface and PySCIPOpt. In <a class="reference external" href="https://mobook.github.io/MO-book/notebooks/10/02-two-stage-production-planning.html">§10.2</a>, PySCIPOpt is used directly to obtain global bounds for the nonconvex worst-case subproblem. HiGHS handles that example’s linear master and fixed-scenario models, and the linear parts of cutting stock.</p>
-<p><strong>Gurobi</strong> supports solver comparisons and the persistent-interface and callback techniques in the traveling-salesman extra material. <strong>CBC, CPLEX and Xpress</strong> provide alternative solvers for selected comparisons; CBC also appears in the functional-programming appendix.</p>
-<p><strong>CVXPY</strong> offers a second way to formulate the refinery problem. After <code class="docutils literal notranslate"><span class="pre">problem.solve()</span></code>, <code class="docutils literal notranslate"><span class="pre">problem.solver_stats.solver_name</span></code> identifies the backend chosen by CVXPY. Recording it makes comparisons easier to reproduce.</p>
 </section>
 <section id="licenses-and-academic-access">
 <h2>Licenses and academic access<a class="headerlink" href="#licenses-and-academic-access" title="Link to this heading">#</a></h2>
@@ -858,12 +921,16 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-guide-to-the-solvers">A guide to the solvers</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling-tools-solvers-and-interfaces">Modeling tools, solvers and interfaces</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling-tools-solvers-and-interfaces">Modeling tools, solvers and interfaces</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solver-choices-and-notebook-map">Solver choices and notebook map</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#solvers-selected-in-the-notebooks">Solvers selected in the notebooks</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#continuous-quadratic-and-conic-examples">Continuous quadratic and conic examples</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#other-solvers-mentioned-in-this-guide">Other solvers mentioned in this guide</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#why-can-a-nonlinear-solver-solve-a-convex-model">Why can a nonlinear solver solve a convex model?</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-the-book-uses-these-choices">How the book uses these choices</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#licenses-and-academic-access">Licenses and academic access</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#open-source-terms">Open-source terms</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#commercial-solvers-community-trial-and-academic-access">Commercial solvers: community, trial and academic access</a></li>
