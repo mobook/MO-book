@@ -41,27 +41,36 @@ We are a group of researchers and educators who came together with a common purp
 
 ## Citation
 
-If you wish to cite this work, please use
+Please cite the book when using these companion notebooks:
 
-```
+```bibtex
 @book{PZGK2025book,
-  author = {Postek, Krzysztof and Zocca, Alessandro and Gromicho, Joaquim and Kantor, Jeffrey},
+  author = {Postek, Krzysztof and
+            Zocca, Alessandro and
+            Gromicho, Joaquim A. S. and
+            Kantor, Jeffrey C.},
   title = {{Hands-On Mathematical Optimization with Python}},
   year = {2025},
   publisher = {Cambridge University Press},
-  place={Cambridge},
-  doi={10.1017/9781009493512}
+  address = {Cambridge},
+  doi = {10.1017/9781009493512}
 }
 ```
 
-and
+To identify the online companion materials separately, use:
 
-```
-@online{PZGK2025online,
-  author = {Postek, Krzysztof and Zocca, Alessandro and Gromicho, Joaquim and Kantor, Jeffrey},
-  title = {Companion Jupyter Book for {``Hands-On Mathematical Optimization with Python’’}},
+```bibtex
+@misc{PZGK2025online,
+  author = {Postek, Krzysztof and
+            Zocca, Alessandro and
+            Gromicho, Joaquim A. S. and
+            Kantor, Jeffrey C.},
+  title = {Companion Jupyter notebooks for
+           {Hands-On Mathematical Optimization with Python}},
   year = {2025},
-  publisher = {GitHub},
-  howpublished = {\url{https://github.com/mobook/MO-book}},
+  howpublished = {\url{https://mobook.github.io/MO-book/}},
+  note = {Source repository: \url{https://github.com/mobook/MO-book}}
 }
 ```
+
+Machine-readable citation information, with the book as the preferred citation, is available in [CITATION.cff](https://github.com/mobook/MO-book/blob/main/CITATION.cff).
