@@ -8,7 +8,7 @@ This book introduces the concepts and tools of mathematical optimization with ex
 
 - Provide a foundation for hands-on learning of mathematical optimization,
 - Demonstrate the tools and concepts of optimization with practical examples,
-- Help readers to develop the practical skills needed to build models and solving problem using state-of-the-art modeling languages and solvers.
+- Help readers to develop the practical skills needed to build models and solve problems using state-of-the-art modeling languages and solvers.
 
 ## Getting started
 
@@ -28,7 +28,7 @@ Start your journey with the [first chapter](notebooks/01/01.00.md)!
 
 ## Help us
 
-We seek your feedback! If you encounter an issue or have suggestions on how to make these examples better, please open an issue using the link at the top of every page (look for the Github cat icon).
+We seek your feedback! If you encounter an issue or have suggestions on how to make these examples better, please open an issue using the link at the top of every page (look for the GitHub cat icon).
 
 ## About us
 
