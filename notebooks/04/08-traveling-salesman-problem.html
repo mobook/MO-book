@@ -654,7 +654,7 @@ A good example is this <a class="reference external" href="https://onlinelibrary
 <section id="preamble">
 <h3>Preamble<a class="headerlink" href="#preamble" title="Link to this heading">#</a></h3>
 <p>Let us start by importing the modules that we will need.</p>
-<p>The first part of this notebook needs only the open-source solver HiGHS. From the section on lazy constraint generation onward we also use Gurobi through <code class="docutils literal notranslate"><span class="pre">gurobipy</span></code>. The size-limited licence that comes with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">gurobipy</span></code> is sufficient for every instance solved with Gurobi here.</p>
+<p>The first part of this notebook needs only the open-source solver HiGHS. From the section on lazy constraint generation onward we also use Gurobi through <code class="docutils literal notranslate"><span class="pre">gurobipy</span></code>. The size-limited license that comes with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">gurobipy</span></code> is sufficient for every instance solved with Gurobi here.</p>
 <p>See <a class="reference internal" href="../appendix/installing-pyomo-and-solvers.html"><span class="std std-doc">Solvers used in this book</span></a> for installation, licensing and the differences between solver interfaces.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -939,7 +939,7 @@ s.t.    &amp; \sum_{i \in N} x_{ij}              &amp; =    &amp; 1     &amp; \f
 \end{array}
 \end{split}\]</div>
 <p>As we learnt earlier in this chapter, imposing the integrality (binary nature in this case) of the decision variables on the core model above is redundant, as it is naturally integral because its constraint matrix is <a class="reference external" href="https://en.wikipedia.org/wiki/Unimodular_matrix#Total_unimodularity">TUM</a>.</p>
-<p>Since this property vanishes as soon as we complement the model in any known way (albeit some <a class="reference external" href="https://arxiv.org/pdf/cs/0609005">published work</a> erroneously saying otherwise, see also entry 17 of this wonderful <a class="reference external" href="https://www.win.tue.nl/~wscor/woeginger/P-versus-NP.htm">legacy page</a>) to reach a valid TSP model, we state the variables <span class="math notranslate nohighlight">\(x_{ij}\)</span> as binary.</p>
+<p>Adding the subtour-elimination constraints used below does not preserve the assignment model’s integrality, so we retain binary <span class="math notranslate nohighlight">\(x_{ij}\)</span> variables.</p>
 <p>The core model forces the degree of each node to be 2 (one arc entering the node and one leaving it) and also forces <span class="math notranslate nohighlight">\(n\)</span> arcs to be used (that this is implied by the model above can be easily seen by adding any of the two groups of constraints).</p>
 <p>Models vary in the way they enforce connectivity, as the core part fails in doing that. In fact, <span class="math notranslate nohighlight">\(x_{ii} = 1\)</span> for all <span class="math notranslate nohighlight">\(i\)</span> is feasible, but the TSP clearly leaves all vertices.</p>
 <p>An immediate improvement to the core model is just to fix the <code class="docutils literal notranslate"><span class="pre">self-loops</span></code> to 0, i.e. <span class="math notranslate nohighlight">\(x_{ii} = 0\)</span>, but that is not enough as pairwise loops <span class="math notranslate nohighlight">\(x_{ij} = x_{ji} = 1\)</span> become the next culprit.</p>
@@ -977,12 +977,13 @@ This ingenious model, devised by C. E. Miller, Albert W. Tucker and R. A. Zemlin
 s.t.    &amp; \sum_{i \in N} x_{ij} &amp; =    &amp; 1    &amp; \forall j \in N                              \\
         &amp; \sum_{j \in N} x_{ij} &amp; =    &amp; 1    &amp; \forall i \in N                              \\
         &amp; x_{ij} \in \{0,1\}    &amp;      &amp;      &amp; \forall i, j \in N                           \\
+        &amp; x_{ii} &amp; = &amp; 0 &amp; \forall i \in N \\
         &amp; u_i - u_j + nx_{ij}   &amp; \leq &amp; n-1  &amp; \forall i,j \in N : 2 \leq i \not = j \leq n \\
-        &amp; u_i \in [0,n-2]       &amp;      &amp;      &amp; \forall i \in N                              \\
+        &amp; u_i \in [0,n-2]       &amp;      &amp;      &amp; \forall i \in N\setminus\{1\}                              \\
 \end{array}
 \end{split}\]</div>
 <p>In fact, this model has been strengthened by several authors, see <a class="reference external" href="https://www.sciencedirect.com/science/article/pii/S0166218X00003139">this paper</a>.</p>
-<p>The first improvement is as below:</p>
+<p>Tightening the coefficient from <span class="math notranslate nohighlight">\(n\)</span> to <span class="math notranslate nohighlight">\(n-1\)</span> gives:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{array}{rrcll}
@@ -990,11 +991,12 @@ s.t.    &amp; \sum_{i \in N} x_{ij} &amp; =    &amp; 1    &amp; \forall j \in N 
 s.t.    &amp; \sum_{i \in N} x_{ij}   &amp; =    &amp; 1    &amp; \forall j \in N                              \\
         &amp; \sum_{j \in N} x_{ij}   &amp; =    &amp; 1    &amp; \forall i \in N                              \\
         &amp; x_{ij} \in \{0,1\}      &amp;      &amp;      &amp; \forall i, j \in N                           \\
+        &amp; x_{ii} &amp; = &amp; 0 &amp; \forall i \in N \\
         &amp; u_i - u_j + (n-1)x_{ij} &amp; \leq &amp; n-2  &amp; \forall i,j \in N : 2 \leq i \not = j \leq n \\
-        &amp; u_i \in [0,n-2]         &amp;      &amp;      &amp; \forall i \in N                              \\
+        &amp; u_i \in [0,n-2]         &amp;      &amp;      &amp; \forall i \in N\setminus\{1\}                              \\
 \end{array}
 \end{split}\]</div>
-<p>The best known is as below:</p>
+<p>The lifted formulation of Desrochers and Laporte (1991) adds the reverse-arc term:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{array}{rrcll}
@@ -1002,12 +1004,13 @@ s.t.    &amp; \sum_{i \in N} x_{ij}   &amp; =    &amp; 1    &amp; \forall j \in 
 s.t.    &amp; \sum_{i \in N} x_{ij}                 &amp; =    &amp; 1    &amp; \forall j \in N                              \\
         &amp; \sum_{j \in N} x_{ij}                 &amp; =    &amp; 1    &amp; \forall i \in N                              \\
         &amp; x_{ij} \in \{0,1\}                    &amp;      &amp;      &amp; \forall i, j \in N                           \\
+        &amp; x_{ii} &amp; = &amp; 0 &amp; \forall i \in N \\
         &amp; u_i - u_j + (n-1)x_{ij} + (n-3)x_{ji} &amp; \leq &amp; n-2  &amp; \forall i,j \in N : 2 \leq i \not = j \leq n \\
-        &amp; u_i \in [0,n-2]                       &amp;      &amp;      &amp; \forall i \in N                              \\
+        &amp; u_i \in [0,n-2]                       &amp;      &amp;      &amp; \forall i \in N\setminus\{1\}                              \\
 \end{array}
 \end{split}\]</div>
 <p>These versions of the MTZ model are equivalent in how they model connectivity, but have increasingly tighter linear relaxations.</p>
-<p>Below we will consider three MTZ models: the basic one, the one improved by <a class="reference external" href="https://www.sciencedirect.com/science/article/pii/0167637791900832">Desrochers and Laporte</a> and the best one so far by <a class="reference external" href="https://www.sciencedirect.com/science/article/pii/S0166218X00003139">Gouveia and Pires</a>.</p>
+<p>Below we compare the basic, tightened, and lifted MTZ formulations. The reverse-arc lifting is due to <a class="reference external" href="https://doi.org/10.1016/0167-6377(91)90083-2">Desrochers and Laporte (1991)</a>. <a class="reference external" href="https://doi.org/10.1016/S0166-218X(00)00313-9">Gouveia and Pires (2001)</a> study disaggregated generalizations. The function name <code class="docutils literal notranslate"><span class="pre">BestMTZ</span></code> refers to the strongest of the three formulations compared here.</p>
 <section id="building-blocks-for-tsp-models">
 <h3>Building blocks for TSP models<a class="headerlink" href="#building-blocks-for-tsp-models" title="Link to this heading">#</a></h3>
 <p>As the good programmers that we all are, we will strive for modularity and reuse.
@@ -2065,7 +2068,7 @@ Once these constraints are added, the previous solution becomes <em>separated</e
 <img alt="../../_images/5133e9b68dbc2e4d95a1e984d83f172949f9664560b49e5d40f74bd262aca270.png" src="../../_images/5133e9b68dbc2e4d95a1e984d83f172949f9664560b49e5d40f74bd262aca270.png" />
 </div>
 </div>
-<p>With <span class="math notranslate nohighlight">\(50 \times 50 = 2500\)</span> binary variables, this instance exceeds the limit of 2000 variables of the size-limited Gurobi licence, so it cannot be handed to that solver as it stands. HiGHS has no such limit and solves it by adding violated DFJ constraints over a modest number of rounds.</p>
+<p>With <span class="math notranslate nohighlight">\(50 \times 50 = 2500\)</span> binary variables, this instance exceeds the limit of 2000 variables of the size-limited Gurobi license, so it cannot be handed to that solver as it stands. HiGHS has no such limit and solves it by adding violated DFJ constraints over a modest number of rounds.</p>
 <p>We could be very happy about this, but we now realize that for all instances that we have been solving <span class="math notranslate nohighlight">\(c_{ij} = c_{ji}\)</span> and in fact we do not need to have both <span class="math notranslate nohighlight">\(x_{ij}\)</span> and <span class="math notranslate nohighlight">\(x_{ji}\)</span>.</p>
 <p>In essence, our underlying graph has been asymmetric (hence, with directed arcs) but can be regarded as symmetric (with undirected edges).</p>
 <p>We do need to be careful about what that means for the model!</p>
@@ -2074,9 +2077,9 @@ Once these constraints are added, the previous solution becomes <em>separated</e
 <h3>Symmetry<a class="headerlink" href="#symmetry" title="Link to this heading">#</a></h3>
 <p>So far, our models include variables <span class="math notranslate nohighlight">\(x_{ij}\)</span> for all <span class="math notranslate nohighlight">\(i,j \in N\)</span>.
 However, if the cost matrix happens to be symmetric (as is the case for all instances studied in this notebook) we may ignore the direction, i.e. consider only one of the two arcs <span class="math notranslate nohighlight">\((i,j)\)</span> or <span class="math notranslate nohighlight">\((j,i)\)</span>.</p>
-<p>The number of edges <span class="math notranslate nohighlight">\((i,j)\)</span> for <span class="math notranslate nohighlight">\(i &lt; j\)</span> is less than half of the number of arcs. For <span class="math notranslate nohighlight">\(n = 50\)</span> that is <span class="math notranslate nohighlight">\(1225\)</span> variables instead of <span class="math notranslate nohighlight">\(2500\)</span>, which also brings the instance back within the limits of the size-limited Gurobi licence.</p>
+<p>The number of edges <span class="math notranslate nohighlight">\((i,j)\)</span> for <span class="math notranslate nohighlight">\(i &lt; j\)</span> is less than half of the number of arcs. For <span class="math notranslate nohighlight">\(n = 50\)</span> that is <span class="math notranslate nohighlight">\(1225\)</span> variables instead of <span class="math notranslate nohighlight">\(2500\)</span>, which also brings the instance back within the limits of the size-limited Gurobi license.</p>
 <p>The symmetric model can be easily derived from the DFJ model: the linear assignment structure is replaced by constraining each node to have degree 2.</p>
-<p>Note that no variant of MTZ is known for the symmetric case!</p>
+<p>The undirected DFJ formulation below exploits symmetric costs. The MTZ formulations compared above use directed arcs, even when costs are symmetric.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">instance</span> <span class="o">=</span> <span class="n">generate_tsp</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
@@ -2237,7 +2240,7 @@ The mechanism to do so is called a <em>callback</em>: a function that we define 
 <p>The solver can do this at different moments.
 For us, the moment of interest is when the solver finds a feasible solution: we can check if it satisfies all the not yet defined constraints, and if needed add some new constraints.</p>
 <p><code class="docutils literal notranslate"><span class="pre">Pyomo</span></code> supports callbacks for using with <code class="docutils literal notranslate"><span class="pre">gurobi</span></code>, <code class="docutils literal notranslate"><span class="pre">cplex</span></code> and <code class="docutils literal notranslate"><span class="pre">xpress</span></code>.
-These are all commercial solvers, of which the free (community edition) of gurobi is the most generous, allowing for up to 2000 variables and/or constraints.</p>
+These are commercial solvers. Gurobi’s <a class="reference external" href="https://support.gurobi.com/hc/en-us/articles/360051597492-How-do-I-resolve-a-Model-too-large-for-size-limited-Gurobi-license-error">size-limited license</a> permits up to 2,000 variables and 2,000 linear constraints for these linear models, for non-production use.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">gurobipy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gp</span>
@@ -2432,7 +2435,7 @@ These are all commercial solvers, of which the free (community edition) of gurob
 <img alt="../../_images/1a90ee73a1a786f24f2642827a5542367343aed1b74987295bb1e80deadd1a4f.png" src="../../_images/1a90ee73a1a786f24f2642827a5542367343aed1b74987295bb1e80deadd1a4f.png" />
 </div>
 </div>
-<p>Since the number of variables, <span class="math notranslate nohighlight">\(n(n-1)/2\)</span>, dominates the number of explicit constraints <span class="math notranslate nohighlight">\(n\)</span>, the highest <span class="math notranslate nohighlight">\(n\)</span> that fits the community edition is <span class="math notranslate nohighlight">\(n=63\)</span> yielding <span class="math notranslate nohighlight">\(1953\)</span> variables and <span class="math notranslate nohighlight">\(63\)</span> constraints.</p>
+<p>Since the number of variables, <span class="math notranslate nohighlight">\(n(n-1)/2\)</span>, dominates the number of explicit constraints <span class="math notranslate nohighlight">\(n\)</span>, the highest <span class="math notranslate nohighlight">\(n\)</span> that fits the size-limited Gurobi license is <span class="math notranslate nohighlight">\(n=63\)</span> yielding <span class="math notranslate nohighlight">\(1953\)</span> variables and <span class="math notranslate nohighlight">\(63\)</span> constraints.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">instance</span> <span class="o">=</span> <span class="n">generate_tsp</span><span class="p">(</span><span class="mi">63</span><span class="p">)</span>
@@ -2920,7 +2923,7 @@ These are all commercial solvers, of which the free (community edition) of gurob
 </div></div></div>
 </div>
 <p>Well, these sizes soon become too large for us!
-Definitely for the community edition of <code class="docutils literal notranslate"><span class="pre">gurobi</span></code> (we can go up to the first two).
+Definitely for Gurobi’s size-limited license (we can go up to the first two).
 Actually, this technique becomes impractical soon after that, even when having a <code class="docutils literal notranslate"><span class="pre">gurobi</span></code> license in place.
 No matter how good the model is, the problem is still very hard!
 The solutions listed above were found by highly researched solvers, specific for the TSP.</p>

@@ -617,7 +617,7 @@
 </section>
 <section id="problem-description">
 <h2>Problem description<a class="headerlink" href="#problem-description" title="Link to this heading">#</a></h2>
-<p>We consider a variant of the Optimal Power Flow problem in which each conventional generator <span class="math notranslate nohighlight">\(i\)</span> commits in advance to produce a specific amount <span class="math notranslate nohighlight">\(p_i\)</span> of energy as determined by the OPF problem assuming the renewable energy production from all solar panels and wind turbines will be equal to the forecasted one, also denoted as <span class="math notranslate nohighlight">\(\bar{p}_j\)</span>. The realized renewable energy output of generator <span class="math notranslate nohighlight">\(j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}\)</span>, however, shall deviate from their forecast values, by an amount <span class="math notranslate nohighlight">\(\Delta_j\)</span>, and result in a power production of</p>
+<p>We consider a variant of the Optimal Power Flow problem in which each conventional generator <span class="math notranslate nohighlight">\(i\)</span> commits in advance to produce a specific amount <span class="math notranslate nohighlight">\(\bar{p}_i\)</span> of energy as determined by the OPF problem assuming the renewable energy production from all solar panels and wind turbines will be equal to the forecasted one, also denoted as <span class="math notranslate nohighlight">\(\bar{p}_j\)</span>. The realized renewable energy output of generator <span class="math notranslate nohighlight">\(j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}\)</span>, however, may deviate from their forecast values, by an amount <span class="math notranslate nohighlight">\(\Delta_j\)</span>, and result in a power production of</p>
 <div class="math notranslate nohighlight">
 \[
 p_j = \bar{p}_j + \Delta_j, \quad  j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}
@@ -634,7 +634,7 @@ p_j = \bar{p}_j + \Delta_j, \quad  j \in \mathcal{G}^{\text{wind}} \cup \mathcal
 \begin{align*}
 \begin{array}{llll}
 \min \quad &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} c_i(\bar{p}_i) +  \mathbb{E} Q(\bar{p}, \Delta) \\
-\text{s.t.} \quad &amp; p_{i}^{\min } \leq \bar{p}_{i} \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}
+\text{s.t.} \quad &amp; p_{i}^{\min } \leq \bar{p}_{i} \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}\cup\mathcal{G}^{\text{hydro}}
 \end{array}
 \end{align*}
 \end{split}\]</div>
@@ -657,7 +657,7 @@ Q(\bar{p},\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text{coal}}
 \end{array}
 \end{align*}
 \end{split}\]</div>
-<p>where <span class="math notranslate nohighlight">\(c_i(.)\)</span> and <span class="math notranslate nohighlight">\(\hat{c}_i(.)\)</span> are the cost functions related to the pre-committed <span class="math notranslate nohighlight">\(\bar{p}_i\)</span> and changed <span class="math notranslate nohighlight">\(r_i\)</span> amounts of energy, remembering that among <span class="math notranslate nohighlight">\(\bar{p}_i\)</span>’s, only those with <span class="math notranslate nohighlight">\(i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}\)</span> are actual decision variables while <span class="math notranslate nohighlight">\(\bar{p}_i\)</span>, <span class="math notranslate nohighlight">\(i \in \mathcal{G}^{\text{solar}} \cup \mathcal{G}^{\text{wind}}\)</span> are known parameters (think of them as wind and solar power forecasts).</p>
+<p>where <span class="math notranslate nohighlight">\(c_i(.)\)</span> and <span class="math notranslate nohighlight">\(\hat{c}_i(.)\)</span> are the cost functions related to the pre-committed <span class="math notranslate nohighlight">\(\bar{p}_i\)</span> and changed <span class="math notranslate nohighlight">\(r_i\)</span> amounts of energy, with first-stage decisions <span class="math notranslate nohighlight">\(\bar{p}_i\)</span> for coal, gas and hydro generators. Wind and solar forecasts are fixed parameters. Hydro production is chosen within its bounds and remains unchanged across scenarios; in these data it has zero variable cost. At load nodes <span class="math notranslate nohighlight">\(\bar{p}_i=0\)</span>. Thus the final balance row in each recourse formulation covers both hydro and load nodes.</p>
 <p>In the <a class="reference internal" href="05-opf-wind-curtailment.html"><span class="std std-doc">OPF problem with wind curtailment</span></a> we solved a similar problem using the SAA method. More specifically, we generated a number of scenarios for the unknown parameters and combined the second-stage problems related to each of these scenarios with the single first-stage problem obtaining one large MILO problem.
 In this notebook, we are going to use a slightly different approach, namely implementing a specific type of linear decision rules. For each conventional generator, we set a recourse action, that is real-time adjustment of its power production, based on the realization of the renewable energy. More specifically, each conventional generator <span class="math notranslate nohighlight">\(i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}\)</span> has a <em>participation factor</em> <span class="math notranslate nohighlight">\(\alpha_i \geq 0\)</span> which determines to which extent that generator responds to the total imbalance <span class="math notranslate nohighlight">\(\sum_j \Delta_j\)</span>. Specifically, the power production <em>after the recourse action</em> at the conventional generator <span class="math notranslate nohighlight">\(i\)</span> is denoted by <span class="math notranslate nohighlight">\(p_i\)</span> and is given by</p>
 <div class="math notranslate nohighlight">
@@ -669,17 +669,17 @@ p_i := \bar{p}_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{
 \[
 r_i = - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j.
 \]</div>
-<p>The participation factor <span class="math notranslate nohighlight">\(\alpha_i \in [0,1]\)</span> indicates the fraction of the power imbalance that generator <span class="math notranslate nohighlight">\(i\)</span> needs to help compensate. To ensure that the power balance is satisfied, we need to have <span class="math notranslate nohighlight">\(\sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \alpha_i = 1\)</span>. Indeed, in this case, assuming the power was balanced in the first stage, i.e., <span class="math notranslate nohighlight">\(\sum_{i \in \mathcal{G}} p_i - \sum_{i \in V} d_i =0\)</span>, then the net power balance after the second stage is</p>
+<p>The participation factor <span class="math notranslate nohighlight">\(\alpha_i \in [0,1]\)</span> indicates the fraction of the power imbalance that generator <span class="math notranslate nohighlight">\(i\)</span> needs to help compensate. To ensure that the power balance is satisfied, we need to have <span class="math notranslate nohighlight">\(\sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \alpha_i = 1\)</span>. Indeed, in this case, assuming the power was balanced in the first stage, i.e., <span class="math notranslate nohighlight">\(\sum_{i \in \mathcal{G}} \bar{p}_i - \sum_{i \in V} d_i =0\)</span>, then the net power balance after the second stage is</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
 \sum_{i \in \mathcal{G}} p_i - \sum_{i \in V} d_i 
-&amp;= \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} (\bar{p}_j + \Delta_j) + \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} (\bar{p}_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j) - \sum_{i \in V} d_i\\
+&amp;= \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} (\bar{p}_j + \Delta_j) + \sum_{h\in\mathcal{G}^{\text{hydro}}}\bar{p}_h + \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} (\bar{p}_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j) - \sum_{i \in V} d_i\\
 &amp;= \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j - \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}}  \left (\sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \alpha_i \right) \Delta_j + \sum_{i \in \mathcal{G}} \bar{p}_i - \sum_{i \in V} d_i \\
 &amp; = \sum_{i \in \mathcal{G}} \bar{p}_i - \sum_{i \in V} d_i = 0
 \end{align*}
 \end{split}\]</div>
-<p>The participation factors <span class="math notranslate nohighlight">\(\alpha_i\)</span>’s do not have to be equal for all generators and in fact, they can be optimized jointly together with the initial power levels <span class="math notranslate nohighlight">\(p_i\)</span>. Since the energy produced as recourse action is more expensive, we account for this by adding to the objective function the cost term <span class="math notranslate nohighlight">\(\sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \hat{c}_i(\alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j)\)</span> for some cost functions <span class="math notranslate nohighlight">\(\hat{c}_i(.)\)</span>.</p>
+<p>The participation factors <span class="math notranslate nohighlight">\(\alpha_i\)</span>’s do not have to be equal for all generators and in fact, they can be optimized jointly together with the initial power levels <span class="math notranslate nohighlight">\(\bar{p}_i\)</span>. Since the energy produced as recourse action is more expensive, we account for this by adding to the objective function the cost term <span class="math notranslate nohighlight">\(\sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \hat{c}_i(-\alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j)\)</span> for some cost functions <span class="math notranslate nohighlight">\(\hat{c}_i(.)\)</span>.</p>
 <p>The resulting two-stage stochastic problem is</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -688,7 +688,7 @@ r_i = - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{s
 \min \quad &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} c_i(\bar{p}_i) + \mathbb{E} Q(\bar{p}, \alpha, \Delta) \\
 \text{s.t.} \quad 
 &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \alpha_i = 1 \\
-&amp; p_{i}^{\min } \leq \bar{p}_{i} \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}} \\
+&amp; p_{i}^{\min } \leq \bar{p}_{i} \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}\cup\mathcal{G}^{\text{hydro}} \\
 &amp; \alpha_i \geq 0 &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}
 \end{array}
 \end{align*}
@@ -698,8 +698,8 @@ r_i = - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{s
 \[\begin{split}
 \begin{align*}
 \begin{array}{lllll}
-Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \hat{c}_i(\alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j) \\
-&amp;\text{s.t.} \quad &amp; p_{i}^{\min } \leq p_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}} \\
+Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \hat{c}_i(-\alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j) \\
+&amp;\text{s.t.} \quad &amp; p_{i}^{\min } \leq \bar{p}_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}} \\
 &amp;&amp; \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = \bar{p}_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j - d_i &amp; \forall \, i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}} \\
 &amp;&amp; \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = \bar{p}_i + \Delta_i - d_i &amp; \forall \, i \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}\\
 &amp;&amp; \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji} = \bar{p}_i - d_i &amp; \forall \, i \in V \setminus (\mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}} \cup \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}) \\
@@ -716,7 +716,7 @@ Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text
 \[\begin{split}
 \begin{align*}
 \begin{array}{llll}
-&amp; \min \quad &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} c_i(\bar{p}_i) + \frac{1}{T} \sum\limits_{s = 1}^T  \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \hat{c}_i(\alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j^s)\\
+&amp; \min \quad &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} c_i(\bar{p}_i) + \frac{1}{T} \sum\limits_{s = 1}^T  \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \hat{c}_i(-\alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j^s)\\
 &amp; \text{s.t.} \quad &amp; p_{i}^{\min } \leq \bar{p}_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j^s \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}, \, \forall s = 1, \ldots, T \\
 &amp;&amp; \sum_{j: (i, j) \in E} f_{ij}^s - \sum_{j: (j, i) \in E} f_{ji}^s = \bar{p}_i - \alpha_i \sum_{j \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}} \Delta_j^s - d_i &amp; \forall \, i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}, \, \forall s = 1, \ldots, T\\
 &amp;&amp; \sum_{j: (i, j) \in E} f_{ij}^s - \sum_{j: (j, i) \in E} f_{ji}^s = \bar{p}_i + \Delta_i^s - d_i &amp; \forall \, i \in \mathcal{G}^{\text{wind}} \cup \mathcal{G}^{\text{solar}}, \, \forall s = 1, \ldots, T\\
@@ -726,7 +726,7 @@ Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text
 &amp;&amp; \theta_i^s \in \mathbb{R} &amp; \forall i \in V, \, \forall s = 1, \ldots, T \\
 &amp;&amp; f_{ij}^s \in \mathbb{R} &amp; \forall (i, j) \in E, \, \forall s = 1, \ldots, T\\
 &amp;&amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}} \alpha_i = 1 \\
-&amp;&amp; p_{i}^{\min } \leq \bar{p}_{i} \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}} \\
+&amp;&amp; p_{i}^{\min } \leq \bar{p}_{i} \leq p_{i}^{\max } &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}\cup\mathcal{G}^{\text{hydro}} \\
 &amp;&amp; \alpha_i \geq 0 &amp; \forall i \in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}.
 \end{array}
 \end{align*}
@@ -739,6 +739,7 @@ Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text
 \end{align*}
 \]</div>
 <p>where <span class="math notranslate nohighlight">\(c_i\)</span> is the unit production cost of the <span class="math notranslate nohighlight">\(i\)</span>-th generator. This structure for the <span class="math notranslate nohighlight">\(\hat{c}_i(\cdot)\)</span> functions means we assume that any real-time adjustment in the energy dispatch of a generator is twice as costly as a pre-scheduled unit of energy generated there.</p>
+<p>The adjustment in the recourse cost has a minus sign because it compensates the renewable imbalance. For the absolute-value cost used here, the sign does not change the numerical value; a general asymmetric adjustment cost would depend on it.</p>
 </section>
 <section id="pyomo-solution">
 <h2>Pyomo solution<a class="headerlink" href="#pyomo-solution" title="Link to this heading">#</a></h2>
@@ -778,6 +779,7 @@ Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text
 <section id="saa-implementation">
 <h3>SAA implementation<a class="headerlink" href="#saa-implementation" title="Link to this heading">#</a></h3>
 <p>The following cell is the Pyomo function implementation of our final optimization problem above, with an optional argument indicating if the participation factors should be taken as uniform across all conventional generators. For ease of accounting for the second-stage costs <span class="math notranslate nohighlight">\(\hat{c}_i(\cdot)\)</span>, we assume that the function takes as an argument not only a list of scenarios for the renewable energy generation, but also the corresponding total and absolute values of the imbalances in the network.</p>
+<p>In the code, <code class="docutils literal notranslate"><span class="pre">model.p</span></code> denotes the scheduled production <span class="math notranslate nohighlight">\(\bar p\)</span>. <code class="docutils literal notranslate"><span class="pre">model.r[i,t]</span></code> stores <span class="math notranslate nohighlight">\(\bar p_i-\alpha_i\sum_j\Delta_j^t\)</span>, which is the realized production for a conventional generator, rather than the adjustment <span class="math notranslate nohighlight">\(r_i\)</span> in the mathematical notation. Wind and solar deviations are added separately in the node balances. The displayed balances use outgoing minus incoming flow, whereas the code uses incoming minus outgoing flow. Negating all flows and phase angles maps one convention to the other and leaves the production decisions and costs unchanged.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># OPF with recourse actions for conventional generators based on participation factors</span>
@@ -868,7 +870,7 @@ Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text
     <span class="p">)</span>
 
     <span class="c1"># Participation factors must sum to one</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">sum_one</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">sum_one</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">uniformparticipationfactors</span><span class="p">:</span>
         <span class="c1"># Participation factors must be equal</span>
@@ -910,7 +912,7 @@ Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text
         <span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span>
         <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
         <span class="n">rule</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">incoming_flow</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">outgoing_flow</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span>
-        <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">imbalances</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"d"</span><span class="p">],</span>
+        <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">imbalances</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">network</span><span class="p">[</span><span class="s2">"nodes"</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">"d"</span><span class="p">],</span>
     <span class="p">)</span>
 
     <span class="n">model</span><span class="o">.</span><span class="n">susceptance</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span>
@@ -990,7 +992,8 @@ Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text
     <span class="n">zeroabstotalimbalances</span><span class="p">,</span>
     <span class="n">uniformparticipationfactors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 <span class="n">firststagecost</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
     <span class="n">data</span><span class="p">[</span><span class="s2">"c_var"</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">"nodes"</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
@@ -1005,14 +1008,13 @@ Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>First-stage energy production cost = 40385.16
-The optimal production levels for the conventional generators are: [135.69, 227.38, 235.31, 371.35, -0.0, -0.0, 298.39, 336.95, -0.0, -0.0]
+The optimal production levels for the conventional generators are: [np.float64(135.69), np.float64(227.38), np.float64(235.31), np.float64(371.35), np.float64(-0.0), np.float64(-0.0), np.float64(298.39), np.float64(336.95), np.float64(-0.0), np.float64(-0.0)]
 </pre></div>
 </div>
 </div>
 </div>
-<p>It is key to understand how this solution would perform if there were perturbations in renewable energy production.</p>
-<p>First of all, it is not guaranteed that it is possible to find a feasible solution in such a case. Following an approach similar to that of the <a class="reference internal" href="05-opf-wind-curtailment.html"><span class="std std-doc">OPF problem with wind curtailment</span></a>, one can solve for the remaining variables when keeping the initial solution <span class="math notranslate nohighlight">\(\bar{p}\)</span> fixed and check that with uniform participation factors, it is not possible to find a feasible flow in any of the scenarios we consider. If instead we allow for non-uniform participation factors, then this is not possible in 13 out of 100 scenarios.</p>
-<p>Putting the feasibility issues aside for a moment, let us check how much extra cost would there be with uniform participation factors would there be on average across our scenarios. We can calculate this by taking the total imbalance and computing the cost of the recourse action to cover it, assuming that every coal and gas generator adjusts its production proportionally to the optimal participation factor previously obtained.</p>
+<p>It is key to understand how the nominal solution would perform if renewable production differed from the forecast. Balancing total supply and demand does not by itself ensure a feasible dispatch: generator and line limits must also hold.</p>
+<p>The next calculation evaluates the adjustment cost for the nominal production plan with uniform participation factors. It is a cost-only estimate; it does not solve the scenario flow problems or establish feasibility. A feasibility count would also need to specify whether participation factors are fixed in advance or reoptimized separately after each scenario is observed.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">averagerecoursecost</span> <span class="o">=</span> <span class="p">(</span>
@@ -1034,17 +1036,17 @@ The optimal production levels for the conventional generators are: [135.69, 227.
     <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">"Average energy production cost due to recourse actions = </span><span class="si">{</span><span class="n">averagerecoursecost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> (but including many infeasible scenarios!)"</span>
+    <span class="sa">f</span><span class="s2">"Average energy production cost due to recourse actions = </span><span class="si">{</span><span class="n">averagerecoursecost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> (cost-only estimate; network feasibility not checked)"</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">"Average total cost = </span><span class="si">{</span><span class="n">averagetotalcost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> (but including many infeasible scenarios!)"</span>
+    <span class="sa">f</span><span class="s2">"Average total cost = </span><span class="si">{</span><span class="n">averagetotalcost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> (cost-only estimate; network feasibility not checked)"</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Average energy production cost due to recourse actions = 5354.25 (but including many infeasible scenarios!)
-Average total cost = 45739.41 (but including many infeasible scenarios!)
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Average energy production cost due to recourse actions = 5354.25 (cost-only estimate; network feasibility not checked)
+Average total cost = 45739.41 (cost-only estimate; network feasibility not checked)
 </pre></div>
 </div>
 </div>
@@ -1063,7 +1065,8 @@ Average total cost = 45739.41 (but including many infeasible scenarios!)
     <span class="n">abstotalimbalances</span><span class="p">,</span>
     <span class="n">uniformparticipationfactors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
     <span class="s2">"The optimal production levels for the conventional generators are"</span><span class="p">,</span>
     <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">],</span>
@@ -1098,8 +1101,8 @@ Average total cost = 45739.41 (but including many infeasible scenarios!)
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal production levels for the conventional generators are [127.0, 205.65, 213.57, 349.62, 27.39, 27.39, 276.66, 323.04, 27.39, 27.39]
-The participation factors for the conventional generators are [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal production levels for the conventional generators are [np.float64(127.0), np.float64(205.65), np.float64(213.57), np.float64(349.62), np.float64(27.39), np.float64(27.39), np.float64(276.66), np.float64(323.04), np.float64(27.39), np.float64(27.39)]
+The participation factors for the conventional generators are [np.float64(0.1), np.float64(0.1), np.float64(0.1), np.float64(0.1), np.float64(0.1), np.float64(0.1), np.float64(0.1), np.float64(0.1), np.float64(0.1), np.float64(0.1)]
 
 First-stage energy production cost = 41719.19
 Average energy production cost due to recourse actions = 5354.25
@@ -1108,9 +1111,9 @@ Total cost = 47073.44
 </div>
 </div>
 </div>
-<p>We see that the total average production cost is slightly higher than in the first “perfect forecast” nominal scenario, but the benefit of this newly obtained solution is that we are sure that in all scenarios we have a feasible power flow dispatch.</p>
-<p>We argue that using this solution should be preferable: even if the ‘nominal’ solution had a slightly lower average production cost, we need to factor in how costly will it be for the network operator when the solution becomes infeasible. Having an infeasible network configuration means there is a risk of cascading failures and/or blackout, which besides possibly damaging the infrastructure is dramatically more expensive from a financial and societal perspective, and having a 13% chance of this happening is just unaffordable.</p>
-<p>Next, we also optimize the participation factors <span class="math notranslate nohighlight">\(\alpha_i\)</span>’s jointly with the initial power levels, to see if we can achieve a reduction in the average total cost. We can do this using the same function as before but changing the argument <code class="docutils literal notranslate"><span class="pre">uniformparticipationfactors</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+<p>The stochastic model chooses scheduled production so that a feasible dispatch exists for every sampled scenario under the uniform participation rule. Its objective includes the average cost of the required adjustments.</p>
+<p>This feasibility statement concerns the sampled network model. It neither guarantees feasibility for every future realization nor estimates a probability of cascading failures or blackouts.</p>
+<p>Next, we optimize the participation factors jointly with the scheduled production, keeping one common set of factors across all scenarios. We use the same function with <code class="docutils literal notranslate"><span class="pre">uniformparticipationfactors=False</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">OPF_participationfactors</span><span class="p">(</span>
@@ -1120,7 +1123,8 @@ Total cost = 47073.44
     <span class="n">abstotalimbalances</span><span class="p">,</span>
     <span class="n">uniformparticipationfactors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
     <span class="s2">"The optimal production levels for the conventional generators are"</span><span class="p">,</span>
     <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">CG</span><span class="p">],</span>
@@ -1155,8 +1159,8 @@ Total cost = 47073.44
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal production levels for the conventional generators are [134.75, 227.38, 235.31, 371.35, -0.0, 0.0, 298.39, 281.66, -0.0, 56.24]
-The optimal participation factors for the conventional generators are [0.06, -0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.73, 0.0, 0.21]
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The optimal production levels for the conventional generators are [np.float64(134.75), np.float64(227.38), np.float64(235.31), np.float64(371.35), np.float64(0.0), np.float64(-0.0), np.float64(298.39), np.float64(281.66), np.float64(-0.0), np.float64(56.24)]
+The optimal participation factors for the conventional generators are [np.float64(0.06), np.float64(-0.0), np.float64(-0.0), np.float64(0.0), np.float64(0.0), np.float64(0.0), np.float64(-0.0), np.float64(0.73), np.float64(0.0), np.float64(0.21)]
 
 First-stage energy production cost = 40446.13
 Average energy production cost due to recourse actions = 5969.05

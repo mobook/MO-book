@@ -580,6 +580,7 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-reports-with-pandas">Creating reports with Pandas</a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-same-model-with-decorators">The same model with decorators</a></li>
 </ul>
             </nav>
         </div>
@@ -594,7 +595,7 @@
   <section class="tex2jax_ignore mathjax_ignore" id="a-basic-pyomo-model">
 <span id="index-5"></span><span id="index-4"></span><span id="index-3"></span><span id="index-2"></span><span id="index-1"></span><span id="index-0"></span><h1>1.2 A basic Pyomo model<a class="headerlink" href="#a-basic-pyomo-model" title="Link to this heading">#</a></h1>
 <p>Pyomo is an algebraic modeling language for mathematical optimization that is integrated within the Python programming environment. It enables users to create optimization models consisting of decision variables, expressions, objective functions, and constraints. Pyomo provides tools to transform models, and then solve them using a variety of open-source and commercial solvers. As an open-source project, Pyomo is not tied to any specific vendor, solver, or class of mathematical optimization problems, and is constantly evolving through contributions from third-party developers.</p>
-<p>This notebook introduces basic elements of Pyomo common to most applications for the small production planning problem introduced earlier in <a class="reference internal" href="01-production-planning.html"><span class="std std-doc">this notebook</span></a> introduced in a companion notebook:</p>
+<p>This notebook introduces basic elements of Pyomo common to most applications for the small production planning problem introduced in the <a class="reference internal" href="01-production-planning.html"><span class="std std-doc">companion notebook</span></a>:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://pyomo.readthedocs.io/en/6.8.0/pyomo_modeling_components/Variables.html">Variables</a></p></li>
 <li><p><a class="reference external" href="https://pyomo.readthedocs.io/en/6.8.0/pyomo_modeling_components/Expressions.html">Expressions</a></p></li>
@@ -603,7 +604,7 @@
 <li><p><a class="reference external" href="https://pyomo.readthedocs.io/en/6.8.0/solving_pyomo_models.html">SolverFactory</a></p></li>
 </ul>
 <p>The Pyomo model shown below is a direct translation of the mathematical model into basic Pyomo components. In this approach, parameter values from the mathematical model are included directly in the Pyomo model for simplicity. This method works well for problems with a few decision variables and constraints, but it limits the reuse of the model. Another notebook will demonstrate Pyomo features for writing models for more generic, “data-driven” applications.</p>
-<p>This notebook also introduces the use of Python decorators to designate Pyomo expressions, objectives, and constraints. While decorators may be unfamiliar to some Python users, or even current Pyomo users, they offer a significant improvement in the readability of Pyomo model. This feature is relatively new and is available in recent versions of Pyomo.</p>
+<p>We first build and solve the model using Pyomo component constructors. At the end of the notebook, we build the same model using Python decorators and compare the results.</p>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Link to this heading">#</a></h2>
 <p>This collection of notebooks is intended to be run in the cloud on <a class="reference external" href="https://colab.google/">Google Colab</a> or on a personal computer. To meet this goal, we start each notebook by verifying the installation of Pyomo and an appropriate solver.</p>
@@ -733,22 +734,25 @@ assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGH
 </section>
 <section id="step-4-expressions">
 <h2>Step 4. Expressions<a class="headerlink" href="#step-4-expressions" title="Link to this heading">#</a></h2>
-<p>Pyomo expressions are mathematical formulas that involve decision variables. The following cell creates expressions for revenue and cost that are assigned to <code class="docutils literal notranslate"><span class="pre">model.revenue</span></code> and <code class="docutils literal notranslate"><span class="pre">model.cost</span></code>, respectively.</p>
+<p>Pyomo expressions are mathematical formulas that involve decision variables. The following cell creates named <code class="docutils literal notranslate"><span class="pre">Expression</span></code> components for revenue and cost, assigned to <code class="docutils literal notranslate"><span class="pre">model.revenue</span></code> and <code class="docutils literal notranslate"><span class="pre">model.cost</span></code>. The <code class="docutils literal notranslate"><span class="pre">expr</span></code> keyword supplies each formula. These components can be reused in the objective and displayed with <code class="docutils literal notranslate"><span class="pre">pprint()</span></code>; they do not introduce new decision variables.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create expressions</span>
-<span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">=</span> <span class="mi">270</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">210</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span>
-<span class="n">model</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x_M</span> <span class="o">+</span> <span class="mi">50</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x_A</span> <span class="o">+</span> <span class="mi">40</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x_B</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create named expressions</span>
+<span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="mi">270</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">210</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x_M</span> <span class="o">+</span> <span class="mi">50</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x_A</span> <span class="o">+</span> <span class="mi">40</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x_B</span><span class="p">)</span>
 
-<span class="c1"># expressions can be printed</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">revenue</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">revenue</span><span class="o">.</span><span class="n">pprint</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">cost</span><span class="o">.</span><span class="n">pprint</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>270*y_U + 210*y_V
-10*x_M + 50*x_A + 40*x_B
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>revenue : Size=1, Index=None
+    Key  : Expression
+    None : 270*y_U + 210*y_V
+cost : Size=1, Index=None
+    Key  : Expression
+    None : 10*x_M + 50*x_A + 40*x_B
 </pre></div>
 </div>
 </div>
@@ -756,50 +760,24 @@ assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGH
 </section>
 <section id="step-5-objective">
 <h2>Step 5. Objective<a class="headerlink" href="#step-5-objective" title="Link to this heading">#</a></h2>
-<p>The objective for this example is to maximize profit which is given by the difference between revenue and cost. There are two ways this objective could be specified in Pyomo.</p>
-<p>The first method is to use <code class="docutils literal notranslate"><span class="pre">pyo.Objective()</span></code> where the expression to be optimized is assigned with the <code class="docutils literal notranslate"><span class="pre">expr</span></code> keyword and the type of objective is assigned with the <code class="docutils literal notranslate"><span class="pre">sense</span></code> keyword.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">model</span><span class="o">.</span><span class="n">profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">cost</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Recent releases of Pyomo provide a second method that uses Python <a class="reference external" href="https://peps.python.org/pep-0318/">decorators</a> to specify an objective. With a decorator, the same objective is written as</p>
+<p>The objective for this example is to maximize profit, given by the difference between revenue and cost. We use <code class="docutils literal notranslate"><span class="pre">pyo.Objective()</span></code>, with <code class="docutils literal notranslate"><span class="pre">expr</span></code> supplying the expression to optimize and <code class="docutils literal notranslate"><span class="pre">sense</span></code> specifying maximization.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">cost</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">cost</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p>Python decorators modify the behavior of the function defined in the next line.  In this case, the decorator <code class="docutils literal notranslate"><span class="pre">&#64;model.Objective()</span></code> modifies the behavior of <code class="docutils literal notranslate"><span class="pre">profit()</span></code> so that it returns an expression for the profit to Pyomo. The keyword <code class="docutils literal notranslate"><span class="pre">sense</span></code> sets the type of objective, which can either be to maximize or minimize the value returned by the objective function. The function <code class="docutils literal notranslate"><span class="pre">profit()</span></code>, after being decorated, takes the Pyomo model as its first argument and adds its name to the model attributes.</p>
-<p>In effect, Pyomo decorators are tags that insert functions into a Pyomo model to serve as expressions, objectives, or constraints. Decorators can improve the readability and maintainability of more complex models. They also simplify the syntax for creating other Pyomo objects expressions, constraints, and other optimization-related elements.</p>
 </section>
 <section id="step-6-constraints">
 <h2>Step 6. Constraints<a class="headerlink" href="#step-6-constraints" title="Link to this heading">#</a></h2>
 <p>Constraints are logical relationships between expressions that define the range of feasible solutions in an optimization problem. A constraint consists of two expressions separated by one of the logical relationships. The logical relationships can be equality (<code class="docutils literal notranslate"><span class="pre">==</span></code>), less-than (<code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>), or greater-than (<code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>).</p>
-<p>Constraints can be created with <code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code>. The constraint is passed as a keyword argument <code class="docutils literal notranslate"><span class="pre">expr</span></code> to <code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code>. For this application the constraints could be expressed as</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">model</span><span class="o">.</span><span class="n">raw_materials</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">9</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x_M</span><span class="p">)</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">labor_A</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x_A</span><span class="p">)</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">labor_B</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x_B</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Alternatively, the <code class="docutils literal notranslate"><span class="pre">&#64;model.Constraint()</span></code> decorator ‘tags’ the output of the following function as a constraint. For the present example, the constraints are expressed with decorators below. This collection of notebooks uses decorators whenever possible to improve the readability and maintainability of Pyomo models.</p>
+<p>Constraints are created with <code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code>. The <code class="docutils literal notranslate"><span class="pre">expr</span></code> keyword supplies the relationship for each constraint.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">raw_materials</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="k">return</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">9</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x_M</span>
-
-
-<span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">labor_A</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="k">return</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x_A</span>
-
-
-<span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">labor_B</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x_B</span>
-
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">raw_materials</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">9</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x_M</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">labor_A</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x_A</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">labor_B</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x_B</span><span class="p">)</span>
 
 <span class="n">model</span><span class="o">.</span><span class="n">pprint</span><span class="p">()</span>
 </pre></div>
@@ -823,10 +801,18 @@ assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGH
         Key  : Lower : Value : Upper : Fixed : Stale : Domain
         None :     0 :  None :  None : False :  True :  Reals
 
+2 Expression Declarations
+    cost : Size=1, Index=None
+        Key  : Expression
+        None : 10*x_M + 50*x_A + 40*x_B
+    revenue : Size=1, Index=None
+        Key  : Expression
+        None : 270*y_U + 210*y_V
+
 1 Objective Declarations
     profit : Size=1, Index=None, Active=True
         Key  : Active : Sense    : Expression
-        None :   True : maximize : 270*y_U + 210*y_V - (10*x_M + 50*x_A + 40*x_B)
+        None :   True : maximize : (270*y_U + 210*y_V) - (10*x_M + 50*x_A + 40*x_B)
 
 3 Constraint Declarations
     labor_A : Size=1, Index=None, Active=True
@@ -839,7 +825,7 @@ assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGH
         Key  : Lower : Body                 : Upper : Active
         None :  -Inf : 10*y_U + 9*y_V - x_M :   0.0 :   True
 
-9 Declarations: x_M x_A x_B y_U y_V profit raw_materials labor_A labor_B
+11 Declarations: x_M x_A x_B y_U y_V revenue cost profit raw_materials labor_A labor_B
 </pre></div>
 </div>
 </div>
@@ -851,26 +837,40 @@ assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGH
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-WARNING: No semi-integer/integer variables in model with non-empty integrality
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.15.1 (git hash: 04024d7): Copyright (c) 2026 under MIT licence terms
+Includes third-party software components, see THIRD_PARTY_NOTICES.md for full details
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>LP has 3 rows; 5 cols; 9 nonzeros
+Coefficient ranges:
+  Matrix  [1e+00, 1e+01]
+  Cost    [1e+01, 3e+02]
+  Bound   [4e+01, 1e+02]
+  RHS     [0e+00, 0e+00]
 Presolving model
-2 rows, 4 cols, 6 nonzeros
-2 rows, 4 cols, 6 nonzeros
-Presolve : Reductions: rows 2(-1); columns 4(-1); elements 6(-3)
+2 rows, 4 cols, 6 nonzeros 0s
+Dependent equations search running on 2 equations with time limit of 1000.00s
+Dependent equations search removed 0 rows and 0 nonzeros in 0.00s (limit = 1000.00s)
+2 rows, 4 cols, 6 nonzeros 0s
+Presolve reductions: rows 2(-1); columns 4(-1); nonzeros 6(-3) 
 Solving the presolved LP
-Using EKK dual simplex solver - serial
+Using dual simplex solver
   Iteration        Objective     Infeasibilities num(sum)
-          0    -2.0999953995e+02 Ph1: 2(4); Du: 3(210) 0s
-          3    -2.6000000000e+03 Pr: 0(0) 0s
+          0    -2.0999953995e+02 Ph1: 2(4); Du: 3(210) 0.0s
+          3    -2.6000000000e+03 Pr: 0(0) 0.0s
+
+Performed postsolve
 Solving the original LP from the solution after postsolve
-Model   status      : Optimal
+
+Model status        : Optimal
 Simplex   iterations: 3
 Objective value     :  2.6000000000e+03
+P-D objective error :  0.0000000000e+00
 HiGHS run time      :          0.00
 </pre></div>
 </div>
@@ -908,10 +908,18 @@ HiGHS run time      :          0.00
         Key  : Lower : Value : Upper : Fixed : Stale : Domain
         None :     0 :  60.0 :  None : False : False :  Reals
 
+2 Expression Declarations
+    cost : Size=1, Index=None
+        Key  : Expression
+        None : 10*x_M + 50*x_A + 40*x_B
+    revenue : Size=1, Index=None
+        Key  : Expression
+        None : 270*y_U + 210*y_V
+
 1 Objective Declarations
     profit : Size=1, Index=None, Active=True
         Key  : Active : Sense    : Expression
-        None :   True : maximize : 270*y_U + 210*y_V - (10*x_M + 50*x_A + 40*x_B)
+        None :   True : maximize : (270*y_U + 210*y_V) - (10*x_M + 50*x_A + 40*x_B)
 
 3 Constraint Declarations
     labor_A : Size=1, Index=None, Active=True
@@ -924,7 +932,7 @@ HiGHS run time      :          0.00
         Key  : Lower : Body                 : Upper : Active
         None :  -Inf : 10*y_U + 9*y_V - x_M :   0.0 :   True
 
-9 Declarations: x_M x_A x_B y_U y_V profit raw_materials labor_A labor_B
+11 Declarations: x_M x_A x_B y_U y_V revenue cost profit raw_materials labor_A labor_B
 </pre></div>
 </div>
 </div>
@@ -939,7 +947,7 @@ HiGHS run time      :          0.00
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>profit : Size=1, Index=None, Active=True
     Key  : Active : Sense    : Expression
-    None :   True : maximize : 270*y_U + 210*y_V - (10*x_M + 50*x_A + 40*x_B)
+    None :   True : maximize : (270*y_U + 210*y_V) - (10*x_M + 50*x_A + 40*x_B)
 </pre></div>
 </div>
 </div>
@@ -977,7 +985,7 @@ Revenue =  18000.00
 </div>
 </div>
 </div>
-<p>Pyomo provides a shortcut notation for accessing solution. After a solution has been computed, a function with the same name as decision variable is created that will report the solution value.</p>
+<p>Pyomo also provides a shortcut for accessing solution values: variable objects are callable, so <code class="docutils literal notranslate"><span class="pre">model.x_A()</span></code> returns the current value of <code class="docutils literal notranslate"><span class="pre">model.x_A</span></code>. Solving the model assigns values to its variables; it does not create new Python functions.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">"x_A ="</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">x_A</span><span class="p">())</span>
@@ -1061,11 +1069,188 @@ dtype: float64
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/4163d61d63fe232f06dc5f1345825298db19fc736c6bdd5f9ace50ab1f7610fc.png" src="../../_images/4163d61d63fe232f06dc5f1345825298db19fc736c6bdd5f9ace50ab1f7610fc.png" />
+<img alt="../../_images/f20b962d0c5164cd93920f6183f3a6ac3d535233e2eef304cf2e82bdec1957ca.png" src="../../_images/f20b962d0c5164cd93920f6183f3a6ac3d535233e2eef304cf2e82bdec1957ca.png" />
 </div>
+</div>
+<p><a name="the-same-model-with-decorators"></a></p>
+</section>
+</section>
+<section id="the-same-model-with-decorators">
+<h2>The same model with decorators<a class="headerlink" href="#the-same-model-with-decorators" title="Link to this heading">#</a></h2>
+<p>The main example used constructors such as <code class="docutils literal notranslate"><span class="pre">pyo.Expression(expr=...)</span></code>. A <a class="reference external" href="https://peps.python.org/pep-0318/">Python decorator</a> is written immediately above a function definition. Pyomo uses this notation to create a model component from the function below it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">revenue</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">270</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">210</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_V</span>
+</pre></div>
+</div>
+<p>Here is how to read these three lines:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head text-left"><p>Part</p></th>
+<th class="head text-left"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">&#64;decorated_model.Expression()</span></code></p></td>
+<td class="text-left"><p>Create an <code class="docutils literal notranslate"><span class="pre">Expression</span></code> on <code class="docutils literal notranslate"><span class="pre">decorated_model</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">revenue(m):</span></code></p></td>
+<td class="text-left"><p>Use the function name for the component name, <code class="docutils literal notranslate"><span class="pre">decorated_model.revenue</span></code>. Pyomo passes the model as <code class="docutils literal notranslate"><span class="pre">m</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">return</span> <span class="pre">...</span></code></p></td>
+<td class="text-left"><p>Supply the symbolic expression used to construct the component.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>For this <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code>, Pyomo calls the function when the component is constructed. The function returns an expression involving variables, before their solution values are known. It is a construction rule, not the optimization algorithm.</p>
+<p>The same pattern applies to <code class="docutils literal notranslate"><span class="pre">Objective</span></code> and <code class="docutils literal notranslate"><span class="pre">Constraint</span></code>. An objective rule returns the expression to optimize, with <code class="docutils literal notranslate"><span class="pre">sense</span></code> selecting maximization or minimization; a constraint rule returns a relationship such as <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>. Using a decorator supplies the rule and attaches the component under the function’s name, instead of writing a separate constructor assignment.</p>
+<p>We now create a separate model so that the first model remains available for comparison. The variables, bounds and formulas are unchanged.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">decorated_model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">"Production Planning: Decorator version"</span><span class="p">)</span>
+
+<span class="n">decorated_model</span><span class="o">.</span><span class="n">x_M</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+<span class="n">decorated_model</span><span class="o">.</span><span class="n">x_A</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">80</span><span class="p">))</span>
+<span class="n">decorated_model</span><span class="o">.</span><span class="n">x_B</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+<span class="n">decorated_model</span><span class="o">.</span><span class="n">y_U</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">40</span><span class="p">))</span>
+<span class="n">decorated_model</span><span class="o">.</span><span class="n">y_V</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">revenue</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">270</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">210</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_V</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cost</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x_M</span> <span class="o">+</span> <span class="mi">50</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x_A</span> <span class="o">+</span> <span class="mi">40</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x_B</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">cost</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">raw_materials</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">9</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x_M</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">labor_A</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x_A</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">labor_B</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_U</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y_V</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x_B</span>
+
+
+<span class="n">decorated_model</span><span class="o">.</span><span class="n">revenue</span><span class="o">.</span><span class="n">pprint</span><span class="p">()</span>
+<span class="n">decorated_model</span><span class="o">.</span><span class="n">cost</span><span class="o">.</span><span class="n">pprint</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>revenue : Size=1, Index=None
+    Key  : Expression
+    None : 270*y_U + 210*y_V
+cost : Size=1, Index=None
+    Key  : Expression
+    None : 10*x_M + 50*x_A + 40*x_B
+</pre></div>
+</div>
+</div>
+</div>
+<p>Both styles construct the same optimization problem. Solving the second model gives the same production plan, resource use and profit for these data. The table compares all five variables and the revenue, cost and profit. More generally, equivalent models can have different optimal plans when there are alternative optima.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">decorated_results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">decorated_model</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">decorated_results</span><span class="p">)</span>
+
+<span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"y_U"</span><span class="p">,</span> <span class="s2">"y_V"</span><span class="p">,</span> <span class="s2">"x_M"</span><span class="p">,</span> <span class="s2">"x_A"</span><span class="p">,</span> <span class="s2">"x_B"</span><span class="p">,</span> <span class="s2">"revenue"</span><span class="p">,</span> <span class="s2">"cost"</span><span class="p">,</span> <span class="s2">"profit"</span><span class="p">]</span>
+<span class="n">comparison</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">"Constructors"</span><span class="p">:</span> <span class="p">[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">],</span>
+        <span class="s2">"Decorators"</span><span class="p">:</span> <span class="p">[</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">decorated_model</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">],</span>
+    <span class="p">},</span>
+    <span class="n">index</span><span class="o">=</span><span class="n">names</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">assert</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">comparison</span><span class="p">[</span><span class="s2">"Constructors"</span><span class="p">]</span> <span class="o">-</span> <span class="n">comparison</span><span class="p">[</span><span class="s2">"Decorators"</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">1e-7</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="n">display</span><span class="p">(</span><span class="n">comparison</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Constructors</th>
+      <th>Decorators</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>y_U</th>
+      <td>20.0</td>
+      <td>20.0</td>
+    </tr>
+    <tr>
+      <th>y_V</th>
+      <td>60.0</td>
+      <td>60.0</td>
+    </tr>
+    <tr>
+      <th>x_M</th>
+      <td>740.0</td>
+      <td>740.0</td>
+    </tr>
+    <tr>
+      <th>x_A</th>
+      <td>80.0</td>
+      <td>80.0</td>
+    </tr>
+    <tr>
+      <th>x_B</th>
+      <td>100.0</td>
+      <td>100.0</td>
+    </tr>
+    <tr>
+      <th>revenue</th>
+      <td>18000.0</td>
+      <td>18000.0</td>
+    </tr>
+    <tr>
+      <th>cost</th>
+      <td>15400.0</td>
+      <td>15400.0</td>
+    </tr>
+    <tr>
+      <th>profit</th>
+      <td>2600.0</td>
+      <td>2600.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
 </div>
 <p>To discover more advanced Pyomo features, see the <a class="reference internal" href="03-production-planning-advanced.html"><span class="std std-doc">next notebook</span></a>.</p>
-</section>
 </section>
 </section>
 
@@ -1149,6 +1334,7 @@ dtype: float64
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-reports-with-pandas">Creating reports with Pandas</a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-same-model-with-decorators">The same model with decorators</a></li>
 </ul>
   </nav></div>
 

@@ -572,6 +572,7 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-representations">Data representations</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mathematical-model">Mathematical model</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-production-model-in-pyomo">The production model in Pyomo</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-same-indexed-model-with-decorators">The same indexed model with decorators</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#for-python-experts-creating-subclasses-of-concretemodel">For Python experts: Creating subclasses of <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code></a></li>
 </ul>
             </nav>
@@ -592,7 +593,7 @@
 <li><p><a class="reference external" href="https://pyomo.readthedocs.io/en/6.8.0/pyomo_modeling_components/Sets.html">Sets</a></p></li>
 <li><p><a class="reference external" href="https://pyomo.readthedocs.io/en/6.8.0/pyomo_modeling_components/Parameters.html">Parameters</a></p></li>
 </ul>
-<p>These components enable the use indexed variables and constraints. The combination of sets and indices are essential to building scalable and maintainable models for more complex applications.</p>
+<p>These components enable the use of indexed variables and constraints. The combination of sets and indices is essential to building scalable and maintainable models for more complex applications.</p>
 <p>We will begin this analysis by examining the problem data sets to identify the underlying problem structure.</p>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Link to this heading">#</a></h2>
@@ -801,7 +802,7 @@ labor B  available  100
 </div>
 </div>
 </div>
-<p>The third table data shows the amount of each resource needed to produce one unit of each product. The rows are labeled by product, and the columns labeled by by resource.</p>
+<p>The third table data shows the amount of each resource needed to produce one unit of each product. The rows are labeled by product, and the columns labeled by resource.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">processes</span> <span class="o">=</span> <span class="p">{</span>
@@ -830,7 +831,7 @@ V    labor B    1
 <section id="mathematical-model">
 <h2>Mathematical model<a class="headerlink" href="#mathematical-model" title="Link to this heading">#</a></h2>
 <p>By rearranging the problem data into straightforward tables, the structure of the production planning problem becomes evident. We can identify a set of products, a set of resources, and a collection of parameters that specify the processes for transforming resources into products. Compared to the previous notebook, these abstractions allow us to create mathematical models that can adapt and scale with the supplied data.</p>
-<p>Let <span class="math notranslate nohighlight">\(\cal{P}\)</span> and <span class="math notranslate nohighlight">\(\cal{R}\)</span> be the set of products and resources, respectively, and let <span class="math notranslate nohighlight">\(p\)</span> and <span class="math notranslate nohighlight">\(r\)</span> be representative elements of those sets. We use indexed decision variables <span class="math notranslate nohighlight">\(x_r\)</span> and <span class="math notranslate nohighlight">\(y_p\)</span> to denote the amount of resource <span class="math notranslate nohighlight">\(r\)</span> that is consumed in production, and <span class="math notranslate nohighlight">\(y_p\)</span> to denote the amount of product <span class="math notranslate nohighlight">\(p\)</span> produced.</p>
+<p>Let <span class="math notranslate nohighlight">\(\cal{P}\)</span> and <span class="math notranslate nohighlight">\(\cal{R}\)</span> be the set of products and resources, respectively, and let <span class="math notranslate nohighlight">\(p\)</span> and <span class="math notranslate nohighlight">\(r\)</span> be representative elements of those sets. We use indexed decision variables <span class="math notranslate nohighlight">\(x_r\)</span> to denote the amount of resource <span class="math notranslate nohighlight">\(r\)</span> that is consumed in production, and <span class="math notranslate nohighlight">\(y_p\)</span> to denote the amount of product <span class="math notranslate nohighlight">\(p\)</span> produced.</p>
 <p>The problem data provides attributes that constrain the decision variables. For example, the decision variables all have lower bounds of zero, and some have upper bounds. We represent these as</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -878,6 +879,7 @@ V    labor B    1
 <section id="the-production-model-in-pyomo">
 <h2>The production model in Pyomo<a class="headerlink" href="#the-production-model-in-pyomo" title="Link to this heading">#</a></h2>
 <p>As before, we begin the construction of a Pyomo model by creating a <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code>.</p>
+<p>We first use component constructors throughout. After solving the model, we show the corresponding decorator version for indexed parameters and constraints, as well as expressions and the objective.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
@@ -895,42 +897,52 @@ V    labor B    1
 </div>
 </div>
 </div>
-<p>The next step is to introduce parameters that will be used in the constraints and objective functions. These are indexed by products, or resources, or both. The parameter values are assigned to model name. We use Pyomo decorators to declare these parameters, where the function between decorated becomes the name of the parameter, and the function returns the parameter value from the problem data sets. This forms the interface between problem data and the Pyomo model.</p>
-<p>This step of declaring Pyomo <code class="docutils literal notranslate"><span class="pre">Param</span></code> objects is often omitted in Pyomo applications. In doing so, the modeler is making a choice to embed the external data representation directly into objectives and constraints of the problem. This can be effective, it does keep the code shorter, and may remove some computational overhead. However, it also blurs the boundary between the data representation and the model statements. Any change in data representation may require editing every place where that data is used in the model. By defining model parameters with <code class="docutils literal notranslate"><span class="pre">Param()</span></code>, the interface to the data representation is located in one clearly defined portion of a larger model, thereby significantly improving the long-term maintainabiity of models. This concern may be overkill in small models like we have here, but is a key consideration when constructing more complex applications.</p>
-<p>Note: The domain for the bounds is set to <code class="docutils literal notranslate"><span class="pre">Any</span></code> because some of them will take value <code class="docutils literal notranslate"><span class="pre">None</span></code>. Pyomo will omit a lower or upper bounds that has a value of <code class="docutils literal notranslate"><span class="pre">None</span></code>, so this is a way to keep the logic simple.</p>
+<p>The next step is to introduce parameters that will be used in the constraints and objective. These are indexed by products, resources, or both. Each <code class="docutils literal notranslate"><span class="pre">pyo.Param()</span></code> constructor receives the relevant index sets and an <code class="docutils literal notranslate"><span class="pre">initialize</span></code> function. Pyomo calls that function with the model followed by the index values to obtain each parameter value from the problem data. This forms the interface between the data and the Pyomo model.</p>
+<p>This step of declaring Pyomo <code class="docutils literal notranslate"><span class="pre">Param</span></code> objects is often omitted in Pyomo applications. In doing so, the modeler is making a choice to embed the external data representation directly into objectives and constraints of the problem. This can be effective, it does keep the code shorter, and may remove some computational overhead. However, it also blurs the boundary between the data representation and the model statements. Any change in data representation may require editing every place where that data is used in the model. By defining model parameters with <code class="docutils literal notranslate"><span class="pre">Param()</span></code>, the interface to the data representation is located in one clearly defined portion of a larger model, thereby significantly improving the long-term maintainability of models. This concern may be overkill in small models like we have here, but is a key consideration when constructing more complex applications.</p>
+<p>Note: The domain for the bounds is set to <code class="docutils literal notranslate"><span class="pre">Any</span></code> because some of them will take value <code class="docutils literal notranslate"><span class="pre">None</span></code>. Pyomo will omit a lower or upper bound that has a value of <code class="docutils literal notranslate"><span class="pre">None</span></code>, so this is a way to keep the logic simple.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># parameter for bounds</span>
-<span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">demand</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">product</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># parameters for bounds</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">demand_rule</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">product</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">products</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="s2">"demand"</span><span class="p">]</span>
 
 
-<span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">available</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">resource</span><span class="p">):</span>
+<span class="n">model</span><span class="o">.</span><span class="n">demand</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">demand_rule</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">available_rule</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">resource</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">resources</span><span class="p">[</span><span class="n">resource</span><span class="p">][</span><span class="s2">"available"</span><span class="p">]</span>
 
 
-<span class="c1"># parameter with price coefficients</span>
-<span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">cp</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">product</span><span class="p">):</span>
+<span class="n">model</span><span class="o">.</span><span class="n">available</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">available_rule</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span>
+
+
+<span class="c1"># parameters with price coefficients</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cp_rule</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">product</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">products</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="s2">"price"</span><span class="p">]</span>
 
 
-<span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">cr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">resource</span><span class="p">):</span>
+<span class="n">model</span><span class="o">.</span><span class="n">cp</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">cp_rule</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">cr_rule</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">resource</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">resources</span><span class="p">[</span><span class="n">resource</span><span class="p">][</span><span class="s2">"price"</span><span class="p">]</span>
 
 
+<span class="n">model</span><span class="o">.</span><span class="n">cr</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">cr_rule</span><span class="p">)</span>
+
+
 <span class="c1"># process parameters: a[r,p]</span>
-<span class="nd">@model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">a</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">resource</span><span class="p">,</span> <span class="n">product</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">a_rule</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">resource</span><span class="p">,</span> <span class="n">product</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">processes</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="n">resource</span><span class="p">]</span>
+
+
+<span class="n">model</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">a_rule</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p>The decision variables, <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span>, are indexed by the set of resources and products, respectively. The indexing is specified by passing the relevant sets as the first argumentns to Pyomo <code class="docutils literal notranslate"><span class="pre">Var()</span></code>. In addition to indexing, it always good practice to specify any known and fixed bounds on the variables. This is done by specifying a function (in Pyomo parlance sometimes called a rule) that returns the bound for a given index. Here we use a Python lambda function with two arguments, model and an index referring to a member of a set, to return a tuple with the lower and upper bound.</p>
+<p>The decision variables, <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span>, are indexed by the set of resources and products, respectively. The indexing is specified by passing the relevant sets as the first arguments to Pyomo <code class="docutils literal notranslate"><span class="pre">Var()</span></code>. In addition to indexing, it is always good practice to specify any known and fixed bounds on the variables. This is done by specifying a function (in Pyomo parlance sometimes called a rule) that returns the bound for a given index. Here we use a Python lambda function with two arguments, model and an index referring to a member of a set, to return a tuple with the lower and upper bound.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span>
@@ -944,36 +956,34 @@ V    labor B    1
 </div>
 </div>
 <p>The objective is expressed with Pyomo <code class="docutils literal notranslate"><span class="pre">quicksum</span></code> which accepts a Python generator to successive terms in the sum. Here we use the parameters <span class="math notranslate nohighlight">\(c_p\)</span> and <span class="math notranslate nohighlight">\(c_r\)</span> that appear in the mathematical version of the model, and which were declared above in the Pyomo version of the model.</p>
+<p>As in the previous notebook, named <code class="docutils literal notranslate"><span class="pre">Expression</span></code> components hold revenue and cost, which are then used in the objective.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">cp</span><span class="p">[</span><span class="n">product</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">product</span><span class="p">]</span> <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span>
+    <span class="n">expr</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">cp</span><span class="p">[</span><span class="n">product</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">product</span><span class="p">]</span> <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span>
 <span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">cr</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span> <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span>
+<span class="n">model</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span>
+    <span class="n">expr</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">cr</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span> <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">)</span>
 <span class="p">)</span>
-
 
 <span class="c1"># create objective</span>
-<span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">profit</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">cost</span>
+<span class="n">model</span><span class="o">.</span><span class="n">profit</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">cost</span><span class="p">,</span> <span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p>The Pyomo <code class="docutils literal notranslate"><span class="pre">Constraint</span></code> decorator accepts one or more sets as arguments. Then, for every member of every set, the decorated function creates an associated constraint. Creating indexed constraints indexed in this manner are an essential building block for more complex models.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">pyo.Constraint()</span></code> constructor accepts index sets and a <code class="docutils literal notranslate"><span class="pre">rule</span></code> function. For each resource, Pyomo calls the rule with the model and the resource index to construct the associated constraint. This creates one resource-use constraint per member of <code class="docutils literal notranslate"><span class="pre">model.RESOURCES</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create indexed constraint</span>
-<span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">materials_used</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">resource</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">materials_used_rule</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">resource</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">(</span>
-        <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">resource</span><span class="p">,</span> <span class="n">product</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">product</span><span class="p">]</span> <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span>
-        <span class="p">)</span>
-        <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span>
+        <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">resource</span><span class="p">,</span> <span class="n">product</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">product</span><span class="p">]</span> <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span>
+        <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span>
     <span class="p">)</span>
+
+
+<span class="n">model</span><span class="o">.</span><span class="n">materials_used</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="n">materials_used_rule</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -984,7 +994,8 @@ V    labor B    1
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">pprint</span><span class="p">()</span>
 
 <span class="c1"># solve</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
 <span class="c1"># create a solution report</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Profit = </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">profit</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -1000,19 +1011,18 @@ V    labor B    1
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>3 Set Declarations
-    PRODUCTS : Size=1, Index=None, Ordered=Insertion
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2 Set Declarations
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>    PRODUCTS : Size=1, Index=None, Ordered=Insertion
         Key  : Dimen : Domain : Size : Members
         None :     1 :    Any :    2 : {'U', 'V'}
     RESOURCES : Size=1, Index=None, Ordered=Insertion
         Key  : Dimen : Domain : Size : Members
         None :     1 :    Any :    3 : {'M', 'labor A', 'labor B'}
-    a_index : Size=1, Index=None, Ordered=True
-        Key  : Dimen : Domain             : Size : Members
-        None :     2 : RESOURCES*PRODUCTS :    6 : {('M', 'U'), ('M', 'V'), ('labor A', 'U'), ('labor A', 'V'), ('labor B', 'U'), ('labor B', 'V')}
 
 5 Param Declarations
-    a : Size=6, Index=a_index, Domain=Any, Default=None, Mutable=False
+    a : Size=6, Index=RESOURCES*PRODUCTS, Domain=Any, Default=None, Mutable=False
         Key              : Value
               ('M', 'U') :    10
               ('M', 'V') :     9
@@ -1050,10 +1060,18 @@ V    labor B    1
           U :     0 :  None :    40 : False :  True :  Reals
           V :     0 :  None :  None : False :  True :  Reals
 
+2 Expression Declarations
+    cost : Size=1, Index=None
+        Key  : Expression
+        None : 10*x[M] + 50*x[labor A] + 40*x[labor B]
+    revenue : Size=1, Index=None
+        Key  : Expression
+        None : 270*y[U] + 210*y[V]
+
 1 Objective Declarations
     profit : Size=1, Index=None, Active=True
         Key  : Active : Sense    : Expression
-        None :   True : maximize : 270*y[U] + 210*y[V] - (10*x[M] + 50*x[labor A] + 40*x[labor B])
+        None :   True : maximize : (270*y[U] + 210*y[V]) - (10*x[M] + 50*x[labor A] + 40*x[labor B])
 
 1 Constraint Declarations
     materials_used : Size=3, Index=RESOURCES, Active=True
@@ -1062,8 +1080,10 @@ V    labor B    1
         labor A :  -Inf :   y[U] + y[V] - x[labor A] :   0.0 :   True
         labor B :  -Inf : 2*y[U] + y[V] - x[labor B] :   0.0 :   True
 
-12 Declarations: PRODUCTS RESOURCES demand available cp cr a_index a x y profit materials_used
-Profit = 2600.0
+13 Declarations: PRODUCTS RESOURCES demand available cp cr a x y revenue cost profit materials_used
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Profit = 2600.0
 
 Production Report
  U  produced =  20.0
@@ -1077,10 +1097,183 @@ Resource Report
 </div>
 </div>
 </div>
+<p><a name="the-same-indexed-model-with-decorators"></a></p>
+</section>
+<section id="the-same-indexed-model-with-decorators">
+<h2>The same indexed model with decorators<a class="headerlink" href="#the-same-indexed-model-with-decorators" title="Link to this heading">#</a></h2>
+<p>The <a class="reference internal" href="02-production-planning-basic.html#the-same-model-with-decorators"><span class="std std-ref">previous notebook</span></a> explains how a decorator creates a component using the name and rule of the function below it. The same pattern applies to indexed components. The index sets go in the decorator, and the function receives the model followed by the indices in the same order.</p>
+<p>For example, the constructor version used <code class="docutils literal notranslate"><span class="pre">model.a</span> <span class="pre">=</span> <span class="pre">pyo.Param(model.RESOURCES,</span> <span class="pre">model.PRODUCTS,</span> <span class="pre">initialize=a_rule)</span></code>. Its decorator counterpart is:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">decorated_model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">decorated_model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">a</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">resource</span><span class="p">,</span> <span class="n">product</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">processes</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="n">resource</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Pyomo calls this function once for each resource-product pair to initialize <code class="docutils literal notranslate"><span class="pre">decorated_model.a[resource,</span> <span class="pre">product]</span></code>. For an indexed constraint, the returned object is a relationship involving decision variables. For a parameter, it is the corresponding data value.</p>
+<p>The following cell builds a separate model from the same dictionaries. It uses decorators for the parameters, revenue and cost expressions, objective and resource-use constraints.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">decorated_model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
+<span class="n">decorated_model</span><span class="o">.</span><span class="n">PRODUCTS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">products</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="n">decorated_model</span><span class="o">.</span><span class="n">RESOURCES</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">resources</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">decorated_model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">demand</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">product</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">products</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="s2">"demand"</span><span class="p">]</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">decorated_model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">available</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">resource</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">resources</span><span class="p">[</span><span class="n">resource</span><span class="p">][</span><span class="s2">"available"</span><span class="p">]</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">decorated_model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cp</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">product</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">products</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="s2">"price"</span><span class="p">]</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">decorated_model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cr</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">resource</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">resources</span><span class="p">[</span><span class="n">resource</span><span class="p">][</span><span class="s2">"price"</span><span class="p">]</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">decorated_model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">decorated_model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">a</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">resource</span><span class="p">,</span> <span class="n">product</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">processes</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="n">resource</span><span class="p">]</span>
+
+
+<span class="n">decorated_model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span>
+    <span class="n">decorated_model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">resource</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">available</span><span class="p">[</span><span class="n">resource</span><span class="p">])</span>
+<span class="p">)</span>
+<span class="n">decorated_model</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span>
+    <span class="n">decorated_model</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">product</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">demand</span><span class="p">[</span><span class="n">product</span><span class="p">])</span>
+<span class="p">)</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">revenue</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">cp</span><span class="p">[</span><span class="n">product</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">product</span><span class="p">]</span> <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Expression</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cost</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">cr</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span> <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">)</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">revenue</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">cost</span>
+
+
+<span class="nd">@decorated_model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">decorated_model</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">materials_used</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">resource</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">resource</span><span class="p">,</span> <span class="n">product</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">product</span><span class="p">]</span> <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">)</span>
+        <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We solve the decorator model and compare its variables, revenue, cost and profit with the constructor model. For these data the two styles give the same solution; the mathematical formulation has not changed.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">decorated_results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">decorated_model</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">decorated_results</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">solution_values</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="o">**</span><span class="p">{</span><span class="sa">f</span><span class="s2">"y[</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">]"</span><span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">p</span><span class="p">])</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">PRODUCTS</span><span class="p">},</span>
+        <span class="o">**</span><span class="p">{</span><span class="sa">f</span><span class="s2">"x[</span><span class="si">{</span><span class="n">r</span><span class="si">}</span><span class="s2">]"</span><span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">r</span><span class="p">])</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">RESOURCES</span><span class="p">},</span>
+        <span class="s2">"revenue"</span><span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">revenue</span><span class="p">),</span>
+        <span class="s2">"cost"</span><span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">cost</span><span class="p">),</span>
+        <span class="s2">"profit"</span><span class="p">:</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">profit</span><span class="p">),</span>
+    <span class="p">}</span>
+
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">comparison</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"Constructors"</span><span class="p">:</span> <span class="n">solution_values</span><span class="p">(</span><span class="n">model</span><span class="p">),</span> <span class="s2">"Decorators"</span><span class="p">:</span> <span class="n">solution_values</span><span class="p">(</span><span class="n">decorated_model</span><span class="p">)}</span>
+<span class="p">)</span>
+<span class="k">assert</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">comparison</span><span class="p">[</span><span class="s2">"Constructors"</span><span class="p">]</span> <span class="o">-</span> <span class="n">comparison</span><span class="p">[</span><span class="s2">"Decorators"</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">1e-7</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="n">display</span><span class="p">(</span><span class="n">comparison</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Constructors</th>
+      <th>Decorators</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>y[U]</th>
+      <td>20.0</td>
+      <td>20.0</td>
+    </tr>
+    <tr>
+      <th>y[V]</th>
+      <td>60.0</td>
+      <td>60.0</td>
+    </tr>
+    <tr>
+      <th>x[M]</th>
+      <td>740.0</td>
+      <td>740.0</td>
+    </tr>
+    <tr>
+      <th>x[labor A]</th>
+      <td>80.0</td>
+      <td>80.0</td>
+    </tr>
+    <tr>
+      <th>x[labor B]</th>
+      <td>100.0</td>
+      <td>100.0</td>
+    </tr>
+    <tr>
+      <th>revenue</th>
+      <td>18000.0</td>
+      <td>18000.0</td>
+    </tr>
+    <tr>
+      <th>cost</th>
+      <td>15400.0</td>
+      <td>15400.0</td>
+    </tr>
+    <tr>
+      <th>profit</th>
+      <td>2600.0</td>
+      <td>2600.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
+</div>
 </section>
 <section id="for-python-experts-creating-subclasses-of-concretemodel">
 <h2>For Python experts: Creating subclasses of <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code><a class="headerlink" href="#for-python-experts-creating-subclasses-of-concretemodel" title="Link to this heading">#</a></h2>
-<p>Some readers of these notebooks may be more experienced Python developers who wish to apply Pyomo in more specialized, data driven applications. The following cell shows how the Pyomo <code class="docutils literal notranslate"><span class="pre">ConcreteModel()</span></code> class can be extended by subclassing to create specialized model classes. Here we create a subclass called <code class="docutils literal notranslate"><span class="pre">ProductionModel</span></code> that accepts a particular representation of the problem data to produce a production model object. The production model object inherits all of the methods associated with any <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code>, such as <code class="docutils literal notranslate"><span class="pre">.display()</span></code>, <code class="docutils literal notranslate"><span class="pre">.solve()</span></code>, and <code class="docutils literal notranslate"><span class="pre">.pprint()</span></code>, but can be extended with additional methods.</p>
+<p>Some readers of these notebooks may be more experienced Python developers who wish to apply Pyomo in more specialized, data driven applications. The following cell shows how the Pyomo <code class="docutils literal notranslate"><span class="pre">ConcreteModel()</span></code> class can be extended by subclassing to create specialized model classes. Here we create a subclass called <code class="docutils literal notranslate"><span class="pre">ProductionModel</span></code> that accepts a particular representation of the problem data to produce a production model object. The production model object inherits all of the methods associated with any <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code>, such as <code class="docutils literal notranslate"><span class="pre">.display()</span></code> and <code class="docutils literal notranslate"><span class="pre">.pprint()</span></code>. The subclass defines its own <code class="docutils literal notranslate"><span class="pre">.solve()</span></code> and <code class="docutils literal notranslate"><span class="pre">.report()</span></code> methods.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">ProductionModel</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">):</span>
@@ -1103,7 +1296,8 @@ Resource Report
         <span class="bp">self</span><span class="o">.</span><span class="n">resources</span> <span class="o">=</span> <span class="n">resources</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">processes</span> <span class="o">=</span> <span class="n">processes</span>
 
-        <span class="c1"># flag to monitor solution status</span>
+        <span class="c1"># flags to monitor model construction and solution status</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">built</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">solved</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">build_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1153,13 +1347,19 @@ Resource Report
                 <span class="o">&lt;=</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span>
             <span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">built</span> <span class="o">=</span> <span class="kc">True</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">SOLVER</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Buildthe model, if necessary, then solve the optimization model.</span>
+<span class="sd">        Build the model, if necessary, then solve the optimization model.</span>
 <span class="sd">        """</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">build_model</span><span class="p">()</span>
-        <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">built</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">build_model</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solved</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">solved</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">results</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
@@ -1269,6 +1469,7 @@ Resource Report
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-representations">Data representations</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mathematical-model">Mathematical model</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-production-model-in-pyomo">The production model in Pyomo</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-same-indexed-model-with-decorators">The same indexed model with decorators</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#for-python-experts-creating-subclasses-of-concretemodel">For Python experts: Creating subclasses of <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code></a></li>
 </ul>
   </nav></div>
