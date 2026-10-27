@@ -623,7 +623,7 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
 </section>
 <section id="problem-description-and-model-formulation">
 <h2>Problem description and model formulation<a class="headerlink" href="#problem-description-and-model-formulation" title="Link to this heading">#</a></h2>
-<p>Consider again the <a class="reference internal" href="../05/03-markowitz-portfolio.html"><span class="std std-doc">Markowitz portfolio optimization</span></a> we presented earlier in Chapter 5. Recall that the matrix <span class="math notranslate nohighlight">\(\Sigma\)</span> describes the covariance among the uncertain return rates <span class="math notranslate nohighlight">\(r_i\)</span>, <span class="math notranslate nohighlight">\(i=1,\dots, n\)</span>. Since <span class="math notranslate nohighlight">\(\Sigma\)</span> is positive semidefinite by definition, it allows for a Cholesky factorization, namely <span class="math notranslate nohighlight">\(\Sigma = B B^\top\)</span>. We can then rewrite the quadratic constraint as <span class="math notranslate nohighlight">\(\|B^\top x \|_2 \leq \gamma\)</span> and thus as <span class="math notranslate nohighlight">\((\gamma, B^\top x) \in \mathcal{L}^{n+1}\)</span> using the Lorentz cone. In this way, we realize that the original portfolio problem we formulated <a class="reference internal" href="../05/03-markowitz-portfolio.html"><span class="std std-doc">earlier</span></a> is in fact a conic quadratic optimization problem, which can thus be solved faster and more reliably. The optimal solution of that problem was the one with the maximum expected return while allowing for a specific level <span class="math notranslate nohighlight">\(\gamma\)</span> of risk.</p>
+<p>Consider again the <a class="reference internal" href="../05/03-markowitz-portfolio.html"><span class="std std-doc">Markowitz portfolio optimization</span></a> we presented earlier in Chapter 5. Recall that the matrix <span class="math notranslate nohighlight">\(\Sigma\)</span> describes the covariance among the uncertain return rates <span class="math notranslate nohighlight">\(r_i\)</span>, <span class="math notranslate nohighlight">\(i=1,\dots, n\)</span>. Since <span class="math notranslate nohighlight">\(\Sigma\)</span> is positive semidefinite by definition, it allows for a Cholesky factorization, namely <span class="math notranslate nohighlight">\(\Sigma = B B^\top\)</span>. We can then rewrite the variance constraint <span class="math notranslate nohighlight">\(x^\top \Sigma x \leq \gamma\)</span> as <span class="math notranslate nohighlight">\(\|B^\top x \|_2 \leq \sqrt{\gamma}\)</span> and thus as <span class="math notranslate nohighlight">\((\sqrt{\gamma}, B^\top x) \in \mathcal{L}^{n+1}\)</span> using the Lorentz cone. In this way, we realize that the original portfolio problem we formulated <a class="reference internal" href="../05/03-markowitz-portfolio.html"><span class="std std-doc">earlier</span></a> is in fact a conic quadratic optimization problem, which can thus be solved faster and more reliably. The optimal solution of that problem was the one with the maximum expected return while allowing for a specific level <span class="math notranslate nohighlight">\(\gamma\)</span> of risk.</p>
 <p>However, an investor could aim for a different trade-off between return and risk and formulate a slightly different optimization problem, namely</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -635,7 +635,7 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
     &amp; x_i \geq 0 &amp; \forall \, i=1,\dots,n. 
 \end{align*}
 \end{split}\]</div>
-<p>where <span class="math notranslate nohighlight">\(\alpha \geq 0\)</span> is a <em>risk tolerance</em> parameter that describes the relative importance of return vs. risk for the investor. The risk, quantified by the variance of the investment return <span class="math notranslate nohighlight">\(x^\top \Sigma x = x^\top B^\top B x\)</span>, appears now in the objective function as a penalty term. Note that even in this new formulation we have a conic problem since we can rewrite it as</p>
+<p>where <span class="math notranslate nohighlight">\(\alpha \geq 0\)</span> is a <em>risk aversion</em> parameter that describes the relative importance of return vs. risk for the investor: a larger value gives a greater penalty to variance. The risk, quantified by the variance of the investment return <span class="math notranslate nohighlight">\(x^\top \Sigma x = x^\top B B^\top x = \|B^\top x\|_2^2\)</span>, appears now in the objective function as a penalty term. Note that even in this new formulation we have a conic problem since we can rewrite it as</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -648,10 +648,10 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
     &amp; x_i \geq 0 &amp; \forall \, i=1,\dots,n. 
 \end{align*}
 \end{split}\]</div>
-<p>Solving for all values of <span class="math notranslate nohighlight">\(\alpha \geq 0\)</span>, one can obtain the so-called <strong>efficient frontier</strong>.</p>
+<p>Varying <span class="math notranslate nohighlight">\(\alpha\)</span> gives portfolios with different return–risk trade-offs. Plotting their expected returns against their variances gives the <strong>efficient frontier</strong>. The plot below instead shows the optimal penalized objective value as a function of <span class="math notranslate nohighlight">\(\alpha\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the initial capital, the risk tolerance, and the guaranteed return rate.</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the initial capital, the risk aversion, and the guaranteed return rate.</span>
 <span class="n">C</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.1</span>
 <span class="n">R</span> <span class="o">=</span> <span class="mf">1.05</span>
@@ -661,17 +661,17 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
 <span class="n">mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.25</span><span class="p">,</span> <span class="mf">1.15</span><span class="p">,</span> <span class="mf">1.35</span><span class="p">])</span>
 <span class="n">Sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">]])</span>
 
-<span class="c1"># Check that Sigma is semi-definite positive</span>
+<span class="c1"># Check that Sigma is positive semidefinite</span>
 <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigvals</span><span class="p">(</span><span class="n">Sigma</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
 
-<span class="c1"># When changing the covariance matrix Sigma, ensure you input a semi-definite positive one.</span>
+<span class="c1"># When changing the covariance matrix Sigma, ensure you input a positive semidefinite one.</span>
 <span class="c1"># The easiest way to generate a random covariance matrix is first generating a random</span>
-<span class="c1"># m x m matrix A and then taking the matrix A^T A (which is always semi-definite positive)</span>
+<span class="c1"># m x m matrix A and then taking the matrix A^T A (which is always positive semidefinite)</span>
 <span class="c1"># m = 3</span>
 <span class="c1"># A = np.random.rand(m, m)</span>
 <span class="c1"># Sigma = A.T @ A</span>
 <span class="c1">#</span>
-<span class="c1"># Moreover, in practive such a matrix A, called factor, can be low-rank,</span>
+<span class="c1"># Moreover, in practice such a matrix A, called factor, can be low-rank,</span>
 <span class="c1"># see https://docs.mosek.com/modeling-cookbook/qcqo.html#example-factor-model.</span>
 <span class="c1"># This would provide better numerical properties for the proper conic formulation</span>
 <span class="c1">#   y=Ax, |y|^2 &lt;= s,</span>
@@ -760,7 +760,7 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
     <span class="n">objective</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">(),</span> <span class="mi">3</span><span class="p">))</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">alpha_values</span><span class="p">,</span> <span class="n">objective</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">tab20c</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">"Risk tolerance $\alpha$"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">"Risk aversion $\alpha$"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">"Optimal objective value"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
@@ -768,7 +768,7 @@ have been previously installed and sets SOLVER to use the Mosek solver via the P
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/4e6e6ed555faf58f4fa4e26a659fa58d39c13a76419542b01b30727e77841f52.png" src="../../_images/4e6e6ed555faf58f4fa4e26a659fa58d39c13a76419542b01b30727e77841f52.png" />
+<img alt="../../_images/becd232e099e0eda2929920a46943cb50261145bcd66ab741cd70320c9beea74.png" src="../../_images/becd232e099e0eda2929920a46943cb50261145bcd66ab741cd70320c9beea74.png" />
 </div>
 </div>
 </section>
