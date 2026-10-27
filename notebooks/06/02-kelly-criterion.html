@@ -272,8 +272,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../03/04-simple-production-model-gdp.html">3.4 Production model using disjunctions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/05-machine-scheduling.html">3.5 Machine Scheduling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/06-facility-location.html">3.6 Facility location problem</a></li>
-
-
 <li class="toctree-l2"><a class="reference internal" href="../03/07-bim-production-revisited.html">3.7 BIM production revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/08-cryptarithms.html">Extra material: Cryptarithms puzzle</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/09-strip-packing.html">Extra material: Strip packing</a></li>
@@ -611,6 +609,7 @@
     <span class="n">solver</span> <span class="o">=</span> <span class="s2">"mosek_direct"</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.kernel</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pmo</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyomo.opt</span><span class="w"> </span><span class="kn">import</span> <span class="n">assert_optimal_termination</span>
 <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pmo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
 
 <span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">"Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available."</span>
@@ -631,27 +630,27 @@ W_N = W_0 R_1 R_2 \cdots R_{N-1} R_N = W_0 \prod_{n=1}^N R_n.
 <p>Kelly’s idea was to maximize the <strong>mean log return</strong>. Intuitively, this objective can be justified as we are simultaneously maximizing the geometric mean return</p>
 <div class="math notranslate nohighlight">
 \[\left(\prod_{n=1}^N R_n\right)^{\frac{1}{N}} = \exp\left(\frac{1}{N}\sum_{n=1}^N \log R_n\right)\]</div>
-<p>and the expected logarithmic utility of wealth</p>
+<p>and the logarithmic utility of terminal wealth</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align}
-\log W_N &amp; = \log W_0 \left(\sum_{n=1}^N \log R_n\right).
+\log W_N &amp; = \log W_0 + \sum_{n=1}^N \log R_n.
 \end{align}
 \]</div>
-<p>The logarithmic utility provides an element of risk aversion. If the returns <span class="math notranslate nohighlight">\(R_i\)</span>’s are independent and identically distributed random variables, then in the long run,</p>
+<p>The logarithmic utility provides an element of risk aversion. If the returns <span class="math notranslate nohighlight">\(R_i\)</span> are independent and identically distributed random variables with finite expected log return, then</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align}
-\mathbb{E}[\log W_N] &amp; = \log W_0\ \mathbb{E}[\log R]
+\mathbb{E}[\log W_N] &amp; = \log W_0 + N\,\mathbb{E}[\log R].
 \end{align}
 \]</div>
-<p>such that the optimal log growth return will almost surely result in higher wealth than any other policy.</p>
+<p>Thus, maximizing expected log return maximizes expected logarithmic utility of terminal wealth.</p>
 </section>
 <section id="modeling-a-game-with-binary-outcomes">
 <h2>Modeling a Game with Binary Outcomes<a class="headerlink" href="#modeling-a-game-with-binary-outcomes" title="Link to this heading">#</a></h2>
 <p>The classical presentation of the Kelly Criterion is to consider repeated wagers on a gambling game with binary outcomes. For each stage, a wager of one unit returns <span class="math notranslate nohighlight">\(1+b\)</span> with probability <span class="math notranslate nohighlight">\(p\)</span> if successful, otherwise the wager returns nothing. The number <span class="math notranslate nohighlight">\(b\)</span> refers to the “odds” of game. The problem is to determine what fraction of the gambler’s wealth should be wagered on each instance of the game.</p>
-<p><img alt="" src="../../_images/kelly-criterion.png" /></p>
-<p>Let <span class="math notranslate nohighlight">\(w\)</span> be the fraction of wealth that is wagered on each instance. Depend on the two possible outcome, the gross return at any stage is</p>
+<p><img alt="A unit wager pays 1+b on a win and zero on a loss." src="../../_images/kelly-criterion.svg" /></p>
+<p>Let <span class="math notranslate nohighlight">\(w\)</span> be the fraction of wealth that is wagered on each instance. Depending on which outcome occurs, the gross return at any stage is</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
@@ -661,7 +660,7 @@ R = \begin{cases}
 \end{cases}
 \end{align}
 \end{split}\]</div>
-<p>The objective is to the maximize the expected log return</p>
+<p>The objective is to maximize the expected log return</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
@@ -682,7 +681,7 @@ p - \frac{1-p}{b} &amp; p(b+1) &gt; 1, \\
 <h3>Conic Optimization<a class="headerlink" href="#conic-optimization" title="Link to this heading">#</a></h3>
 <p>Recall that an <a class="reference external" href="https://docs.mosek.com/modeling-cookbook/expo.html">exponential cone</a> is a convex set <span class="math notranslate nohighlight">\(\mathbf{K}_{\mathrm{exp}} \)</span> of <span class="math notranslate nohighlight">\(\mathbb{R}^3\)</span> whose points <span class="math notranslate nohighlight">\((r, x, y)\)</span> satisfy the inequality</p>
 <div class="math notranslate nohighlight">
-\[r \geq x \exp{\frac{y}{x}} \quad \text{ if } \quad x \geq 0,\]</div>
+\[r \geq x \exp{\frac{y}{x}} \quad \text{ if } \quad x &gt; 0,\]</div>
 <p>or the inequalities <span class="math notranslate nohighlight">\(r \geq 0\)</span> and <span class="math notranslate nohighlight">\(y \leq 0\)</span> if <span class="math notranslate nohighlight">\(x=0\)</span>.</p>
 <p>Introducing two auxiliary variables <span class="math notranslate nohighlight">\(q_1\)</span> and <span class="math notranslate nohighlight">\(q_2\)</span> and taking the exponential of the terms in the objective function, we obtain</p>
 <div class="math notranslate nohighlight">
@@ -732,7 +731,8 @@ p - \frac{1-p}{b} &amp; p(b+1) &gt; 1, \\
 
 
 <span class="n">m</span> <span class="o">=</span> <span class="n">kelly</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Conic optimization solution for w: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">()</span><span class="si">:</span><span class="s2"> 0.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="c1"># analytical solution to Kelly's problem</span>
@@ -758,8 +758,8 @@ Analytical solution for w:  0.1180
 <p>where <span class="math notranslate nohighlight">\(\lambda \geq 0\)</span> is a risk-aversion parameter. For the case with two outcomes <span class="math notranslate nohighlight">\(R_1\)</span> and <span class="math notranslate nohighlight">\(R_2\)</span> with known probabilities <span class="math notranslate nohighlight">\(p_1\)</span> and <span class="math notranslate nohighlight">\(p_2\)</span> considered here, this constraint rewrites as</p>
 <div class="math notranslate nohighlight">
 \[p_1 R_1^{-\lambda} + p_2 R_2^{-\lambda} \leq 1.\]</div>
-<p>When <span class="math notranslate nohighlight">\(\lambda=0\)</span> the constraint is always satisfied and no risk-aversion is in effect. Choosing <span class="math notranslate nohighlight">\(\lambda &gt; 0\)</span> requires outcomes with low return to occur with low probability and this effect increases for larger values of <span class="math notranslate nohighlight">\(\lambda\)</span>. A feasible solution can always be found by setting the bet size <span class="math notranslate nohighlight">\(w=0\)</span> to give <span class="math notranslate nohighlight">\(R_1 = 1\)</span> and <span class="math notranslate nohighlight">\(R_2 = 0\)</span>.</p>
-<p>This constraint can be reformulated using exponential cones. Rewriting each term as an exponential results gives</p>
+<p>When <span class="math notranslate nohighlight">\(\lambda=0\)</span> the constraint is always satisfied and no risk-aversion is in effect. Choosing <span class="math notranslate nohighlight">\(\lambda &gt; 0\)</span> requires outcomes with low return to occur with low probability and this effect increases for larger values of <span class="math notranslate nohighlight">\(\lambda\)</span>. A feasible solution can always be found by setting the bet size <span class="math notranslate nohighlight">\(w=0\)</span> to give <span class="math notranslate nohighlight">\(R_1 = 1\)</span> and <span class="math notranslate nohighlight">\(R_2 = 1\)</span>.</p>
+<p>This constraint can be reformulated using exponential cones. Rewriting each term as an exponential gives</p>
 <div class="math notranslate nohighlight">
 \[e^{\log(p_1) - \lambda\log(R_1)}  + e^{\log(p_2) - \lambda\log(R_2)} \leq 1.\]</div>
 <p>We previously introduced two auxiliary real variables <span class="math notranslate nohighlight">\(q_1,q_2 \in \mathbb{R}\)</span> such that <span class="math notranslate nohighlight">\(q_i \leq \log(R_i)\)</span>, using which we can reformulate the risk constraint as</p>
@@ -774,7 +774,7 @@ u_1 + u_2 &amp; \leq 1 \\
 (u_2, 1, \log(p_2) - \lambda q_2) &amp; \in \mathbf{K}_{\mathrm{exp}}.
 \end{align}
 \end{split}\]</div>
-<p>For fixed probabilities <span class="math notranslate nohighlight">\(p_1=p\)</span> and <span class="math notranslate nohighlight">\(p_2=1-p\)</span>, odds <span class="math notranslate nohighlight">\(b\)</span>, and risk-aversion parameter <span class="math notranslate nohighlight">\(\lambda \geq 0\)</span>, the risk-constrained Kelly bet is a solution to the conic optimization problem rewrites as</p>
+<p>For fixed probabilities <span class="math notranslate nohighlight">\(p_1=p\)</span> and <span class="math notranslate nohighlight">\(p_2=1-p\)</span>, odds <span class="math notranslate nohighlight">\(b\)</span>, and risk-aversion parameter <span class="math notranslate nohighlight">\(\lambda \geq 0\)</span>, the risk-constrained Kelly bet solves the following conic optimization problem</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
@@ -825,13 +825,14 @@ u_1 + u_2 &amp; \leq 1 \\
 
 <span class="c1"># conic optimization solution to the risk-constrained version of Kelly's problem</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">kelly_rc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">lambd</span><span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Risk-constrainend solution for w: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">()</span><span class="si">:</span><span class="s2"> 0.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Risk-constrained solution for w: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">()</span><span class="si">:</span><span class="s2"> 0.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Risk-constrainend solution for w:  0.0589
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Risk-constrained solution for w:  0.0589
 </pre></div>
 </div>
 </div>
@@ -840,16 +841,24 @@ u_1 + u_2 &amp; \leq 1 \\
 <section id="simulation">
 <h2>Simulation<a class="headerlink" href="#simulation" title="Link to this heading">#</a></h2>
 <p>The following cells simulate the performance of the Kelly Criterion both with and without risk constraints. Compare the cases by comparing the log mean growth, which is reduced by presence of risk constraints, and the portfolio draw down for the most pathological cases, which is improved by the presence of risk constraints.</p>
+<p>The simulation uses 80 stages by default, including when the optimal expected log growth is zero. When <span class="math notranslate nohighlight">\(p(b+1)\leq 1\)</span>, the analytical optimum is not to bet; it remains feasible with the risk constraint.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">kelly_sim</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">lambd</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="n">kelly_rc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">lambd</span><span class="p">)</span>
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    <span class="n">w</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">kelly_sim</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">lambd</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">K</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="mi">80</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">))</span> <span class="ow">or</span> <span class="n">K</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"K must be a positive number of stages."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">p</span> <span class="o">*</span> <span class="p">(</span><span class="n">b</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># The analytical no-bet optimum also satisfies the risk constraint.</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">kelly_rc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">lambd</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">()</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">p</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">b</span> <span class="o">*</span> <span class="n">w</span><span class="p">))</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">w</span><span class="p">))</span>
 
-    <span class="k">if</span> <span class="n">K</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">K</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">/</span> <span class="n">m</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
@@ -861,8 +870,8 @@ u_1 + u_2 &amp; \leq 1 \\
         <span class="n">ax</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumprod</span><span class="p">(</span><span class="n">R</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 
     <span class="n">ax</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">K</span><span class="p">)),</span> <span class="s2">"r"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Kelly Criterion: E[logR] = </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="n">s</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">" p = </span><span class="si">{</span><span class="n">p</span><span class="si">:</span><span class="s2">0.3f</span><span class="si">}</span><span class="s2"> </span><span class="se">\n</span><span class="s2"> b = </span><span class="si">{</span><span class="n">b</span><span class="si">:</span><span class="s2">0.3f</span><span class="si">}</span><span class="s2"> </span><span class="se">\n</span><span class="s2"> $\lambda$ = </span><span class="si">{</span><span class="n">lambd</span><span class="si">:</span><span class="s2">0.3f</span><span class="si">}</span><span class="s2"> </span><span class="se">\n</span><span class="s2"> w = </span><span class="si">{</span><span class="n">w</span><span class="si">:</span><span class="s2">0.3f</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Kelly Criterion: exp(E[log R]) = </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="si">:</span><span class="s2">0.5f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">" p = </span><span class="si">{</span><span class="n">p</span><span class="si">:</span><span class="s2">0.3f</span><span class="si">}</span><span class="s2"> </span><span class="se">\n</span><span class="s2"> b = </span><span class="si">{</span><span class="n">b</span><span class="si">:</span><span class="s2">0.3f</span><span class="si">}</span><span class="s2"> </span><span class="se">\n</span><span class="s2"> $</span><span class="se">\\</span><span class="s2">lambda$ = </span><span class="si">{</span><span class="n">lambd</span><span class="si">:</span><span class="s2">0.3f</span><span class="si">}</span><span class="s2"> </span><span class="se">\n</span><span class="s2"> w = </span><span class="si">{</span><span class="n">w</span><span class="si">:</span><span class="s2">0.3f</span><span class="si">}</span><span class="s2">"</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">"top"</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"k"</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Wealth"</span><span class="p">)</span>
@@ -878,7 +887,7 @@ u_1 + u_2 &amp; \leq 1 \\
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/64946ea73c194c74f309de7e69aba3a4251a4aa019a96910d89586b14177f5c9.png" src="../../_images/64946ea73c194c74f309de7e69aba3a4251a4aa019a96910d89586b14177f5c9.png" />
+<img alt="../../_images/55e72dfd2ac65dd0b463e2bb1a6d24408c558fda72eba47ea8baf9e4b0be6cc8.png" src="../../_images/55e72dfd2ac65dd0b463e2bb1a6d24408c558fda72eba47ea8baf9e4b0be6cc8.png" />
 </div>
 </div>
 </section>
@@ -886,7 +895,7 @@ u_1 + u_2 &amp; \leq 1 \\
 <h2>Bibliographic Notes<a class="headerlink" href="#bibliographic-notes" title="Link to this heading">#</a></h2>
 <p>The Kelly Criterion has been included in many tutorial introductions to finance and probability, and the subject of popular accounts.</p>
 <blockquote>
-<div><p>Poundstone, W. (2010). Fortune’s formula: The untold story of the scientific betting system that beat the casinos and Wall Street. Hill and Wang. <a class="reference external" href="https://www.onlinecasinoground.nl/wp-content/uploads/2020/10/Fortunes-Formula-boek-van-William-Poundstone-oa-Kelly-Criterion.pdf">https://www.onlinecasinoground.nl/wp-content/uploads/2020/10/Fortunes-Formula-boek-van-William-Poundstone-oa-Kelly-Criterion.pdf</a></p>
+<div><p>Poundstone, W. (2010). Fortune’s formula: The untold story of the scientific betting system that beat the casinos and Wall Street. Hill and Wang. <a class="reference external" href="https://us.macmillan.com/books/9780374707088/fortunesformula/">Publisher’s page</a>.</p>
 </div></blockquote>
 <blockquote>
 <div><p>Thorp, E. O. (2017). A man for all markets: From Las Vegas to wall street, how i beat the dealer and the market. Random House.</p>

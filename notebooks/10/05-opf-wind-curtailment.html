@@ -272,8 +272,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../03/04-simple-production-model-gdp.html">3.4 Production model using disjunctions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/05-machine-scheduling.html">3.5 Machine Scheduling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/06-facility-location.html">3.6 Facility location problem</a></li>
-
-
 <li class="toctree-l2"><a class="reference internal" href="../03/07-bim-production-revisited.html">3.7 BIM production revisited</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/08-cryptarithms.html">Extra material: Cryptarithms puzzle</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../03/09-strip-packing.html">Extra material: Strip packing</a></li>
@@ -1274,7 +1272,7 @@ Q(x,v) := &amp;\min        &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mat
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/fa33283a7fde205f80f46e1cae72454e849d7cc2fe2967b68f30e13a5a60f0e1.png" src="../../_images/fa33283a7fde205f80f46e1cae72454e849d7cc2fe2967b68f30e13a5a60f0e1.png" />
+<img alt="../../_images/0ba54b888d78221aa6dd0f6460f637a39283eb3378ebf9045284f98f0a72f6c0.png" src="../../_images/0ba54b888d78221aa6dd0f6460f637a39283eb3378ebf9045284f98f0a72f6c0.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -1309,6 +1307,11 @@ Q(x,v) := &amp;\min        &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mat
 
     <span class="c1"># Binary variable indicating whether a generator is on or off</span>
     <span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
+    <span class="c1"># Solar and hydro generators are committed in every scenario.</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">"nodes"</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">"energy_type"</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"solar"</span><span class="p">,</span> <span class="s2">"hydro"</span><span class="p">]:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
 
     <span class="c1"># Power generation of each generator</span>
     <span class="n">model</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
@@ -1326,7 +1329,7 @@ Q(x,v) := &amp;\min        &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mat
         <span class="p">),</span>
     <span class="p">)</span>
 
-    <span class="c1"># Binary variable indicating whether a wind turbine is curtailed (0) or not (1)</span>
+    <span class="c1"># Binary variable: 1 means curtailed, 0 means not curtailed</span>
     <span class="n">model</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
 
     <span class="c1"># term2 is the variable cost of generation, calculated in the second stage, which is the sum of the variable costs of all generators that are turned on</span>
@@ -1376,7 +1379,7 @@ Q(x,v) := &amp;\min        &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mat
     <span class="k">def</span><span class="w"> </span><span class="nf">flow_conservation</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="n">incoming_flow</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">V</span> <span class="k">if</span> <span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">)</span>
         <span class="n">outgoing_flow</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">V</span> <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">incoming_flow</span> <span class="o">-</span> <span class="n">outgoing_flow</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">-</span> <span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"d"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">incoming_flow</span> <span class="o">-</span> <span class="n">outgoing_flow</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">-</span> <span class="n">network</span><span class="p">[</span><span class="s2">"nodes"</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s2">"d"</span><span class="p">]</span>
 
     <span class="c1"># Power flow on each edge is equal to the susceptance of the edge times the difference in voltage angles between the two nodes connected by the edge</span>
     <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
@@ -1409,25 +1412,30 @@ Q(x,v) := &amp;\min        &amp; \sum_{i \in \mathcal{G}^{\text{coal}} \cup \mat
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">UC_windcurtailment</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">samples</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Objective value: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">$</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
-<span class="n">turbineactivity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+<span class="n">curtailed_scenarios</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
     <span class="p">[[</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">W</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">"Number of scenarios wind tubine 64 is active: </span><span class="si">{</span><span class="n">turbineactivity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">2.0f</span><span class="si">}</span><span class="s2"> out of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+    <span class="sa">f</span><span class="s2">"Number of scenarios wind turbine 64 is curtailed: </span><span class="si">{</span><span class="n">curtailed_scenarios</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">2.0f</span><span class="si">}</span><span class="s2"> out of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">"Number of scenarios wind tubine 65 is active: </span><span class="si">{</span><span class="n">turbineactivity</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">2.0f</span><span class="si">}</span><span class="s2"> out of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+    <span class="sa">f</span><span class="s2">"Number of scenarios wind turbine 65 is curtailed: </span><span class="si">{</span><span class="n">curtailed_scenarios</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">2.0f</span><span class="si">}</span><span class="s2"> out of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
 <span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">curtailed</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">W</span><span class="p">,</span> <span class="n">curtailed_scenarios</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Wind turbine </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> is not curtailed in </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">curtailed</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> out of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="si">}</span><span class="s2"> scenarios."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Objective value: 33353.52$
 
-Number of scenarios wind tubine 64 is active: 18 out of 100
-Number of scenarios wind tubine 65 is active: 16 out of 100
+Number of scenarios wind turbine 64 is curtailed: 18 out of 100
+Number of scenarios wind turbine 65 is curtailed: 16 out of 100
+Wind turbine 64 is not curtailed in 82 out of 100 scenarios.
+Wind turbine 65 is not curtailed in 84 out of 100 scenarios.
 </pre></div>
 </div>
 </div>
@@ -1469,7 +1477,8 @@ Number of scenarios wind tubine 65 is active: 16 out of 100
 <span class="p">}</span>
 
 <span class="n">m_nominal</span> <span class="o">=</span> <span class="n">UC_windcurtailment_fixed_x</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="p">[</span><span class="n">mean_sample</span><span class="p">])</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m_nominal</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m_nominal</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Nominal objective = </span><span class="si">{</span><span class="n">m_nominal</span><span class="o">.</span><span class="n">objective</span><span class="p">()</span><span class="si">:</span><span class="s2">0.2f</span><span class="si">}</span><span class="s2">$"</span><span class="p">)</span>
 <span class="n">fixed_x</span> <span class="o">=</span> <span class="n">m_nominal</span><span class="o">.</span><span class="n">x</span>
@@ -1477,61 +1486,49 @@ Number of scenarios wind tubine 65 is active: 16 out of 100
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Nominal objective = 16451.25
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Nominal objective = 16451.25$
 </pre></div>
 </div>
 </div>
 </div>
-<p>Now, for each of our scenarios we will solve the problem by fixing the initial decisions to be the one for the ‘average’ scenario and see in how many of them we cannot obtain a feasible second-stage decision, which we extract using the try-except mechanism of Python catching an error in case we are trying to call a solution that does not exist.</p>
+<p>For each sampled scenario, we fix the commitment decisions to the nominal solution and solve for the remaining decisions. We count a scenario as infeasible only when the solver proves infeasibility. Other termination conditions are reported separately, without treating a missing solution as proof of infeasibility.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pyomo.environ</span><span class="w"> </span><span class="kn">import</span> <span class="n">TerminationCondition</span>
 
-<span class="c1"># Suppress Pyomo warnings</span>
-<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"pyomo.core"</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
-
-<span class="c1"># Initialize counter</span>
-<span class="n">n_infeasible</span> <span class="o">=</span> <span class="mi">0</span>
-
+<span class="n">scenario_status</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+<span class="n">scenario_results</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
-    <span class="c1"># Build model for current sample</span>
     <span class="n">m_single</span> <span class="o">=</span> <span class="n">UC_windcurtailment_fixed_x</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="p">[</span><span class="n">samples</span><span class="p">[</span><span class="n">t</span><span class="p">]],</span> <span class="n">fixed_x</span><span class="p">)</span>
-
-    <span class="c1"># Solve without loading a potentially invalid solution</span>
     <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m_single</span><span class="p">,</span> <span class="n">load_solutions</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-    <span class="c1"># Access termination condition directly (Appsi interface)</span>
     <span class="n">tc</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span>
-
-    <span class="c1"># Handle infeasible or no-solution cases</span>
-    <span class="k">if</span> <span class="n">tc</span> <span class="ow">in</span> <span class="p">[</span>
-        <span class="n">TerminationCondition</span><span class="o">.</span><span class="n">infeasible</span><span class="p">,</span>
-        <span class="n">TerminationCondition</span><span class="o">.</span><span class="n">infeasibleOrUnbounded</span><span class="p">,</span>
-        <span class="n">TerminationCondition</span><span class="o">.</span><span class="n">noSolution</span><span class="p">,</span>
-    <span class="p">]:</span>
-        <span class="n">n_infeasible</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># Increment infeasibility count</span>
-
-    <span class="c1"># Only load solution if feasible</span>
-    <span class="k">elif</span> <span class="n">tc</span> <span class="o">==</span> <span class="n">TerminationCondition</span><span class="o">.</span><span class="n">optimal</span> <span class="ow">or</span> <span class="n">tc</span> <span class="o">==</span> <span class="n">TerminationCondition</span><span class="o">.</span><span class="n">feasible</span><span class="p">:</span>
-        <span class="n">m_single</span><span class="o">.</span><span class="n">solutions</span><span class="o">.</span><span class="n">load_from</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
-
-    <span class="c1"># Handle any unexpected solver status gracefully</span>
+    <span class="k">if</span> <span class="n">tc</span> <span class="o">==</span> <span class="n">TerminationCondition</span><span class="o">.</span><span class="n">infeasible</span><span class="p">:</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="s2">"proven infeasible"</span>
+    <span class="k">elif</span> <span class="n">pyo</span><span class="o">.</span><span class="n">check_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="s2">"optimal"</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sample </span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">: unexpected termination condition — </span><span class="si">{</span><span class="n">tc</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"unresolved: </span><span class="si">{</span><span class="n">tc</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">scenario_status</span><span class="p">[</span><span class="n">status</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">scenario_results</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"scenario"</span><span class="p">:</span> <span class="n">t</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="n">status</span><span class="p">})</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The second-stage problem is infeasible in </span><span class="si">{</span><span class="n">n_infeasible</span><span class="si">}</span><span class="s2"> out of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2"> instances"</span><span class="p">)</span>
+<span class="n">n_infeasible</span> <span class="o">=</span> <span class="n">scenario_status</span><span class="p">[</span><span class="s2">"proven infeasible"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The second-stage model is proven infeasible in </span><span class="si">{</span><span class="n">n_infeasible</span><span class="si">}</span><span class="s2"> out of </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2"> sampled scenarios."</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">status</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">scenario_status</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The second-stage problem is infeasible in 65 out of 100 instances
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The second-stage model is proven infeasible in 65 out of 100 sampled scenarios.
+optimal: 35
+proven infeasible: 65
 </pre></div>
 </div>
 </div>
 </div>
-<p>As it turns out, the <em>nominal</em> commitment solution would lead to infeasibility, thus a blackout, in 65% of the cases. Since a blackout is the very last thing a network operator would like to happen, this clearly demonstrates the value of the stochastic solution. It is important to note that a <em>very robust</em> solution that avoids blackouts could be explained by simply assuming very poor performance of the wind turbines. Such a solution, however, could be unnecessarily conservative and expensive, and it is therefore better to prepare for a set of <em>realistic</em> scenarios.</p>
+<p>For the displayed sample, the nominal commitment plan makes the dispatch model infeasible in 65 of 100 scenarios. The stochastic plan instead provides a feasible dispatch for every scenario included in its optimization.</p>
+<p>This comparison demonstrates the value of accounting for uncertain wind generation when choosing commitments. It is a feasibility assessment within the sampled model, not a 65% probability of a real-world blackout. A conservative plan based only on very low wind output could also maintain feasibility, but may be unnecessarily expensive compared with a plan designed for a representative set of scenarios.</p>
 </section>
 </section>
 
