@@ -17,3 +17,9 @@ The original scripts infer a workspace root from their location under `tmp/`. Th
 The large PBF, graph arrays and reference matrices are not duplicated in this source archive. The original machine retains them in the project's `output/reviews/4.09-shortest-path/netherlands-pbf-20260924/` directory. To reproduce the timings elsewhere, supply `nl-walk.npz`, `reference.npy` and `selected.npy` in the matching output directory and verify the recorded graph checksum. Preserve the original results before running: these scripts write results to that directory. To start a new NetworkX measurement, use a fresh `networkx-standalone` output directory rather than existing checkpoints.
 
 This is the historical Windows experiment code; uploading the teaching notebook to Colab does not automatically execute this national benchmark.
+
+## Availability of the historical input
+
+On 27 October 2026 the dated Geofabrik download URL recorded in `source.json` returned HTTP 404. Its checksum remains available, but the national PBF, graph arrays and reference matrices are not currently in a public archive. The published national timings are recorded results; reproducing the exact experiment requires those historical inputs. A current extract would produce a new experiment. The separate `road-network-recorded-results.zip` contains the Amsterdam graph and recorded results, not the national inputs.
+
+The original launchers remain unchanged. Their machine-specific paths require adaptation; a portable launcher alone cannot restore the unavailable national inputs.
