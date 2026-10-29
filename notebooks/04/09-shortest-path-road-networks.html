@@ -694,7 +694,7 @@ with individual routes, then compare a distance matrix computed row by row with
 one-to-many Dijkstra searches against a single batched Pandana call. Pandana uses
 contraction hierarchies to preprocess the network for repeated queries.</p>
 <p>For local execution install <code class="docutils literal notranslate"><span class="pre">pandana&gt;=0.8</span></code>, <code class="docutils literal notranslate"><span class="pre">osmnx</span></code>, <code class="docutils literal notranslate"><span class="pre">geopy</span></code>, <code class="docutils literal notranslate"><span class="pre">folium</span></code>,
-<code class="docutils literal notranslate"><span class="pre">matplotlib</span></code>, <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code>, <code class="docutils literal notranslate"><span class="pre">mapclassify</span></code>, <code class="docutils literal notranslate"><span class="pre">psutil</span></code>, and <code class="docutils literal notranslate"><span class="pre">threadpoolctl</span></code>. Colab installation is handled above.
+<code class="docutils literal notranslate"><span class="pre">matplotlib</span></code>, <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code>, <code class="docutils literal notranslate"><span class="pre">mapclassify</span></code>, <code class="docutils literal notranslate"><span class="pre">psutil</span></code>, and <code class="docutils literal notranslate"><span class="pre">threadpoolctl</span></code>. The recorded experiment was tested with Pandana 0.8; Colab installation is handled above.
 Geocoding, map acquisition, and interactive background tiles require internet access.</p>
 <section id="running-and-saving-in-google-colab">
 <h3>Running and saving in Google Colab<a class="headerlink" href="#running-and-saving-in-google-colab" title="Link to this heading">#</a></h3>
@@ -770,7 +770,7 @@ wider community.</p>
 <p><a class="reference external" href="https://github.com/UDST/pandana/releases/tag/v0.8">Pandana 0.8</a>, released in
 August 2026, reflects a collective effort to support the modern Python ecosystem.
 <strong><a class="reference external" href="https://ced.berkeley.edu/people/paul-waddell">Paul Waddell</a></strong> helped coordinate the renewed maintenance work, and <strong><a class="reference external" href="https://github.com/smmaurer">Sam Maurer</a></strong>
-helped bring the release to completion. Among the wider community of contributors,
+helped bring the release to completion (Paul Waddell, personal communication, August 2026). Among the wider community of contributors,
 <strong><a class="reference external" href="https://github.com/UDST/pandana/pull/198">Joaquim Gromicho</a></strong> contributed
 compatibility updates supporting Python 3.14, NumPy 2, and pandas 3.
 This contribution was part of the collective maintenance and release effort.</p>
@@ -1269,95 +1269,106 @@ temporary closures or walking access at a venue.</p>
 <span class="k">if</span> <span class="ow">not</span> <span class="n">shared</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"Distinct places assigned to the same graph node:"</span><span class="p">)</span>
     <span class="n">display</span><span class="p">(</span><span class="n">style_locations</span><span class="p">(</span><span class="n">shared</span><span class="p">[[</span><span class="s2">"address"</span><span class="p">,</span> <span class="s2">"node"</span><span class="p">,</span> <span class="s2">"snap_m"</span><span class="p">]]))</span>
+
+<span class="c1"># A configurable screening threshold; a short snap alone does not prove coverage.</span>
+<span class="n">MAX_SNAP_DISTANCE_M</span> <span class="o">=</span> <span class="mf">1000.0</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">MAX_SNAP_DISTANCE_M</span><span class="p">)</span> <span class="ow">or</span> <span class="n">MAX_SNAP_DISTANCE_M</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"MAX_SNAP_DISTANCE_M must be finite and nonnegative."</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s2">"distant_snap"</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">"snap_m"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">MAX_SNAP_DISTANCE_M</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Southernmost graph node: </span><span class="si">{</span><span class="nb">min</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s1">'y'</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">G_walk</span><span class="o">.</span><span class="n">nodes</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2"> N"</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">df</span><span class="p">[</span><span class="s2">"distant_snap"</span><span class="p">]</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Coverage warning: snaps exceed </span><span class="si">{</span><span class="n">MAX_SNAP_DISTANCE_M</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> m. "</span>
+          <span class="s2">"Routes involving these places are unsuitable as walking-distance estimates."</span><span class="p">)</span>
+    <span class="n">display</span><span class="p">(</span><span class="n">style_locations</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">distant_snap</span><span class="p">,</span> <span class="p">[</span><span class="s2">"address"</span><span class="p">,</span> <span class="s2">"snap_m"</span><span class="p">]]))</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output text_html"><style type="text/css">
-#T_f0ed6 th.col_heading.col0 {
+#T_b6c1d th.col_heading.col0 {
   text-align: left;
 }
-#T_f0ed6 th.col_heading.col1 {
+#T_b6c1d th.col_heading.col1 {
   text-align: right;
 }
-#T_f0ed6 th.col_heading.col2 {
+#T_b6c1d th.col_heading.col2 {
   text-align: right;
 }
-#T_f0ed6 th.col_heading.col3 {
+#T_b6c1d th.col_heading.col3 {
   text-align: right;
 }
-#T_f0ed6 th.col_heading.col4 {
+#T_b6c1d th.col_heading.col4 {
   text-align: right;
 }
-#T_f0ed6_row0_col0, #T_f0ed6_row1_col0, #T_f0ed6_row2_col0, #T_f0ed6_row3_col0, #T_f0ed6_row4_col0, #T_f0ed6_row5_col0 {
+#T_b6c1d_row0_col0, #T_b6c1d_row1_col0, #T_b6c1d_row2_col0, #T_b6c1d_row3_col0, #T_b6c1d_row4_col0, #T_b6c1d_row5_col0 {
   text-align: left;
 }
-#T_f0ed6_row0_col1, #T_f0ed6_row0_col2, #T_f0ed6_row0_col3, #T_f0ed6_row0_col4, #T_f0ed6_row1_col1, #T_f0ed6_row1_col2, #T_f0ed6_row1_col3, #T_f0ed6_row1_col4, #T_f0ed6_row2_col1, #T_f0ed6_row2_col2, #T_f0ed6_row2_col3, #T_f0ed6_row2_col4, #T_f0ed6_row3_col1, #T_f0ed6_row3_col2, #T_f0ed6_row3_col3, #T_f0ed6_row3_col4, #T_f0ed6_row4_col1, #T_f0ed6_row4_col2, #T_f0ed6_row4_col3, #T_f0ed6_row4_col4, #T_f0ed6_row5_col1, #T_f0ed6_row5_col2, #T_f0ed6_row5_col3, #T_f0ed6_row5_col4 {
+#T_b6c1d_row0_col1, #T_b6c1d_row0_col2, #T_b6c1d_row0_col3, #T_b6c1d_row0_col4, #T_b6c1d_row1_col1, #T_b6c1d_row1_col2, #T_b6c1d_row1_col3, #T_b6c1d_row1_col4, #T_b6c1d_row2_col1, #T_b6c1d_row2_col2, #T_b6c1d_row2_col3, #T_b6c1d_row2_col4, #T_b6c1d_row3_col1, #T_b6c1d_row3_col2, #T_b6c1d_row3_col3, #T_b6c1d_row3_col4, #T_b6c1d_row4_col1, #T_b6c1d_row4_col2, #T_b6c1d_row4_col3, #T_b6c1d_row4_col4, #T_b6c1d_row5_col1, #T_b6c1d_row5_col2, #T_b6c1d_row5_col3, #T_b6c1d_row5_col4 {
   text-align: right;
 }
-#T_f0ed6_level0_row0, #T_f0ed6_level0_row1, #T_f0ed6_level0_row2, #T_f0ed6_level0_row3, #T_f0ed6_level0_row4, #T_f0ed6_level0_row5 {
+#T_b6c1d_level0_row0, #T_b6c1d_level0_row1, #T_b6c1d_level0_row2, #T_b6c1d_level0_row3, #T_b6c1d_level0_row4, #T_b6c1d_level0_row5 {
   text-align: right;
 }
 </style>
-<table id="T_f0ed6">
+<table id="T_b6c1d">
   <thead>
     <tr>
       <th class="blank level0" >&nbsp;</th>
-      <th id="T_f0ed6_level0_col0" class="col_heading level0 col0" >address</th>
-      <th id="T_f0ed6_level0_col1" class="col_heading level0 col1" >lat</th>
-      <th id="T_f0ed6_level0_col2" class="col_heading level0 col2" >lon</th>
-      <th id="T_f0ed6_level0_col3" class="col_heading level0 col3" >node</th>
-      <th id="T_f0ed6_level0_col4" class="col_heading level0 col4" >snap_m</th>
+      <th id="T_b6c1d_level0_col0" class="col_heading level0 col0" >address</th>
+      <th id="T_b6c1d_level0_col1" class="col_heading level0 col1" >lat</th>
+      <th id="T_b6c1d_level0_col2" class="col_heading level0 col2" >lon</th>
+      <th id="T_b6c1d_level0_col3" class="col_heading level0 col3" >node</th>
+      <th id="T_b6c1d_level0_col4" class="col_heading level0 col4" >snap_m</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th id="T_f0ed6_level0_row0" class="row_heading level0 row0" >0</th>
-      <td id="T_f0ed6_row0_col0" class="data row0 col0" >Centraal Station</td>
-      <td id="T_f0ed6_row0_col1" class="data row0 col1" >52.379045</td>
-      <td id="T_f0ed6_row0_col2" class="data row0 col2" >4.900871</td>
-      <td id="T_f0ed6_row0_col3" class="data row0 col3" >5629071965</td>
-      <td id="T_f0ed6_row0_col4" class="data row0 col4" >11.179</td>
+      <th id="T_b6c1d_level0_row0" class="row_heading level0 row0" >0</th>
+      <td id="T_b6c1d_row0_col0" class="data row0 col0" >Centraal Station</td>
+      <td id="T_b6c1d_row0_col1" class="data row0 col1" >52.379045</td>
+      <td id="T_b6c1d_row0_col2" class="data row0 col2" >4.900871</td>
+      <td id="T_b6c1d_row0_col3" class="data row0 col3" >5629071965</td>
+      <td id="T_b6c1d_row0_col4" class="data row0 col4" >11.179</td>
     </tr>
     <tr>
-      <th id="T_f0ed6_level0_row1" class="row_heading level0 row1" >1</th>
-      <td id="T_f0ed6_row1_col0" class="data row1 col0" >VU Hoofdgebouw</td>
-      <td id="T_f0ed6_row1_col1" class="data row1 col1" >52.334180</td>
-      <td id="T_f0ed6_row1_col2" class="data row1 col2" >4.866900</td>
-      <td id="T_f0ed6_row1_col3" class="data row1 col3" >294648098</td>
-      <td id="T_f0ed6_row1_col4" class="data row1 col4" >61.952</td>
+      <th id="T_b6c1d_level0_row1" class="row_heading level0 row1" >1</th>
+      <td id="T_b6c1d_row1_col0" class="data row1 col0" >VU Hoofdgebouw</td>
+      <td id="T_b6c1d_row1_col1" class="data row1 col1" >52.334180</td>
+      <td id="T_b6c1d_row1_col2" class="data row1 col2" >4.866900</td>
+      <td id="T_b6c1d_row1_col3" class="data row1 col3" >294648098</td>
+      <td id="T_b6c1d_row1_col4" class="data row1 col4" >61.952</td>
     </tr>
     <tr>
-      <th id="T_f0ed6_level0_row2" class="row_heading level0 row2" >2</th>
-      <td id="T_f0ed6_row2_col0" class="data row2 col0" >Amsterdam Business School</td>
-      <td id="T_f0ed6_row2_col1" class="data row2 col1" >52.365107</td>
-      <td id="T_f0ed6_row2_col2" class="data row2 col2" >4.911718</td>
-      <td id="T_f0ed6_row2_col3" class="data row2 col3" >46356661</td>
-      <td id="T_f0ed6_row2_col4" class="data row2 col4" >43.880</td>
+      <th id="T_b6c1d_level0_row2" class="row_heading level0 row2" >2</th>
+      <td id="T_b6c1d_row2_col0" class="data row2 col0" >Amsterdam Business School</td>
+      <td id="T_b6c1d_row2_col1" class="data row2 col1" >52.365107</td>
+      <td id="T_b6c1d_row2_col2" class="data row2 col2" >4.911718</td>
+      <td id="T_b6c1d_row2_col3" class="data row2 col3" >46356661</td>
+      <td id="T_b6c1d_row2_col4" class="data row2 col4" >43.880</td>
     </tr>
     <tr>
-      <th id="T_f0ed6_level0_row3" class="row_heading level0 row3" >3</th>
-      <td id="T_f0ed6_row3_col0" class="data row3 col0" >University of Amsterdam</td>
-      <td id="T_f0ed6_row3_col1" class="data row3 col1" >52.368133</td>
-      <td id="T_f0ed6_row3_col2" class="data row3 col2" >4.889804</td>
-      <td id="T_f0ed6_row3_col3" class="data row3 col3" >13285036240</td>
-      <td id="T_f0ed6_row3_col4" class="data row3 col4" >55.953</td>
+      <th id="T_b6c1d_level0_row3" class="row_heading level0 row3" >3</th>
+      <td id="T_b6c1d_row3_col0" class="data row3 col0" >University of Amsterdam</td>
+      <td id="T_b6c1d_row3_col1" class="data row3 col1" >52.368133</td>
+      <td id="T_b6c1d_row3_col2" class="data row3 col2" >4.889804</td>
+      <td id="T_b6c1d_row3_col3" class="data row3 col3" >13285036240</td>
+      <td id="T_b6c1d_row3_col4" class="data row3 col4" >55.953</td>
     </tr>
     <tr>
-      <th id="T_f0ed6_level0_row4" class="row_heading level0 row4" >4</th>
-      <td id="T_f0ed6_row4_col0" class="data row4 col0" >Johan Cruijff ArenA</td>
-      <td id="T_f0ed6_row4_col1" class="data row4 col1" >52.314353</td>
-      <td id="T_f0ed6_row4_col2" class="data row4 col2" >4.942843</td>
-      <td id="T_f0ed6_row4_col3" class="data row4 col3" >2680554148</td>
-      <td id="T_f0ed6_row4_col4" class="data row4 col4" >2329.508</td>
+      <th id="T_b6c1d_level0_row4" class="row_heading level0 row4" >4</th>
+      <td id="T_b6c1d_row4_col0" class="data row4 col0" >Johan Cruijff ArenA</td>
+      <td id="T_b6c1d_row4_col1" class="data row4 col1" >52.314353</td>
+      <td id="T_b6c1d_row4_col2" class="data row4 col2" >4.942843</td>
+      <td id="T_b6c1d_row4_col3" class="data row4 col3" >2680554148</td>
+      <td id="T_b6c1d_row4_col4" class="data row4 col4" >2329.508</td>
     </tr>
     <tr>
-      <th id="T_f0ed6_level0_row5" class="row_heading level0 row5" >5</th>
-      <td id="T_f0ed6_row5_col0" class="data row5 col0" >Ziggo Dome</td>
-      <td id="T_f0ed6_row5_col1" class="data row5 col1" >52.313753</td>
-      <td id="T_f0ed6_row5_col2" class="data row5 col2" >4.937709</td>
-      <td id="T_f0ed6_row5_col3" class="data row5 col3" >2680554148</td>
-      <td id="T_f0ed6_row5_col4" class="data row5 col4" >2016.547</td>
+      <th id="T_b6c1d_level0_row5" class="row_heading level0 row5" >5</th>
+      <td id="T_b6c1d_row5_col0" class="data row5 col0" >Ziggo Dome</td>
+      <td id="T_b6c1d_row5_col1" class="data row5 col1" >52.313753</td>
+      <td id="T_b6c1d_row5_col2" class="data row5 col2" >4.937709</td>
+      <td id="T_b6c1d_row5_col3" class="data row5 col3" >2680554148</td>
+      <td id="T_b6c1d_row5_col4" class="data row5 col4" >2016.547</td>
     </tr>
   </tbody>
 </table>
@@ -1365,46 +1376,88 @@ temporary closures or walking access at a venue.</p>
 </pre></div>
 </div>
 <div class="output text_html"><style type="text/css">
-#T_b46cd th.col_heading.col0 {
+#T_6914b th.col_heading.col0 {
   text-align: left;
 }
-#T_b46cd th.col_heading.col1 {
+#T_6914b th.col_heading.col1 {
   text-align: right;
 }
-#T_b46cd th.col_heading.col2 {
+#T_6914b th.col_heading.col2 {
   text-align: right;
 }
-#T_b46cd_row0_col0, #T_b46cd_row1_col0 {
+#T_6914b_row0_col0, #T_6914b_row1_col0 {
   text-align: left;
 }
-#T_b46cd_row0_col1, #T_b46cd_row0_col2, #T_b46cd_row1_col1, #T_b46cd_row1_col2 {
+#T_6914b_row0_col1, #T_6914b_row0_col2, #T_6914b_row1_col1, #T_6914b_row1_col2 {
   text-align: right;
 }
-#T_b46cd_level0_row0, #T_b46cd_level0_row1 {
+#T_6914b_level0_row0, #T_6914b_level0_row1 {
   text-align: right;
 }
 </style>
-<table id="T_b46cd">
+<table id="T_6914b">
   <thead>
     <tr>
       <th class="blank level0" >&nbsp;</th>
-      <th id="T_b46cd_level0_col0" class="col_heading level0 col0" >address</th>
-      <th id="T_b46cd_level0_col1" class="col_heading level0 col1" >node</th>
-      <th id="T_b46cd_level0_col2" class="col_heading level0 col2" >snap_m</th>
+      <th id="T_6914b_level0_col0" class="col_heading level0 col0" >address</th>
+      <th id="T_6914b_level0_col1" class="col_heading level0 col1" >node</th>
+      <th id="T_6914b_level0_col2" class="col_heading level0 col2" >snap_m</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th id="T_b46cd_level0_row0" class="row_heading level0 row0" >4</th>
-      <td id="T_b46cd_row0_col0" class="data row0 col0" >Johan Cruijff ArenA</td>
-      <td id="T_b46cd_row0_col1" class="data row0 col1" >2680554148</td>
-      <td id="T_b46cd_row0_col2" class="data row0 col2" >2329.508</td>
+      <th id="T_6914b_level0_row0" class="row_heading level0 row0" >4</th>
+      <td id="T_6914b_row0_col0" class="data row0 col0" >Johan Cruijff ArenA</td>
+      <td id="T_6914b_row0_col1" class="data row0 col1" >2680554148</td>
+      <td id="T_6914b_row0_col2" class="data row0 col2" >2329.508</td>
     </tr>
     <tr>
-      <th id="T_b46cd_level0_row1" class="row_heading level0 row1" >5</th>
-      <td id="T_b46cd_row1_col0" class="data row1 col0" >Ziggo Dome</td>
-      <td id="T_b46cd_row1_col1" class="data row1 col1" >2680554148</td>
-      <td id="T_b46cd_row1_col2" class="data row1 col2" >2016.547</td>
+      <th id="T_6914b_level0_row1" class="row_heading level0 row1" >5</th>
+      <td id="T_6914b_row1_col0" class="data row1 col0" >Ziggo Dome</td>
+      <td id="T_6914b_row1_col1" class="data row1 col1" >2680554148</td>
+      <td id="T_6914b_row1_col2" class="data row1 col2" >2016.547</td>
+    </tr>
+  </tbody>
+</table>
+</div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Southernmost graph node: 52.31935 N
+Coverage warning: snaps exceed 1000 m. Routes involving these places are unsuitable as walking-distance estimates.
+</pre></div>
+</div>
+<div class="output text_html"><style type="text/css">
+#T_c5cbf th.col_heading.col0 {
+  text-align: left;
+}
+#T_c5cbf th.col_heading.col1 {
+  text-align: right;
+}
+#T_c5cbf_row0_col0, #T_c5cbf_row1_col0 {
+  text-align: left;
+}
+#T_c5cbf_row0_col1, #T_c5cbf_row1_col1 {
+  text-align: right;
+}
+#T_c5cbf_level0_row0, #T_c5cbf_level0_row1 {
+  text-align: right;
+}
+</style>
+<table id="T_c5cbf">
+  <thead>
+    <tr>
+      <th class="blank level0" >&nbsp;</th>
+      <th id="T_c5cbf_level0_col0" class="col_heading level0 col0" >address</th>
+      <th id="T_c5cbf_level0_col1" class="col_heading level0 col1" >snap_m</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th id="T_c5cbf_level0_row0" class="row_heading level0 row0" >4</th>
+      <td id="T_c5cbf_row0_col0" class="data row0 col0" >Johan Cruijff ArenA</td>
+      <td id="T_c5cbf_row0_col1" class="data row0 col1" >2329.508</td>
+    </tr>
+    <tr>
+      <th id="T_c5cbf_level0_row1" class="row_heading level0 row1" >5</th>
+      <td id="T_c5cbf_row1_col0" class="data row1 col0" >Ziggo Dome</td>
+      <td id="T_c5cbf_row1_col1" class="data row1 col1" >2016.547</td>
     </tr>
   </tbody>
 </table>
@@ -1418,9 +1471,20 @@ locates the place, while snapping chooses a node in the available network.
 Shared nodes give identical network-distance rows and zero distance between the
 assigned nodes. This does not mean the venues coincide. Large snapping distances
 can also reveal missing network coverage near the original coordinates.</p>
-<p>We keep this example and display the snapping distances. The occurrence of a
-shared node may change with live data. Both routing packages below reuse the
-same node assignment so that they solve the same query.</p>
+<p>In the archived graph, the southernmost node is at <strong>52.31935 N</strong>, north of
+both ArenA and Ziggo Dome. Their nearest nodes are about <strong>2.33 km</strong> and
+<strong>2.02 km</strong> away, so this is a <strong>network-coverage failure</strong>, not simply a
+harmless shared-node case. Routes involving these venues are unsuitable for
+actual walking-distance estimates. The acquisition boundary or component
+selection may be involved; the saved graph alone does not establish which step
+removed the area.</p>
+<p>We retain this case to show why coverage must be checked. The cell above flags
+snaps beyond a configurable 1,000 m threshold; inspect the surrounding network
+even when the threshold is not exceeded. A useful venue-routing network must
+cover the venues and connect them to the city. Both packages below reuse the
+same node assignments, and we separately check reachability. Neither agreement
+between algorithms nor reachability repairs missing geographic coverage.
+The occurrence of distant or shared nodes may change with live data.</p>
 <p>In the route map, blue lines follow road edges; dashed magenta lines connect
 the geocoded places to their snapped nodes. These straight-line connectors
 show the snapping offsets, not verified walkable access routes.</p>
@@ -1981,107 +2045,112 @@ Pandana, integer-mm costs: 1883.298 m
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ids</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reachability and geographic coverage are separate checks.</span>
+<span class="n">ids</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">has_path</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">j</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Some selected graph nodes are unreachable; inspect network components."</span><span class="p">)</span>
+<span class="n">distance_labels</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">address</span> <span class="o">+</span> <span class="n">df</span><span class="o">.</span><span class="n">distant_snap</span><span class="o">.</span><span class="n">map</span><span class="p">({</span><span class="kc">True</span><span class="p">:</span> <span class="s2">" [coverage warning]"</span><span class="p">,</span> <span class="kc">False</span><span class="p">:</span> <span class="s2">""</span><span class="p">})</span>
 <span class="n">origs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span>
 <span class="n">dests</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span>
 <span class="n">distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">network</span><span class="o">.</span><span class="n">shortest_path_lengths</span><span class="p">(</span><span class="n">origs</span><span class="p">,</span> <span class="n">dests</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span>
-<span class="n">display</span><span class="p">(</span><span class="n">style_table</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">distances</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">columns</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">"</span><span class="si">{:.1f}</span><span class="s2">"</span><span class="p">))</span>
+<span class="n">display</span><span class="p">(</span><span class="n">style_table</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">distances</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">distance_labels</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">distance_labels</span><span class="p">)</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">"</span><span class="si">{:.1f}</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">set_caption</span><span class="p">(</span><span class="s2">"Graph-node distances (m); flagged places lack nearby network coverage"</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output text_html"><style type="text/css">
-#T_0f460 th.col_heading.col0 {
+#T_41939 th.col_heading.col0 {
   text-align: right;
 }
-#T_0f460 th.col_heading.col1 {
+#T_41939 th.col_heading.col1 {
   text-align: right;
 }
-#T_0f460 th.col_heading.col2 {
+#T_41939 th.col_heading.col2 {
   text-align: right;
 }
-#T_0f460 th.col_heading.col3 {
+#T_41939 th.col_heading.col3 {
   text-align: right;
 }
-#T_0f460 th.col_heading.col4 {
+#T_41939 th.col_heading.col4 {
   text-align: right;
 }
-#T_0f460 th.col_heading.col5 {
+#T_41939 th.col_heading.col5 {
   text-align: right;
 }
-#T_0f460_row0_col0, #T_0f460_row0_col1, #T_0f460_row0_col2, #T_0f460_row0_col3, #T_0f460_row0_col4, #T_0f460_row0_col5, #T_0f460_row1_col0, #T_0f460_row1_col1, #T_0f460_row1_col2, #T_0f460_row1_col3, #T_0f460_row1_col4, #T_0f460_row1_col5, #T_0f460_row2_col0, #T_0f460_row2_col1, #T_0f460_row2_col2, #T_0f460_row2_col3, #T_0f460_row2_col4, #T_0f460_row2_col5, #T_0f460_row3_col0, #T_0f460_row3_col1, #T_0f460_row3_col2, #T_0f460_row3_col3, #T_0f460_row3_col4, #T_0f460_row3_col5, #T_0f460_row4_col0, #T_0f460_row4_col1, #T_0f460_row4_col2, #T_0f460_row4_col3, #T_0f460_row4_col4, #T_0f460_row4_col5, #T_0f460_row5_col0, #T_0f460_row5_col1, #T_0f460_row5_col2, #T_0f460_row5_col3, #T_0f460_row5_col4, #T_0f460_row5_col5 {
+#T_41939_row0_col0, #T_41939_row0_col1, #T_41939_row0_col2, #T_41939_row0_col3, #T_41939_row0_col4, #T_41939_row0_col5, #T_41939_row1_col0, #T_41939_row1_col1, #T_41939_row1_col2, #T_41939_row1_col3, #T_41939_row1_col4, #T_41939_row1_col5, #T_41939_row2_col0, #T_41939_row2_col1, #T_41939_row2_col2, #T_41939_row2_col3, #T_41939_row2_col4, #T_41939_row2_col5, #T_41939_row3_col0, #T_41939_row3_col1, #T_41939_row3_col2, #T_41939_row3_col3, #T_41939_row3_col4, #T_41939_row3_col5, #T_41939_row4_col0, #T_41939_row4_col1, #T_41939_row4_col2, #T_41939_row4_col3, #T_41939_row4_col4, #T_41939_row4_col5, #T_41939_row5_col0, #T_41939_row5_col1, #T_41939_row5_col2, #T_41939_row5_col3, #T_41939_row5_col4, #T_41939_row5_col5 {
   text-align: right;
 }
-#T_0f460_level0_row0, #T_0f460_level0_row1, #T_0f460_level0_row2, #T_0f460_level0_row3, #T_0f460_level0_row4, #T_0f460_level0_row5 {
+#T_41939_level0_row0, #T_41939_level0_row1, #T_41939_level0_row2, #T_41939_level0_row3, #T_41939_level0_row4, #T_41939_level0_row5 {
   text-align: left;
 }
 </style>
-<table id="T_0f460">
+<table id="T_41939">
+  <caption>Graph-node distances (m); flagged places lack nearby network coverage</caption>
   <thead>
     <tr>
       <th class="blank level0" >&nbsp;</th>
-      <th id="T_0f460_level0_col0" class="col_heading level0 col0" >Centraal Station</th>
-      <th id="T_0f460_level0_col1" class="col_heading level0 col1" >VU Hoofdgebouw</th>
-      <th id="T_0f460_level0_col2" class="col_heading level0 col2" >Amsterdam Business School</th>
-      <th id="T_0f460_level0_col3" class="col_heading level0 col3" >University of Amsterdam</th>
-      <th id="T_0f460_level0_col4" class="col_heading level0 col4" >Johan Cruijff ArenA</th>
-      <th id="T_0f460_level0_col5" class="col_heading level0 col5" >Ziggo Dome</th>
+      <th id="T_41939_level0_col0" class="col_heading level0 col0" >Centraal Station</th>
+      <th id="T_41939_level0_col1" class="col_heading level0 col1" >VU Hoofdgebouw</th>
+      <th id="T_41939_level0_col2" class="col_heading level0 col2" >Amsterdam Business School</th>
+      <th id="T_41939_level0_col3" class="col_heading level0 col3" >University of Amsterdam</th>
+      <th id="T_41939_level0_col4" class="col_heading level0 col4" >Johan Cruijff ArenA [coverage warning]</th>
+      <th id="T_41939_level0_col5" class="col_heading level0 col5" >Ziggo Dome [coverage warning]</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th id="T_0f460_level0_row0" class="row_heading level0 row0" >Centraal Station</th>
-      <td id="T_0f460_row0_col0" class="data row0 col0" >0.0</td>
-      <td id="T_0f460_row0_col1" class="data row0 col1" >6876.2</td>
-      <td id="T_0f460_row0_col2" class="data row0 col2" >2288.7</td>
-      <td id="T_0f460_row0_col3" class="data row0 col3" >1588.8</td>
-      <td id="T_0f460_row0_col4" class="data row0 col4" >8689.6</td>
-      <td id="T_0f460_row0_col5" class="data row0 col5" >8689.6</td>
+      <th id="T_41939_level0_row0" class="row_heading level0 row0" >Centraal Station</th>
+      <td id="T_41939_row0_col0" class="data row0 col0" >0.0</td>
+      <td id="T_41939_row0_col1" class="data row0 col1" >6876.2</td>
+      <td id="T_41939_row0_col2" class="data row0 col2" >2288.7</td>
+      <td id="T_41939_row0_col3" class="data row0 col3" >1588.8</td>
+      <td id="T_41939_row0_col4" class="data row0 col4" >8689.6</td>
+      <td id="T_41939_row0_col5" class="data row0 col5" >8689.6</td>
     </tr>
     <tr>
-      <th id="T_0f460_level0_row1" class="row_heading level0 row1" >VU Hoofdgebouw</th>
-      <td id="T_0f460_row1_col0" class="data row1 col0" >6876.2</td>
-      <td id="T_0f460_row1_col1" class="data row1 col1" >0.0</td>
-      <td id="T_0f460_row1_col2" class="data row1 col2" >6208.5</td>
-      <td id="T_0f460_row1_col3" class="data row1 col3" >5425.1</td>
-      <td id="T_0f460_row1_col4" class="data row1 col4" >7564.6</td>
-      <td id="T_0f460_row1_col5" class="data row1 col5" >7564.6</td>
+      <th id="T_41939_level0_row1" class="row_heading level0 row1" >VU Hoofdgebouw</th>
+      <td id="T_41939_row1_col0" class="data row1 col0" >6876.2</td>
+      <td id="T_41939_row1_col1" class="data row1 col1" >0.0</td>
+      <td id="T_41939_row1_col2" class="data row1 col2" >6208.5</td>
+      <td id="T_41939_row1_col3" class="data row1 col3" >5425.1</td>
+      <td id="T_41939_row1_col4" class="data row1 col4" >7564.6</td>
+      <td id="T_41939_row1_col5" class="data row1 col5" >7564.6</td>
     </tr>
     <tr>
-      <th id="T_0f460_level0_row2" class="row_heading level0 row2" >Amsterdam Business School</th>
-      <td id="T_0f460_row2_col0" class="data row2 col0" >2288.7</td>
-      <td id="T_0f460_row2_col1" class="data row2 col1" >6208.5</td>
-      <td id="T_0f460_row2_col2" class="data row2 col2" >0.0</td>
-      <td id="T_0f460_row2_col3" class="data row2 col3" >1883.3</td>
-      <td id="T_0f460_row2_col4" class="data row2 col4" >7376.6</td>
-      <td id="T_0f460_row2_col5" class="data row2 col5" >7376.6</td>
+      <th id="T_41939_level0_row2" class="row_heading level0 row2" >Amsterdam Business School</th>
+      <td id="T_41939_row2_col0" class="data row2 col0" >2288.7</td>
+      <td id="T_41939_row2_col1" class="data row2 col1" >6208.5</td>
+      <td id="T_41939_row2_col2" class="data row2 col2" >0.0</td>
+      <td id="T_41939_row2_col3" class="data row2 col3" >1883.3</td>
+      <td id="T_41939_row2_col4" class="data row2 col4" >7376.6</td>
+      <td id="T_41939_row2_col5" class="data row2 col5" >7376.6</td>
     </tr>
     <tr>
-      <th id="T_0f460_level0_row3" class="row_heading level0 row3" >University of Amsterdam</th>
-      <td id="T_0f460_row3_col0" class="data row3 col0" >1588.8</td>
-      <td id="T_0f460_row3_col1" class="data row3 col1" >5425.1</td>
-      <td id="T_0f460_row3_col2" class="data row3 col2" >1883.3</td>
-      <td id="T_0f460_row3_col3" class="data row3 col3" >0.0</td>
-      <td id="T_0f460_row3_col4" class="data row3 col4" >7543.5</td>
-      <td id="T_0f460_row3_col5" class="data row3 col5" >7543.5</td>
+      <th id="T_41939_level0_row3" class="row_heading level0 row3" >University of Amsterdam</th>
+      <td id="T_41939_row3_col0" class="data row3 col0" >1588.8</td>
+      <td id="T_41939_row3_col1" class="data row3 col1" >5425.1</td>
+      <td id="T_41939_row3_col2" class="data row3 col2" >1883.3</td>
+      <td id="T_41939_row3_col3" class="data row3 col3" >0.0</td>
+      <td id="T_41939_row3_col4" class="data row3 col4" >7543.5</td>
+      <td id="T_41939_row3_col5" class="data row3 col5" >7543.5</td>
     </tr>
     <tr>
-      <th id="T_0f460_level0_row4" class="row_heading level0 row4" >Johan Cruijff ArenA</th>
-      <td id="T_0f460_row4_col0" class="data row4 col0" >8689.6</td>
-      <td id="T_0f460_row4_col1" class="data row4 col1" >7564.6</td>
-      <td id="T_0f460_row4_col2" class="data row4 col2" >7376.6</td>
-      <td id="T_0f460_row4_col3" class="data row4 col3" >7543.5</td>
-      <td id="T_0f460_row4_col4" class="data row4 col4" >0.0</td>
-      <td id="T_0f460_row4_col5" class="data row4 col5" >0.0</td>
+      <th id="T_41939_level0_row4" class="row_heading level0 row4" >Johan Cruijff ArenA [coverage warning]</th>
+      <td id="T_41939_row4_col0" class="data row4 col0" >8689.6</td>
+      <td id="T_41939_row4_col1" class="data row4 col1" >7564.6</td>
+      <td id="T_41939_row4_col2" class="data row4 col2" >7376.6</td>
+      <td id="T_41939_row4_col3" class="data row4 col3" >7543.5</td>
+      <td id="T_41939_row4_col4" class="data row4 col4" >0.0</td>
+      <td id="T_41939_row4_col5" class="data row4 col5" >0.0</td>
     </tr>
     <tr>
-      <th id="T_0f460_level0_row5" class="row_heading level0 row5" >Ziggo Dome</th>
-      <td id="T_0f460_row5_col0" class="data row5 col0" >8689.6</td>
-      <td id="T_0f460_row5_col1" class="data row5 col1" >7564.6</td>
-      <td id="T_0f460_row5_col2" class="data row5 col2" >7376.6</td>
-      <td id="T_0f460_row5_col3" class="data row5 col3" >7543.5</td>
-      <td id="T_0f460_row5_col4" class="data row5 col4" >0.0</td>
-      <td id="T_0f460_row5_col5" class="data row5 col5" >0.0</td>
+      <th id="T_41939_level0_row5" class="row_heading level0 row5" >Ziggo Dome [coverage warning]</th>
+      <td id="T_41939_row5_col0" class="data row5 col0" >8689.6</td>
+      <td id="T_41939_row5_col1" class="data row5 col1" >7564.6</td>
+      <td id="T_41939_row5_col2" class="data row5 col2" >7376.6</td>
+      <td id="T_41939_row5_col3" class="data row5 col3" >7543.5</td>
+      <td id="T_41939_row5_col4" class="data row5 col4" >0.0</td>
+      <td id="T_41939_row5_col5" class="data row5 col5" >0.0</td>
     </tr>
   </tbody>
 </table>
@@ -2097,107 +2166,112 @@ the estimate includes travelling from each point to that common node.</p>
 estimate need not be the shortest real-world route, especially when the graph
 omits nearby streets. Comparing the two tables makes the effect of snapping
 visible rather than hiding it by replacing the example locations.</p>
+<p>For the archived ArenA and Ziggo Dome coordinates, which are about <strong>355 m</strong>
+apart, the two connectors sum to about <strong>4.35 km</strong>. This demonstrates the
+coverage failure: it is not a usable walking-distance estimate between the
+venues. Rows and columns with distant snaps are explicitly flagged below.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">access_estimate</span> <span class="o">=</span> <span class="n">distances</span> <span class="o">+</span> <span class="n">df</span><span class="o">.</span><span class="n">snap_m</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">df</span><span class="o">.</span><span class="n">snap_m</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
 <span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">access_estimate</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">display</span><span class="p">(</span><span class="n">style_table</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">access_estimate</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">columns</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">"</span><span class="si">{:.1f}</span><span class="s2">"</span><span class="p">))</span>
+<span class="n">display</span><span class="p">(</span><span class="n">style_table</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">access_estimate</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">distance_labels</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">distance_labels</span><span class="p">)</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">"</span><span class="si">{:.1f}</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">set_caption</span><span class="p">(</span><span class="s2">"Connector illustration (m), not verified walking distances; flagged venue routes are unsuitable"</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output text_html"><style type="text/css">
-#T_6b6d9 th.col_heading.col0 {
+#T_771bf th.col_heading.col0 {
   text-align: right;
 }
-#T_6b6d9 th.col_heading.col1 {
+#T_771bf th.col_heading.col1 {
   text-align: right;
 }
-#T_6b6d9 th.col_heading.col2 {
+#T_771bf th.col_heading.col2 {
   text-align: right;
 }
-#T_6b6d9 th.col_heading.col3 {
+#T_771bf th.col_heading.col3 {
   text-align: right;
 }
-#T_6b6d9 th.col_heading.col4 {
+#T_771bf th.col_heading.col4 {
   text-align: right;
 }
-#T_6b6d9 th.col_heading.col5 {
+#T_771bf th.col_heading.col5 {
   text-align: right;
 }
-#T_6b6d9_row0_col0, #T_6b6d9_row0_col1, #T_6b6d9_row0_col2, #T_6b6d9_row0_col3, #T_6b6d9_row0_col4, #T_6b6d9_row0_col5, #T_6b6d9_row1_col0, #T_6b6d9_row1_col1, #T_6b6d9_row1_col2, #T_6b6d9_row1_col3, #T_6b6d9_row1_col4, #T_6b6d9_row1_col5, #T_6b6d9_row2_col0, #T_6b6d9_row2_col1, #T_6b6d9_row2_col2, #T_6b6d9_row2_col3, #T_6b6d9_row2_col4, #T_6b6d9_row2_col5, #T_6b6d9_row3_col0, #T_6b6d9_row3_col1, #T_6b6d9_row3_col2, #T_6b6d9_row3_col3, #T_6b6d9_row3_col4, #T_6b6d9_row3_col5, #T_6b6d9_row4_col0, #T_6b6d9_row4_col1, #T_6b6d9_row4_col2, #T_6b6d9_row4_col3, #T_6b6d9_row4_col4, #T_6b6d9_row4_col5, #T_6b6d9_row5_col0, #T_6b6d9_row5_col1, #T_6b6d9_row5_col2, #T_6b6d9_row5_col3, #T_6b6d9_row5_col4, #T_6b6d9_row5_col5 {
+#T_771bf_row0_col0, #T_771bf_row0_col1, #T_771bf_row0_col2, #T_771bf_row0_col3, #T_771bf_row0_col4, #T_771bf_row0_col5, #T_771bf_row1_col0, #T_771bf_row1_col1, #T_771bf_row1_col2, #T_771bf_row1_col3, #T_771bf_row1_col4, #T_771bf_row1_col5, #T_771bf_row2_col0, #T_771bf_row2_col1, #T_771bf_row2_col2, #T_771bf_row2_col3, #T_771bf_row2_col4, #T_771bf_row2_col5, #T_771bf_row3_col0, #T_771bf_row3_col1, #T_771bf_row3_col2, #T_771bf_row3_col3, #T_771bf_row3_col4, #T_771bf_row3_col5, #T_771bf_row4_col0, #T_771bf_row4_col1, #T_771bf_row4_col2, #T_771bf_row4_col3, #T_771bf_row4_col4, #T_771bf_row4_col5, #T_771bf_row5_col0, #T_771bf_row5_col1, #T_771bf_row5_col2, #T_771bf_row5_col3, #T_771bf_row5_col4, #T_771bf_row5_col5 {
   text-align: right;
 }
-#T_6b6d9_level0_row0, #T_6b6d9_level0_row1, #T_6b6d9_level0_row2, #T_6b6d9_level0_row3, #T_6b6d9_level0_row4, #T_6b6d9_level0_row5 {
+#T_771bf_level0_row0, #T_771bf_level0_row1, #T_771bf_level0_row2, #T_771bf_level0_row3, #T_771bf_level0_row4, #T_771bf_level0_row5 {
   text-align: left;
 }
 </style>
-<table id="T_6b6d9">
+<table id="T_771bf">
+  <caption>Connector illustration (m), not verified walking distances; flagged venue routes are unsuitable</caption>
   <thead>
     <tr>
       <th class="blank level0" >&nbsp;</th>
-      <th id="T_6b6d9_level0_col0" class="col_heading level0 col0" >Centraal Station</th>
-      <th id="T_6b6d9_level0_col1" class="col_heading level0 col1" >VU Hoofdgebouw</th>
-      <th id="T_6b6d9_level0_col2" class="col_heading level0 col2" >Amsterdam Business School</th>
-      <th id="T_6b6d9_level0_col3" class="col_heading level0 col3" >University of Amsterdam</th>
-      <th id="T_6b6d9_level0_col4" class="col_heading level0 col4" >Johan Cruijff ArenA</th>
-      <th id="T_6b6d9_level0_col5" class="col_heading level0 col5" >Ziggo Dome</th>
+      <th id="T_771bf_level0_col0" class="col_heading level0 col0" >Centraal Station</th>
+      <th id="T_771bf_level0_col1" class="col_heading level0 col1" >VU Hoofdgebouw</th>
+      <th id="T_771bf_level0_col2" class="col_heading level0 col2" >Amsterdam Business School</th>
+      <th id="T_771bf_level0_col3" class="col_heading level0 col3" >University of Amsterdam</th>
+      <th id="T_771bf_level0_col4" class="col_heading level0 col4" >Johan Cruijff ArenA [coverage warning]</th>
+      <th id="T_771bf_level0_col5" class="col_heading level0 col5" >Ziggo Dome [coverage warning]</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th id="T_6b6d9_level0_row0" class="row_heading level0 row0" >Centraal Station</th>
-      <td id="T_6b6d9_row0_col0" class="data row0 col0" >0.0</td>
-      <td id="T_6b6d9_row0_col1" class="data row0 col1" >6949.3</td>
-      <td id="T_6b6d9_row0_col2" class="data row0 col2" >2343.7</td>
-      <td id="T_6b6d9_row0_col3" class="data row0 col3" >1655.9</td>
-      <td id="T_6b6d9_row0_col4" class="data row0 col4" >11030.3</td>
-      <td id="T_6b6d9_row0_col5" class="data row0 col5" >10717.4</td>
+      <th id="T_771bf_level0_row0" class="row_heading level0 row0" >Centraal Station</th>
+      <td id="T_771bf_row0_col0" class="data row0 col0" >0.0</td>
+      <td id="T_771bf_row0_col1" class="data row0 col1" >6949.3</td>
+      <td id="T_771bf_row0_col2" class="data row0 col2" >2343.7</td>
+      <td id="T_771bf_row0_col3" class="data row0 col3" >1655.9</td>
+      <td id="T_771bf_row0_col4" class="data row0 col4" >11030.3</td>
+      <td id="T_771bf_row0_col5" class="data row0 col5" >10717.4</td>
     </tr>
     <tr>
-      <th id="T_6b6d9_level0_row1" class="row_heading level0 row1" >VU Hoofdgebouw</th>
-      <td id="T_6b6d9_row1_col0" class="data row1 col0" >6949.3</td>
-      <td id="T_6b6d9_row1_col1" class="data row1 col1" >0.0</td>
-      <td id="T_6b6d9_row1_col2" class="data row1 col2" >6314.3</td>
-      <td id="T_6b6d9_row1_col3" class="data row1 col3" >5543.0</td>
-      <td id="T_6b6d9_row1_col4" class="data row1 col4" >9956.1</td>
-      <td id="T_6b6d9_row1_col5" class="data row1 col5" >9643.1</td>
+      <th id="T_771bf_level0_row1" class="row_heading level0 row1" >VU Hoofdgebouw</th>
+      <td id="T_771bf_row1_col0" class="data row1 col0" >6949.3</td>
+      <td id="T_771bf_row1_col1" class="data row1 col1" >0.0</td>
+      <td id="T_771bf_row1_col2" class="data row1 col2" >6314.3</td>
+      <td id="T_771bf_row1_col3" class="data row1 col3" >5543.0</td>
+      <td id="T_771bf_row1_col4" class="data row1 col4" >9956.1</td>
+      <td id="T_771bf_row1_col5" class="data row1 col5" >9643.1</td>
     </tr>
     <tr>
-      <th id="T_6b6d9_level0_row2" class="row_heading level0 row2" >Amsterdam Business School</th>
-      <td id="T_6b6d9_row2_col0" class="data row2 col0" >2343.7</td>
-      <td id="T_6b6d9_row2_col1" class="data row2 col1" >6314.3</td>
-      <td id="T_6b6d9_row2_col2" class="data row2 col2" >0.0</td>
-      <td id="T_6b6d9_row2_col3" class="data row2 col3" >1983.1</td>
-      <td id="T_6b6d9_row2_col4" class="data row2 col4" >9750.0</td>
-      <td id="T_6b6d9_row2_col5" class="data row2 col5" >9437.1</td>
+      <th id="T_771bf_level0_row2" class="row_heading level0 row2" >Amsterdam Business School</th>
+      <td id="T_771bf_row2_col0" class="data row2 col0" >2343.7</td>
+      <td id="T_771bf_row2_col1" class="data row2 col1" >6314.3</td>
+      <td id="T_771bf_row2_col2" class="data row2 col2" >0.0</td>
+      <td id="T_771bf_row2_col3" class="data row2 col3" >1983.1</td>
+      <td id="T_771bf_row2_col4" class="data row2 col4" >9750.0</td>
+      <td id="T_771bf_row2_col5" class="data row2 col5" >9437.1</td>
     </tr>
     <tr>
-      <th id="T_6b6d9_level0_row3" class="row_heading level0 row3" >University of Amsterdam</th>
-      <td id="T_6b6d9_row3_col0" class="data row3 col0" >1655.9</td>
-      <td id="T_6b6d9_row3_col1" class="data row3 col1" >5543.0</td>
-      <td id="T_6b6d9_row3_col2" class="data row3 col2" >1983.1</td>
-      <td id="T_6b6d9_row3_col3" class="data row3 col3" >0.0</td>
-      <td id="T_6b6d9_row3_col4" class="data row3 col4" >9928.9</td>
-      <td id="T_6b6d9_row3_col5" class="data row3 col5" >9616.0</td>
+      <th id="T_771bf_level0_row3" class="row_heading level0 row3" >University of Amsterdam</th>
+      <td id="T_771bf_row3_col0" class="data row3 col0" >1655.9</td>
+      <td id="T_771bf_row3_col1" class="data row3 col1" >5543.0</td>
+      <td id="T_771bf_row3_col2" class="data row3 col2" >1983.1</td>
+      <td id="T_771bf_row3_col3" class="data row3 col3" >0.0</td>
+      <td id="T_771bf_row3_col4" class="data row3 col4" >9928.9</td>
+      <td id="T_771bf_row3_col5" class="data row3 col5" >9616.0</td>
     </tr>
     <tr>
-      <th id="T_6b6d9_level0_row4" class="row_heading level0 row4" >Johan Cruijff ArenA</th>
-      <td id="T_6b6d9_row4_col0" class="data row4 col0" >11030.3</td>
-      <td id="T_6b6d9_row4_col1" class="data row4 col1" >9956.1</td>
-      <td id="T_6b6d9_row4_col2" class="data row4 col2" >9750.0</td>
-      <td id="T_6b6d9_row4_col3" class="data row4 col3" >9928.9</td>
-      <td id="T_6b6d9_row4_col4" class="data row4 col4" >0.0</td>
-      <td id="T_6b6d9_row4_col5" class="data row4 col5" >4346.1</td>
+      <th id="T_771bf_level0_row4" class="row_heading level0 row4" >Johan Cruijff ArenA [coverage warning]</th>
+      <td id="T_771bf_row4_col0" class="data row4 col0" >11030.3</td>
+      <td id="T_771bf_row4_col1" class="data row4 col1" >9956.1</td>
+      <td id="T_771bf_row4_col2" class="data row4 col2" >9750.0</td>
+      <td id="T_771bf_row4_col3" class="data row4 col3" >9928.9</td>
+      <td id="T_771bf_row4_col4" class="data row4 col4" >0.0</td>
+      <td id="T_771bf_row4_col5" class="data row4 col5" >4346.1</td>
     </tr>
     <tr>
-      <th id="T_6b6d9_level0_row5" class="row_heading level0 row5" >Ziggo Dome</th>
-      <td id="T_6b6d9_row5_col0" class="data row5 col0" >10717.4</td>
-      <td id="T_6b6d9_row5_col1" class="data row5 col1" >9643.1</td>
-      <td id="T_6b6d9_row5_col2" class="data row5 col2" >9437.1</td>
-      <td id="T_6b6d9_row5_col3" class="data row5 col3" >9616.0</td>
-      <td id="T_6b6d9_row5_col4" class="data row5 col4" >4346.1</td>
-      <td id="T_6b6d9_row5_col5" class="data row5 col5" >0.0</td>
+      <th id="T_771bf_level0_row5" class="row_heading level0 row5" >Ziggo Dome [coverage warning]</th>
+      <td id="T_771bf_row5_col0" class="data row5 col0" >10717.4</td>
+      <td id="T_771bf_row5_col1" class="data row5 col1" >9643.1</td>
+      <td id="T_771bf_row5_col2" class="data row5 col2" >9437.1</td>
+      <td id="T_771bf_row5_col3" class="data row5 col3" >9616.0</td>
+      <td id="T_771bf_row5_col4" class="data row5 col4" >4346.1</td>
+      <td id="T_771bf_row5_col5" class="data row5 col5" >0.0</td>
     </tr>
   </tbody>
 </table>
@@ -2505,8 +2579,8 @@ storing every path requires much more memory than storing the distance matrix.</
 <section id="how-does-the-distance-matrix-computation-scale">
 <h2>How does the distance-matrix computation scale?<a class="headerlink" href="#how-does-the-distance-matrix-computation-scale" title="Link to this heading">#</a></h2>
 <p>The next cell records the machine and software for the <strong>current execution</strong>,
-including its CPU allocation. Colab hardware varies between sessions. The saved Amsterdam outputs in
-this local revision were measured on 24 September 2026 on an Intel Core Ultra 9
+including its CPU allocation. Colab hardware varies between sessions. The saved Amsterdam timing outputs in
+the archived run were measured on 24 September 2026 on an Intel Core Ultra 9
 285HX, 24 cores / 24 logical processors, 63.46 GiB RAM, 64-bit Windows 11 build
 26200, Python 3.14.6, Pandana 0.8, NetworkX 3.6.1, NumPy 2.5.3, pandas 3.0.5 and
 OSMnx 2.1.1. A completed Colab execution must replace these outputs and retain
@@ -2905,6 +2979,12 @@ once its network is ready. The dashed speedup curve charges the complete measure
 Pandana preprocessing cost to one matrix; this cost is paid once when the same
 network serves repeated requests. The spread over repetitions indicates observed
 timing variability, not a confidence interval. Preprocessing is measured once.</p>
+<p>In the recorded Amsterdam run, the query-only ratio falls from about <strong>143</strong>
+at <span class="math notranslate nohighlight">\(n=25\)</span> to <strong>16.6</strong> at <span class="math notranslate nohighlight">\(n=500\)</span> and <strong>8.7</strong> at <span class="math notranslate nohighlight">\(n=1000\)</span>; including Pandana
+setup gives about <strong>6.6</strong> at <span class="math notranslate nohighlight">\(n=1000\)</span>. On this fixed graph and over this range,
+NetworkX performs one full search per origin while Pandana answers all <span class="math notranslate nohighlight">\(n^2\)</span>
+pairs. Both also incur quadratic matrix/output work. These observations are
+not a general linear-versus-quadratic complexity comparison.</p>
 <p>Increasing <span class="math notranslate nohighlight">\(n\)</span> increases the number of pairs quadratically. Even fast routing
 does not remove the cost of representing the result: the final float64 matrix
 alone needs <span class="math notranslate nohighlight">\(8n^2\)</span> bytes. Pandana additionally constructs origin and destination
@@ -3076,6 +3156,13 @@ outside Colab, on an <strong>Intel Core Ultra 9 285HX (24 cores / 24 logical pro
 63.46 GiB RAM, Windows 11 build 26200</strong>, with <strong>Python 3.14.6, Pandana 0.8,
 NetworkX 3.6.1, NumPy 2.5.3, pandas 3.0.5, and OSMnx 2.1.1</strong>. They use the
 <a class="reference external" href="https://download.geofabrik.de/europe/netherlands-260923.osm.pbf">Geofabrik Netherlands PBF dated 23 September 2026</a>.
+That historical download URL returned HTTP 404 when checked on 27 October 2026.
+Its SHA-256 is preserved in the archived <code class="docutils literal notranslate"><span class="pre">source.json</span></code>, but the national PBF,
+derived graph arrays and reference matrices are not currently available in a
+public archive. The national figures therefore remain recorded results, not
+an exactly reproducible public-input experiment. Substituting today’s extract
+would create a new experiment. The separate Amsterdam graph and inputs are
+available in the saved archive linked at the end of this notebook.
 The source is OpenStreetMap contributors, ODbL 1.0. The walking graph has
 <strong>3,333,231 nodes</strong>, <strong>8,454,986 directed arcs</strong>, and <strong>33,821 connected components</strong>.
 We retain the entire graph; seed 2025 selects 1,000 distinct endpoints in the
@@ -3212,7 +3299,9 @@ table with its separate Windows provenance. It does not claim a new national run
 In Colab it downloads one ZIP file. Download the executed notebook from Colab’s
 File menu as well, so its plots and outputs are preserved with the measurements.</p>
 <p>The <a class="reference external" href="https://raw.githubusercontent.com/mobook/MO-book/main/notebooks/04/data/road-network-recorded-results.zip">saved local inputs and results</a> accompany the published
-Windows execution. New Colab sessions generate their own archive below.</p>
+Windows execution of the Amsterdam example, together with the recorded national
+table. They do not include the national graph or its reference matrices.
+New Colab sessions generate their own archive below.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">assert</span> <span class="n">environment</span><span class="p">[</span><span class="s2">"run_utc"</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">timings</span><span class="p">)</span> <span class="o">==</span> <span class="mi">6</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">sizes</span><span class="p">)</span>
@@ -3285,7 +3374,9 @@ lets us solve a TSP using real road-network distances: choose the locations,
 compute their distance matrix here, and supply it as the cost matrix to a TSP
 formulation there instead of using straight-line distances. Keep the same location
 ordering for the matrix rows and columns, and choose locations that are mutually
-reachable. A directed road network can produce asymmetric distances, so use a
+reachable, with adequate coverage and reasonable snaps at every place. Exclude
+the flagged venue estimates above until their missing coverage is repaired.
+A directed road network can produce asymmetric distances, so use a
 directed TSP formulation unless the matrix is symmetric.</p>
 </section>
 </section>

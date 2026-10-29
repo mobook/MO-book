@@ -568,16 +568,16 @@
             <nav aria-label="Page">
                 <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-and-optimization-workflows">Pyomo and Optimization Workflows</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functional-programming-and-monads">Functional Programming and Monads</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functional-programming-and-monad-inspired-containers">Functional Programming and Monad-inspired Containers</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pure-functions">Pure functions</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#function-composition">Function composition</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#map-filter-and-functools-reduce"><code class="docutils literal notranslate"><span class="pre">map</span></code>, <code class="docutils literal notranslate"><span class="pre">filter</span></code>, and <code class="docutils literal notranslate"><span class="pre">functools.reduce</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#why-monads">Why monads?</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-maybe-monad">The <strong>Maybe</strong> monad</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-failure-monad">The Failure monad</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#why-monad-inspired-containers">Why monad-inspired containers?</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-maybe-container">The <strong>Maybe</strong> container</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-failure-container">The Failure container</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-pyomo-monad">A Pyomo monad</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-pyomo-workflow-container">A Pyomo workflow container</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#import-pyomo-and-solvers">Import Pyomo and solvers</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#wrapping-pyomo-solvers-and-transformations-as-functions">Wrapping Pyomo solvers and transformations as functions</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomomonad"><strong>PyomoMonad</strong></a></li>
@@ -607,8 +607,8 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="functional-programming-with-pyomo">
 <h1>Functional Programming with Pyomo<a class="headerlink" href="#functional-programming-with-pyomo" title="Link to this heading">#</a></h1>
-<p>Pyomo, an abbreviation for <strong>Py</strong>thon <strong>O</strong>ptimization <strong>M</strong>odeling <strong>O</strong>bjects, might not appear to be a suitable choice for functional programming. Functional programming, after all, relies on pure, stateless functions that operate on immutable data. Pyomo’s workflow, instead, is based mutating a model’s state using transformations and solvers. These approaches would seem to be fundamentally incompatible at first glance.</p>
-<p>The objective of this notebook is to demonstrate how encapsulating Pyomo transformations and solvers within relatively pure functions, along with a simple <strong>PyomoMonad</strong>, can create a functional programming environment for optimization that supports a flexible and expressive optimization workflows.</p>
+<p>Pyomo, an abbreviation for <strong>Py</strong>thon <strong>O</strong>ptimization <strong>M</strong>odeling <strong>O</strong>bjects, might not appear to be a suitable choice for functional programming. Functional programming, after all, relies on pure, stateless functions that operate on immutable data. Pyomo’s workflow, instead, is based on mutating a model’s state using transformations and solvers. These approaches would seem to be fundamentally incompatible at first glance.</p>
+<p>The objective of this notebook is to demonstrate how encapsulating Pyomo transformations and solvers within relatively pure functions, along with a simple monad-inspired workflow container, <strong>PyomoMonad</strong>, can create a functional programming environment for optimization that supports flexible and expressive optimization workflows.</p>
 <p>See <a class="reference internal" href="installing-pyomo-and-solvers.html"><span class="std std-doc">Solvers used in this book</span></a> for installation, licensing and the differences between solver interfaces.</p>
 <section id="pyomo-and-optimization-workflows">
 <h2>Pyomo and Optimization Workflows<a class="headerlink" href="#pyomo-and-optimization-workflows" title="Link to this heading">#</a></h2>
@@ -618,20 +618,20 @@
 <li><p>A mathematical model is created from a problem statement and model of the available data.</p></li>
 <li><p>A Python code is prepared that can read relevant data and generates an instance of a Pyomo ConcreteModel.</p></li>
 <li><p>Optional transformations may be applied to convert the model into a solvable form.</p></li>
-<li><p>A solver is selected and applied to compute a solution and load into the model object.</p></li>
+<li><p>A solver is selected and applied to compute a solution and load it into the model object.</p></li>
 <li><p>A suitable solution report is extracted from the solved model object.</p></li>
 </ol>
-<p>Given the range of possible problem types, modeling choices, transformations, and solvers, this can be complex workflow with opportunities for generating exceptions, and the need to log and display intermediate results.</p>
-<p>This notebook implements the Pyomo workflow by applying abstractions from functional programming and category theory. A simple <strong>PyomoMonad</strong> is proposed to enable the utilization of pure functions at each stage, from model construction to the presentation of the optimal solution.</p>
+<p>Given the range of possible problem types, modeling choices, transformations, and solvers, this can be a complex workflow with opportunities for generating exceptions, and the need to log and display intermediate results.</p>
+<p>This notebook implements the Pyomo workflow by applying abstractions from functional programming and category theory. A simple monad-inspired workflow container, <strong>PyomoMonad</strong>, is proposed to enable the utilization of pure functions at each stage, from model construction to the presentation of the optimal solution.</p>
 </section>
-<section id="functional-programming-and-monads">
-<h2>Functional Programming and Monads<a class="headerlink" href="#functional-programming-and-monads" title="Link to this heading">#</a></h2>
+<section id="functional-programming-and-monad-inspired-containers">
+<h2>Functional Programming and Monad-inspired Containers<a class="headerlink" href="#functional-programming-and-monad-inspired-containers" title="Link to this heading">#</a></h2>
 <p>This section provides a brief and generic introduction to functional programming and monads. Readers familiar with these topics can skip forward to the section where these concepts are applied to the Pyomo workflow.</p>
 <section id="pure-functions">
 <h3>Pure functions<a class="headerlink" href="#pure-functions" title="Link to this heading">#</a></h3>
-<p>A characteristic feature of functional programming is the use of “pure” functions. Pure functions always returns the same result for identical arguments with no side effects such as changing non-local variables or call-by-reference arguments, printing, or data base interactions. Because there are no side effects, there is no change in state between invocations of a pure function. All results of calling a pure function are restricted to the result returned by the function.</p>
-<p>There are important practical advantages for pure function that result from from these restrictions. For example, pure functions are generally short with a single purpose, they can be executed concurrency because there is no common state, are easily tested, and allow recursion. These advantages make pure functions useful building blocks for complex applications.</p>
-<p>Python lambda functions are examples of pure functions. Here we create a series of three lambda functions:</p>
+<p>A characteristic feature of functional programming is the use of “pure” functions. Pure functions always return the same result for identical arguments with no side effects such as changing non-local variables or call-by-reference arguments, printing, or database interactions. Because there are no side effects, there is no change in state between invocations of a pure function. All results of calling a pure function are restricted to the result returned by the function.</p>
+<p>There are important practical advantages for pure functions that result from these restrictions. For example, pure functions are generally short with a single purpose, they can be executed concurrently because there is no common state, are easily tested, and allow recursion. These advantages make pure functions useful building blocks for complex applications.</p>
+<p>The following three lambda functions are pure:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">trim</span></code> that strips white space from a string,</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">upper</span></code> that converts a string to upper case,</p></li>
@@ -732,7 +732,7 @@ GET OFF MY LAWN!
 </section>
 <section id="map-filter-and-functools-reduce">
 <h3><code class="docutils literal notranslate"><span class="pre">map</span></code>, <code class="docutils literal notranslate"><span class="pre">filter</span></code>, and <code class="docutils literal notranslate"><span class="pre">functools.reduce</span></code><a class="headerlink" href="#map-filter-and-functools-reduce" title="Link to this heading">#</a></h3>
-<p>The functions <code class="docutils literal notranslate"><span class="pre">map</span></code>, <code class="docutils literal notranslate"><span class="pre">filter</span></code>, and <code class="docutils literal notranslate"><span class="pre">functools.reduce</span></code> extend the utility of pure functions. Note that <code class="docutils literal notranslate"><span class="pre">map</span></code> actually returns an iterator, so <code class="docutils literal notranslate"><span class="pre">list</span></code> is required to apply the function to every element of the data given in <code class="docutils literal notranslate"><span class="pre">map</span></code>.</p>
+<p>The functions <code class="docutils literal notranslate"><span class="pre">map</span></code>, <code class="docutils literal notranslate"><span class="pre">filter</span></code>, and <code class="docutils literal notranslate"><span class="pre">functools.reduce</span></code> extend the utility of pure functions. The function <code class="docutils literal notranslate"><span class="pre">map</span></code> returns an iterator. Here <code class="docutils literal notranslate"><span class="pre">list</span></code> consumes that iterator, materializing and displaying all results. A loop or another consumer could also evaluate the iterator.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">enthuse</span><span class="p">,</span> <span class="p">[</span><span class="s2">"hello"</span><span class="p">,</span> <span class="s2">"go away"</span><span class="p">,</span> <span class="s2">" get off my lawn"</span><span class="p">]))</span>
@@ -745,7 +745,7 @@ GET OFF MY LAWN!
 </div>
 </div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">reduce</span></code> applies a function of two values recursively to a tuple, list, or iterator to reduce it to a single cumulative value. This provides a convenient means to construct of composition of two or more functions.</p>
+<p><code class="docutils literal notranslate"><span class="pre">reduce</span></code> applies a function of two values recursively to a tuple, list, or iterator to reduce it to a single cumulative value. This provides a convenient means to construct a composition of two or more functions.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce</span>
@@ -762,9 +762,9 @@ GET OFF MY LAWN!
 </div>
 </div>
 </section>
-<section id="why-monads">
-<h3>Why monads?<a class="headerlink" href="#why-monads" title="Link to this heading">#</a></h3>
-<p>Composing pure functions is a highly expressive and flexible style of programming, but consider what happens when something happens that causes a change of state. In the following cell, for example, an exception is generated when a composite function is applied to an input with the wrong type.</p>
+<section id="why-monad-inspired-containers">
+<h3>Why monad-inspired containers?<a class="headerlink" href="#why-monad-inspired-containers" title="Link to this heading">#</a></h3>
+<p>Composing pure functions is a highly expressive and flexible style of programming, but consider what happens when something causes a change of state. In the following cell, for example, an exception is generated when a composite function is applied to an input with the wrong type.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># this will produce an error message</span>
@@ -781,15 +781,16 @@ GET OFF MY LAWN!
 </div>
 </div>
 </div>
-<p>This may not be a desirable result for a more complex workflow. This is where monads fit in.</p>
-<p>A monad wraps the inputs and outputs of a pure function into a structure that can perform additional computation. There two basic methods for monads:</p>
+<p>This may not be a desirable result for a more complex workflow. This motivates the monad-inspired containers below.</p>
+<p>A monad wraps the inputs and outputs of a pure function into a structure that can perform additional computation. There are two basic methods for monads:</p>
 <ul class="simple">
 <li><p><strong>unit</strong> which wraps a value into a monad.</p></li>
-<li><p><strong>bind</strong> which chains pure functions together.</p></li>
+<li><p><strong>bind</strong>, which applies a function that itself returns a container, so that such functions can be chained.</p></li>
 </ul>
+<p>These examples are monad-inspired workflow containers. Their <code class="docutils literal notranslate"><span class="pre">bind</span></code> methods accept functions returning plain values and wrap the results. Binding the container constructor therefore nests containers; this teaching API is not claimed to satisfy the usual monad identity law.</p>
 </section>
-<section id="the-maybe-monad">
-<h3>The <strong>Maybe</strong> monad<a class="headerlink" href="#the-maybe-monad" title="Link to this heading">#</a></h3>
+<section id="the-maybe-container">
+<h3>The <strong>Maybe</strong> container<a class="headerlink" href="#the-maybe-container" title="Link to this heading">#</a></h3>
 <p>The following cell implements a simple <strong>Maybe</strong> container for a value that may or may not be present. A successful <code class="docutils literal notranslate"><span class="pre">bind</span></code> wraps the function’s result. If the function raises an exception, <code class="docutils literal notranslate"><span class="pre">bind</span></code> returns a container with <code class="docutils literal notranslate"><span class="pre">value=None</span></code> and <code class="docutils literal notranslate"><span class="pre">contains_value=False</span></code>; later binds pass that failure along without calling their functions. The flag distinguishes a missing value from a successful function that happens to return <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -828,7 +829,7 @@ GET OFF MY LAWN!
 </div>
 </div>
 </div>
-<p>The important thing to notice is that the pure functions previously defined can be applied and composed with no changes. All of the boilerplate code need to check for errors has been encapsulated in the <strong>Maybe</strong> monad.</p>
+<p>The important thing to notice is that the pure functions previously defined can be applied and composed with no changes. All of the boilerplate code needed to check for errors has been encapsulated in the <strong>Maybe</strong> container.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Maybe</span><span class="p">(</span><span class="s2">" get off my lawn"</span><span class="p">)</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">trim</span><span class="p">)</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">upper</span><span class="p">)</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">exclaim</span><span class="p">)()</span>
@@ -841,7 +842,7 @@ GET OFF MY LAWN!
 </div>
 </div>
 </div>
-<p>Why do this? One benefit of <strong>Maybe</strong> is that we now have a way to avoid or capture error messages produced when from a composition of functions.</p>
+<p>Why do this? One benefit of <strong>Maybe</strong> is that we now have a way to avoid or capture error messages produced by a composition of functions.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># this will not generate an error</span>
@@ -851,9 +852,9 @@ GET OFF MY LAWN!
 </div>
 </div>
 </section>
-<section id="the-failure-monad">
-<h3>The Failure monad<a class="headerlink" href="#the-failure-monad" title="Link to this heading">#</a></h3>
-<p>The <strong>Failure</strong> monad is designed to handle exceptions. Without modifying any of the previously defined functions, <strong>Failure</strong> captures the first exception and pushes it to the end of a chain of calculations. All of the boilerplate is in the monad, not the functions.</p>
+<section id="the-failure-container">
+<h3>The Failure container<a class="headerlink" href="#the-failure-container" title="Link to this heading">#</a></h3>
+<p>The <strong>Failure</strong> container is designed to handle exceptions. Without modifying any of the previously defined functions, <strong>Failure</strong> captures the first exception and pushes it to the end of a chain of calculations. All of the boilerplate is in the container, not the functions.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">Failure</span><span class="p">:</span>
@@ -905,8 +906,8 @@ GET OFF MY LAWN!
 </div>
 </section>
 </section>
-<section id="a-pyomo-monad">
-<h2>A Pyomo monad<a class="headerlink" href="#a-pyomo-monad" title="Link to this heading">#</a></h2>
+<section id="a-pyomo-workflow-container">
+<h2>A Pyomo workflow container<a class="headerlink" href="#a-pyomo-workflow-container" title="Link to this heading">#</a></h2>
 <p>We can use the same idea to organize a Pyomo workflow. A container holds a model, a status and an optional reporting function. Each <code class="docutils literal notranslate"><span class="pre">bind</span></code> applies one step to the current model and wraps the result. If a step raises an exception, the container records it and skips subsequent steps, so an unsuccessful solve does not flow into a report that expects solution values.</p>
 <p>The implementation has three parts:</p>
 <ul class="simple">
@@ -936,7 +937,7 @@ GET OFF MY LAWN!
 </section>
 <section id="wrapping-pyomo-solvers-and-transformations-as-functions">
 <h3>Wrapping Pyomo solvers and transformations as functions<a class="headerlink" href="#wrapping-pyomo-solvers-and-transformations-as-functions" title="Link to this heading">#</a></h3>
-<p>Each wrapper returns a function that accepts a model, clones it, applies the requested operation and returns the clone. With no operation specified, it returns an unchanged clone. The solver wrapper also checks termination before returning a solution; otherwise, the monad captures the failure instead of passing an unsuccessful result to the next step.</p>
+<p>Each wrapper returns a function that accepts a model, clones it, applies the requested operation and returns the clone. With no operation specified, it returns an unchanged clone. The solver wrapper also checks termination before returning a solution; otherwise, the container captures the failure instead of passing an unsuccessful result to the next step.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># given a string specification, returns a solver created by pyomo.SolverFactory</span>
@@ -980,22 +981,22 @@ GET OFF MY LAWN!
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">PyomoMonad</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A simple monad class for handling Pyomo operations with error handling.</span>
+<span class="w">    </span><span class="sd">"""A monad-inspired workflow container for Pyomo operations and errors.</span>
 <span class="sd">    </span>
 <span class="sd">    This class is designed to simplify Pyomo operations by providing a way to</span>
 <span class="sd">    handle errors and chaining operations together. The bind method is used to</span>
-<span class="sd">    chain operations, and the __call__ method is used to execute the monad.</span>
+<span class="sd">    chain operations, and the __call__ method is used to call the container.</span>
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">effect</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Initialize the PyomoMonad instance.</span>
 <span class="sd">        </span>
-<span class="sd">        :param value: The value to be processed by the monad</span>
+<span class="sd">        :param value: The value to be processed by the container</span>
 <span class="sd">        :type value: Any</span>
 <span class="sd">        :param effect: A function to be applied on the value</span>
 <span class="sd">        :type effect: callable, optional</span>
-<span class="sd">        :param status: The current status of the monad, used for error handling</span>
+<span class="sd">        :param status: The current status of the container, used for error handling</span>
 <span class="sd">        :type status: Any, optional</span>
 <span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
@@ -1003,9 +1004,9 @@ GET OFF MY LAWN!
         <span class="bp">self</span><span class="o">.</span><span class="n">effect</span> <span class="o">=</span> <span class="n">effect</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">bind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Bind a function to the current monad instance.</span>
+<span class="w">        </span><span class="sd">"""Bind a function to the current container instance.</span>
 <span class="sd">        </span>
-<span class="sd">        :param func: The function to be bound to the current monad</span>
+<span class="sd">        :param func: The function to be bound to the current container</span>
 <span class="sd">        :type func: callable</span>
 <span class="sd">        :return: A new PyomoMonad instance</span>
 <span class="sd">        :rtype: PyomoMonad</span>
@@ -1021,9 +1022,9 @@ GET OFF MY LAWN!
             <span class="k">return</span> <span class="n">PyomoMonad</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">value</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">e</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="n">status</span><span class="o">=</span><span class="n">e</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Execute the monad by calling its effect if it exists, or return its value.</span>
+<span class="w">        </span><span class="sd">"""Run the reporting effect, or return the wrapped value.</span>
 <span class="sd">        </span>
-<span class="sd">        :return: The result of executing the monad's effect or its value</span>
+<span class="sd">        :return: The result of executing the container's effect or its value</span>
 <span class="sd">        :rtype: Any</span>
 <span class="sd">        """</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">effect</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1034,7 +1035,7 @@ GET OFF MY LAWN!
     <span class="k">def</span><span class="w"> </span><span class="fm">__rshift__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Implement the '&gt;&gt;' operator for chaining operations.</span>
 <span class="sd">        </span>
-<span class="sd">        :param func: The function to be bound to the current monad</span>
+<span class="sd">        :param func: The function to be bound to the current container</span>
 <span class="sd">        :type func: callable</span>
 <span class="sd">        :return: A new PyomoMonad instance</span>
 <span class="sd">        :rtype: PyomoMonad</span>
@@ -1146,7 +1147,7 @@ dtype: float64
 \[
 A  \stackrel{k_1}{\longrightarrow} B  \stackrel{k_2}{\longrightarrow} C
 \]</div>
-<p>that take place in batch reactor under isothermal conditions. The feed initially consists of pure <span class="math notranslate nohighlight">\(A\)</span>. The goal is to maximize the production of <span class="math notranslate nohighlight">\(B\)</span>. Ultimately it is necessary to account for the turnaround time needed between successive batches, but as a first attempt we will settle for finding the maximum achievable concentration of <span class="math notranslate nohighlight">\(B\)</span>, and time required to achieve that concentration.</p>
+<p>that take place in a batch reactor under isothermal conditions. The feed initially consists of pure <span class="math notranslate nohighlight">\(A\)</span>. The goal is to maximize the production of <span class="math notranslate nohighlight">\(B\)</span>. Ultimately it is necessary to account for the turnaround time needed between successive batches, but as a first attempt we will settle for finding the maximum achievable concentration of <span class="math notranslate nohighlight">\(B\)</span>, and time required to achieve that concentration.</p>
 </section>
 <section id="mathematical-model">
 <h3>Mathematical model<a class="headerlink" href="#mathematical-model" title="Link to this heading">#</a></h3>
@@ -1355,16 +1356,16 @@ b(tf) = 0.669
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomo-and-optimization-workflows">Pyomo and Optimization Workflows</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functional-programming-and-monads">Functional Programming and Monads</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functional-programming-and-monad-inspired-containers">Functional Programming and Monad-inspired Containers</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pure-functions">Pure functions</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#function-composition">Function composition</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#map-filter-and-functools-reduce"><code class="docutils literal notranslate"><span class="pre">map</span></code>, <code class="docutils literal notranslate"><span class="pre">filter</span></code>, and <code class="docutils literal notranslate"><span class="pre">functools.reduce</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#why-monads">Why monads?</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-maybe-monad">The <strong>Maybe</strong> monad</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-failure-monad">The Failure monad</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#why-monad-inspired-containers">Why monad-inspired containers?</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-maybe-container">The <strong>Maybe</strong> container</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-failure-container">The Failure container</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-pyomo-monad">A Pyomo monad</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-pyomo-workflow-container">A Pyomo workflow container</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#import-pyomo-and-solvers">Import Pyomo and solvers</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#wrapping-pyomo-solvers-and-transformations-as-functions">Wrapping Pyomo solvers and transformations as functions</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyomomonad"><strong>PyomoMonad</strong></a></li>

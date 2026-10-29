@@ -569,8 +569,8 @@
             <nav aria-label="Page">
                 <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-statment">Problem Statment</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-lower-and-upper-bounds-on-shelf-width">A lower and upper bounds on shelf width</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-statement">Problem Statement</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lower-and-upper-bounds-on-shelf-width">Lower and upper bounds on shelf width</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling-strategy">Modeling Strategy</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#version-1-a-pyomo-model-to-line-up-the-boxes">Version 1: A Pyomo model to line up the boxes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#version-2-rotating-boxes">Version 2: Rotating boxes</a></li>
@@ -590,7 +590,7 @@
   <section class="tex2jax_ignore mathjax_ignore" id="extra-material-strip-packing">
 <span id="index-2"></span><span id="index-1"></span><span id="index-0"></span><h1>Extra material: Strip packing<a class="headerlink" href="#extra-material-strip-packing" title="Link to this heading">#</a></h1>
 <p><em>Strip packing</em> (SP) refers to the problem of packing rectangles onto a 2-dimensional strip of fixed width.</p>
-<p>Many variants of this problem have been studied, the most basic is the pack a set of rectangles onto the shortest possible strip without rotation. Other variants allow rotation of the rectangles, require a packing that allows cutting the rectangles out of the strip with edge-to-edge cuts (guillotine packing), extends the strip to three dimensions, or extends the packing to non-rectangular shapes.</p>
+<p>Many variants of this problem have been studied, the most basic is to pack a set of rectangles onto the shortest possible strip without rotation. Other variants allow rotation of the rectangles, require a packing that allows cutting the rectangles out of the strip with edge-to-edge cuts (guillotine packing), extends the strip to three dimensions, or extends the packing to non-rectangular shapes.</p>
 <p>The extensive study of strip packing problems is motivated by their many industrial applications including</p>
 <ul class="simple">
 <li><p>placement of macro cells in semiconductor layouts,</p></li>
@@ -600,7 +600,7 @@
 <li><p>planning and scheduling <span class="math notranslate nohighlight">\(CO_2\)</span> utilization for enhanced oil recovery,</p></li>
 <li><p>scheduling allocations of a common resource.</p></li>
 </ul>
-<p>Finding optimal solutions to strip packing problems is combinatorially difficult. Strip packing belongs to a class of problems called “NP-hard” for which known solution algorithms require effort that grows exponentially with problem size. For that reason much research on strip packing has been directed towards practical heuristic algorithms for finding good, though not optimal, for industrial applications.</p>
+<p>Finding optimal solutions to strip packing problems is combinatorially difficult. Strip packing belongs to a class of problems called “NP-hard” for which no polynomial-time exact algorithm is known for the general problem. For that reason much research on strip packing has been directed towards practical heuristic algorithms for finding good, though not optimal, solutions for industrial applications.</p>
 <p>In this notebook, we illustrate Pyomo models to find optimal solutions to smaller but economically relevant problems. We use the problem of packing boxes onto the shortest possible shelf of fixed depth.</p>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Link to this heading">#</a></h2>
@@ -619,14 +619,17 @@
 <span class="n">SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
  
 <span class="k">assert</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">"Solver </span><span class="si">{</span><span class="n">solver</span><span class="si">}</span><span class="s2"> is not available."</span>
+
+<span class="c1"># Limit big-M leakage from nearly integral rotation indicators.</span>
+<span class="n">SOLVER</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">"mip_feasibility_tolerance"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-9</span>
 </pre></div>
 </div>
 </div>
 </div>
 </section>
-<section id="problem-statment">
-<h2>Problem Statment<a class="headerlink" href="#problem-statment" title="Link to this heading">#</a></h2>
-<p>Assume you are given a collection of <span class="math notranslate nohighlight">\(N\)</span> boxes, whose dimensions are <span class="math notranslate nohighlight">\((w_i, d_i)\)</span> for <span class="math notranslate nohighlight">\(i=0, \ldots, N-1\)</span>. These boxes are to placed on shelf of depth <span class="math notranslate nohighlight">\(D\)</span>. The boxes can be rotated, if needed, to fit on the shelf. How wide of a shelf is needed?</p>
+<section id="problem-statement">
+<h2>Problem Statement<a class="headerlink" href="#problem-statement" title="Link to this heading">#</a></h2>
+<p>Assume you are given a collection of <span class="math notranslate nohighlight">\(N\)</span> boxes, whose dimensions are <span class="math notranslate nohighlight">\((w_i, d_i)\)</span> for <span class="math notranslate nohighlight">\(i=0, \ldots, N-1\)</span>. These boxes are to be placed on a shelf of depth <span class="math notranslate nohighlight">\(D\)</span>. The boxes can be rotated, if needed, to fit on the shelf. How wide of a shelf is needed?</p>
 <p>We will start by creating a function to generate a table of <span class="math notranslate nohighlight">\(N\)</span> boxes. For concreteness, we assume the dimensions are in millimeters.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -651,7 +654,7 @@
 <span class="n">boxes</span> <span class="o">=</span> <span class="n">generate_boxes</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
 <span class="n">display</span><span class="p">(</span><span class="n">boxes</span><span class="p">)</span>
 
-<span class="c1"># set shelf width as a multiple of the deepest box</span>
+<span class="c1"># set shelf depth as a multiple of the deepest box</span>
 <span class="n">D</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">boxes</span><span class="p">[</span><span class="s2">"d"</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Shelf Depth = "</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
 </pre></div>
@@ -729,13 +732,13 @@
 </div>
 </div>
 </section>
-<section id="a-lower-and-upper-bounds-on-shelf-width">
-<h2>A lower and upper bounds on shelf width<a class="headerlink" href="#a-lower-and-upper-bounds-on-shelf-width" title="Link to this heading">#</a></h2>
+<section id="lower-and-upper-bounds-on-shelf-width">
+<h2>Lower and upper bounds on shelf width<a class="headerlink" href="#lower-and-upper-bounds-on-shelf-width" title="Link to this heading">#</a></h2>
 <p>A lower bound on the shelf width can be obtained by dividing the total area required to place all boxes on the shelf by the shelf depth. The area of box <span class="math notranslate nohighlight">\(i\)</span> is <span class="math notranslate nohighlight">\(w_i d_i\)</span>, therefore the lower bound is given by</p>
 <div class="math notranslate nohighlight">
 \[W_{lb} = \frac{1}{D}\sum_{i=0}^{N-1} w_i d_i.\]</div>
-<p>An upper bound on the shelf width <span class="math notranslate nohighlight">\(W_{ub}\)</span> can be obtained aligning the boxes along the front of the shelf without rotation. To set the stage for later calculations, the position of box <span class="math notranslate nohighlight">\(i\)</span> on the shelf is defined by the coordinates <span class="math notranslate nohighlight">\((x_{i,1}, y_{i,1})\)</span> and <span class="math notranslate nohighlight">\((x_{i,2}, y_{i,2})\)</span>, corresponding to the lower left corner and the upper right corner, respectively.</p>
-<p>The two set of coordinates of box <span class="math notranslate nohighlight">\(i\)</span> are linked to the width <span class="math notranslate nohighlight">\(w_i\)</span> and depth <span class="math notranslate nohighlight">\(d_i\)</span> by the following equations:</p>
+<p>An upper bound on the shelf width <span class="math notranslate nohighlight">\(W_{ub}\)</span> can be obtained by aligning the boxes along the front of the shelf without rotation. To set the stage for later calculations, the position of box <span class="math notranslate nohighlight">\(i\)</span> on the shelf is defined by the coordinates <span class="math notranslate nohighlight">\((x_{i,1}, y_{i,1})\)</span> and <span class="math notranslate nohighlight">\((x_{i,2}, y_{i,2})\)</span>, corresponding to the lower left corner and the upper right corner, respectively.</p>
+<p>The two sets of coordinates of box <span class="math notranslate nohighlight">\(i\)</span> are linked to the width <span class="math notranslate nohighlight">\(w_i\)</span> and depth <span class="math notranslate nohighlight">\(d_i\)</span> by the following equations:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -744,7 +747,7 @@ y_{i,2} &amp; = y_{i,1} + d_i
 \end{align*}
 \end{split}\]</div>
 <p>An additional binary variable <span class="math notranslate nohighlight">\(r_i\)</span> designates whether the rectangle has been rotated, with <span class="math notranslate nohighlight">\(r_i=0\)</span> denoting no rotation and <span class="math notranslate nohighlight">\(r_i=1\)</span> denoting a 90 degree rotation (all other rotations yield one of these two configurations).</p>
-<p>The following cell create and display a data frame showing the bounding boxes and performs calculations to obtain the trivial box arrangement, as well as the lower and upper bounds.</p>
+<p>The following cell creates and displays a data frame showing the bounding boxes and performs calculations to obtain the trivial box arrangement, as well as the lower and upper bounds.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">pack_boxes_V0</span><span class="p">(</span><span class="n">boxes</span><span class="p">):</span>
@@ -771,7 +774,7 @@ y_{i,2} &amp; = y_{i,1} + d_i
             <span class="n">h</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span>
             <span class="n">c</span> <span class="o">=</span> <span class="s2">"r"</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span>
-            <span class="n">Rectangle</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"k"</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
+            <span class="n">Rectangle</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"k"</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="n">xc</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">w</span> <span class="o">/</span> <span class="mi">2</span>
         <span class="n">yc</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="n">h</span> <span class="o">/</span> <span class="mi">2</span>
@@ -789,7 +792,7 @@ y_{i,2} &amp; = y_{i,1} + d_i
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Upper bound on shelf width = </span><span class="si">{</span><span class="n">W_ub</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Optimal shelf width = </span><span class="si">{</span><span class="n">W</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.1</span> <span class="o">*</span> <span class="n">soln</span><span class="p">[</span><span class="s2">"w"</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.1</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">W_ub</span> <span class="k">if</span> <span class="n">W_ub</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">W</span><span class="p">))</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">D</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"shelf depth $D$"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">W_lb</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"lower bound $W_</span><span class="si">{lb}</span><span class="s2">$"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span><span class="p">)</span>
@@ -797,7 +800,7 @@ y_{i,2} &amp; = y_{i,1} + d_i
         <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"upper bound $W_</span><span class="si">{ub}</span><span class="s2">$"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span>
-            <span class="n">W_ub</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"upper bound $W_</span><span class="si">{ub}</span><span class="s2">$"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span>
+            <span class="n">W_ub</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"upper bound $W_</span><span class="si">{ub}</span><span class="s2">$"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span>
         <span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"optimal solution $W$"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"-"</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[</span><span class="n">D</span><span class="p">,</span> <span class="n">D</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
@@ -811,7 +814,7 @@ y_{i,2} &amp; = y_{i,1} + d_i
 
 
 <span class="n">soln</span> <span class="o">=</span> <span class="n">pack_boxes_V0</span><span class="p">(</span><span class="n">boxes</span><span class="p">)</span>
-<span class="n">display</span><span class="p">(</span><span class="n">soln</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">soln</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">6</span><span class="p">))</span>
 <span class="n">show_boxes</span><span class="p">(</span><span class="n">soln</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -928,26 +931,28 @@ y_{i,2} &amp; = y_{i,1} + d_i
   </tbody>
 </table>
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Lower bound on shelf width = 370
-Upper bound on shelf width = 1125
 </pre></div>
 </div>
-<img alt="../../_images/88517953f6c7223143c5568bc55b341459bb9bc4914ecf5303f3efe1c8fea9f5.png" src="../../_images/88517953f6c7223143c5568bc55b341459bb9bc4914ecf5303f3efe1c8fea9f5.png" />
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Upper bound on shelf width = 1125
+</pre></div>
+</div>
+<img alt="../../_images/a32d92d6b70c6e794d34380c125b91b07efa0894ab54aa404c111ea9d097ddbb.png" src="../../_images/a32d92d6b70c6e794d34380c125b91b07efa0894ab54aa404c111ea9d097ddbb.png" />
 </div>
 </div>
 </section>
 <section id="modeling-strategy">
 <h2>Modeling Strategy<a class="headerlink" href="#modeling-strategy" title="Link to this heading">#</a></h2>
-<p>At this point, one may have some ideas on how to efficiently pack boxes on the shelf. For example, one might start by placing the larger boxes to left edge of the shelf, then rotating and placing the smaller boxes with a goal of minimized the occupied with of the shelf.</p>
+<p>At this point, one may have some ideas on how to efficiently pack boxes on the shelf. For example, one might start by placing the larger boxes to left edge of the shelf, then rotating and placing the smaller boxes with a goal of minimizing the occupied width of the shelf.</p>
 <p>Optimization takes a different, less algorithmic approach. The strategy is to describe constraints that must be satisfied for any solution to the problem, then let the solver find the values of the decision variables that minimizes the shelf width. The constraints include:</p>
 <ul class="simple">
 <li><p>The bounding boxes must fit within the boundaries of the shelf, and to the left of vertical line drawn at <span class="math notranslate nohighlight">\(x = W\)</span>, where the shelf width <span class="math notranslate nohighlight">\(W\)</span> is a decision variable.</p></li>
 <li><p>The boxes can be rotated 90 degrees.</p></li>
-<li><p>The boxes must not overlap in either the <span class="math notranslate nohighlight">\(x\)</span> or <span class="math notranslate nohighlight">\(y\)</span> dimensions.</p></li>
+<li><p>Each pair of boxes must be separated along at least one axis, so their interiors do not overlap.</p></li>
 </ul>
 </section>
 <section id="version-1-a-pyomo-model-to-line-up-the-boxes">
 <h2>Version 1: A Pyomo model to line up the boxes<a class="headerlink" href="#version-1-a-pyomo-model-to-line-up-the-boxes" title="Link to this heading">#</a></h2>
-<p>For this first Pyomo model we look to reproduce a lineup of the boxes on the shelf. In the case the problem is to minimize <span class="math notranslate nohighlight">\(W\)</span> where</p>
+<p>For this first Pyomo model we look to reproduce a lineup of the boxes on the shelf. In this case the problem is to minimize <span class="math notranslate nohighlight">\(W\)</span> where</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -959,7 +964,7 @@ Upper bound on shelf width = 1125
 \end{align*}
 \end{split}\]</div>
 <p>This first model does not consider rotation or placement of the boxes in the <span class="math notranslate nohighlight">\(y\)</span> dimension, so those decisions are not included.</p>
-<p>The disjunctive constraints specify relationships between <span class="math notranslate nohighlight">\(x_{i,1}\)</span> and <span class="math notranslate nohighlight">\(x_{i,2}\)</span> to prevent overlapping positions of boxes on the shelf. The disjunctions require that either that box <span class="math notranslate nohighlight">\(i\)</span> is to the left of box <span class="math notranslate nohighlight">\(j\)</span> or that box <span class="math notranslate nohighlight">\(j\)</span> is the left of box <span class="math notranslate nohighlight">\(i\)</span>. This is specified as an exclusive or disjunction because both conditions can be true at the same time. This disjunctive relationship must hold for every pair of boxes that are different from each other, but specifying <span class="math notranslate nohighlight">\(i\)</span> doesn’t overlap with <span class="math notranslate nohighlight">\(j\)</span> assures <span class="math notranslate nohighlight">\(j\)</span> doesn’t overlap <span class="math notranslate nohighlight">\(i\)</span>. So it is only necessary to specify disjunctions for all pairs <span class="math notranslate nohighlight">\(i, j\)</span> where <span class="math notranslate nohighlight">\(i &lt; j\)</span>.</p>
+<p>The disjunctive constraints specify relationships between <span class="math notranslate nohighlight">\(x_{i,1}\)</span> and <span class="math notranslate nohighlight">\(x_{i,2}\)</span> to prevent overlapping positions of boxes on the shelf. The disjunctions require that either box <span class="math notranslate nohighlight">\(i\)</span> is to the left of box <span class="math notranslate nohighlight">\(j\)</span> or that box <span class="math notranslate nohighlight">\(j\)</span> is to the left of box <span class="math notranslate nohighlight">\(i\)</span>. This is specified as an exclusive or disjunction because both conditions cannot be true at the same time for boxes of positive width. This disjunctive relationship must hold for every pair of boxes that are different from each other, but specifying <span class="math notranslate nohighlight">\(i\)</span> doesn’t overlap with <span class="math notranslate nohighlight">\(j\)</span> assures <span class="math notranslate nohighlight">\(j\)</span> doesn’t overlap <span class="math notranslate nohighlight">\(i\)</span>. So it is only necessary to specify disjunctions for all pairs <span class="math notranslate nohighlight">\(i, j\)</span> where <span class="math notranslate nohighlight">\(i &lt; j\)</span>.</p>
 <p>The corresponding Pyomo model is a direct implementation of this model. One feature of the implementation is the use of a set <code class="docutils literal notranslate"><span class="pre">m.PAIRS</span></code> to identify the disjunctions. Defining this set simplifies coding for the corresponding disjunction.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -993,7 +998,8 @@ Upper bound on shelf width = 1125
         <span class="k">return</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
 
     <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">"gdp.bigm"</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="n">soln</span> <span class="o">=</span> <span class="n">boxes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"x1"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
@@ -1006,7 +1012,7 @@ Upper bound on shelf width = 1125
 
 
 <span class="n">m</span><span class="p">,</span> <span class="n">soln</span><span class="p">,</span> <span class="n">W_ub</span> <span class="o">=</span> <span class="n">pack_boxes_V1</span><span class="p">(</span><span class="n">boxes</span><span class="p">)</span>
-<span class="n">display</span><span class="p">(</span><span class="n">soln</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">soln</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">6</span><span class="p">))</span>
 <span class="n">show_boxes</span><span class="p">(</span><span class="n">soln</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1044,8 +1050,8 @@ Upper bound on shelf width = 1125
       <th>0</th>
       <td>138</td>
       <td>71</td>
-      <td>986.999999</td>
-      <td>1124.999999</td>
+      <td>280.0</td>
+      <td>418.0</td>
       <td>0</td>
       <td>71</td>
       <td>0</td>
@@ -1054,8 +1060,8 @@ Upper bound on shelf width = 1125
       <th>1</th>
       <td>154</td>
       <td>117</td>
-      <td>186.000000</td>
-      <td>340.000000</td>
+      <td>0.0</td>
+      <td>154.0</td>
       <td>0</td>
       <td>117</td>
       <td>0</td>
@@ -1064,8 +1070,8 @@ Upper bound on shelf width = 1125
       <th>2</th>
       <td>139</td>
       <td>176</td>
-      <td>656.999999</td>
-      <td>795.999999</td>
+      <td>735.0</td>
+      <td>874.0</td>
       <td>0</td>
       <td>176</td>
       <td>0</td>
@@ -1074,8 +1080,8 @@ Upper bound on shelf width = 1125
       <th>3</th>
       <td>121</td>
       <td>175</td>
-      <td>340.000000</td>
-      <td>461.000000</td>
+      <td>614.0</td>
+      <td>735.0</td>
       <td>0</td>
       <td>175</td>
       <td>0</td>
@@ -1084,8 +1090,8 @@ Upper bound on shelf width = 1125
       <th>4</th>
       <td>196</td>
       <td>117</td>
-      <td>461.000000</td>
-      <td>657.000000</td>
+      <td>418.0</td>
+      <td>614.0</td>
       <td>0</td>
       <td>117</td>
       <td>0</td>
@@ -1094,8 +1100,8 @@ Upper bound on shelf width = 1125
       <th>5</th>
       <td>186</td>
       <td>85</td>
-      <td>0.000000</td>
-      <td>186.000000</td>
+      <td>874.0</td>
+      <td>1060.0</td>
       <td>0</td>
       <td>85</td>
       <td>0</td>
@@ -1104,8 +1110,8 @@ Upper bound on shelf width = 1125
       <th>6</th>
       <td>126</td>
       <td>99</td>
-      <td>795.999999</td>
-      <td>921.999999</td>
+      <td>154.0</td>
+      <td>280.0</td>
       <td>0</td>
       <td>99</td>
       <td>0</td>
@@ -1114,8 +1120,8 @@ Upper bound on shelf width = 1125
       <th>7</th>
       <td>65</td>
       <td>85</td>
-      <td>921.999999</td>
-      <td>986.999999</td>
+      <td>1060.0</td>
+      <td>1125.0</td>
       <td>0</td>
       <td>85</td>
       <td>0</td>
@@ -1127,7 +1133,7 @@ Upper bound on shelf width = 1125
 Optimal shelf width = 1125
 </pre></div>
 </div>
-<img alt="../../_images/198e299bebba19e7ac655895dfbe408e6b852715d6ea7803c14239798b8cd41e.png" src="../../_images/198e299bebba19e7ac655895dfbe408e6b852715d6ea7803c14239798b8cd41e.png" />
+<img alt="../../_images/0539722ad61094bc024471344a07125b1f24efb1989e213f1eaf69882b6219f1.png" src="../../_images/0539722ad61094bc024471344a07125b1f24efb1989e213f1eaf69882b6219f1.png" />
 </div>
 </div>
 <p>The solution that we found is not better than the upper bound. This is not surprising, since we did not consider rotation of the boxes.</p>
@@ -1142,7 +1148,7 @@ Optimal shelf width = 1125
 \text{s.t} \quad
 &amp; x_{i, 2} \leq W  &amp; \forall \, i\\
 &amp; x_{i, 1}, x_{i, 2} \geq 0  &amp; \forall \, i \\
-&amp; y_{i, 1} = 0 &amp; \forall \, i \\
+&amp; y_{i, 1} = 0,\quad y_{i,2}\leq D &amp; \forall \, i \\
 &amp; [x_{i, 2} \leq x_{j,1}] \veebar [ x_{j, 2} \leq x_{i, 1}] &amp; \forall \, i &lt; j \\
 &amp; 
 \left[ 
@@ -1163,14 +1169,32 @@ x_{i,2} = x_{i,1} + d_i\\
 y_{i,2} = y_{i,1} + w_i\\
 \end{array}
 \end{array}
-\right] &amp; \forall \, i &lt; j
+\right] &amp; \forall i\in\{0,\ldots,N-1\}
 \end{align*}
 \end{split}\]</div>
 <p>In this version of the model, the boxes will be lined up against the edge of the shelf with <span class="math notranslate nohighlight">\(y_{i,1} = 0\)</span>. Decision variables are now included in the model for rotation <span class="math notranslate nohighlight">\(r\)</span> to the <span class="math notranslate nohighlight">\(y\)</span> dimension of the bounding boxes.</p>
+<p>The implementation takes the shelf depth <code class="docutils literal notranslate"><span class="pre">D</span></code> explicitly. The vertical coordinates are bounded by <code class="docutils literal notranslate"><span class="pre">D</span></code>; the width bound is the sum of the smallest horizontal dimensions among orientations that fit that depth. This replaces the unrotated bound above for Versions 2–4. Placing those orientations in a row proves this upper bound is feasible. Because Version 2 keeps every box in that row and chooses the smallest fitting horizontal dimension independently, this bound is also its optimal width. If neither orientation fits, the input is infeasible. The solver uses a tighter integer feasibility tolerance to limit big-M effects on the box dimensions; the tables round coordinates only for display.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">pack_boxes_V2</span><span class="p">(</span><span class="n">boxes</span><span class="p">):</span>
-    <span class="n">W_ub</span> <span class="o">=</span> <span class="n">boxes</span><span class="p">[</span><span class="s2">"w"</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">shelf_width_upper_bound</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">D</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Width of a feasible row, using an orientation that fits the shelf."""</span>
+    <span class="k">if</span> <span class="n">D</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">boxes</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="p">(</span><span class="n">boxes</span><span class="p">[[</span><span class="s2">"w"</span><span class="p">,</span> <span class="s2">"d"</span><span class="p">]]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Use a positive shelf depth and positive box dimensions."</span><span class="p">)</span>
+    <span class="n">widths</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">box</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">choices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">box</span><span class="p">[</span><span class="s2">"d"</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">D</span><span class="p">:</span>
+            <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="s2">"w"</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">box</span><span class="p">[</span><span class="s2">"w"</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">D</span><span class="p">:</span>
+            <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="s2">"d"</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">choices</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Box </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> cannot fit within shelf depth </span><span class="si">{</span><span class="n">D</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="n">widths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">choices</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">widths</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">pack_boxes_V2</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">D</span><span class="p">):</span>
+    <span class="n">W_ub</span> <span class="o">=</span> <span class="n">shelf_width_upper_bound</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
 
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">"Packing boxes problem with rotation"</span><span class="p">)</span>
 
@@ -1180,8 +1204,8 @@ y_{i,2} = y_{i,1} + w_i\\
     <span class="n">m</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">y1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">y2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">D</span><span class="p">))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">D</span><span class="p">))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">()</span>
@@ -1216,20 +1240,21 @@ y_{i,2} = y_{i,1} + w_i\\
         <span class="k">return</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
 
     <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">"gdp.bigm"</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="n">soln</span> <span class="o">=</span> <span class="n">boxes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"x1"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"x2"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"y1"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">y1</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"y2"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">y2</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
-    <span class="n">soln</span><span class="p">[</span><span class="s2">"r"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]())</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+    <span class="n">soln</span><span class="p">[</span><span class="s2">"r"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]()))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">m</span><span class="p">,</span> <span class="n">soln</span><span class="p">,</span> <span class="n">W_ub</span>
 
 
-<span class="n">m</span><span class="p">,</span> <span class="n">soln</span><span class="p">,</span> <span class="n">W_ub</span> <span class="o">=</span> <span class="n">pack_boxes_V2</span><span class="p">(</span><span class="n">boxes</span><span class="p">)</span>
-<span class="n">display</span><span class="p">(</span><span class="n">soln</span><span class="p">)</span>
+<span class="n">m</span><span class="p">,</span> <span class="n">soln</span><span class="p">,</span> <span class="n">W_ub</span> <span class="o">=</span> <span class="n">pack_boxes_V2</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">soln</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">6</span><span class="p">))</span>
 <span class="n">show_boxes</span><span class="p">(</span><span class="n">soln</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1267,8 +1292,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>0</th>
       <td>138</td>
       <td>71</td>
-      <td>0.000002</td>
-      <td>71.000002</td>
+      <td>0.000000</td>
+      <td>71.000000</td>
       <td>0.0</td>
       <td>138.0</td>
       <td>1</td>
@@ -1277,8 +1302,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>1</th>
       <td>154</td>
       <td>117</td>
-      <td>631.999999</td>
-      <td>748.999999</td>
+      <td>696.999999</td>
+      <td>813.999999</td>
       <td>0.0</td>
       <td>154.0</td>
       <td>1</td>
@@ -1287,8 +1312,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>2</th>
       <td>139</td>
       <td>176</td>
-      <td>393.999999</td>
-      <td>532.999999</td>
+      <td>557.999999</td>
+      <td>696.999999</td>
       <td>0.0</td>
       <td>176.0</td>
       <td>0</td>
@@ -1297,8 +1322,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>3</th>
       <td>121</td>
       <td>175</td>
-      <td>70.999999</td>
-      <td>191.999999</td>
+      <td>436.999999</td>
+      <td>557.999999</td>
       <td>0.0</td>
       <td>175.0</td>
       <td>0</td>
@@ -1307,8 +1332,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>4</th>
       <td>196</td>
       <td>117</td>
-      <td>276.999999</td>
-      <td>393.999999</td>
+      <td>319.999999</td>
+      <td>436.999999</td>
       <td>0.0</td>
       <td>196.0</td>
       <td>1</td>
@@ -1317,8 +1342,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>5</th>
       <td>186</td>
       <td>85</td>
-      <td>191.999999</td>
-      <td>276.999999</td>
+      <td>169.999999</td>
+      <td>254.999999</td>
       <td>0.0</td>
       <td>186.0</td>
       <td>1</td>
@@ -1327,8 +1352,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>6</th>
       <td>126</td>
       <td>99</td>
-      <td>532.999999</td>
-      <td>631.999999</td>
+      <td>70.999999</td>
+      <td>169.999999</td>
       <td>0.0</td>
       <td>126.0</td>
       <td>1</td>
@@ -1337,8 +1362,8 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>7</th>
       <td>65</td>
       <td>85</td>
-      <td>748.999999</td>
-      <td>813.999999</td>
+      <td>254.999999</td>
+      <td>319.999999</td>
       <td>0.0</td>
       <td>85.0</td>
       <td>0</td>
@@ -1346,17 +1371,17 @@ y_{i,2} = y_{i,1} + w_i\\
   </tbody>
 </table>
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Lower bound on shelf width = 370
-Upper bound on shelf width = 1125
+Upper bound on shelf width = 814
 Optimal shelf width = 814
 </pre></div>
 </div>
-<img alt="../../_images/801e1cacd87ad179a36eba37fc5d6a203d7559bb15bcff543763fcc01b5824c7.png" src="../../_images/801e1cacd87ad179a36eba37fc5d6a203d7559bb15bcff543763fcc01b5824c7.png" />
+<img alt="../../_images/4abb9c5d9c9ea2a0b3108cde46518c06466ad36b1e04c632fc4f9abeac2b26dd.png" src="../../_images/4abb9c5d9c9ea2a0b3108cde46518c06466ad36b1e04c632fc4f9abeac2b26dd.png" />
 </div>
 </div>
 </section>
 <section id="version-3-placing-and-rotating-boxes-in-two-dimensions">
 <h2>Version 3: Placing and Rotating boxes in two dimensions<a class="headerlink" href="#version-3-placing-and-rotating-boxes-in-two-dimensions" title="Link to this heading">#</a></h2>
-<p>Obviously the packages can be packed closer together by allowing boxes to be stacked deeper into the shelf. New constraints are needed to maintain the bounding boxes within the shelf depth, and to avoid overlaps in the <span class="math notranslate nohighlight">\(y\)</span> dimension.</p>
+<p>Obviously the boxes can be packed closer together by allowing boxes to be stacked deeper into the shelf. New constraints are needed to maintain the bounding boxes within the shelf depth, and to avoid overlaps in the <span class="math notranslate nohighlight">\(y\)</span> dimension.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -1369,15 +1394,15 @@ Optimal shelf width = 814
 &amp; \begin{bmatrix}
 x_{i, 2} \leq x_{j,1} \\
 \end{bmatrix}
-\veebar
+\vee
 \begin{bmatrix}
 x_{j, 2} \leq x_{i, 1} \\
 \end{bmatrix}
- \veebar 
+ \vee 
 \begin{bmatrix}
 y_{i, 2} \leq y_{j, 1} \\
 \end{bmatrix}
-\veebar
+\vee
 \begin{bmatrix}
 y_{j, 2} \leq y_{i, 1} \\
 \end{bmatrix}
@@ -1391,17 +1416,18 @@ y_{i,2} = y_{i,1} + d_i\\
 r_i = 1 \\
 x_{i,2} = x_{i,1} + d_i\\
 y_{i,2} = y_{i,1} + w_i\\
-\end{bmatrix} &amp; \forall i &lt; j
+\end{bmatrix} &amp; \forall i\in\{0,\ldots,N-1\}
 \end{align*}
 \end{split}\]</div>
+<p>At least one of the four separation inequalities must hold; two can hold simultaneously. Pyomo selects one disjunct to enforce, without requiring the inequalities in the unselected disjuncts to be false. This represents the ordinary OR in the geometric formulation.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">pack_boxes_V3</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">D</span><span class="p">):</span>
-    <span class="n">W_ub</span> <span class="o">=</span> <span class="n">boxes</span><span class="p">[</span><span class="s2">"w"</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="n">W_ub</span> <span class="o">=</span> <span class="n">shelf_width_upper_bound</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
 
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">"Packing boxes problem with rotation and shelf depth"</span><span class="p">)</span>
 
-    <span class="n">m</span><span class="o">.</span><span class="n">D</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">mutable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">D</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">D</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">D</span><span class="p">)</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">BOXES</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">PAIRS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">j</span><span class="p">)</span>
@@ -1409,8 +1435,8 @@ y_{i,2} = y_{i,1} + w_i\\
     <span class="n">m</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">y1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">y2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">D</span><span class="p">))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">D</span><span class="p">))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">()</span>
@@ -1450,20 +1476,21 @@ y_{i,2} = y_{i,1} + w_i\\
         <span class="p">]</span>
 
     <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">"gdp.bigm"</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="n">soln</span> <span class="o">=</span> <span class="n">boxes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"x1"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"x2"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"y1"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">y1</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"y2"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">y2</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
-    <span class="n">soln</span><span class="p">[</span><span class="s2">"r"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]())</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+    <span class="n">soln</span><span class="p">[</span><span class="s2">"r"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]()))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">m</span><span class="p">,</span> <span class="n">soln</span><span class="p">,</span> <span class="n">W_ub</span>
 
 
 <span class="n">m</span><span class="p">,</span> <span class="n">soln</span><span class="p">,</span> <span class="n">W_ub</span> <span class="o">=</span> <span class="n">pack_boxes_V3</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
-<span class="n">display</span><span class="p">(</span><span class="n">soln</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">soln</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">6</span><span class="p">))</span>
 <span class="n">show_boxes</span><span class="p">(</span><span class="n">soln</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1501,107 +1528,108 @@ y_{i,2} = y_{i,1} + w_i\\
       <th>0</th>
       <td>138</td>
       <td>71</td>
-      <td>1.170000e+02</td>
-      <td>255.0</td>
-      <td>196.0</td>
-      <td>267.0</td>
+      <td>121.0</td>
+      <td>259.0</td>
+      <td>85.0</td>
+      <td>156.0</td>
       <td>0</td>
     </tr>
     <tr>
       <th>1</th>
       <td>154</td>
       <td>117</td>
-      <td>0.000000e+00</td>
-      <td>117.0</td>
-      <td>99.0</td>
-      <td>253.0</td>
+      <td>259.0</td>
+      <td>376.0</td>
+      <td>85.0</td>
+      <td>239.0</td>
       <td>1</td>
     </tr>
     <tr>
       <th>2</th>
       <td>139</td>
       <td>176</td>
-      <td>2.430000e+02</td>
-      <td>382.0</td>
-      <td>-0.0</td>
-      <td>176.0</td>
+      <td>0.0</td>
+      <td>139.0</td>
+      <td>175.0</td>
+      <td>351.0</td>
       <td>0</td>
     </tr>
     <tr>
       <th>3</th>
       <td>121</td>
       <td>175</td>
-      <td>2.550000e+02</td>
-      <td>376.0</td>
-      <td>177.0</td>
-      <td>352.0</td>
+      <td>0.0</td>
+      <td>121.0</td>
+      <td>-0.0</td>
+      <td>175.0</td>
       <td>0</td>
     </tr>
     <tr>
       <th>4</th>
       <td>196</td>
       <td>117</td>
-      <td>1.260000e+02</td>
-      <td>243.0</td>
-      <td>-0.0</td>
-      <td>196.0</td>
+      <td>139.0</td>
+      <td>256.0</td>
+      <td>156.0</td>
+      <td>352.0</td>
       <td>1</td>
     </tr>
     <tr>
       <th>5</th>
       <td>186</td>
       <td>85</td>
-      <td>-2.709165e-14</td>
-      <td>186.0</td>
-      <td>267.0</td>
-      <td>352.0</td>
+      <td>121.0</td>
+      <td>307.0</td>
+      <td>0.0</td>
+      <td>85.0</td>
       <td>0</td>
     </tr>
     <tr>
       <th>6</th>
       <td>126</td>
       <td>99</td>
-      <td>1.311662e-11</td>
-      <td>126.0</td>
-      <td>-0.0</td>
-      <td>99.0</td>
+      <td>256.0</td>
+      <td>382.0</td>
+      <td>239.0</td>
+      <td>338.0</td>
       <td>0</td>
     </tr>
     <tr>
       <th>7</th>
       <td>65</td>
       <td>85</td>
-      <td>1.860000e+02</td>
-      <td>251.0</td>
-      <td>267.0</td>
-      <td>352.0</td>
+      <td>307.0</td>
+      <td>372.0</td>
+      <td>-0.0</td>
+      <td>85.0</td>
       <td>0</td>
     </tr>
   </tbody>
 </table>
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Lower bound on shelf width = 370
-Upper bound on shelf width = 1125
+Upper bound on shelf width = 814
 Optimal shelf width = 382
 </pre></div>
 </div>
-<img alt="../../_images/55bbd5cb95f1d555ebf3a61e02ba4e7310703b3b45cc7366a46a77b18b01265b.png" src="../../_images/55bbd5cb95f1d555ebf3a61e02ba4e7310703b3b45cc7366a46a77b18b01265b.png" />
+<img alt="../../_images/d2ea8588c38736d9d99acf8bea67696d54072cfd27481710126133612248b209.png" src="../../_images/d2ea8588c38736d9d99acf8bea67696d54072cfd27481710126133612248b209.png" />
 </div>
 </div>
 </section>
 <section id="advanced-topic-symmetry-breaking">
 <h2>Advanced Topic: Symmetry Breaking<a class="headerlink" href="#advanced-topic-symmetry-breaking" title="Link to this heading">#</a></h2>
-<p>One of the issues in combinatorial problem is the challenge of symmetries. A symmetry is a situation where a change in solution configuration leaves the objective unchanged. Strip packing problems are especially susceptible to symmetries. Symmetries can significantly increase the effort needed to find and verify an optimal solution. In [1], Trespalacios and Grossmann introduced a modification to the strip packing problem to reduce the number of symmetries. We implement this new model formulation in Pyomo in the following cell.</p>
+<p>One of the issues in combinatorial problems is the challenge of symmetries. A symmetry is a situation where a change in solution configuration leaves the objective unchanged. Strip packing problems are especially susceptible to symmetries. Symmetries can significantly increase the effort needed to find and verify an optimal solution. In [1], Trespalacios and Grossmann introduced a modification to the strip packing problem to reduce the number of symmetries. We implement this new model formulation in Pyomo in the following cell.</p>
 <p>[1] <em>Trespalacios, F., &amp; Grossmann, I. E. (2017). Symmetry breaking for generalized disjunctive programming formulation of the strip packing problem. Annals of Operations Research, 258(2), 747-759. DOI <a class="reference external" href="https://doi.org/10.1007/s10479-016-2112-9">10.1007/s10479-016-2112-9</a></em></p>
+<p>In the vertical-separation branches, the horizontal projections are allowed to overlap or touch at a boundary. The weak inequalities preserve valid packings with fractional dimensions; imposing a one-unit overlap would exclude some of them. Boundary ties can satisfy more than one branch, so this convention does not assign a unique branch to every packing.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">pack_boxes_V4</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">D</span><span class="p">):</span>
-    <span class="n">W_ub</span> <span class="o">=</span> <span class="n">boxes</span><span class="p">[</span><span class="s2">"w"</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="n">W_ub</span> <span class="o">=</span> <span class="n">shelf_width_upper_bound</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
 
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span>
         <span class="s2">"Packing boxes problem with rotation and shelf depth (symmetry breaking model)"</span>
     <span class="p">)</span>
 
-    <span class="n">m</span><span class="o">.</span><span class="n">D</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">mutable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">D</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">D</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">D</span><span class="p">)</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">BOXES</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">boxes</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">PAIRS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">j</span><span class="p">)</span>
@@ -1609,8 +1637,8 @@ Optimal shelf width = 382
     <span class="n">m</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">x1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">x2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">y1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">y2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">D</span><span class="p">))</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y2</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">D</span><span class="p">))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">()</span>
@@ -1645,25 +1673,26 @@ Optimal shelf width = 382
         <span class="k">return</span> <span class="p">[</span>
             <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">j</span><span class="p">]],</span>
             <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span>
-            <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">y2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">y1</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
-            <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">y2</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">y1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">y2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">y1</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span>
+            <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">y2</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">y1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span>
         <span class="p">]</span>
 
     <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">"gdp.bigm"</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="n">soln</span> <span class="o">=</span> <span class="n">boxes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"x1"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x1</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">]</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"x2"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">x2</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">]</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"y1"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">y1</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">]</span>
     <span class="n">soln</span><span class="p">[</span><span class="s2">"y2"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">y2</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">]</span>
-    <span class="n">soln</span><span class="p">[</span><span class="s2">"r"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]())</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">]</span>
+    <span class="n">soln</span><span class="p">[</span><span class="s2">"r"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">i</span><span class="p">]()))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">BOXES</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">m</span><span class="p">,</span> <span class="n">soln</span><span class="p">,</span> <span class="n">W_ub</span>
 
 
 <span class="n">m</span><span class="p">,</span> <span class="n">soln</span><span class="p">,</span> <span class="n">W_ub</span> <span class="o">=</span> <span class="n">pack_boxes_V4</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
-<span class="n">display</span><span class="p">(</span><span class="n">soln</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">soln</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">6</span><span class="p">))</span>
 <span class="n">show_boxes</span><span class="p">(</span><span class="n">soln</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">W_ub</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1721,17 +1750,17 @@ Optimal shelf width = 382
       <th>2</th>
       <td>139</td>
       <td>176</td>
-      <td>-0.0</td>
+      <td>0.0</td>
       <td>139.0</td>
-      <td>175.0</td>
-      <td>351.0</td>
+      <td>176.0</td>
+      <td>352.0</td>
       <td>0</td>
     </tr>
     <tr>
       <th>3</th>
       <td>121</td>
       <td>175</td>
-      <td>-0.0</td>
+      <td>0.0</td>
       <td>121.0</td>
       <td>0.0</td>
       <td>175.0</td>
@@ -1753,7 +1782,7 @@ Optimal shelf width = 382
       <td>85</td>
       <td>186.0</td>
       <td>372.0</td>
-      <td>-0.0</td>
+      <td>0.0</td>
       <td>85.0</td>
       <td>0</td>
     </tr>
@@ -1763,8 +1792,8 @@ Optimal shelf width = 382
       <td>99</td>
       <td>256.0</td>
       <td>382.0</td>
-      <td>239.0</td>
-      <td>338.0</td>
+      <td>253.0</td>
+      <td>352.0</td>
       <td>0</td>
     </tr>
     <tr>
@@ -1780,11 +1809,11 @@ Optimal shelf width = 382
   </tbody>
 </table>
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Lower bound on shelf width = 370
-Upper bound on shelf width = 1125
+Upper bound on shelf width = 814
 Optimal shelf width = 382
 </pre></div>
 </div>
-<img alt="../../_images/47970d91e0243538954837bc3f77c73272514d8341e7e0ff448bee5a9761e8f4.png" src="../../_images/47970d91e0243538954837bc3f77c73272514d8341e7e0ff448bee5a9761e8f4.png" />
+<img alt="../../_images/85225aec0109f97eb49cc5ea730bd2f1ae7e5fb389de5362a24c1c83af94ae87.png" src="../../_images/85225aec0109f97eb49cc5ea730bd2f1ae7e5fb389de5362a24c1c83af94ae87.png" />
 </div>
 </div>
 </section>
@@ -1857,8 +1886,8 @@ Optimal shelf width = 382
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-statment">Problem Statment</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-lower-and-upper-bounds-on-shelf-width">A lower and upper bounds on shelf width</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-statement">Problem Statement</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lower-and-upper-bounds-on-shelf-width">Lower and upper bounds on shelf width</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling-strategy">Modeling Strategy</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#version-1-a-pyomo-model-to-line-up-the-boxes">Version 1: A Pyomo model to line up the boxes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#version-2-rotating-boxes">Version 2: Rotating boxes</a></li>

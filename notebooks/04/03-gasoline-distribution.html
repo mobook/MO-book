@@ -595,7 +595,7 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="gasoline-distribution">
 <span id="index-6"></span><span id="index-5"></span><span id="index-4"></span><span id="index-3"></span><span id="index-2"></span><span id="index-1"></span><span id="index-0"></span><h1>4.3 Gasoline distribution<a class="headerlink" href="#gasoline-distribution" title="Link to this heading">#</a></h1>
-<p>This notebook presents a transportation model to optimally allocate the delivery of a commodity from multiple sources to multiple destinations. The model invites a discussion of the pitfalls in optimizing a global objective for customers who may have an uneven share of the resulting benefits, then through model refinement arrives at a group cost-sharing plan to delivery costs.</p>
+<p>This notebook presents a transportation model to optimally allocate the delivery of a commodity from multiple sources to multiple destinations. The model invites a discussion of the pitfalls in optimizing a global objective for customers who may have an uneven share of the resulting benefits, then through model refinement arrives at a plan for sharing delivery costs.</p>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Link to this heading">#</a></h2>
 <p>The following cell sets and verifies a global SOLVER for the notebook. If run on Google Colab, the cell installs Pyomo and the HiGHS solver, while, if run elsewhere, it assumes Pyomo and HiGHS have been previously installed. It then sets to use HiGHS as solver via the appsi module and a test is performed to verify that it is available. The solver interface is stored in a global object <code class="docutils literal notranslate"><span class="pre">SOLVER</span></code> for later use.</p>
@@ -635,6 +635,7 @@
 <section id="problem-distributing-gasoline-to-franchise-operators">
 <h2>Problem: Distributing gasoline to franchise operators<a class="headerlink" href="#problem-distributing-gasoline-to-franchise-operators" title="Link to this heading">#</a></h2>
 <p>YaYa Gas-n-Grub is the franchisor and operator of a network of regional convenience stores that sell gasoline and convenience items in the United States. Each store is individually owned by a YaYa Gas-n-Grub franchisee who pays fees to the franchisor for services. Gasoline is delivered by truck from regional distribution terminals by the current supplier. Each truck delivers 8,000 gallons at a fixed charge of $700 per delivery or $0.0875 per gallon. Franchise owners are eager to reduce delivery costs to boost profits.</p>
+<p>The models below prorate delivery costs per gallon, including the current supplier’s rate of $0.0875 per gallon. They do not charge for an integer number of fixed-cost truck trips.</p>
 <p>YaYa Gas-n-Grub decides to accept proposals from other distribution terminals, “A” and “B”, to supply the franchise operators. Rather than a fixed fee per delivery, they proposed pricing based on location. But they already have existing customers, “A” and “B” can only provide a limited amount of gasoline to new customers totaling 100,000 and 80,000 gallons respectively. The only difference between the new suppliers and the current supplier is the delivery charge.</p>
 <p>The following chart shows the pricing of gasoline delivery in cents/gallon.</p>
 <div align="center">
@@ -713,20 +714,21 @@
 <p>The first optimization model aims to minimize the total cost of delivery to all franchise owners.</p>
 <p>We introduce the decision variables <span class="math notranslate nohighlight">\(x_{d, s} \geq 0\)</span>, where subscript <span class="math notranslate nohighlight">\(d \in 1, \dots, n_d\)</span> refers to the destination of the delivery and subscript <span class="math notranslate nohighlight">\(s \in 1, \dots, n_s\)</span> to the source. The value of <span class="math notranslate nohighlight">\(x_{d,s}\)</span> is the volume of gasoline shipped to destination <span class="math notranslate nohighlight">\(d\)</span> from source <span class="math notranslate nohighlight">\(s\)</span>.</p>
 <p>Given the cost rate <span class="math notranslate nohighlight">\(r_{d, s}\)</span> for delivering one unit of gasoline from <span class="math notranslate nohighlight">\(s\)</span> to <span class="math notranslate nohighlight">\(d\)</span>, the objective is to minimize the total cost of transporting gasoline from the sources to the destinations subject to meeting the demand requirements, <span class="math notranslate nohighlight">\(D_d\)</span>, at all destinations, and satisfying the supply constraints, <span class="math notranslate nohighlight">\(S_s\)</span>, at all sources.</p>
-<p>In mathematical terms, we can write the full problem as</p>
+<p>Let <span class="math notranslate nohighlight">\(U = \{(\mathrm{Cara},\mathrm{Terminal\ B}), (\mathrm{Grace},\mathrm{Terminal\ A})\}\)</span> be the unavailable destination-source pairs. Each model fixes their shipments to zero. In mathematical terms, we can write the full problem as</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
     \min \quad &amp; \sum_{d=1}^{n_d} \sum_{s=1}^{n_s} r_{d, s} x_{d, s} \\
     \text{s.t.} \quad &amp;\sum_{s=1}^{n_s} x_{d, s}  = D_d &amp; \forall \, d = 1, \dots, n_d &amp; \quad \text{(demand constraints)}\\
     &amp; \sum_{d=1}^{n_d} x_{d, s}  \leq S_s &amp; \forall \, s = 1, \dots, n_s &amp; \quad \text{(supply constraints)}\\
+    &amp; x_{d,s} = 0 &amp; \forall (d,s) \in U &amp; \quad \text{(unavailable routes)}\\
     &amp; x_{d, s} \geq 0 &amp; \forall \, d = 1, \dots, n_d, \, s = 1, \dots, n_s.
 \end{align*}
 \end{split}\]</div>
 </section>
 <section id="data-entry">
 <h2>Data Entry<a class="headerlink" href="#data-entry" title="Link to this heading">#</a></h2>
-<p>The data is stored into Pandas DataFrame and Series objects. Note the use of a large rates to avoid assigning shipments to destination-source pairs not allowed by the problem statement.</p>
+<p>The data is stored in Pandas DataFrame and Series objects. The two routes not offered in the problem statement (Terminal B to Cara and Terminal A to Grace) carry a placeholder rate of 100 cents per gallon in the table. Each model fixes their shipments to zero, so the placeholder never affects a solution.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
@@ -952,7 +954,7 @@
 </table>
 </div></div></div>
 </div>
-<p>The following Pyomo model is an implementation of the mathematical optimization model described above. The sets and indices have been designated with more descriptive symbols readability and maintenance.</p>
+<p>The following Pyomo model is an implementation of the mathematical optimization model described above. The sets and indices have been designated with more descriptive symbols for readability and maintenance.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">transport</span><span class="p">(</span><span class="n">supply</span><span class="p">,</span> <span class="n">demand</span><span class="p">,</span> <span class="n">rates</span><span class="p">):</span>
@@ -962,6 +964,8 @@
     <span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">rates</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="s2">"Cara"</span><span class="p">,</span> <span class="s2">"Terminal B"</span><span class="p">]</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="s2">"Grace"</span><span class="p">,</span> <span class="s2">"Terminal A"</span><span class="p">]</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">Rates</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">src</span><span class="p">):</span>
@@ -1149,13 +1153,14 @@ New delivery costs = $26113.50
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/b06c87789cac28762e35b74b14e46e561c72a6b313ff374ea5f28495163df995.png" src="../../_images/b06c87789cac28762e35b74b14e46e561c72a6b313ff374ea5f28495163df995.png" />
+</div></div><img alt="../../_images/24c31cdc7509030c3e9c827533adcd95cf99802224f40fc8e2d34bd75e49ad1c.png" src="../../_images/24c31cdc7509030c3e9c827533adcd95cf99802224f40fc8e2d34bd75e49ad1c.png" />
 </div>
 </div>
 </section>
 <section id="model-2-minimize-cost-rate-for-franchise-owners">
 <h2>Model 2: Minimize cost rate for franchise owners<a class="headerlink" href="#model-2-minimize-cost-rate-for-franchise-owners" title="Link to this heading">#</a></h2>
-<p>Minimizing total costs provides no guarantee that individual franchise owners will benefit equally, or in fact benefit at all, from minimizing total costs. In this example neither Emma or Fujita would save any money on delivery costs, and the majority of savings goes to just one of the franchisees. Without a better distribution of the benefits there may be little enthusiasm among the franchisees to adopt change. This observation motivates an attempt at a second model. In this case the objective is minimizing a common rate for the cost of gasoline distribution subject to meeting the demand and supply constraints, <span class="math notranslate nohighlight">\(S_s\)</span>, at all sources.</p>
+<p>Minimizing total costs provides no guarantee that individual franchise owners will benefit equally, or in fact benefit at all, from minimizing total costs. In this example neither Emma nor Fujita would save any money on delivery costs, and Grace receives the largest individual share of the savings. In the displayed plan, her $600 is about 47.1% of the group saving of $1,274; Dan also saves $0 in this particular optimum. Without a better distribution of the benefits there may be little enthusiasm among the franchisees to adopt change. This observation motivates an attempt at a second model. In this case the objective is minimizing a common rate for the cost of gasoline distribution subject to meeting the demand and supply constraints, <span class="math notranslate nohighlight">\(S_s\)</span>, at all sources.</p>
+<p>Model 1 has alternative optimal shipment plans. Terminal B can split its 80,000 gallons between Grace and Dan at the same rate; after supplying Badri and Helen, Terminal A can split its remaining capacity between Alice and Cara. Grace’s saving ranges from $450 to $600, and she remains the largest saver. The objective leaves the allocation among tied franchisees undetermined, which strengthens the case for explicitly sharing the savings in Model 3.</p>
 <p>The mathematical formulation of this different problem is as follows:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -1164,11 +1169,12 @@ New delivery costs = $26113.50
     \text{s.t.} \quad &amp;\sum_{s=1}^{n_s} x_{d, s}  = D_d &amp; \forall \, d = 1, \dots, n_d &amp; \quad \text{(demand constraints)}\\
     &amp; \sum_{d=1}^{n_d} x_{d, s}  \leq S_s &amp; \forall \, s =  1, \dots, n_s &amp; \quad \text{(supply constraints)}\\
     &amp; \sum_{s=1}^{n_s} r_{d, s} x_{d, s} = \rho D_d &amp; \forall d = 1, \dots, n_d &amp; \quad \text{(common cost rate)}\\
+    &amp; x_{d,s} = 0 &amp; \forall (d,s) \in U &amp; \quad \text{(unavailable routes)}\\
     &amp; x_{d, s} \geq 0 &amp; \forall \, d = 1, \dots, n_d, \, s = 1, \dots, n_s.
 \end{align*}
 \end{split}\]</div>
 <p>The following Pyomo model implements this formulation.</p>
-<p>The savings chart below has zero-height bars: the common rate remains 8.75 cents per gallon, so every franchise saves $0. This is a model result, not a missing figure. Emma and Fujita have no cheaper supplier; requiring the same direct delivery-cost rate for everyone prevents the group from reducing that rate. Model 3 instead shares the total cost across franchises.</p>
+<p>The savings chart below has zero-height bars: the common rate remains 8.75 cents per gallon, so every franchise saves $0. This is a model result, not a missing figure. Emma and Fujita have no cheaper supplier; requiring the same direct delivery-cost rate for everyone prevents the group from reducing that rate. Model 2 also has alternative optimal shipment mixes: the optimal common rate is determined, but the displayed deliveries are only one way to achieve it. The equality can require a mix of permitted routes with higher and lower rates so that each franchise pays exactly 8.75 cents per gallon. Model 3 instead shares the total cost across franchises.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">transport_v2</span><span class="p">(</span><span class="n">supply</span><span class="p">,</span> <span class="n">demand</span><span class="p">,</span> <span class="n">rates</span><span class="p">):</span>
@@ -1178,6 +1184,8 @@ New delivery costs = $26113.50
     <span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">rates</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="s2">"Cara"</span><span class="p">,</span> <span class="s2">"Terminal B"</span><span class="p">]</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="s2">"Grace"</span><span class="p">,</span> <span class="s2">"Terminal A"</span><span class="p">]</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">()</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">)</span>
@@ -1294,9 +1302,9 @@ New delivery costs = $27387.5
   <tbody>
     <tr>
       <th>Alice</th>
-      <td>16912.0</td>
-      <td>5248.6</td>
-      <td>7839.4</td>
+      <td>22894.7</td>
+      <td>7105.3</td>
+      <td>0.0</td>
       <td>2625.0</td>
       <td>2625.0</td>
       <td>0.0</td>
@@ -1316,9 +1324,9 @@ New delivery costs = $27387.5
     </tr>
     <tr>
       <th>Cara</th>
-      <td>49754.6</td>
-      <td>245.4</td>
+      <td>-0.0</td>
       <td>0.0</td>
+      <td>50000.0</td>
       <td>4375.0</td>
       <td>4375.0</td>
       <td>0.0</td>
@@ -1327,9 +1335,9 @@ New delivery costs = $27387.5
     </tr>
     <tr>
       <th>Dan</th>
+      <td>11538.5</td>
+      <td>8461.5</td>
       <td>0.0</td>
-      <td>0.0</td>
-      <td>20000.0</td>
       <td>1750.0</td>
       <td>1750.0</td>
       <td>0.0</td>
@@ -1361,7 +1369,7 @@ New delivery costs = $27387.5
     <tr>
       <th>Grace</th>
       <td>0.0</td>
-      <td>0.0</td>
+      <td>-0.0</td>
       <td>80000.0</td>
       <td>7000.0</td>
       <td>7000.0</td>
@@ -1371,9 +1379,9 @@ New delivery costs = $27387.5
     </tr>
     <tr>
       <th>Helen</th>
-      <td>-0.0</td>
+      <td>9000.0</td>
+      <td>9000.0</td>
       <td>0.0</td>
-      <td>18000.0</td>
       <td>1575.0</td>
       <td>1575.0</td>
       <td>0.0</td>
@@ -1382,7 +1390,7 @@ New delivery costs = $27387.5
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/1584aea72e628af009484cad64c7dac6263ec630ff80dc2eb7058d2c1f31f5f2.png" src="../../_images/1584aea72e628af009484cad64c7dac6263ec630ff80dc2eb7058d2c1f31f5f2.png" />
+</div></div><img alt="../../_images/01f868220aacd5629da772c6bf2ea5bd35b583d111c08e91f1bcdbec75ab7f16.png" src="../../_images/01f868220aacd5629da772c6bf2ea5bd35b583d111c08e91f1bcdbec75ab7f16.png" />
 </div>
 </div>
 </section>
@@ -1390,7 +1398,7 @@ New delivery costs = $27387.5
 <h2>Model 3: Minimize total cost for a cost-sharing plan<a class="headerlink" href="#model-3-minimize-total-cost-for-a-cost-sharing-plan" title="Link to this heading">#</a></h2>
 <p>The prior two models demonstrated some practical difficulties in realizing the benefits of a cost optimization plan. Model 1 will likely fail in a franchiser/franchisee arrangement because the realized savings would be for the benefit of a few.</p>
 <p>Model 2 was an attempt to remedy the problem by solving for an allocation of deliveries that would lower the cost rate that would be paid by each franchisee directly to the gasoline distributors. Perhaps surprisingly, the resulting solution offered no savings to any franchisee. Inspecting the data shows the source of the problem is that two franchisees, Emma and Fujita, simply have no lower cost alternative than the current supplier. Therefore, finding a distribution plan with direct payments to the distributors that lowers everyone’s cost is an impossible task.</p>
-<p>We now consider a third model that addresses this problem with a plan to share the cost savings among the franchisees. In this plan, the franchiser would collect delivery fees from the franchisees to pay the gasoline distributors. The optimization objective returns to the problem to minimizing total delivery costs, but then adds a constraint that defines a common cost rate to charge all franchisees. By offering a benefit to all parties, the franchiser offers incentive for group participation in contracting for gasoline distribution services.</p>
+<p>We now consider a third model that addresses this problem with a plan to share the cost savings among the franchisees. In this plan, the franchiser would collect delivery fees from the franchisees to pay the gasoline distributors. The optimization objective returns to minimizing total delivery costs, but then adds a constraint that defines a common cost rate to charge all franchisees. By offering a benefit to all parties, the franchiser offers incentive for group participation in contracting for gasoline distribution services.</p>
 <p>In mathematical terms, the problem can be formulated as follows:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -1399,6 +1407,7 @@ New delivery costs = $27387.5
     \text{s.t.} \quad &amp;\sum_{s=1}^{n_s} x_{d, s}  = D_d &amp; \forall \, d= 1, \dots, n_d &amp; \quad \text{(demand constraints)}\\
     &amp; \sum_{d=1}^{n_d} x_{d, s}  \leq S_s &amp; \forall \, s = 1, \dots, n_s &amp; \quad \text{(supply constraints)}\\
     &amp; \sum_{d=1}^{n_d} \sum_{s=1}^{n_s} r_{d, s} x_{d, s} = \rho \sum_{d=1}^{n_d} D_d &amp; &amp; \quad \text{(shared delivery costs)}\\
+    &amp; x_{d,s} = 0 &amp; \forall (d,s) \in U &amp; \quad \text{(unavailable routes)}\\
     &amp; x_{d, s} \geq 0 &amp; \forall \, d = 1, \dots, n_d, \, s = 1, \dots, n_s.
 \end{align*}
 \end{split}\]</div>
@@ -1411,6 +1420,8 @@ New delivery costs = $27387.5
     <span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">rates</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="s2">"Cara"</span><span class="p">,</span> <span class="s2">"Terminal B"</span><span class="p">]</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="s2">"Grace"</span><span class="p">,</span> <span class="s2">"Terminal A"</span><span class="p">]</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">()</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">)</span>
@@ -1518,9 +1529,9 @@ New delivery costs = $26113.50
   <tbody>
     <tr>
       <th>Alice</th>
+      <td>0.0</td>
+      <td>0.0</td>
       <td>30000.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
       <td>2625.0</td>
       <td>2502.9</td>
       <td>122.1</td>
@@ -1540,9 +1551,9 @@ New delivery costs = $26113.50
     </tr>
     <tr>
       <th>Cara</th>
-      <td>12000.0</td>
+      <td>42000.0</td>
       <td>0.0</td>
-      <td>38000.0</td>
+      <td>8000.0</td>
       <td>4375.0</td>
       <td>4171.5</td>
       <td>203.5</td>
@@ -1606,7 +1617,7 @@ New delivery costs = $26113.50
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/98976c00202ae6577ecd6cfe4085a27a207d701747aac2330cb147556ff64bfd.png" src="../../_images/98976c00202ae6577ecd6cfe4085a27a207d701747aac2330cb147556ff64bfd.png" />
+</div></div><img alt="../../_images/0d36f33a11b1bcdbcfac14f9a0aa4a53c1ad00fc25c45a25de9edb02b77baa7a.png" src="../../_images/0d36f33a11b1bcdbcfac14f9a0aa4a53c1ad00fc25c45a25de9edb02b77baa7a.png" />
 </div>
 </div>
 </section>
@@ -1644,7 +1655,7 @@ New delivery costs = $26113.50
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/9c77caad228961a2e6d16eb7c6a9570c9193d2e54ab4640627f3b771fb6eee3e.png" src="../../_images/9c77caad228961a2e6d16eb7c6a9570c9193d2e54ab4640627f3b771fb6eee3e.png" />
+<img alt="../../_images/a01e01d1b3d338f946edcc8f6e74a7dd2303e63ea410258df54175a717d1a12f.png" src="../../_images/a01e01d1b3d338f946edcc8f6e74a7dd2303e63ea410258df54175a717d1a12f.png" />
 </div>
 </div>
 </section>
@@ -1803,15 +1814,15 @@ demand_constraint : Size=8
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>x : Size=24, Index=DESTINATIONS*SOURCES
     Key                            : Lower : Value   : Upper : Fixed : Stale : Domain
-     ('Alice', 'Current Supplier') :     0 :     0.0 :  None : False : False : NonNegativeReals
-           ('Alice', 'Terminal A') :     0 : 30000.0 :  None : False : False : NonNegativeReals
+     ('Alice', 'Current Supplier') :     0 : 30000.0 :  None : False : False : NonNegativeReals
+           ('Alice', 'Terminal A') :     0 :     0.0 :  None : False : False : NonNegativeReals
            ('Alice', 'Terminal B') :     0 :     0.0 :  None : False : False : NonNegativeReals
      ('Badri', 'Current Supplier') :     0 :     0.0 :  None : False : False : NonNegativeReals
            ('Badri', 'Terminal A') :     0 : 40000.0 :  None : False : False : NonNegativeReals
            ('Badri', 'Terminal B') :     0 :     0.0 :  None : False : False : NonNegativeReals
-      ('Cara', 'Current Supplier') :     0 : 38000.0 :  None : False : False : NonNegativeReals
-            ('Cara', 'Terminal A') :     0 : 12000.0 :  None : False : False : NonNegativeReals
-            ('Cara', 'Terminal B') :     0 :     0.0 :  None : False : False : NonNegativeReals
+      ('Cara', 'Current Supplier') :     0 :  8000.0 :  None : False : False : NonNegativeReals
+            ('Cara', 'Terminal A') :     0 : 42000.0 :  None : False : False : NonNegativeReals
+            ('Cara', 'Terminal B') :     0 :     0.0 :  None :  True : False : NonNegativeReals
        ('Dan', 'Current Supplier') :     0 : 20000.0 :  None : False : False : NonNegativeReals
              ('Dan', 'Terminal A') :     0 :     0.0 :  None : False : False : NonNegativeReals
              ('Dan', 'Terminal B') :     0 :    -0.0 :  None : False : False : NonNegativeReals
@@ -1822,7 +1833,7 @@ demand_constraint : Size=8
           ('Fujita', 'Terminal A') :     0 :     0.0 :  None : False : False : NonNegativeReals
           ('Fujita', 'Terminal B') :     0 :     0.0 :  None : False : False : NonNegativeReals
      ('Grace', 'Current Supplier') :     0 :     0.0 :  None : False : False : NonNegativeReals
-           ('Grace', 'Terminal A') :     0 :     0.0 :  None : False : False : NonNegativeReals
+           ('Grace', 'Terminal A') :     0 :     0.0 :  None :  True : False : NonNegativeReals
            ('Grace', 'Terminal B') :     0 : 80000.0 :  None : False : False : NonNegativeReals
      ('Helen', 'Current Supplier') :     0 :     0.0 :  None : False : False : NonNegativeReals
            ('Helen', 'Terminal A') :     0 : 18000.0 :  None : False : False : NonNegativeReals
@@ -1842,23 +1853,23 @@ demand_constraint : Size=8
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"cost = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">total_cost</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="c1"># Constraint reports</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Constraint: supply_constraint"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Constraint: supply_constraint (gallons; dual in dollars/gallon)"</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">src</span><span class="si">:</span><span class="s2">12s</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">supply_constraint</span><span class="p">[</span><span class="n">src</span><span class="p">]()</span><span class="si">:</span><span class="s2">8.0f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">supply_constraint</span><span class="p">[</span><span class="n">src</span><span class="p">]]</span><span class="si">:</span><span class="s2">8.2f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">src</span><span class="si">:</span><span class="s2">16s</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">supply_constraint</span><span class="p">[</span><span class="n">src</span><span class="p">]()</span><span class="si">:</span><span class="s2">8.0f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">supply_constraint</span><span class="p">[</span><span class="n">src</span><span class="p">]],</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">0.0</span><span class="si">:</span><span class="s2">9.4f</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Constraint: demand_constraint"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Constraint: demand_constraint (gallons; dual in dollars/gallon)"</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dst</span><span class="si">:</span><span class="s2">12s</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">demand_constraint</span><span class="p">[</span><span class="n">dst</span><span class="p">]()</span><span class="si">:</span><span class="s2">8.0f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">demand_constraint</span><span class="p">[</span><span class="n">dst</span><span class="p">]]</span><span class="si">:</span><span class="s2">8.2f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dst</span><span class="si">:</span><span class="s2">12s</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">demand_constraint</span><span class="p">[</span><span class="n">dst</span><span class="p">]()</span><span class="si">:</span><span class="s2">8.0f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">demand_constraint</span><span class="p">[</span><span class="n">dst</span><span class="p">]],</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">0.0</span><span class="si">:</span><span class="s2">9.4f</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
 
 <span class="c1"># Decision variable reports</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Decision variables: x"</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">:</span>
     <span class="k">for</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">src</span><span class="si">:</span><span class="s2">12s</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">dst</span><span class="si">:</span><span class="s2">12s</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">dst</span><span class="p">,</span><span class="w"> </span><span class="n">src</span><span class="p">]()</span><span class="si">:</span><span class="s2">8.0f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">src</span><span class="si">:</span><span class="s2">16s</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">dst</span><span class="si">:</span><span class="s2">12s</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">dst</span><span class="p">,</span><span class="w"> </span><span class="n">src</span><span class="p">](),</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">0.0</span><span class="si">:</span><span class="s2">8.0f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -1867,43 +1878,43 @@ demand_constraint : Size=8
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Objective: cost
 cost = 26113.5
 
-Constraint: supply_constraint
-Terminal A      100000     -0.00
-Terminal B       80000     -0.01
-Current Supplier    133000     -0.00
+Constraint: supply_constraint (gallons; dual in dollars/gallon)
+Terminal A          100000    -0.0045
+Terminal B           80000    -0.0075
+Current Supplier    133000     0.0000
 
-Constraint: demand_constraint
-Alice            30000      0.09
-Badri            40000      0.09
-Cara             50000      0.09
-Dan              20000      0.09
-Emma             30000      0.09
-Fujita           45000      0.09
-Grace            80000      0.09
-Helen            18000      0.08
+Constraint: demand_constraint (gallons; dual in dollars/gallon)
+Alice            30000     0.0875
+Badri            40000     0.0855
+Cara             50000     0.0875
+Dan              20000     0.0875
+Emma             30000     0.0875
+Fujita           45000     0.0875
+Grace            80000     0.0875
+Helen            18000     0.0795
 
 Decision variables: x
-Terminal A   -&gt; Alice            30000
-Terminal A   -&gt; Badri            40000
-Terminal A   -&gt; Cara             12000
-Terminal A   -&gt; Dan                  0
-Terminal A   -&gt; Emma                 0
-Terminal A   -&gt; Fujita               0
-Terminal A   -&gt; Grace                0
-Terminal A   -&gt; Helen            18000
+Terminal A       -&gt; Alice                0
+Terminal A       -&gt; Badri            40000
+Terminal A       -&gt; Cara             42000
+Terminal A       -&gt; Dan                  0
+Terminal A       -&gt; Emma                 0
+Terminal A       -&gt; Fujita               0
+Terminal A       -&gt; Grace                0
+Terminal A       -&gt; Helen            18000
 
-Terminal B   -&gt; Alice                0
-Terminal B   -&gt; Badri                0
-Terminal B   -&gt; Cara                 0
-Terminal B   -&gt; Dan                 -0
-Terminal B   -&gt; Emma                 0
-Terminal B   -&gt; Fujita               0
-Terminal B   -&gt; Grace            80000
-Terminal B   -&gt; Helen                0
+Terminal B       -&gt; Alice                0
+Terminal B       -&gt; Badri                0
+Terminal B       -&gt; Cara                 0
+Terminal B       -&gt; Dan                  0
+Terminal B       -&gt; Emma                 0
+Terminal B       -&gt; Fujita               0
+Terminal B       -&gt; Grace            80000
+Terminal B       -&gt; Helen                0
 
-Current Supplier -&gt; Alice                0
+Current Supplier -&gt; Alice            30000
 Current Supplier -&gt; Badri                0
-Current Supplier -&gt; Cara             38000
+Current Supplier -&gt; Cara              8000
 Current Supplier -&gt; Dan              20000
 Current Supplier -&gt; Emma             30000
 Current Supplier -&gt; Fujita           45000
@@ -2100,9 +2111,9 @@ Current Supplier -&gt; Helen                0
   <tbody>
     <tr>
       <th>Alice</th>
+      <td>0.0</td>
+      <td>0.0</td>
       <td>30000.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
     </tr>
     <tr>
       <th>Badri</th>
@@ -2112,9 +2123,9 @@ Current Supplier -&gt; Helen                0
     </tr>
     <tr>
       <th>Cara</th>
-      <td>12000.0</td>
+      <td>42000.0</td>
       <td>0.0</td>
-      <td>38000.0</td>
+      <td>8000.0</td>
     </tr>
     <tr>
       <th>Dan</th>
@@ -2148,7 +2159,7 @@ Current Supplier -&gt; Helen                0
     </tr>
   </tbody>
 </table>
-</div></div><img alt="../../_images/162d749d94a590b894190186ee6a1e2a6727650ff233e8f83d15d2ffc327b5c3.png" src="../../_images/162d749d94a590b894190186ee6a1e2a6727650ff233e8f83d15d2ffc327b5c3.png" />
+</div></div><img alt="../../_images/490b9382064aa47088cf1b959cf750ed60b7d7029e2940c65e8dadd6387ab06d.png" src="../../_images/490b9382064aa47088cf1b959cf750ed60b7d7029e2940c65e8dadd6387ab06d.png" />
 </div>
 </div>
 </section>
@@ -2167,7 +2178,7 @@ Current Supplier -&gt; Helen                0
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2">"</span>
         <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">supply = </span><span class="si">{</span><span class="n">supply</span><span class="p">[</span><span class="n">src</span><span class="p">]</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2">"</span>
         <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">shipped = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">shipped_from_source</span><span class="p">[</span><span class="n">src</span><span class="p">]()</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2">"</span>
-        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">marginal value = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">supply_constraint</span><span class="p">[</span><span class="n">src</span><span class="p">]]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">marginal value = </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">supply_constraint</span><span class="p">[</span><span class="n">src</span><span class="p">]],</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">0.0</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
 <span class="k">for</span> <span class="n">dst</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">DESTINATIONS</span><span class="p">:</span>
     <span class="n">network</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span>
@@ -2175,7 +2186,7 @@ Current Supplier -&gt; Helen                0
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dst</span><span class="si">}</span><span class="s2">"</span>
         <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">demand = </span><span class="si">{</span><span class="n">demand</span><span class="p">[</span><span class="n">dst</span><span class="p">]</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2">"</span>
         <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">shipped = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">shipped_to_destination</span><span class="p">[</span><span class="n">dst</span><span class="p">]()</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2">"</span>
-        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">marginal cost = </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">demand_constraint</span><span class="p">[</span><span class="n">dst</span><span class="p">]]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">marginal cost = </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">dual</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">demand_constraint</span><span class="p">[</span><span class="n">dst</span><span class="p">]],</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">0.0</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
 <span class="n">edge_labels</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">SOURCES</span><span class="p">:</span>
@@ -2205,7 +2216,7 @@ Current Supplier -&gt; Helen                0
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/3e19eda9e8cb7f0e043186b87b2dcb48e66bdcab2ccd36349b1c2f45ac34af6c.png" src="../../_images/3e19eda9e8cb7f0e043186b87b2dcb48e66bdcab2ccd36349b1c2f45ac34af6c.png" />
+<img alt="../../_images/3158670461470b056db1d15f9e0a67f9b83ed3e3cf43113ba3022356ad460f0b.png" src="../../_images/3158670461470b056db1d15f9e0a67f9b83ed3e3cf43113ba3022356ad460f0b.png" />
 </div>
 </div>
 </section>

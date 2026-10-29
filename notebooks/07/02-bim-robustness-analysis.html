@@ -1344,7 +1344,8 @@
 </section>
 <section id="actual-performance-of-the-nominal-solution">
 <h2>Actual performance of the nominal solution<a class="headerlink" href="#actual-performance-of-the-nominal-solution" title="Link to this heading">#</a></h2>
-<p>We now perform a stochastic simulation to assess the performance of the nominal solutions that we found earlier.</p>
+<p>We now perform a stochastic simulation to assess the nominal acquisition plan under perturbed demand. In each month, the recourse rule minimizes missed chip demand using the available materials and carries all remaining stock forward. It does not enforce the planning model’s storage capacity or final-stock targets.</p>
+<p>We therefore report capacity exceedances and final-stock shortfalls alongside missed demand and inventory cost. These diagnostics evaluate this recourse rule; they do not demonstrate feasible operation under every planning constraint. An operational policy that enforces those constraints would need explicit decisions for excess stock and final targets, followed by a new simulation.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">minimize_missed_demand_in_period</span><span class="p">(</span>
@@ -1452,6 +1453,22 @@
     <span class="k">return</span> <span class="p">{</span><span class="s2">"MissingDemand"</span><span class="p">:</span> <span class="n">MissingDemand</span><span class="p">,</span> <span class="s2">"InventoryEvolution"</span><span class="p">:</span> <span class="n">InventoryEvolution</span><span class="p">}</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">inventory_diagnostics</span><span class="p">(</span><span class="n">InventoryEvolution</span><span class="p">,</span> <span class="n">problem_data</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
+    <span class="c1"># The index levels are material and trajectory; columns are months.</span>
+    <span class="n">monthly_totals</span> <span class="o">=</span> <span class="n">InventoryEvolution</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="n">problem_data</span><span class="p">[</span><span class="s2">"purchases"</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">final_stock</span> <span class="o">=</span> <span class="n">InventoryEvolution</span><span class="p">[</span><span class="n">last</span><span class="p">]</span><span class="o">.</span><span class="n">unstack</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">targets</span> <span class="o">=</span> <span class="n">problem_data</span><span class="p">[</span><span class="s2">"eot_inventory"</span><span class="p">]</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">final_stock</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">shortfall</span> <span class="o">=</span> <span class="p">(</span><span class="n">targets</span> <span class="o">-</span> <span class="n">final_stock</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">lower</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"month_ends"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">monthly_totals</span><span class="o">.</span><span class="n">size</span><span class="p">),</span>
+        <span class="s2">"capacity_exceedances"</span><span class="p">:</span> <span class="nb">int</span><span class="p">((</span><span class="n">monthly_totals</span> <span class="o">&gt;</span> <span class="n">problem_data</span><span class="p">[</span><span class="s2">"stock_limit"</span><span class="p">]</span> <span class="o">+</span> <span class="n">tolerance</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span>
+        <span class="s2">"max_month_end_stock"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">monthly_totals</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span>
+        <span class="s2">"trajectories"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">final_stock</span><span class="p">),</span>
+        <span class="s2">"final_target_shortfalls"</span><span class="p">:</span> <span class="nb">int</span><span class="p">((</span><span class="n">shortfall</span> <span class="o">&gt;</span> <span class="n">tolerance</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span>
+    <span class="p">}</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">report</span><span class="p">(</span><span class="n">MissingDemand</span><span class="p">,</span> <span class="n">InventoryEvolution</span><span class="p">,</span> <span class="n">problem_data</span><span class="p">,</span> <span class="n">rho</span><span class="p">):</span>
     <span class="c1"># list to store DFs with per-group computed quantiles at various levels</span>
     <span class="n">average_missed_demand</span> <span class="o">=</span> <span class="n">MissingDemand</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
@@ -1497,6 +1514,13 @@
     <span class="nb">print</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">"Simulated average missed demand for logic chips is </span><span class="si">{</span><span class="n">MissingDemand</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'logic'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> and for memory chips is </span><span class="si">{</span><span class="n">MissingDemand</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'memory'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
     <span class="p">)</span>
+    <span class="n">diagnostics</span> <span class="o">=</span> <span class="n">inventory_diagnostics</span><span class="p">(</span><span class="n">InventoryEvolution</span><span class="p">,</span> <span class="n">problem_data</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Month-end stocks above capacity: </span><span class="si">{</span><span class="n">diagnostics</span><span class="p">[</span><span class="s1">'capacity_exceedances'</span><span class="p">]</span><span class="si">}</span><span class="s2"> "</span>
+          <span class="sa">f</span><span class="s2">"of </span><span class="si">{</span><span class="n">diagnostics</span><span class="p">[</span><span class="s1">'month_ends'</span><span class="p">]</span><span class="si">}</span><span class="s2"> (tolerance 1e-6)"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Maximum month-end stock: </span><span class="si">{</span><span class="n">diagnostics</span><span class="p">[</span><span class="s1">'max_month_end_stock'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">; "</span>
+          <span class="sa">f</span><span class="s2">"capacity: </span><span class="si">{</span><span class="n">problem_data</span><span class="p">[</span><span class="s1">'stock_limit'</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Trajectories below at least one final-stock target: "</span>
+          <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">diagnostics</span><span class="p">[</span><span class="s1">'final_target_shortfalls'</span><span class="p">]</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">diagnostics</span><span class="p">[</span><span class="s1">'trajectories'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span>
         <span class="s2">"Plot of missed chips demand over time under "</span>
         <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">rho</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
@@ -1526,7 +1550,7 @@
 </div>
 </div>
 </div>
-<p>The simulation results report a sllighly higher inventory cost and a nonzero amount of missed chip demand.</p>
+<p>The simulation reports a slightly higher inventory cost and nonzero missed chip demand. The diagnostics below also show where the recourse rule exceeds storage capacity or misses final-stock targets.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">report</span><span class="p">(</span><span class="n">SimResults</span><span class="p">[</span><span class="s2">"MissingDemand"</span><span class="p">],</span> <span class="n">SimResults</span><span class="p">[</span><span class="s2">"InventoryEvolution"</span><span class="p">],</span> <span class="n">problem_data</span><span class="p">,</span> <span class="n">rho</span><span class="p">)</span>
@@ -1539,6 +1563,10 @@ Theoretical inventory cost: 3270.57
 
 Simulated realized inventory cost: 3313.86
 Simulated average missed demand for logic chips is 16.360 and for memory chips is 0.000
+
+Month-end stocks above capacity: 54 of 600 (tolerance 1e-6)
+Maximum month-end stock: 9175.14; capacity: 9000
+Trajectories below at least one final-stock target: 9 of 50
 
 Plot of missed chips demand over time under 8.0% uncertainty
 </pre></div>
