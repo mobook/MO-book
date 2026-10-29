@@ -281,7 +281,6 @@
 </details></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="04.00.html">4. Network Optimization</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="01-dinner-seat-allocation.html">4.1 Dinner seating arrangement</a></li>
-
 <li class="toctree-l2"><a class="reference internal" href="02-mincost-flow.html">4.2 Minimum-Cost Flow Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="03-gasoline-distribution.html">4.3 Gasoline distribution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="04-exam-room-scheduling.html">4.4 Exam room scheduling</a></li>
@@ -571,9 +570,14 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem">Problem</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#demonstration-of-triangular-arbitrage">Demonstration of Triangular Arbitrage</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling">Modeling</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling">Modeling</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#connection-to-shortest-paths-and-the-trading-horizon">Connection to shortest paths and the trading horizon</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#display-graph">Display graph</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#forex-data">FOREX data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#interpreting-the-historical-result">Interpreting the historical result</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bibliographic-notes">Bibliographic notes</a></li>
 </ul>
             </nav>
         </div>
@@ -618,7 +622,7 @@
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.environ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyo</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 </pre></div>
 </div>
@@ -628,12 +632,19 @@
 <section id="problem">
 <h2>Problem<a class="headerlink" href="#problem" title="Link to this heading">#</a></h2>
 <p>Exchanging one currency for another is among the most common of all banking transactions. Currencies are normally priced relative to each other.</p>
-<p>At this moment of this writing, for example, the Japanese yen (symbol JPY) is priced at 0.00761 relative to the euro (symbol EUR). At this price 100 euros would purchase 100/0.00761 = 13,140.6 yen. Conversely, EUR is priced at 131.585 yen.  The ‘round-trip’ of 100 euros from EUR to JPY and back to EUR results in</p>
+<p>As a numerical illustration, take a price of 0.00761 euros (EUR) per Japanese yen (JPY). At this price, 100 euros purchases <span class="math notranslate nohighlight">\(100/0.00761 \approx 13{,}140.60\)</span> yen. Suppose the reverse exchange requires 131.585 yen per euro. The round trip gives</p>
 <div class="math notranslate nohighlight">
-\[100 \text{ EUR} \times \frac{1\text{ JPY}}{0.00761\text{ EUR}} {\quad\longrightarrow\quad} 12,140.6 \text{ JPY} \times\frac{1\text{ EUR}}{131.585\text{ JPY}} {\quad\longrightarrow\quad} 99.9954\text{ EUR}\]</div>
-<p>The small loss in this round-trip transaction is the fee collected by the brokers and banking system to provide these services.</p>
-<p>Needless to say, if a simple round-trip transaction like this reliably produced a net gain then there would many eager traders ready to take advantage of the situation. Trading situations offering a net gain with no risk are called arbitrage, and are the subject of intense interest by traders in the foreign exchange (forex) and crypto-currency markets around the globe.</p>
-<p>As one might expect, arbitrage opportunities involving a simple round-trip between a pair of currencies are almost non-existent in real-world markets. When the do appear, they are easily detected and rapid and automated trading  quickly exploit the situation. More complex arbitrage opportunities, however, can arise when working with three more currencies and a table of cross-currency exchange rates.</p>
+\[\begin{split}
+\begin{aligned}
+100\text{ EUR}\times\frac{1\text{ JPY}}{0.00761\text{ EUR}}
+&amp;\approx 13{,}140.60\text{ JPY},\\
+\frac{100}{0.00761}\text{ JPY}\times\frac{1\text{ EUR}}{131.585\text{ JPY}}
+&amp;\approx 99.8640\text{ EUR}.
+\end{aligned}
+\end{split}\]</div>
+<p>The loss is about 0.1360 euros. Different buying and selling prices can reflect a bid–ask spread; explicit transaction fees, when charged, are additional.</p>
+<p>Needless to say, if a simple round-trip transaction like this reliably produced a net gain then there would be many eager traders ready to take advantage of the situation. Trading situations offering a net gain with no risk are called arbitrage, and are the subject of intense interest by traders in the foreign exchange (forex) and crypto-currency markets around the globe.</p>
+<p>As one might expect, arbitrage opportunities involving a simple round trip between a pair of currencies are almost non-existent in real-world markets. When they do appear, they are easily detected and rapid automated trading quickly exploits the situation. More complex arbitrage opportunities can arise when working with three or more currencies and a table of cross-currency exchange rates.</p>
 </section>
 <section id="demonstration-of-triangular-arbitrage">
 <h2>Demonstration of Triangular Arbitrage<a class="headerlink" href="#demonstration-of-triangular-arbitrage" title="Link to this heading">#</a></h2>
@@ -659,22 +670,22 @@
 </tr>
 <tr class="row-even"><td class="text-left"><p>JPY</p></td>
 <td class="text-center"><p>100.0</p></td>
-<td class="text-center"><p>133.3</p></td>
+<td class="text-center"><p><span class="math notranslate nohighlight">\(1/0.0075\)</span></p></td>
 <td class="text-center"><p>1.0</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>Entry <span class="math notranslate nohighlight">\(a_{m, n}\)</span> is the number units of currency <span class="math notranslate nohighlight">\(m\)</span> received in exchange for one unit of currency <span class="math notranslate nohighlight">\(n\)</span>.  We use the notation</p>
+<p>Entry <span class="math notranslate nohighlight">\(a_{m, n}\)</span> is the number of units of currency <span class="math notranslate nohighlight">\(m\)</span> received in exchange for one unit of currency <span class="math notranslate nohighlight">\(n\)</span>.  We use the notation</p>
 <div class="math notranslate nohighlight">
 \[a_{m, n} = a_{m \leftarrow n}\]</div>
-<p>as reminder of what the entries denote. For this data there are no two way arbitrage opportunities. We can check this by explicitly computing all two-way currency exchanges</p>
+<p>as a reminder of what the entries denote. This data set has no two-way arbitrage opportunities. We can check this by explicitly computing all two-way currency exchanges</p>
 <div class="math notranslate nohighlight">
 \[I \rightarrow J \rightarrow I\]</div>
 <p>by computing</p>
 <div class="math notranslate nohighlight">
 \[ a_{i \leftarrow j} \times a_{j \leftarrow i}\]</div>
-<p>This data set shows no net cost and no arbitrage for conversion from one currency to another and back again.</p>
+<p>The reciprocal JPY/EUR entry is used without rounding in the code. This data set shows no net cost and no arbitrage for conversion from one currency to another and back again.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
@@ -692,7 +703,7 @@
     <span class="sa">f</span><span class="s2">"Net gain factor of the currency exchange chain USD -&gt; JPY -&gt; USD is: </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'USD'</span><span class="p">,</span><span class="w"> </span><span class="s1">'JPY'</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'JPY'</span><span class="p">,</span><span class="w"> </span><span class="s1">'USD'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">"Net gain factor of the currency exchangen USD -&gt; JPY -&gt; USD is: </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'EUR'</span><span class="p">,</span><span class="w"> </span><span class="s1">'JPY'</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'JPY'</span><span class="p">,</span><span class="w"> </span><span class="s1">'EUR'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+    <span class="sa">f</span><span class="s2">"Net gain factor of the currency exchange chain EUR -&gt; JPY -&gt; EUR is: </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'EUR'</span><span class="p">,</span><span class="w"> </span><span class="s1">'JPY'</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s1">'JPY'</span><span class="p">,</span><span class="w"> </span><span class="s1">'EUR'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -742,9 +753,9 @@
     </tr>
   </tbody>
 </table>
-</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Net change factor of the transaction chain USD -&gt; EUR -&gt; USD is: 1.0
-Net change factor of the transaction chain USD -&gt; JPY -&gt; USD is: 1.0
-Net change factor of the transaction chain USD -&gt; JPY -&gt; USD is: 1.0
+</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Net gain factor of the currency exchange chain USD -&gt; EUR -&gt; USD is: 1.0
+Net gain factor of the currency exchange chain USD -&gt; JPY -&gt; USD is: 1.0
+Net gain factor of the currency exchange chain EUR -&gt; JPY -&gt; EUR is: 1.0
 </pre></div>
 </div>
 </div>
@@ -763,53 +774,77 @@ Net change factor of the transaction chain USD -&gt; JPY -&gt; USD is: 1.0
 <span class="n">K</span> <span class="o">=</span> <span class="s2">"EUR"</span>
 
 <span class="nb">print</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">"Net gain factor of the currency exchangen USD -&gt; JPY -&gt; EUR -&gt; USD is: </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">I</span><span class="p">,</span><span class="w"> </span><span class="n">K</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">K</span><span class="p">,</span><span class="w"> </span><span class="n">J</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">J</span><span class="p">,</span><span class="w"> </span><span class="n">I</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+    <span class="sa">f</span><span class="s2">"Net gain factor of the currency exchange chain USD -&gt; JPY -&gt; EUR -&gt; USD is: </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">I</span><span class="p">,</span><span class="w"> </span><span class="n">K</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">K</span><span class="p">,</span><span class="w"> </span><span class="n">J</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">J</span><span class="p">,</span><span class="w"> </span><span class="n">I</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Net gain factor of the currency exchangen USD -&gt; JPY -&gt; EUR -&gt; USD is: 1.5
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Net gain factor of the currency exchange chain USD -&gt; JPY -&gt; EUR -&gt; USD is: 1.5
 </pre></div>
 </div>
 </div>
 </div>
-<p>Our challenge is create a model that can identify complex arbitrage opportunities that may exist in cross-currency forex markets.</p>
+<p>Our challenge is to create a model that can identify complex arbitrage opportunities that may exist in cross-currency forex markets.</p>
 </section>
 <section id="modeling">
 <h2>Modeling<a class="headerlink" href="#modeling" title="Link to this heading">#</a></h2>
 <p>The cross-currency table <span class="math notranslate nohighlight">\(A\)</span> provides exchange rates among currencies. Entry <span class="math notranslate nohighlight">\(a_{i,j}\)</span> in row <span class="math notranslate nohighlight">\(i\)</span>, column <span class="math notranslate nohighlight">\(j\)</span> tells us how many units of currency <span class="math notranslate nohighlight">\(i\)</span> are received in exchange for one unit of currency <span class="math notranslate nohighlight">\(j\)</span>. We use the notation <span class="math notranslate nohighlight">\(a_{i, j} = a_{i\leftarrow j}\)</span> to remind ourselves of this relationship.</p>
-<p>We start with <span class="math notranslate nohighlight">\(w_j(0)\)</span> units of currency <span class="math notranslate nohighlight">\(j \in N\)</span>, where <span class="math notranslate nohighlight">\(N\)</span> is the set of all currencies in the data set. We consider a sequence of trades <span class="math notranslate nohighlight">\(t = 1, 2, \ldots, T\)</span> where <span class="math notranslate nohighlight">\(w_j(t)\)</span> is the amount of currency <span class="math notranslate nohighlight">\(j\)</span> on hand after completing trade <span class="math notranslate nohighlight">\(t\)</span>.</p>
-<p>Each trade is executed in two phases. In the first phase an amount <span class="math notranslate nohighlight">\(x_{i\leftarrow j}(t)\)</span> of currency <span class="math notranslate nohighlight">\(j\)</span> is committed for exchange to currency <span class="math notranslate nohighlight">\(i\)</span>. This allows a trade to include multiple currency transactions. After the commitment the unencumbered balance for currency <span class="math notranslate nohighlight">\(j\)</span> must satisfy trading constraints. Each trade consists of simultaneous transactions in one or more currencies.</p>
+<p>We start with <span class="math notranslate nohighlight">\(w_j(0)\)</span> units of currency <span class="math notranslate nohighlight">\(j \in N\)</span>, where <span class="math notranslate nohighlight">\(N\)</span> is the set of all currencies in the data set. We consider trading stages <span class="math notranslate nohighlight">\(t = 1, 2, \ldots, T\)</span>; each stage can contain several simultaneous currency transactions. Here <span class="math notranslate nohighlight">\(w_j(t)\)</span> is the amount of currency <span class="math notranslate nohighlight">\(j\)</span> on hand after completing stage <span class="math notranslate nohighlight">\(t\)</span>.</p>
+<p>Each stage is executed in two phases. In the first phase an amount <span class="math notranslate nohighlight">\(x_{i\leftarrow j}(t)\)</span> of currency <span class="math notranslate nohighlight">\(j\)</span> is committed for exchange to currency <span class="math notranslate nohighlight">\(i\)</span>. This allows a stage to include multiple currency transactions. After the commitment the unencumbered balance for currency <span class="math notranslate nohighlight">\(j\)</span> must satisfy trading constraints. Each stage consists of simultaneous transactions in one or more currencies.</p>
 <div class="math notranslate nohighlight">
 \[w_j(t-1) - \sum_{i\ne j} x_{i\leftarrow j}(t) \geq 0\]</div>
 <p>Here a lower bound has been placed to prohibit short-selling of currency <span class="math notranslate nohighlight">\(j\)</span>. This constraint could be modified if leveraging is allowed on the exchange.</p>
-<p>The second phase of the trade is complete when the exchange credits all of the currency accounts according to</p>
+<p>The second phase of the stage is complete when the exchange credits all of the currency accounts according to</p>
 <div class="math notranslate nohighlight">
 \[ w_j(t) = w_j(t-1) - \underbrace{\sum_{i\ne j} x_{i\leftarrow j}(t)}_{\text{outgoing}} + \underbrace{\sum_{i\ne j} a_{j\leftarrow i}x_{j\leftarrow i}(t)}_{\text{incoming}} \]</div>
-<p>We assume all trading fees and costs are represented in the bid/ask spreads represented by <span class="math notranslate nohighlight">\(a_{j\leftarrow i}\)</span></p>
-<p>The goal of this calculation is to find a set of transactions <span class="math notranslate nohighlight">\(x_{i\leftarrow j}(t) \geq 0\)</span> to maximize the value of portfolio after a specified number of trades <span class="math notranslate nohighlight">\(T\)</span>.</p>
+<p>We assume all trading fees and costs are included in the effective conversion rates <span class="math notranslate nohighlight">\(a_{j\leftarrow i}\)</span>.</p>
+<p>The goal is to maximize the final amount of the selected reserve currency <span class="math notranslate nohighlight">\(R\)</span> after <span class="math notranslate nohighlight">\(T\)</span> trading stages. A stage can contain several simultaneous exchanges; it is not a unit of clock time. The initial holding is 100 units of <span class="math notranslate nohighlight">\(R\)</span>.</p>
+<p>Putting the constraints together gives the following LO model, with <span class="math notranslate nohighlight">\(w_j^0=100\)</span> for <span class="math notranslate nohighlight">\(j=R\)</span> and <span class="math notranslate nohighlight">\(w_j^0=0\)</span> otherwise:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{aligned}
+\max\quad &amp; w_R(T)\\
+\text{s.t.}\quad &amp; w_j(0)=w_j^0 &amp;&amp; j\in N,\\
+&amp; \sum_{i\ne j}x_{i\leftarrow j}(t)\leq w_j(t-1)
+&amp;&amp; j\in N,\ t=1,\ldots,T,\\
+&amp; w_j(t)=w_j(t-1)-\sum_{i\ne j}x_{i\leftarrow j}(t)
++\sum_{i\ne j}a_{j\leftarrow i}x_{j\leftarrow i}(t)
+&amp;&amp; j\in N,\ t=1,\ldots,T,\\
+&amp; w_j(t)\geq0 &amp;&amp; j\in N,\ t=0,\ldots,T,\\
+&amp; x_{i\leftarrow j}(t)\geq0 &amp;&amp; i,j\in N,\ i\ne j,\ t=1,\ldots,T.
+\end{aligned}
+\end{split}\]</div>
+<section id="connection-to-shortest-paths-and-the-trading-horizon">
+<h3>Connection to shortest paths and the trading horizon<a class="headerlink" href="#connection-to-shortest-paths-and-the-trading-horizon" title="Link to this heading">#</a></h3>
+<p>Give each directed currency arc <span class="math notranslate nohighlight">\(j\to i\)</span> the weight <span class="math notranslate nohighlight">\(-\log a_{i\leftarrow j}\)</span>. A product of exchange rates greater than one becomes a sum of weights less than zero. Thus an arbitrage cycle corresponds to a negative-weight cycle, as in the <a class="reference internal" href="05-cryptocurrency-arbitrage.html"><span class="std std-doc">cryptocurrency example</span></a> in Chapter 4. A negative cycle can be detected with Bellman–Ford; ordinary shortest paths on the original currency graph are not finite once such a reachable cycle can be repeated indefinitely.</p>
+<p>Here the horizon bounds the number of stages. To connect it to a shortest-path problem, make <span class="math notranslate nohighlight">\(T+1\)</span> layers of currency nodes <span class="math notranslate nohighlight">\((j,t)\)</span>. Trading arcs go from <span class="math notranslate nohighlight">\((j,t-1)\)</span> to <span class="math notranslate nohighlight">\((i,t)\)</span> with weight <span class="math notranslate nohighlight">\(-\log a_{i\leftarrow j}\)</span>; holding a currency gives an arc of weight zero to the next layer. A path from <span class="math notranslate nohighlight">\((R,0)\)</span> to <span class="math notranslate nohighlight">\((R,T)\)</span> represents a closed currency walk with at most <span class="math notranslate nohighlight">\(T\)</span> exchanges. It may revisit currencies and need not be a simple cycle of length <span class="math notranslate nohighlight">\(T\)</span>.</p>
+<p>With the fixed positive rates and no transaction capacities or fixed fees used here, an optimal all-in path exists: splitting wealth among routes cannot outperform the route with the largest rate product. The LO model also allows splits when routes tie. Later stages may hold the proceeds, so <span class="math notranslate nohighlight">\(T=3\)</span> allows up to three successive conversions rather than requiring three nonzero trades.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">arbitrage</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">R</span><span class="o">=</span><span class="s2">"EUR"</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">"Forex Arbitrage"</span><span class="p">)</span>
 
-    <span class="c1"># length of trading chain</span>
+    <span class="c1"># stages, including the initial holdings</span>
     <span class="n">m</span><span class="o">.</span><span class="n">T0</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
 
-    <span class="c1"># number of transactions</span>
+    <span class="c1"># trading stages</span>
     <span class="n">m</span><span class="o">.</span><span class="n">T1</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
 
-    <span class="c1"># currency *nodes*</span>
+    <span class="c1"># currency nodes</span>
     <span class="n">m</span><span class="o">.</span><span class="n">NODES</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 
-    <span class="c1"># paths between currency nodes i -&gt; j</span>
+    <span class="c1"># Preserve the rates on the model so its graph does not depend on a later df.</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">NODES</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span><span class="p">,</span>
+                    <span class="n">initialize</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]),</span> <span class="n">within</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">PositiveReals</span><span class="p">)</span>
+
+    <span class="c1"># exchange arcs: j -&gt; i, indexed as (i, j)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">ARCS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">NODES</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="k">lambda</span> <span class="n">arb</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">j</span><span class="p">)</span>
 
-    <span class="c1"># w[i, t] amount of currency i on hand after transaction t</span>
+    <span class="c1"># w[i, t]: units of currency i held after stage t</span>
     <span class="n">m</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">NODES</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T0</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
 
-    <span class="c1"># x[m, n, t] amount of currency m converted to currency n in transaction t t</span>
+    <span class="c1"># x[i, j, t]: units of currency j committed for conversion to i at stage t</span>
     <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">ARCS</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T1</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">NonNegativeReals</span><span class="p">)</span>
 
     <span class="c1"># start with assignment of 100 units of a selected reserve currency</span>
@@ -829,26 +864,27 @@ Net change factor of the transaction chain USD -&gt; JPY -&gt; USD is: 1.0
     <span class="k">def</span><span class="w"> </span><span class="nf">balances</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">t</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span>
             <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">j</span>
-        <span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">j</span><span class="p">)</span>
+        <span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">j</span><span class="p">)</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">wealth</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">R</span><span class="p">,</span> <span class="n">T</span><span class="p">]</span>
 
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T0</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">t = </span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">t</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">ARCS</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">1e-6</span><span class="p">:</span>
                     <span class="nb">print</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">j</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">  Convert </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">]()</span><span class="si">:</span><span class="s2">11.5f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">j</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">t</span><span class="p">]()</span><span class="si">:</span><span class="s2">11.5f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">j</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">  Convert </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">]()</span><span class="si">:</span><span class="s2">11.5f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">j</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">])</span><span class="o">*</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">t</span><span class="p">]()</span><span class="si">:</span><span class="s2">11.5f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span>
                     <span class="p">)</span>
             <span class="nb">print</span><span class="p">()</span>
 
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"w[</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">] = </span><span class="si">{</span><span class="nb">abs</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">]())</span><span class="si">:</span><span class="s2">11.5f</span><span class="si">}</span><span class="s2"> "</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"w[</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">] = </span><span class="si">{</span><span class="p">(</span><span class="mf">0.0</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nb">abs</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">]())</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">1e-8</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">]())</span><span class="si">:</span><span class="s2">11.5f</span><span class="si">}</span><span class="s2"> "</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 
@@ -860,110 +896,73 @@ Net change factor of the transaction chain USD -&gt; JPY -&gt; USD is: 1.0
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-
-t = 0
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>t = 0
 
 w[USD,0] =     0.00000 
 w[EUR,0] =   100.00000 
 w[JPY,0] =     0.00000 
-w[GBP,0] =     0.00000 
-w[CHF,0] =     0.00000 
-w[CAD,0] =     0.00000 
-w[AUD,0] =     0.00000 
-w[HKD,0] =     0.00000 
 
 t = 1
 
-EUR -&gt; JPY  Convert   100.00000 EUR to 13160.97000 JPY
+EUR -&gt; USD  Convert   100.00000 EUR to   200.00000 USD
 
-w[USD,1] =     0.00000 
+w[USD,1] =   200.00000 
 w[EUR,1] =     0.00000 
-w[JPY,1] = 13160.97000 
-w[GBP,1] =     0.00000 
-w[CHF,1] =     0.00000 
-w[CAD,1] =     0.00000 
-w[AUD,1] =     0.00000 
-w[HKD,1] =     0.00000 
+w[JPY,1] =     0.00000 
 
 t = 2
 
-JPY -&gt; CAD  Convert 13160.97000 JPY to   140.82238 CAD
+USD -&gt; JPY  Convert   200.00000 USD to 20000.00000 JPY
 
 w[USD,2] =     0.00000 
 w[EUR,2] =     0.00000 
-w[JPY,2] =     0.00000 
-w[GBP,2] =     0.00000 
-w[CHF,2] =     0.00000 
-w[CAD,2] =   140.82238 
-w[AUD,2] =     0.00000 
-w[HKD,2] =     0.00000 
+w[JPY,2] = 20000.00000 
 
 t = 3
 
-CAD -&gt; EUR  Convert   140.82238 CAD to   100.44860 EUR
+JPY -&gt; EUR  Convert 20000.00000 JPY to   150.00000 EUR
 
 w[USD,3] =     0.00000 
-w[EUR,3] =   100.44860 
+w[EUR,3] =   150.00000 
 w[JPY,3] =     0.00000 
-w[GBP,3] =     0.00000 
-w[CHF,3] =     0.00000 
-w[CAD,3] =     0.00000 
-w[AUD,3] =     0.00000 
-w[HKD,3] =     0.00000 
 
 Initial wealth   100.00000 EUR
-Final wealth   100.44860 EUR
+Final wealth   150.00000 EUR
 </pre></div>
 </div>
 </div>
 </div>
+</section>
 </section>
 <section id="display-graph">
 <h2>Display graph<a class="headerlink" href="#display-graph" title="Link to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">display_graph</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
-    <span class="n">path</span> <span class="o">=</span> <span class="p">[]</span>
-
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Holdings after each stage:"</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T0</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]()</span> <span class="o">&gt;=</span> <span class="mf">1e-6</span><span class="p">:</span>
-                <span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">]()</span><span class="si">:</span><span class="s2">11.5f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="n">path</span> <span class="o">=</span> <span class="s2">" -&gt; "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">holdings</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">]()</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]()</span> <span class="o">&gt;=</span> <span class="mf">1e-6</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"t=</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">holdings</span><span class="p">))</span>
 
     <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span><span class="p">:</span>
-        <span class="n">G</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-    <span class="n">nodelist</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-    <span class="n">edge_labels</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-
+    <span class="n">edge_labels</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">T1</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">ARCS</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">:</span>
-                <span class="n">nodelist</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-                <span class="n">nodelist</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
-                <span class="n">y</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">t</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]()</span>
-                <span class="n">x</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]()</span>
+            <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">t</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="mf">1e-6</span><span class="p">:</span>
                 <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
-                <span class="n">edge_labels</span><span class="p">[(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                <span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"t=</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">])</span><span class="si">:</span><span class="s2">.6g</span><span class="si">}</span><span class="s2">"</span>
+                <span class="n">previous</span> <span class="o">=</span> <span class="n">edge_labels</span><span class="o">.</span><span class="n">get</span><span class="p">((</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span>
+                <span class="n">edge_labels</span><span class="p">[(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="n">previous</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="n">label</span> <span class="k">if</span> <span class="n">previous</span> <span class="k">else</span> <span class="n">label</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">G</span><span class="p">:</span>
+        <span class="n">G</span><span class="o">.</span><span class="n">add_nodes_from</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">NODES</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]()</span> <span class="o">&gt;=</span> <span class="mf">1e-6</span><span class="p">)</span>
 
-    <span class="n">nodelist</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span>
-    <span class="n">pos</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">spring_layout</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
-    <span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx</span><span class="p">(</span>
-        <span class="n">G</span><span class="p">,</span>
-        <span class="n">pos</span><span class="p">,</span>
-        <span class="n">with_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">node_size</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
-        <span class="n">nodelist</span><span class="o">=</span><span class="n">nodelist</span><span class="p">,</span>
-        <span class="n">node_color</span><span class="o">=</span><span class="s2">"lightblue"</span><span class="p">,</span>
-        <span class="n">node_shape</span><span class="o">=</span><span class="s2">"s"</span><span class="p">,</span>
-        <span class="n">arrowsize</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-        <span class="n">label</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">spring_layout</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">2023</span><span class="p">)</span>
+    <span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">with_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">node_size</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+                     <span class="n">node_color</span><span class="o">=</span><span class="s2">"lightblue"</span><span class="p">,</span> <span class="n">node_shape</span><span class="o">=</span><span class="s2">"s"</span><span class="p">,</span> <span class="n">arrowsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
     <span class="n">nx</span><span class="o">.</span><span class="n">draw_networkx_edge_labels</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">edge_labels</span><span class="o">=</span><span class="n">edge_labels</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
 
 <span class="n">display_graph</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
@@ -971,17 +970,21 @@ Final wealth   100.44860 EUR
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>   100.00000 USD -&gt; 11861.00000 JPY -&gt;   126.91270 CAD -&gt;   100.45140 USD
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Holdings after each stage:
+t=0: 100.00000 EUR
+t=1: 200.00000 USD
+t=2: 20000.00000 JPY
+t=3: 150.00000 EUR
 </pre></div>
 </div>
-<img alt="../../_images/22a1af045b511be0444ab4ae34975512955298840c4cfe0a565befc0a05750f6.png" src="../../_images/22a1af045b511be0444ab4ae34975512955298840c4cfe0a565befc0a05750f6.png" />
+<img alt="../../_images/f1602cb9b51d87c10d629e7ec244c12fc995e34add6c03f1f9ec21ef0cb805ec.png" src="../../_images/f1602cb9b51d87c10d629e7ec244c12fc995e34add6c03f1f9ec21ef0cb805ec.png" />
 </div>
 </div>
 </section>
 <section id="forex-data">
 <h2>FOREX data<a class="headerlink" href="#forex-data" title="Link to this heading">#</a></h2>
-<p><a class="reference external" href="https://www.bloomberg.com/markets/currencies/cross-rates">https://www.bloomberg.com/markets/currencies/cross-rates</a></p>
-<p><a class="reference external" href="https://www.tradingview.com/markets/currencies/cross-rates-overview-prices/">https://www.tradingview.com/markets/currencies/cross-rates-overview-prices/</a></p>
+<p>The following fixed table was transcribed on 17 March 2022 from the <a class="reference external" href="https://www.bloomberg.com/markets/currencies/cross-rates">Bloomberg cross-rate page</a>. <a class="reference external" href="https://www.tradingview.com/markets/currencies/cross-rates-overview-prices/">TradingView</a> offers another cross-rate display. The notebook uses the saved table, not a live download.</p>
+<p>These rates have been rounded to four decimal places. We first solve the model using those numbers literally, then examine whether the apparent gain is supported by their precision. A displayed cross-rate table does not supply simultaneous executable bid/ask quotes, fees or available trading quantities.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># data extracted 2022-03-17</span>
@@ -1130,14 +1133,18 @@ Final wealth   100.44860 EUR
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">arbitrage</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="s2">"USD"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Initial wealth: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="s1">'USD'</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">]()</span><span class="si">:</span><span class="s2">11.5f</span><span class="si">}</span><span class="s2"> USD"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Final wealth:   </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">w</span><span class="p">[</span><span class="s1">'USD'</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">]()</span><span class="si">:</span><span class="s2">11.5f</span><span class="si">}</span><span class="s2"> USD"</span><span class="p">)</span>
+
+<span class="c1"># Sensitivity illustration: replace only the JPY -&gt; CAD rate by the reciprocal</span>
+<span class="c1"># of the table's CAD -&gt; JPY rate, without changing df or the optimized example.</span>
+<span class="n">reciprocal_cad_per_jpy</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">"JPY"</span><span class="p">,</span> <span class="s2">"CAD"</span><span class="p">]</span>
+<span class="n">illustrative_final_usd</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">"JPY"</span><span class="p">,</span> <span class="s2">"USD"</span><span class="p">]</span> <span class="o">*</span> <span class="n">reciprocal_cad_per_jpy</span> <span class="o">*</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">"USD"</span><span class="p">,</span> <span class="s2">"CAD"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Reciprocal CAD per JPY: </span><span class="si">{</span><span class="n">reciprocal_cad_per_jpy</span><span class="si">:</span><span class="s2">.10f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Same three-trade route with that reciprocal: </span><span class="si">{</span><span class="n">illustrative_final_usd</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2"> USD"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Running HiGHS 1.5.3 [date: 2023-05-16, git hash: 594fa5a9d]
-Copyright (c) 2023 HiGHS under MIT licence terms
-
-t = 0
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>t = 0
 
 w[USD,0] =   100.00000 
 w[EUR,0] =     0.00000 
@@ -1189,6 +1196,9 @@ w[HKD,3] =     0.00000
 
 Initial wealth:   100.00000 USD
 Final wealth:     100.45140 USD
+
+Reciprocal CAD per JPY: 0.0106517145
+Same three-trade route with that reciprocal: 99.99810 USD
 </pre></div>
 </div>
 </div>
@@ -1200,12 +1210,25 @@ Final wealth:     100.45140 USD
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>   100.00000 USD -&gt; 11861.00000 JPY -&gt;   126.91270 CAD -&gt;   100.45140 USD
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Holdings after each stage:
+t=0: 100.00000 USD
+t=1: 11861.00000 JPY
+t=2: 126.91270 CAD
+t=3: 100.45140 USD
 </pre></div>
 </div>
-<img alt="../../_images/b9187d2fa7e1a69c76e00a4d54789ade5864f3af768dfb79fcf4561451d736f5.png" src="../../_images/b9187d2fa7e1a69c76e00a4d54789ade5864f3af768dfb79fcf4561451d736f5.png" />
+<img alt="../../_images/b179fbb7ecc75903c31531b9ba9e8263ab39a78db6ce929b8f2ead3454940a5f.png" src="../../_images/b179fbb7ecc75903c31531b9ba9e8263ab39a78db6ce929b8f2ead3454940a5f.png" />
 </div>
 </div>
+</section>
+<section id="interpreting-the-historical-result">
+<h2>Interpreting the historical result<a class="headerlink" href="#interpreting-the-historical-result" title="Link to this heading">#</a></h2>
+<p>For the literal rounded table, the optimal three-stage USD route is USD → JPY → CAD → USD. It turns 100 USD into about 100.45140 USD, an apparent gain of 0.4514%. This is a result for the saved coefficients, not evidence that the gain could have been realized in the market.</p>
+<p>The JPY → CAD entry is 0.0107 CAD per JPY. The reciprocal of the reverse entry is <span class="math notranslate nohighlight">\(1/93.8816\approx0.0106517145\)</span>, which also rounds to 0.0107. Using that reciprocal for this one trade makes the same route return about 99.99810 USD. This illustrates how rounding alone can account for the apparent gain; the reciprocal is not a recovered historical execution price. The teaching example with an exact 50% triangular gain is deliberately synthetic and separate from this historical table.</p>
+</section>
+<section id="bibliographic-notes">
+<h2>Bibliographic notes<a class="headerlink" href="#bibliographic-notes" title="Link to this heading">#</a></h2>
+<p>Robert Sedgewick and Kevin Wayne, <em>Algorithms</em>, 4th edition (Addison-Wesley, 2011), §4.4, describe the negative-logarithm construction and Bellman–Ford arbitrage detection; their <a class="reference external" href="https://github.com/kevin-wayne/algs4/blob/master/src/main/java/edu/princeton/cs/algs4/Arbitrage.java">arbitrage implementation</a> accompanies that discussion. NetworkX documents the corresponding <a class="reference external" href="https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.shortest_paths.weighted.find_negative_cycle.html">negative-cycle search</a>. Chapter 4’s <a class="reference internal" href="05-cryptocurrency-arbitrage.html"><span class="std std-doc">cryptocurrency example</span></a> develops the connection between exchange rates, negative cycles and linear optimization.</p>
 </section>
 </section>
 
@@ -1278,9 +1301,14 @@ Final wealth:     100.45140 USD
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#preamble-install-pyomo-and-a-solver">Preamble: Install Pyomo and a solver</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem">Problem</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#demonstration-of-triangular-arbitrage">Demonstration of Triangular Arbitrage</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling">Modeling</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#modeling">Modeling</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#connection-to-shortest-paths-and-the-trading-horizon">Connection to shortest paths and the trading horizon</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#display-graph">Display graph</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#forex-data">FOREX data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#interpreting-the-historical-result">Interpreting the historical result</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bibliographic-notes">Bibliographic notes</a></li>
 </ul>
   </nav></div>
 

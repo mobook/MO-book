@@ -281,7 +281,6 @@
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../04/04.00.html">4. Network Optimization</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../04/01-dinner-seat-allocation.html">4.1 Dinner seating arrangement</a></li>
-
 <li class="toctree-l2"><a class="reference internal" href="../04/02-mincost-flow.html">4.2 Minimum-Cost Flow Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../04/03-gasoline-distribution.html">4.3 Gasoline distribution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../04/04-exam-room-scheduling.html">4.4 Exam room scheduling</a></li>
@@ -580,7 +579,7 @@
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ramping-constraints">Ramping constraints</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#specifying-the-minimum-number-of-operational-days-between-maintenance-periods">Specifying the minimum number of operational days between maintenance periods</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#spacing-between-maintenance-periods">Spacing between maintenance periods</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exercises">Exercises</a></li>
 </ul>
             </nav>
@@ -634,10 +633,10 @@
 </section>
 <section id="modeling-with-disjunctive-constraints">
 <h2>Modeling with disjunctive constraints<a class="headerlink" href="#modeling-with-disjunctive-constraints" title="Link to this heading">#</a></h2>
-<p>The model comprises two sets of the binary variables indexed by the day <span class="math notranslate nohighlight">\(t\)</span>, with <span class="math notranslate nohighlight">\(t=1,\dots,T\)</span>. Binary variables <span class="math notranslate nohighlight">\(x_t\)</span> correspond to the operating mode of the process unit, with <span class="math notranslate nohighlight">\(x_t=1\)</span> indicating the unit is operating on day <span class="math notranslate nohighlight">\(t\)</span> and able to earn a profit <span class="math notranslate nohighlight">\(c_t\)</span>. Binary variable <span class="math notranslate nohighlight">\(y_t=1\)</span> indicates the first day of a maintenance period during which the unit is not operating and earning <span class="math notranslate nohighlight">\(0\)</span> profit.</p>
+<p>The model uses binary variables <span class="math notranslate nohighlight">\(x_t\)</span> for days <span class="math notranslate nohighlight">\(t=1,\ldots,T\)</span>, with <span class="math notranslate nohighlight">\(x_t=1\)</span> indicating that the unit operates and earns profit <span class="math notranslate nohighlight">\(c_t\)</span>. A maintenance start must leave time for all <span class="math notranslate nohighlight">\(M\)</span> shutdown days within the horizon, so its possible dates are <span class="math notranslate nohighlight">\(Y=\{1,\ldots,T-M+1\}\)</span>. For <span class="math notranslate nohighlight">\(t\in Y\)</span>, the binary variable <span class="math notranslate nohighlight">\(y_t=1\)</span> indicates the first day of a maintenance period.</p>
 <section id="objective">
 <h3>Objective<a class="headerlink" href="#objective" title="Link to this heading">#</a></h3>
-<p>The planning objective is to maximize profit realized during the <span class="math notranslate nohighlight">\(T\)</span> days the plant is operational. This is achieved by maximizing the sum of the products of the profit per day <span class="math notranslate nohighlight">\(c_t\)</span> and the binary variable <span class="math notranslate nohighlight">\(x_t\)</span> indicating the unit is operating on that day.</p>
+<p>The planning objective is to maximize profit realized over the <span class="math notranslate nohighlight">\(T\)</span>-day planning horizon. This is achieved by maximizing the sum of the products of the profit per day <span class="math notranslate nohighlight">\(c_t\)</span> and the binary variable <span class="math notranslate nohighlight">\(x_t\)</span> indicating the unit is operating on that day.</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
@@ -650,36 +649,33 @@
 <p><strong>Number of maintenance periods is equal to P.</strong></p>
 <p>Completing <span class="math notranslate nohighlight">\(P\)</span> maintenance periods requires a total of <span class="math notranslate nohighlight">\(P\)</span> starts.</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}
-\begin{align*}
-\sum_{t=1}^T y_t &amp;  = P \\
-\end{align*}
-\end{split}\]</div>
+\[
+\sum_{t\in Y} y_t=P.
+\]</div>
 <p><strong>Maintenance periods do not overlap.</strong></p>
-<p>No more than one maintenance period can start in any consecutive set of <span class="math notranslate nohighlight">\(M\)</span> days.</p>
+<p>No more than one maintenance period can start in any consecutive set of <span class="math notranslate nohighlight">\(M\)</span> days. Only possible start dates in <span class="math notranslate nohighlight">\(Y\)</span> are included in the sum:</p>
 <div class="math notranslate nohighlight">
-\[
-\begin{align*}
-\sum_{s=0}^{M-1}y_{t+s} &amp; \leq 1 \qquad \forall \, t = 1, 2, \ldots, T-M+1
-\end{align*}
-\]</div>
-<p>This last requirement could be modified if some period of time should occur between maintenance periods.</p>
+\[\begin{split}
+\sum_{\substack{0\leq s&lt;M\\t+s\in Y}} y_{t+s}\leq1
+\qquad \forall t\in Y.
+\end{split}\]</div>
+<p>This requirement can be strengthened if a gap is needed between maintenance periods.</p>
 <p><strong>The unit must shut down for M days following a maintenance start.</strong></p>
-<p>The final requirement is a disjunctive constraint that says either <span class="math notranslate nohighlight">\(y_t = 0\)</span> or the sum <span class="math notranslate nohighlight">\(\sum_{s=0}^{M-1}x_{t+s} = 0\)</span>, but not both. Mathematically, this forms a set of constraints reading</p>
+<p>If <span class="math notranslate nohighlight">\(y_t=1\)</span>, the operating level must be zero on days <span class="math notranslate nohighlight">\(t,\ldots,t+M-1\)</span>. Equivalently, either there is no start on day <span class="math notranslate nohighlight">\(t\)</span>, or all <span class="math notranslate nohighlight">\(M\)</span> operating levels are zero:</p>
 <div class="math notranslate nohighlight">
 \[
-\begin{align*}
-\left(y_t = 0\right) \veebar \left(\sum_{s=0}^{M-1}x_{t+s} = 0\right)\qquad \forall \, t = 1, 2, \ldots, T-M+1
-\end{align*}
+\left(y_t=0\right)\ \lor\
+\left(\sum_{s=0}^{M-1}x_{t+s}=0\right)
+\qquad \forall t\in Y.
 \]</div>
-<p>where <span class="math notranslate nohighlight">\(\veebar\)</span> denotes an exclusive OR condition.</p>
+<p>The two algebraic conditions can both hold: a day with no maintenance start may still fall within an existing shutdown. In Pyomo, <code class="docutils literal notranslate"><span class="pre">xor=True</span></code> selects exactly one disjunct to enforce; it does not require the algebraic conditions in the unselected disjunct to be false.</p>
 </section>
 </section>
 <section id="pyomo-implementation">
 <h2>Pyomo implementation<a class="headerlink" href="#pyomo-implementation" title="Link to this heading">#</a></h2>
 <section id="pyomo-model">
 <h3>Pyomo model<a class="headerlink" href="#pyomo-model" title="Link to this heading">#</a></h3>
-<p>The disjunctive constraints can be represented directly in Pyomo using the <a class="reference external" href="https://pyomo.readthedocs.io/en/latest/modeling_extensions/gdp.html">Generalized Disjunctive Programming</a> extension. The GDP extension transforms the disjunctive constraints to a mixed integer linear optimization (MILO) problem using convex hull and cutting plane methods.</p>
+<p>The disjunctive constraints can be represented directly using Pyomo’s <a class="reference external" href="https://pyomo.readthedocs.io/en/stable/explanation/modeling/gdp/modeling.html">Generalized Disjunctive Programming</a> extension. The following model uses the hull reformulation, <code class="docutils literal notranslate"><span class="pre">gdp.hull</span></code>, to obtain a mixed integer linear optimization (MILO) problem.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">maintenance_planning</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">P</span><span class="p">):</span>
@@ -692,7 +688,7 @@
 
     <span class="n">m</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">maximize</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">profit</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
@@ -704,7 +700,7 @@
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">no_overlap</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span> <span class="o">+</span> <span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span> <span class="o">+</span> <span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="k">if</span> <span class="n">t</span> <span class="o">+</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Disjunction</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="n">xor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">required_shutdown</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
@@ -712,7 +708,8 @@
 
     <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">"gdp.hull"</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 
@@ -759,26 +756,26 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/6cfa0bff87aeea4c6271af588f487dcc4f0a03f8c33d2cb34b083f1943431864.png" src="../../_images/6cfa0bff87aeea4c6271af588f487dcc4f0a03f8c33d2cb34b083f1943431864.png" />
+<img alt="../../_images/b9458ecae5e4c5ab96317dbd8d59c71d59ec8ff87e5374108fded6f2439ede9e.png" src="../../_images/b9458ecae5e4c5ab96317dbd8d59c71d59ec8ff87e5374108fded6f2439ede9e.png" />
 </div>
 </div>
 </section>
 </section>
 <section id="ramping-constraints">
 <h2>Ramping constraints<a class="headerlink" href="#ramping-constraints" title="Link to this heading">#</a></h2>
-<p>Prior to maintenance shutdown, a large processing unit may take some time to safely ramp down from full production. Furthermore, it also requires more time to safely ramp back up to full production after maintenance. To account for ramp-down and ramp-up periods, we modify the problem formation in the following ways.</p>
+<p>Prior to maintenance shutdown, a large processing unit may take some time to safely ramp down from full production. Furthermore, it also requires more time to safely ramp back up to full production after maintenance. To account for ramp-down and ramp-up periods, we modify the problem formulation in the following ways.</p>
 <ul class="simple">
 <li><p>The variable denoting unit operation, <span class="math notranslate nohighlight">\(x_t\)</span> is changed from a binary variable to a continuous variable <span class="math notranslate nohighlight">\(0 \leq x_t \leq 1\)</span> denoting the fraction of total capacity at which the unit is operating on day <span class="math notranslate nohighlight">\(t\)</span>.</p></li>
-<li><p>Two new variable sequences, <span class="math notranslate nohighlight">\(0 \leq u_t^+ \leq u_t^{+,\max}\)</span> and <span class="math notranslate nohighlight">\(0\leq u_t^- \leq u_t^{-,\max}\)</span>, are introduced which denote the fraction increase or decrease in unit capacity to completed on day <span class="math notranslate nohighlight">\(t\)</span>.</p></li>
+<li><p>Two new variable sequences, <span class="math notranslate nohighlight">\(0 \leq u_t^+ \leq u_t^{+,\max}\)</span> and <span class="math notranslate nohighlight">\(0\leq u_t^- \leq u_t^{-,\max}\)</span>, are introduced which denote the fractional increase or decrease in unit capacity completed on day <span class="math notranslate nohighlight">\(t\)</span>.</p></li>
 <li><p>An additional sequence of equality constraints is introduced relating <span class="math notranslate nohighlight">\(x_t\)</span> to <span class="math notranslate nohighlight">\(u_t^+\)</span> and <span class="math notranslate nohighlight">\(u_t^-\)</span>:</p></li>
 </ul>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
-x_{t} &amp; = x_{t-1} + u^+_t - u^-_t \quad \forall \, t = 1, 2, \ldots, T-1.
+x_{t} &amp; = x_{t-1} + u^+_t - u^-_t \quad \forall \, t = 2, 3, \ldots, T.
 \end{align*}
 \]</div>
-<p>We begin the Pyomo model by specifying the constraints, then modifying the Big-M formulation to add the features described above.</p>
+<p>The next model adds these ramping constraints to the same shutdown disjunctions and again uses the hull reformulation.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Parameters for ramping constraints</span>
@@ -796,7 +793,7 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t \quad \forall \, t = 1, 2, \ldots, T-1.
 
     <span class="n">m</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">upos</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">upos_max</span><span class="p">))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">uneg</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">uneg_max</span><span class="p">))</span>
 
@@ -810,7 +807,7 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t \quad \forall \, t = 1, 2, \ldots, T-1.
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">no_overlap</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span> <span class="o">+</span> <span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span> <span class="o">+</span> <span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="k">if</span> <span class="n">t</span> <span class="o">+</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Disjunction</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="n">xor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">required_shutdown</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
@@ -825,7 +822,8 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t \quad \forall \, t = 1, 2, \ldots, T-1.
 
     <span class="n">pyo</span><span class="o">.</span><span class="n">TransformationFactory</span><span class="p">(</span><span class="s2">"gdp.hull"</span><span class="p">)</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 
@@ -836,38 +834,43 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t \quad \forall \, t = 1, 2, \ldots, T-1.
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/f27bd114f05f99477cca86a350985a024783627997a9a0bb438c369130f019c1.png" src="../../_images/f27bd114f05f99477cca86a350985a024783627997a9a0bb438c369130f019c1.png" />
+<img alt="../../_images/88eef02e792225dddc490b91d51be9c3734c4ef2635b42ccadd2010e71260850.png" src="../../_images/88eef02e792225dddc490b91d51be9c3734c4ef2635b42ccadd2010e71260850.png" />
 </div>
 </div>
 </section>
-<section id="specifying-the-minimum-number-of-operational-days-between-maintenance-periods">
-<h2>Specifying the minimum number of operational days between maintenance periods<a class="headerlink" href="#specifying-the-minimum-number-of-operational-days-between-maintenance-periods" title="Link to this heading">#</a></h2>
-<p>Up to this point we have imposed no constraints on the frequency of maintenance periods. Without such constraints, particularly when ramping constraints are imposed, is that maintenance periods will be scheduled back-to-back, which is clearly not a useful result for most situations.</p>
-<p>The next revision of the model is to incorporate a requirement that <span class="math notranslate nohighlight">\(N\)</span> operational days be scheduled between any maintenance periods. This does allow for maintenance to be postponed until the very end of the planning period. The disjunctive constraints read</p>
+<section id="spacing-between-maintenance-periods">
+<h2>Spacing between maintenance periods<a class="headerlink" href="#spacing-between-maintenance-periods" title="Link to this heading">#</a></h2>
+<p>Without an additional gap, maintenance periods can be scheduled back-to-back. We now require at least <span class="math notranslate nohighlight">\(N\)</span> days outside maintenance between successive maintenance periods. These days can include ramping: the requirement spaces the maintenance starts, rather than imposing positive or full-capacity production on each intervening day.</p>
+<p>If one period starts on day <span class="math notranslate nohighlight">\(t\)</span>, the next can start no earlier than day <span class="math notranslate nohighlight">\(t+M+N\)</span>. Thus the start-spacing constraint is</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\sum_{\substack{0\leq s&lt;M+N\\t+s\in Y}} y_{t+s}\leq1
+\qquad \forall t\in Y.
+\end{split}\]</div>
+<p>The shutdown still lasts <span class="math notranslate nohighlight">\(M\)</span> days, so its disjunction is unchanged:</p>
 <div class="math notranslate nohighlight">
 \[
-\begin{align*}
-\left(y_t = 0\right) \veebar \left(\sum_{s=0}^{(M + N -1) \wedge (t + s \leq T)}x_{t+s} = 0\right)\qquad \forall t = 1, 2, \ldots, T-M+1
-\end{align*}
+\left(y_t=0\right)\ \lor\
+\left(\sum_{s=0}^{M-1}x_{t+s}=0\right)
+\qquad \forall t\in Y.
 \]</div>
-<p>where the upper bound on the summation is needed to handle the terminal condition.</p>
-<p>Paradoxically, this is an example where the Big-M method provides a much faster solution.</p>
+<p>An equivalent direct big-M constraint is</p>
 <div class="math notranslate nohighlight">
 \[
-\begin{align*}
-\sum_{s=0}^{(M + N -1) \wedge (t + s \leq T)}x_{t+s} \leq (M+N)(1-y_t) \qquad \forall t = 1, 2, \ldots, T-M+1
-\end{align*}
+\sum_{s=0}^{M-1}x_{t+s}\leq M(1-y_t)
+\qquad \forall t\in Y.
 \]</div>
-<p>The following cell implements both sets of constraints.</p>
+<p>The bound <span class="math notranslate nohighlight">\(0\leq x_t\leq1\)</span> makes <span class="math notranslate nohighlight">\(M\)</span> a valid big-M coefficient for this sum of <span class="math notranslate nohighlight">\(M\)</span> terms. A final maintenance period may finish on day <span class="math notranslate nohighlight">\(T\)</span>; no additional gap after that last period is imposed outside the planning horizon.</p>
+<p>The following cell uses the direct big-M constraint. The commented GDP alternative enforces the same <span class="math notranslate nohighlight">\(M\)</span>-day shutdown; use one shutdown block or the other, with the common start-spacing constraint.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set the minimum number of operational days between maintenance periods</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set the minimum gap between successive maintenance periods</span>
 <span class="n">N</span> <span class="o">=</span> <span class="mi">10</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">maintenance_planning_ramp_operational</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span>
-        <span class="s2">"Maintenance planning with ramping constraints and minimum operational days"</span>
+        <span class="s2">"Maintenance planning with ramping constraints and minimum maintenance gap"</span>
     <span class="p">)</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">RangeSet</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
@@ -877,7 +880,7 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t \quad \forall \, t = 1, 2, \ldots, T-1.
 
     <span class="n">m</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">upos</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">upos_max</span><span class="p">))</span>
     <span class="n">m</span><span class="o">.</span><span class="n">uneg</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">uneg_max</span><span class="p">))</span>
 
@@ -897,26 +900,24 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t \quad \forall \, t = 1, 2, \ldots, T-1.
     <span class="k">def</span><span class="w"> </span><span class="nf">sumy</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">)</span> <span class="o">==</span> <span class="n">P</span>
 
-    <span class="c1"># no more than one maintenance start in the period of length M</span>
+    <span class="c1"># no more than one maintenance start in a window of length M + N</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">sprd</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span> <span class="o">+</span> <span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">W</span> <span class="k">if</span> <span class="n">t</span> <span class="o">+</span> <span class="n">s</span> <span class="o">&lt;=</span> <span class="n">T</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span> <span class="o">+</span> <span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">W</span> <span class="k">if</span> <span class="n">t</span> <span class="o">+</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span>
 
-    <span class="c1"># Choose one or the other the following methods. Comment out the method not used.</span>
-
-    <span class="c1"># Disjunctive constraint</span>
-    <span class="c1"># @m.Disjunction(m.Y)</span>
+    <span class="c1"># GDP alternative: use this block instead of the direct big-M block below.</span>
+    <span class="c1"># @m.Disjunction(m.Y, xor=True)</span>
     <span class="c1"># def disj(m, t):</span>
-    <span class="c1">#    return [m.y[t] == 0,</span>
-    <span class="c1">#            sum(m.x[t+s] for s in m.W if t + s &lt;= T) == 0]</span>
-    <span class="c1"># pyo.TransformationFactory('gdp.bigm').apply_to(m)</span>
+    <span class="c1">#     return [[m.y[t] == 0], [sum(m.x[t + s] for s in m.S) == 0]]</span>
+    <span class="c1"># pyo.TransformationFactory("gdp.bigm").apply_to(m)</span>
 
-    <span class="c1"># big-M method</span>
+    <span class="c1"># Direct big-M shutdown: M days, independently of the spacing N.</span>
     <span class="nd">@m</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Y</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">bigm</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">t</span> <span class="o">+</span> <span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">M</span> <span class="o">+</span> <span class="n">N</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">t</span> <span class="o">+</span> <span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">M</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">t</span><span class="p">])</span>
 
-    <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">m</span>
 
@@ -927,15 +928,15 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t \quad \forall \, t = 1, 2, \ldots, T-1.
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../_images/2a548d563cdea4fd2513c14a63d713ab2d83fdb20437beccb720f9998ecacd32.png" src="../../_images/2a548d563cdea4fd2513c14a63d713ab2d83fdb20437beccb720f9998ecacd32.png" />
+<img alt="../../_images/38377c8898542701ce6d4f8592c765632b745b207df3644550599a7db20f99a8.png" src="../../_images/38377c8898542701ce6d4f8592c765632b745b207df3644550599a7db20f99a8.png" />
 </div>
 </div>
 </section>
 <section id="exercises">
 <h2>Exercises<a class="headerlink" href="#exercises" title="Link to this heading">#</a></h2>
 <ol class="arabic simple">
-<li><p>Rather than specify how many maintenance periods must be accommodated, modify the model so that the process unit can operate no more than <span class="math notranslate nohighlight">\(N\)</span> days without a maintenance shutdown.  (Hint. You may to introduce an additional set of binary variables, <span class="math notranslate nohighlight">\(z_t\)</span> to denote the start of an operational period.)</p></li>
-<li><p>Do a systematic comparison of the Big-M, Convex Hull, and Cutting Plane techniques for implementing the disjunctive constraints. Your comparison should include a measure of complexity (such as the number of decision variables and constraints in the resulting transformed problems), computational effort, and the effect of solver (such as HiGHS vs cbc).</p></li>
+<li><p>Rather than specify how many maintenance periods must be accommodated, modify the model so that the process unit can operate no more than <span class="math notranslate nohighlight">\(L\)</span> days without a maintenance shutdown.  (Hint. You may need to introduce an additional set of binary variables, <span class="math notranslate nohighlight">\(z_t\)</span> to denote the start of an operational period.)</p></li>
+<li><p>Do a systematic comparison of the Big-M, Convex Hull, and Cutting Plane techniques for implementing the disjunctive constraints. Your comparison should include a measure of complexity (such as the number of decision variables and constraints in the resulting transformed problems), computational effort, and the effect of solver choice (such as HiGHS vs cbc).</p></li>
 </ol>
 </section>
 </section>
@@ -1018,7 +1019,7 @@ x_{t} &amp; = x_{t-1} + u^+_t - u^-_t \quad \forall \, t = 1, 2, \ldots, T-1.
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ramping-constraints">Ramping constraints</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#specifying-the-minimum-number-of-operational-days-between-maintenance-periods">Specifying the minimum number of operational days between maintenance periods</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#spacing-between-maintenance-periods">Spacing between maintenance periods</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exercises">Exercises</a></li>
 </ul>
   </nav></div>
