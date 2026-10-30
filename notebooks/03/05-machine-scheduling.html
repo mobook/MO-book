@@ -625,8 +625,8 @@
 </section>
 <section id="problem-description">
 <h2>Problem description<a class="headerlink" href="#problem-description" title="Link to this heading">#</a></h2>
-<p>“Which job should be done next?” is a question one face in modern life, whether for a busy student working on course assignments, a courier delivering packages, a server waiting on tables in a busy restaurant, a computer processing threads, or a machine on a complex assembly line. There are well-known empirical rules or heuristics to address to this question, among which “first in, first out”, “last in, first out”, or “shortest job first”.</p>
-<p>What we consider in this notebook is the modeling finding solutions to this class of problem using optimization techniques. This notebook demonstrates the formulation of a model for scheduling a single machine scheduling using disjunctive programming in Pyomo. Data for the example problem is from Chapter 5 of the book by Christelle Guéret, Christian Prins, Marc Sevaux titled <a class="reference external" href="https://www2.isye.gatech.edu/~sahmed/isye3133b/XpressBook.pdf">Applications of Optimization with Xpress-MP</a> (Dash Optimization, 2000).</p>
+<p>“Which job should be done next?” is a question one faces in modern life, whether for a busy student working on course assignments, a courier delivering packages, a server waiting on tables in a busy restaurant, a computer processing threads, or a machine on a complex assembly line. There are well-known empirical rules or heuristics to address this question, among which “first in, first out”, “last in, first out”, or “shortest job first”.</p>
+<p>This notebook models and solves single-machine scheduling problems using disjunctive programming in Pyomo. Data for the example problem is from Chapter 5 of the book by Christelle Guéret, Christian Prins, Marc Sevaux titled <a class="reference external" href="https://www2.isye.gatech.edu/~sahmed/isye3133b/XpressBook.pdf">Applications of Optimization with Xpress-MP</a> (Dash Optimization, 2000).</p>
 <p>Consider the problem of scheduling a set of jobs on a single machine given the release time, duration, and due time for each job. Our goal is to find a sequence of the jobs on the machine that meets the due dates. If no such schedule exists, then the objective is to find the least bad schedule that minimizes a designated performance metric.</p>
 <section id="job-data">
 <h3>Job data<a class="headerlink" href="#job-data" title="Link to this heading">#</a></h3>
@@ -722,7 +722,7 @@
 </section>
 <section id="schedule-data">
 <h3>Schedule data<a class="headerlink" href="#schedule-data" title="Link to this heading">#</a></h3>
-<p>A schedule is also represented here by a Pandas dataframe indexed by job names. The columns indicate the start, finish, and the amount by each job is past due. The following function creates the schedule corresponding to the scenario in which jobs are executed in the order given by the <code class="docutils literal notranslate"><span class="pre">jobs</span></code> dataframe.</p>
+<p>A schedule is also represented here by a Pandas dataframe indexed by job names. The columns indicate the start, finish, and the amount by which each job is past due. The following function creates the schedule corresponding to the scenario in which jobs are executed in the order given by the <code class="docutils literal notranslate"><span class="pre">jobs</span></code> dataframe.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">seq</span><span class="p">):</span>
@@ -817,7 +817,7 @@
 </section>
 <section id="gantt-chart">
 <h3>Gantt chart<a class="headerlink" href="#gantt-chart" title="Link to this heading">#</a></h3>
-<p>A classical way of visualizing scheduling data in the form of a Gantt chart. The next cell defines a function <code class="docutils literal notranslate"><span class="pre">gantt</span></code> that plots a Gantt chart given jobs and schedule information.</p>
+<p>A classical way of visualizing scheduling data is a Gantt chart. The next cell defines a function <code class="docutils literal notranslate"><span class="pre">gantt</span></code> that plots a Gantt chart given jobs and schedule information.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">gantt</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">schedule</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">""</span><span class="p">):</span>
@@ -914,12 +914,13 @@
 <li><p>Earliest due date (EDD)</p></li>
 <li><p>Shortest processing time (SPT)</p></li>
 </ul>
+<p>The examples use stable sorting, so jobs tied on the selected criterion retain their order in the input table.</p>
 <section id="first-in-first-out-fifo">
 <h3>First-in, first-out (FIFO)<a class="headerlink" href="#first-in-first-out-fifo" title="Link to this heading">#</a></h3>
-<p>One of the most common scheduling rules is to execute jobs in the order they are released for processing, in other words “first-in, first-out” (FIFO). The following cell creates a Pandas dataframe  is indexed by job names. The start time, finish time, and, if past due, the amount by which the job is past due.</p>
+<p>One of the most common scheduling rules is to execute jobs in the order they are released for processing, in other words “first-in, first-out” (FIFO). The following cell constructs and plots the FIFO schedule, showing each job’s start, finish and tardiness.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fifo</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"release"</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fifo</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"release"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"stable"</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 <span class="n">gantt</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">fifo</span><span class="p">,</span> <span class="s2">"First in, First out"</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -928,16 +929,16 @@
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Using the "First in, First out" strategy, the total past due is 31.0
 </pre></div>
 </div>
-<img alt="../../_images/fc19ec0fa3e7613c295170cfbf50f5813da555fc1f212b2cc15711c932ac22aa.png" src="../../_images/fc19ec0fa3e7613c295170cfbf50f5813da555fc1f212b2cc15711c932ac22aa.png" />
+<img alt="../../_images/16dfb91b819ff25e53d31a00ad2d0223f959084e1e465dbb754ba24ce0280d13.png" src="../../_images/16dfb91b819ff25e53d31a00ad2d0223f959084e1e465dbb754ba24ce0280d13.png" />
 </div>
 </div>
 </section>
 <section id="earliest-due-date-edd">
 <h3>Earliest due date (EDD)<a class="headerlink" href="#earliest-due-date-edd" title="Link to this heading">#</a></h3>
-<p>When due dates are known, a common scheduling rule is to prioritize jobs by due date. This strategy will be familiar to any student deciding which homework assignment should to work on next.</p>
+<p>When due dates are known, a common scheduling rule is to prioritize jobs by due date. This strategy will be familiar to any student deciding which homework assignment to work on next.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">edd</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"due"</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">edd</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"due"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"stable"</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 <span class="n">gantt</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">edd</span><span class="p">,</span> <span class="s2">"Earliest due date"</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -946,7 +947,7 @@
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Using the "Earliest due date" strategy, the total past due is 27.0
 </pre></div>
 </div>
-<img alt="../../_images/27be359c55a1c19794de6def37c5587a57ca8887793e2679cc5dd61267ab9a88.png" src="../../_images/27be359c55a1c19794de6def37c5587a57ca8887793e2679cc5dd61267ab9a88.png" />
+<img alt="../../_images/65c0bcc02ac560a804470e18c53f50daaa95552537db78b02df2dba13a4c0aa8.png" src="../../_images/65c0bcc02ac560a804470e18c53f50daaa95552537db78b02df2dba13a4c0aa8.png" />
 </div>
 </div>
 </section>
@@ -955,7 +956,7 @@
 <p>When the job durations are known, another common scheduling rule is to prioritize jobs by their (remaining) processing time.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">spt</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"duration"</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">spt</span> <span class="o">=</span> <span class="n">schedule_jobs</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">jobs</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"duration"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"stable"</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 <span class="n">gantt</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">spt</span><span class="p">,</span> <span class="s2">"Shortest Processing Time"</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -964,7 +965,7 @@
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Using the "Shortest Processing Time" strategy, the total past due is 51.0
 </pre></div>
 </div>
-<img alt="../../_images/a5064862b770b0ffa220c22625b8e270a6d21fca4f9e086edb18dc631022ac62.png" src="../../_images/a5064862b770b0ffa220c22625b8e270a6d21fca4f9e086edb18dc631022ac62.png" />
+<img alt="../../_images/f244db0c36adce60dbf3dadb5bf84171eae7b9011a0fa411574bf74ee2c350fe.png" src="../../_images/f244db0c36adce60dbf3dadb5bf84171eae7b9011a0fa411574bf74ee2c350fe.png" />
 </div>
 </div>
 </section>
@@ -1027,7 +1028,7 @@
 \text{start}_{j} &amp; \geq \text{release}_{j}\\
 \end{align*}
 \end{split}\]</div>
-<p>Once started, machine processing continues until the job is finished. The finish time for each job is compared to the due time, and any past due interval is stored the <span class="math notranslate nohighlight">\(\text{past}_j\)</span> decision variable.</p>
+<p>Once started, machine processing continues until the job is finished. The finish time for each job is compared to the due time, and any past due interval is stored in the <span class="math notranslate nohighlight">\(\text{past}_j\)</span> decision variable.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -1036,7 +1037,7 @@
 \text{past}_{j} &amp; \geq 0
 \end{align*}
 \end{split}\]</div>
-<p>The final set of constraints require that no pair of jobs be operating on the same machine at the same time. For this purpose, we consider each unique pair (<span class="math notranslate nohighlight">\(i\)</span>, <span class="math notranslate nohighlight">\(j\)</span>) where the constraint <span class="math notranslate nohighlight">\(i &lt; j\)</span> to imposed to avoid considering the same pair twice. Then for any unique pair <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span>,  either <span class="math notranslate nohighlight">\(i\)</span> finishes before <span class="math notranslate nohighlight">\(j\)</span> starts, or <span class="math notranslate nohighlight">\(j\)</span> finishes before <span class="math notranslate nohighlight">\(i\)</span> starts. This is expressed as the family of disjunctions</p>
+<p>The final set of constraints require that no pair of jobs be operating on the same machine at the same time. For this purpose, we consider each unique pair (<span class="math notranslate nohighlight">\(i\)</span>, <span class="math notranslate nohighlight">\(j\)</span>) where <span class="math notranslate nohighlight">\(i &lt; j\)</span> is imposed to avoid considering the same pair twice. Then for any unique pair <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span>,  either <span class="math notranslate nohighlight">\(i\)</span> finishes before <span class="math notranslate nohighlight">\(j\)</span> starts, or <span class="math notranslate nohighlight">\(j\)</span> finishes before <span class="math notranslate nohighlight">\(i\)</span> starts. This is expressed as the family of disjunctions</p>
 <div class="math notranslate nohighlight">
 \[
 \begin{align*}
@@ -1050,14 +1051,14 @@
 &amp; \forall i &lt; j
 \end{align*}
 \]</div>
-<p>This model and constraints can be directly translated to Pyomo using the Disjuction component as follows.</p>
+<p>This model and constraints can be directly translated to Pyomo using the Disjunction component as follows.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">machine_schedule</span><span class="p">(</span><span class="n">jobs</span><span class="p">):</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">"Job machine scheduling"</span><span class="p">)</span>
 
     <span class="c1"># Create a set of jobs using the dataframe index and a</span>
-    <span class="c1"># set of orderd pairs of distinct jobs (i,j) with i &lt; j</span>
+    <span class="c1"># set of ordered pairs of distinct jobs (i,j) with i &lt; j</span>
     <span class="n">m</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">jobs</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
     <span class="n">m</span><span class="o">.</span><span class="n">PAIRS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">JOBS</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">JOBS</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">j</span><span class="p">)</span>
 
@@ -1182,16 +1183,16 @@
 <img alt="../../_images/cad9c9ff37e52bb0ba9d0920f42a934d4c93a6ff17470e35ccd54422291cb9c3.png" src="../../_images/cad9c9ff37e52bb0ba9d0920f42a934d4c93a6ff17470e35ccd54422291cb9c3.png" />
 </div>
 </div>
-<p>The solution obtained solving the optimization problem outperforms that derived from any of the rules outline above. Nonetheless, heuristic techniques become essential when tackling large scheduling problems.</p>
-<p>For comparison, we also implement a standard MILO using the big-M method. The idea is to introduce a binary variable <span class="math notranslate nohighlight">\(z_{ij} \in \{0,1\}\)</span> for each disjunctive constraint above.</p>
+<p>The solution obtained solving the optimization problem outperforms that derived from any of the rules outlined above. Nonetheless, heuristic techniques become essential when tackling large scheduling problems.</p>
+<p>For comparison, we also implement a standard MILO using the big-M method. The idea is to introduce a binary variable <span class="math notranslate nohighlight">\(z_{ij} \in \{0,1\}\)</span> for each disjunctive constraint above. Here <span class="math notranslate nohighlight">\(z_{ij}=1\)</span> means that job <span class="math notranslate nohighlight">\(i\)</span> precedes job <span class="math notranslate nohighlight">\(j\)</span>.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
-\text{finish}_i &amp; \leq  \text{start}_j + M z_{ij} \\
-\text{finish}_j &amp; \leq  \text{start}_i + M (1 - z_{ij}).
+\text{finish}_i &amp; \leq  \text{start}_j + M (1 - z_{ij}) \\
+\text{finish}_j &amp; \leq  \text{start}_i + M z_{ij}.
 \end{align*}
 \end{split}\]</div>
-<p>This creates an equivalent MILO model which leads to the same solution, but it features many more variables and is usually slower to solve.</p>
+<p>Both formulations attain the same optimal objective value, though their optimal schedules can differ. For this seven-job instance, the manual big-M formulation has 42 variables, including 21 binaries; the transformed disjunctive formulation has 63 variables, including 42 binaries. Solve time depends on the instance, formulation and solver.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">machine_scheduleMILO</span><span class="p">(</span><span class="n">jobs</span><span class="p">):</span>
