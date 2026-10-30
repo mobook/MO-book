@@ -667,7 +667,7 @@
 \[
     e_i = y^{(i)} - {m}^\top {X}^{(i)} - b = y^{(i)} - \sum_{j=1}^k X^{(i)}_j m_j - b,
 \]</div>
-<p>for some real numbers <span class="math notranslate nohighlight">\(b, m_1,\dots,m_k\)</span>. The Ordinary Least Squares (OLS) is a possible statistical optimality criterion for such a linear regression, which tries to minimize the sum of the errors squares, that is <span class="math notranslate nohighlight">\(\sum_{i=1}^n e_i^2\)</span>. The OLS regression can thus be formulated as an optimization with the coefficients <span class="math notranslate nohighlight">\(b\)</span> and <span class="math notranslate nohighlight">\(m_i\)</span>’s and the errors <span class="math notranslate nohighlight">\(e_i\)</span>’s as the decision variables, namely</p>
+<p>for some real numbers <span class="math notranslate nohighlight">\(b, m_1,\dots,m_k\)</span>. The Ordinary Least Squares (OLS) is a possible statistical optimality criterion for such a linear regression, which tries to minimize the sum of squared errors, that is <span class="math notranslate nohighlight">\(\sum_{i=1}^n e_i^2\)</span>. The OLS regression can thus be formulated as an optimization with the coefficients <span class="math notranslate nohighlight">\(b\)</span> and <span class="math notranslate nohighlight">\(m_i\)</span>’s and the errors <span class="math notranslate nohighlight">\(e_i\)</span>’s as the decision variables, namely</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align}
@@ -678,20 +678,22 @@
 </section>
 <section id="convexity-of-the-optimization-model">
 <h2>Convexity of the optimization model<a class="headerlink" href="#convexity-of-the-optimization-model" title="Link to this heading">#</a></h2>
-<p>Denote by <span class="math notranslate nohighlight">\({\theta}=(b,{m}) \in \mathbb{R}^{k+1}\)</span> the vector comprising all variables, by <span class="math notranslate nohighlight">\(y =(y^{(1)}, \dots, y^{(n)})\)</span>, and by <span class="math notranslate nohighlight">\({\tilde{X}} = \mathbb{R}^{d \times (n+1)}\)</span> the so-called <em>design matrix</em> associated with the dataset, that is</p>
+<p>Denote by <span class="math notranslate nohighlight">\({\theta}=(b,{m}) \in \mathbb{R}^{k+1}\)</span> the vector comprising all variables, by <span class="math notranslate nohighlight">\(y =(y^{(1)}, \dots, y^{(n)})\)</span>, and by <span class="math notranslate nohighlight">\({\tilde{X}} \in \mathbb{R}^{n \times (k+1)}\)</span> the so-called <em>design matrix</em> associated with the dataset, that is</p>
 <div class="math notranslate nohighlight">
-\[
+\[\begin{split}
     {\tilde{X}} = \left[
-    \begin{array}{cccc}
-    {1} &amp; {X}^{(1)} &amp; \dots &amp; {X}^{(n)}
+    \begin{array}{cc}
+    1 &amp; ({X}^{(1)})^\top \\
+    \vdots &amp; \vdots \\
+    1 &amp; ({X}^{(n)})^\top
     \end{array}\right].
-\]</div>
+\end{split}\]</div>
 <p>We can then rewrite the minimization problem above as an unconstrained optimization problem in the vector of variables <span class="math notranslate nohighlight">\({\theta}\)</span>, namely</p>
 <div class="math notranslate nohighlight">
 \[
     \min_{{\theta}} f({\theta}),
 \]</div>
-<p>with <span class="math notranslate nohighlight">\(f: \mathbb{R}^{k+1} \rightarrow \mathbb{R}\)</span> defined as <span class="math notranslate nohighlight">\(f({\theta}):=\| {y} - {\tilde{X}} {\theta} \|_2^2\)</span>. Note that here <span class="math notranslate nohighlight">\(y\)</span> and <span class="math notranslate nohighlight">\({X}^{(i)}\)</span>, <span class="math notranslate nohighlight">\(i=1,\dots,n\)</span> are not a vector of variables, but rather of known parameters. The Hessian of the objective function can be calculated to be</p>
+<p>with <span class="math notranslate nohighlight">\(f: \mathbb{R}^{k+1} \rightarrow \mathbb{R}\)</span> defined as <span class="math notranslate nohighlight">\(f({\theta}):=\| {y} - {\tilde{X}} {\theta} \|_2^2\)</span>. Note that here <span class="math notranslate nohighlight">\(y\)</span> and <span class="math notranslate nohighlight">\({X}^{(i)}\)</span>, <span class="math notranslate nohighlight">\(i=1,\dots,n\)</span> are known data, rather than decision variables. The Hessian of the objective function can be calculated to be</p>
 <div class="math notranslate nohighlight">
 \[
     \nabla^2 f(\theta) = 2 {\tilde{X}}^\top {\tilde{X}}.
@@ -702,7 +704,7 @@
     t^\top \nabla^2 f(\theta) t = 2 t^\top {\tilde{X}}^\top \tilde{X} t = 2 \| {\tilde{X}} t \|_2^2 \geq 0, \qquad \forall \, t \in \mathbb{R}^{k+1}.
 \]</div>
 <p>The OLS optimization problem is then always convex.</p>
-<p>The OLS problem can be implemented in Pyomo as follows. Leveraging the convexity of the problem and thus the uniqueness of the solution, in case <code class="docutils literal notranslate"><span class="pre">mosek</span></code> is not available, we could resort to the generic nonlinear solver <code class="docutils literal notranslate"><span class="pre">ipopt</span></code>.</p>
+<p>The OLS problem can be implemented in Pyomo as follows. Convexity ensures that every local minimum is a global minimum, so if <code class="docutils literal notranslate"><span class="pre">mosek</span></code> is not available we can use the nonlinear solver <code class="docutils literal notranslate"><span class="pre">ipopt</span></code>. The coefficient vector is unique when the design matrix has full column rank. With a rank-deficient design matrix, different coefficient vectors can give the same fitted values and minimum objective value.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">ols_regression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
