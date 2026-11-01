@@ -554,6 +554,7 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-problem-optimal-material-acquisition-and-production-planning-using-demand-forecasts">The problem: Optimal material acquisition and production planning using demand forecasts</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-optimization-model">The optimization model</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#a-more-parsimonious-model">A more parsimonious model</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#checking-an-infeasible-budget">Checking an infeasible budget</a></li>
 </ul>
 </li>
 </ul>
@@ -793,7 +794,7 @@
 </table>
 </div>
 </div>
-<p>The inventory is limited by a capacity of a total of 9000 units per month, regardless of the type of material of products in stock. The holding costs of the inventory are 0.05 per unit per month regardless of the material type. Due to budget constraints, BIM cannot spend more than 5000 per month on acquisition.</p>
+<p>The inventory is limited by a capacity of a total of 9000 units per month, regardless of the type of material or product in stock. The holding costs of the inventory are 0.05 per unit per month regardless of the material type. Due to budget constraints, BIM cannot spend more than 5000 per month on acquisition.</p>
 <p>BIM aims at minimizing the acquisition and holding costs of the materials while meeting the required quantities for production. The production is made to order, meaning that no inventory of chips is kept.</p>
 <p>Let us model the material acquisition planning and solve it optimally based on the chip demand forecasted above. First import both the price and forecast chip demand as Pandas dataframes.</p>
 <div class="cell docutils container">
@@ -1179,12 +1180,12 @@
 </section>
 <section id="the-optimization-model">
 <h2>The optimization model<a class="headerlink" href="#the-optimization-model" title="Link to this heading">#</a></h2>
-<p>Define the set of raw material <span class="math notranslate nohighlight">\(P=\{\text{copper},\text{silicon},\text{germanium},\text{plastic}\}\)</span> and <span class="math notranslate nohighlight">\(T\)</span> the set of the <span class="math notranslate nohighlight">\(12\)</span> months of the year. Let</p>
+<p>Define the set of raw materials <span class="math notranslate nohighlight">\(P=\{\text{copper},\text{silicon},\text{germanium},\text{plastic}\}\)</span> and <span class="math notranslate nohighlight">\(T\)</span> the set of the <span class="math notranslate nohighlight">\(12\)</span> months of the year. Let</p>
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\(x_{pt} \geq 0\)</span> be the variable describing the amount of raw material <span class="math notranslate nohighlight">\(p \in P\)</span> acquired in month <span class="math notranslate nohighlight">\(t \in T\)</span>;</p></li>
 <li><p><span class="math notranslate nohighlight">\(s_{pt} \geq 0\)</span> be the variable describing the amount of raw material <span class="math notranslate nohighlight">\(p \in P\)</span> left in stock at the end of month <span class="math notranslate nohighlight">\(t \in T\)</span>. Note that these values are uniquely determined by the <span class="math notranslate nohighlight">\(x\)</span> variables, but we keep these additional variables to ease the modeling.</p></li>
 </ul>
-<p>The total cost is the objective function of our optimal acquisition and production problem. If <span class="math notranslate nohighlight">\(\pi_{pt}\)</span> is the unit price of product <span class="math notranslate nohighlight">\(p \in P\)</span> in month <span class="math notranslate nohighlight">\(t \in T\)</span> and <span class="math notranslate nohighlight">\(h_{pt}\)</span> the unit holding costs (which happen to be constant) we can express the total cost as:</p>
+<p>The total cost is the objective function of our optimal acquisition and production problem. If <span class="math notranslate nohighlight">\(\pi_{pt}\)</span> is the unit price of raw material <span class="math notranslate nohighlight">\(p \in P\)</span> in month <span class="math notranslate nohighlight">\(t \in T\)</span> and <span class="math notranslate nohighlight">\(h_{pt}\)</span> the unit holding costs (which happen to be constant) we can express the total cost as:</p>
 <div class="math notranslate nohighlight">
 \[
     \sum_{p\in P}\sum_{t \in T}\pi_{pt}x_{pt} + \sum_{p\in P}\sum_{t \in T} h_{pt} s_{pt}.
@@ -1194,7 +1195,7 @@
 \[
     \sum_{p\in P} \pi_{pt}x_{pt} \leq \beta \quad \forall t \in T.
 \]</div>
-<p>Further, we constrain the inventory to be always the storage capacity <span class="math notranslate nohighlight">\(\ell \geq 0\)</span> using:</p>
+<p>Further, we constrain the total inventory to be no greater than the storage capacity <span class="math notranslate nohighlight">\(\ell \geq 0\)</span> using:</p>
 <div class="math notranslate nohighlight">
 \[
     \sum_{p\in P} s_{pt} \leq \ell \quad \forall t \in T.
@@ -1233,7 +1234,7 @@
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">pi</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">acquisition_price</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="n">t</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">acquisition_price</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">h</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
@@ -1290,7 +1291,8 @@
     <span class="mi">9000</span><span class="p">,</span>
     <span class="n">budget</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">show_table_of_pyomo_variables</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">):</span>
@@ -1303,7 +1305,7 @@
     <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">The optimal amounts of raw materials to acquire in each month are:"</span><span class="p">)</span>
     <span class="n">display</span><span class="p">(</span><span class="n">show_table_of_pyomo_variables</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">The corresponding optimal stock levels in each months are:"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">The corresponding optimal stock levels in each month are:"</span><span class="p">)</span>
     <span class="n">stock</span> <span class="o">=</span> <span class="n">show_table_of_pyomo_variables</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
     <span class="n">display</span><span class="p">(</span><span class="n">stock</span><span class="p">)</span>
 
@@ -1430,7 +1432,7 @@
     </tr>
   </tbody>
 </table>
-</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The corresponding optimal stock levels in each months are:
+</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The corresponding optimal stock levels in each month are:
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1531,7 +1533,7 @@
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The stock levels can be visualized as follows
 </pre></div>
 </div>
-<img alt="../../_images/bb15940d57791e37d38ac0000d7b529f1bc87058cb588fe4e64cf048843bfd82.png" src="../../_images/bb15940d57791e37d38ac0000d7b529f1bc87058cb588fe4e64cf048843bfd82.png" />
+<img alt="../../_images/f2cbe056d127774d3b50b80949eadc2f461362590a236986f31443b33a792dc5.png" src="../../_images/f2cbe056d127774d3b50b80949eadc2f461362590a236986f31443b33a792dc5.png" />
 </div>
 </div>
 <p>Here is a different solution corresponding to the situation where the budget is much lower, namely 2000.</p>
@@ -1547,7 +1549,8 @@
     <span class="n">budget</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
 <span class="n">report_pyomo_solution</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
@@ -1652,7 +1655,7 @@
     </tr>
   </tbody>
 </table>
-</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The corresponding optimal stock levels in each months are:
+</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The corresponding optimal stock levels in each month are:
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1753,7 +1756,7 @@
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The stock levels can be visualized as follows
 </pre></div>
 </div>
-<img alt="../../_images/8b93e4c31990ad6bc85f24188ae73b7c869835662a8838fbdcb31d71ae3f4ea1.png" src="../../_images/8b93e4c31990ad6bc85f24188ae73b7c869835662a8838fbdcb31d71ae3f4ea1.png" />
+<img alt="../../_images/b6a430ae12d6392e431150c88e42334c99d0b6b32f0913a5b83722e36d753e57.png" src="../../_images/b6a430ae12d6392e431150c88e42334c99d0b6b32f0913a5b83722e36d753e57.png" />
 </div>
 </div>
 <p>Looking at the two optimal solutions corresponding to different budgets, we can note that:</p>
@@ -1764,7 +1767,7 @@
 </ul>
 <section id="a-more-parsimonious-model">
 <h3>A more parsimonious model<a class="headerlink" href="#a-more-parsimonious-model" title="Link to this heading">#</a></h3>
-<p>We can create a more parsimonious model with fewer variables by getting rid of the auxiliary variables <span class="math notranslate nohighlight">\(s_{pt}\)</span>. Here is the corresponding implementation in Pyomo:</p>
+<p>We can create a more parsimonious model with fewer variables by expressing the stock levels <span class="math notranslate nohighlight">\(s_{pt}\)</span> in terms of the acquisition variables <span class="math notranslate nohighlight">\(x_{pt}\)</span>. The initial stock and monthly balance equations determine each stock level recursively. The second implementation therefore uses a Pyomo <code class="docutils literal notranslate"><span class="pre">Expression</span></code> for <span class="math notranslate nohighlight">\(s_{pt}\)</span> and keeps its nonnegativity as an explicit constraint. Both implementations describe the same feasible acquisition plans and total costs. Here is the corresponding implementation in Pyomo:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">BIMProductAcquisitionAndInventory_v2</span><span class="p">(</span>
@@ -1786,7 +1789,7 @@
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">pi</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">acquisition_price</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="n">t</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">acquisition_price</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span>
 
     <span class="nd">@m</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">PT</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">h</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
@@ -1845,7 +1848,8 @@
     <span class="mi">9000</span><span class="p">,</span>
     <span class="mi">2000</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 <span class="n">report_pyomo_solution</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1895,9 +1899,9 @@
       <td>666.67</td>
       <td>0.0</td>
       <td>400.0</td>
-      <td>65.05</td>
-      <td>0.00</td>
-      <td>125.62</td>
+      <td>56.88</td>
+      <td>0.0</td>
+      <td>133.79</td>
       <td>0.0</td>
       <td>0.0</td>
       <td>0.0</td>
@@ -1910,8 +1914,8 @@
       <td>0.00</td>
       <td>0.0</td>
       <td>0.0</td>
-      <td>266.00</td>
-      <td>327.00</td>
+      <td>593.00</td>
+      <td>0.0</td>
       <td>1065.00</td>
       <td>0.0</td>
       <td>0.0</td>
@@ -1926,8 +1930,8 @@
       <td>1000.0</td>
       <td>0.0</td>
       <td>0.00</td>
-      <td>983.65</td>
-      <td>695.52</td>
+      <td>1000.0</td>
+      <td>679.17</td>
       <td>2000.0</td>
       <td>2000.0</td>
       <td>934.5</td>
@@ -1941,7 +1945,7 @@
       <td>0.0</td>
       <td>0.0</td>
       <td>0.00</td>
-      <td>0.00</td>
+      <td>0.0</td>
       <td>0.00</td>
       <td>0.0</td>
       <td>0.0</td>
@@ -1949,7 +1953,7 @@
     </tr>
   </tbody>
 </table>
-</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The corresponding optimal stock levels in each months are:
+</div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The corresponding optimal stock levels in each month are:
 </pre></div>
 </div>
 <div class="output text_html"><div>
@@ -1993,8 +1997,8 @@
       <td>1980.33</td>
       <td>1742.33</td>
       <td>1856.33</td>
-      <td>1673.38</td>
-      <td>1435.38</td>
+      <td>1665.21</td>
+      <td>1427.21</td>
       <td>1296.0</td>
       <td>1003.0</td>
       <td>744.0</td>
@@ -2008,7 +2012,7 @@
       <td>805.00</td>
       <td>472.00</td>
       <td>68.00</td>
-      <td>0.00</td>
+      <td>327.00</td>
       <td>0.00</td>
       <td>718.0</td>
       <td>343.0</td>
@@ -2024,7 +2028,7 @@
       <td>3932.33</td>
       <td>2552.33</td>
       <td>1388.33</td>
-      <td>1241.98</td>
+      <td>1258.33</td>
       <td>713.5</td>
       <td>1377.5</td>
       <td>2173.5</td>
@@ -2050,7 +2054,32 @@
 </div></div><div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>The stock levels can be visualized as follows
 </pre></div>
 </div>
-<img alt="../../_images/8b93e4c31990ad6bc85f24188ae73b7c869835662a8838fbdcb31d71ae3f4ea1.png" src="../../_images/8b93e4c31990ad6bc85f24188ae73b7c869835662a8838fbdcb31d71ae3f4ea1.png" />
+<img alt="../../_images/abce28c8c979f757aff80cd80a288c07b7337b1eaa0a53b37b107c7bbb29c3f7.png" src="../../_images/abce28c8c979f757aff80cd80a288c07b7337b1eaa0a53b37b107c7bbb29c3f7.png" />
+</div>
+</div>
+</section>
+<section id="checking-an-infeasible-budget">
+<h3>Checking an infeasible budget<a class="headerlink" href="#checking-an-infeasible-budget" title="Link to this heading">#</a></h3>
+<p>The monthly budget of 1900 discussed above makes the model infeasible. To inspect this outcome, solve with <code class="docutils literal notranslate"><span class="pre">load_solutions=False</span></code> and read the termination condition before attempting to load any solution. The following cell reports that condition without reading acquisition or stock values.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">infeasible_plan</span> <span class="o">=</span> <span class="n">BIMProductAcquisitionAndInventory</span><span class="p">(</span>
+    <span class="n">demand</span><span class="p">,</span>
+    <span class="n">price</span><span class="p">,</span>
+    <span class="p">{</span><span class="s2">"silicon"</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s2">"germanium"</span><span class="p">:</span> <span class="mi">1500</span><span class="p">,</span> <span class="s2">"plastic"</span><span class="p">:</span> <span class="mi">1750</span><span class="p">,</span> <span class="s2">"copper"</span><span class="p">:</span> <span class="mi">4800</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">"silicon"</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s2">"germanium"</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s2">"plastic"</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s2">"copper"</span><span class="p">:</span> <span class="mi">2000</span><span class="p">},</span>
+    <span class="mi">9000</span><span class="p">,</span>
+    <span class="mi">1900</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">infeasible_results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">infeasible_plan</span><span class="p">,</span> <span class="n">load_solutions</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Termination condition:"</span><span class="p">,</span> <span class="n">infeasible_results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Termination condition: infeasible
+</pre></div>
+</div>
 </div>
 </div>
 </section>
@@ -2127,6 +2156,7 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-problem-optimal-material-acquisition-and-production-planning-using-demand-forecasts">The problem: Optimal material acquisition and production planning using demand forecasts</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-optimization-model">The optimization model</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#a-more-parsimonious-model">A more parsimonious model</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#checking-an-infeasible-budget">Checking an infeasible budget</a></li>
 </ul>
 </li>
 </ul>
