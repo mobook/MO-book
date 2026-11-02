@@ -585,9 +585,9 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="extra-material-support-vector-machines-with-conic-optimization">
 <span id="index-6"></span><span id="index-5"></span><span id="index-4"></span><span id="index-3"></span><span id="index-2"></span><span id="index-1"></span><span id="index-0"></span><h1>Extra material: Support vector machines with conic optimization<a class="headerlink" href="#extra-material-support-vector-machines-with-conic-optimization" title="Link to this heading">#</a></h1>
-<p>In this notebook we come back to the concept of training support vector machines as we did in <a class="reference internal" href="../05/04-svm-binary-classification.html"><span class="std std-doc">the first SVM notebook</span></a></p>
+<p>In this notebook we come back to the concept of training support vector machines as we did in <a class="reference internal" href="../05/04-svm-binary-classification.html"><span class="std std-doc">the first SVM notebook</span></a>.</p>
 <p>Here we write the SVM models using explicit conic constraints, which MOSEK handles directly.</p>
-<p>The first part of this notebook shall therefore consist of data imports and other things that need no further explanation. Please move directly to the cell entitled “Conic optimization model” if you already have the data loaded from there.</p>
+<p>The first part of this notebook shall consist of data imports and other things that need no further explanation. Please move directly to the cell entitled “Conic optimization model” if you already have the data loaded from there.</p>
 <p>Here we absorb the intercept <span class="math notranslate nohighlight">\(b\)</span> into the augmented weight vector <span class="math notranslate nohighlight">\(\bar{w}=(b,w)\)</span>. The objective below regularizes this whole vector, including <span class="math notranslate nohighlight">\(b\)</span>. This changes the training model from the first SVM notebook, which leaves the intercept unpenalized; it is more than a change of notation.</p>
 <section id="preamble-install-pyomo-and-a-solver">
 <h2>Preamble: Install Pyomo and a solver<a class="headerlink" href="#preamble-install-pyomo-and-a-solver" title="Link to this heading">#</a></h2>
@@ -654,11 +654,11 @@
 </section>
 <section id="select-features-and-training-sets">
 <h3>Select features and training sets<a class="headerlink" href="#select-features-and-training-sets" title="Link to this heading">#</a></h3>
-<p>Following customary practices, we divide the data set into a <strong>training set</strong> used to train the classifier, and a <strong>testing set</strong> that will be used to evaluate the performance of the classifier. In addition, we select two dimensional subset of the features to enable plotting of the results for exposition. Since our definition of a positive outcome corresponds to detecting a genuine banknote, we rescale the “class” feature to have values of 1 for genuine banknotes and -1 for counterfeit banknotes.</p>
+<p>Following customary practices, we divide the data set into a <strong>training set</strong> used to train the classifier, and a <strong>testing set</strong> that will be used to evaluate the performance of the classifier. In addition, we select a two-dimensional subset of the features to enable plotting of the results for exposition. Since our definition of a positive outcome corresponds to detecting a genuine banknote, we rescale the “class” feature to have values of 1 for genuine banknotes and -1 for counterfeit banknotes.</p>
 <p>We use <code class="docutils literal notranslate"><span class="pre">random_state=0</span></code> so that all formulations are trained and evaluated on the same reproducible split.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create training and validation test sets</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># create training and test sets</span>
 <span class="n">df_train</span><span class="p">,</span> <span class="n">df_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
 <span class="c1"># select training features</span>
@@ -722,7 +722,7 @@
 <p>Moreover, in many applications, the consequences of a false positive can differ from those of a false negative. For these reasons, we seek a more comprehensive set of metrics to compare binary classifiers.</p>
 <ul class="simple">
 <li><p>Sensitivity of a classifier measures how many of the actually positive items in the dataset have been labelled as positive.</p></li>
-<li><p>Precision, on the other hand, counts how many of the items marked as positive, are actually positive.</p></li>
+<li><p>Precision, on the other hand, counts how many of the items marked as positive are actually positive.</p></li>
 </ul>
 <p>A <a class="reference external" href="https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-019-6413-7">detailed discussion on this topic</a> recommends the <a class="reference external" href="https://towardsdatascience.com/the-best-classification-metric-youve-never-heard-of-the-matthews-correlation-coefficient-3bf50a2f3e9a">Matthews correlation coefficient (MCC)</a> as a reliable performance measure for binary classifiers.</p>
 <p>The code below demonstrates an example of a function that evaluates the performance of a binary classifier and returns the Matthews correlation coefficient as its output.</p>
@@ -861,7 +861,7 @@ y_i \bar{w}^\top \bar{x}_i &amp; \geq 1 - z_i&amp; \forall i\in\{1,2,\dots,n\}
 <p>and an auxiliary decision variable <span class="math notranslate nohighlight">\(r\)</span> where</p>
 <div class="math notranslate nohighlight">
 \[2 r \geq \|\bar{w}\|_2^2 = \bar{w}_1^2 + \bar{w}_2^2 + \cdots + \bar{w}_{p+1}^2\]</div>
-<p>With these additional components, the primal problem is now a conic optimization problem ready for implementation with the Pyomo <a class="reference external" href="https://pyomo.readthedocs.io/en/stable/library_reference/kernel/index.html">Kernel Library</a> and Mosek conic solver.</p>
+<p>With these additional components, the primal problem is now a conic optimization problem ready for implementation with the Pyomo <a class="reference external" href="https://pyomo.readthedocs.io/en/stable/library_reference/kernel/index.html">Kernel Library</a> and MOSEK conic solver.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -1085,7 +1085,7 @@ Accuracy =  88.4%
 \end{split}\]</div>
 <p>We introduce an additional decision variable <span class="math notranslate nohighlight">\(r \geq 0\)</span> to specify rotated quadratic cones. Let <span class="math notranslate nohighlight">\(z = F^\top\alpha\)</span>, then</p>
 <div class="math notranslate nohighlight">
-\[\alpha^\top F F^\top \alpha \leq 2 r \iff z^\top z \leq 2 r \iff (r, 1, z) \in Q_r^{3 + p}\]</div>
+\[\alpha^\top F F^\top \alpha \leq 2 r \iff z^\top z \leq 2 r \iff (r, 1, z) \in \mathcal{Q}_r^{3 + p}\]</div>
 <p>The result is a conic optimization problem for the dual coefficients <span class="math notranslate nohighlight">\(\alpha\)</span> and auxiliary variables <span class="math notranslate nohighlight">\(r\)</span> and <span class="math notranslate nohighlight">\(z\)</span>.</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
@@ -1096,7 +1096,7 @@ Accuracy =  88.4%
 &amp; 0 \leq \alpha \leq \frac{c}{n} &amp; \alpha\in\mathbb{R}^n \\
 \end{align*}
 \end{split}\]</div>
-<p>The solution to the dual formulation provides an alternative expression for the resulting support vector machine. Let <span class="math notranslate nohighlight">\({SV}\)</span> represent the set of <strong>support vectors</strong>, which can be implemented as the set of indices for which <span class="math notranslate nohighlight">\(\alpha_i &gt; 0\)</span>.
+<p>The solution to the dual formulation provides an alternative expression for the resulting support vector machine. Let <span class="math notranslate nohighlight">\(\mathcal{SV}\)</span> represent the set of <strong>support vectors</strong>, which can be implemented as the set of indices for which <span class="math notranslate nohighlight">\(\alpha_i &gt; 0\)</span>.
 The SVM can be expressed as either</p>
 <div class="math notranslate nohighlight">
 \[
@@ -1112,7 +1112,7 @@ y^{pred} &amp; = \text{sgn}\left( \bar{w}^\top \bar{x} \right)\quad
 y^{pred} &amp; =  \text{sgn}\left( \sum_{i\in\mathcal{SV}} \alpha_i y_i \bar{x}_i^\top \bar{x} \right)
 \end{align}
 \]</div>
-<p>The first formulation is a computationally efficient implementation of a linear SVM, and used in the following Pyomo implementation. The second formulation, however, provides additional insight into how an SVM works, and is the basis for important generalizations of SVM including the kernelized SVM discussed below. The intercept has not disappeared: it is the first coordinate of <span class="math notranslate nohighlight">\(\bar{w}\)</span> and is recovered from the dual coefficients as <span class="math notranslate nohighlight">\(b=\sum_i\alpha_i y_i\)</span>.</p>
+<p>The first formulation is a computationally efficient implementation of a linear SVM, and is used in the following Pyomo implementation. The second formulation, however, provides additional insight into how an SVM works, and is the basis for important generalizations of SVM including the kernelized SVM discussed below. The intercept has not disappeared: it is the first coordinate of <span class="math notranslate nohighlight">\(\bar{w}\)</span> and is recovered from the dual coefficients as <span class="math notranslate nohighlight">\(b=\sum_i\alpha_i y_i\)</span>.</p>
 <p>The following code implements the above SVM dual formulation.</p>
 </section>
 <section id="pyomo-implementation">
@@ -1148,12 +1148,12 @@ y^{pred} &amp; =  \text{sgn}\left( \sum_{i\in\mathcal{SV}} \alpha_i y_i \bar{x}_
     <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
-    <span class="c1"># Use the same relative tolerance for the classifier and support-vector plot.</span>
+    <span class="c1"># Use a relative tolerance only to color the support-vector plot.</span>
     <span class="n">support_tol</span> <span class="o">=</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">c</span> <span class="o">/</span> <span class="n">n</span>
     <span class="n">S</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="n">support_tol</span><span class="p">]</span>
 
     <span class="c1"># create and return linear SVM</span>
-    <span class="n">w_bar</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">*</span> <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">S</span><span class="p">)</span>
+    <span class="n">w_bar</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">*</span> <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
     <span class="n">w</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">w_bar</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">columns</span><span class="p">)})</span>
     <span class="n">b</span> <span class="o">=</span> <span class="n">w_bar</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -1176,8 +1176,8 @@ y^{pred} &amp; =  \text{sgn}\left( \sum_{i\in\mathcal{SV}} \alpha_i y_i \bar{x}_
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>variance    0.554456
-skewness    0.151649
-dtype: float64 -0.20865812423723146
+skewness    0.151651
+dtype: float64 -0.20865692461693444
 </pre></div>
 </div>
 <img alt="../../_images/cdb78ec44b718b7721ceede308ccd419088c05c4efae4b9c687e82b9a01ffcb0.png" src="../../_images/cdb78ec44b718b7721ceede308ccd419088c05c4efae4b9c687e82b9a01ffcb0.png" />
@@ -1280,7 +1280,7 @@ y^{pred} = \text{sgn} \left( w^\top \phi(\bar{x}) \right).
 </section>
 <section id="implementation">
 <h3>Implementation<a class="headerlink" href="#implementation" title="Link to this heading">#</a></h3>
-<p>To take advantage of the kernel trick, we assume an appropriate kernel <span class="math notranslate nohighlight">\(K(\bar{x}, \bar{z})\)</span> has been identified, then replace all instances of <span class="math notranslate nohighlight">\(\phi(\bar{x}_i)^\top \phi(\bar{x})\)</span> with the kernel. The “kernelized” SVM is then given by solution to</p>
+<p>To take advantage of the kernel trick, we assume an appropriate kernel <span class="math notranslate nohighlight">\(K(\bar{x}, \bar{z})\)</span> has been identified, then replace all instances of <span class="math notranslate nohighlight">\(\phi(\bar{x}_i)^\top \phi(\bar{x})\)</span> with the kernel. The “kernelized” SVM is then given by the solution to</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -1325,7 +1325,7 @@ G = \begin{bmatrix}
 <div class="math notranslate nohighlight">
 \[y^{pred} = \text{sgn} \left( \sum_{i\in\mathcal{SV}} \alpha_i y_i K(\bar{x}_i, \bar{x}) \right)\]</div>
 <p>The following cell implements this model, leaving it to the user to specify the kernel function via a lambda-function argument.</p>
-<p>Numerically, we treat a coefficient as nonzero when it exceeds <code class="docutils literal notranslate"><span class="pre">1e-3</span> <span class="pre">*</span> <span class="pre">c</span> <span class="pre">/</span> <span class="pre">n</span></code>. The same tolerance is used to identify support vectors in the plot and to evaluate the classifier.</p>
+<p>The plots highlight coefficients exceeding <code class="docutils literal notranslate"><span class="pre">1e-3</span> <span class="pre">*</span> <span class="pre">c</span> <span class="pre">/</span> <span class="pre">n</span></code>. Both classifier implementations retain every fitted coefficient when evaluating predictions: a small coefficient can have a substantial contribution when features or kernel values are large.</p>
 <p>The factory below passes augmented vectors <span class="math notranslate nohighlight">\(\bar{x}=(1,x)\)</span> and <span class="math notranslate nohighlight">\(\bar{z}=(1,z)\)</span> to every kernel function.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1371,7 +1371,7 @@ G = \begin{bmatrix}
     <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
-    <span class="c1"># Use the same relative tolerance for the classifier and support-vector plot.</span>
+    <span class="c1"># Use a relative tolerance only to color the support-vector plot.</span>
     <span class="n">support_tol</span> <span class="o">=</span> <span class="mf">1e-3</span> <span class="o">*</span> <span class="n">c</span> <span class="o">/</span> <span class="n">n</span>
     <span class="n">SV</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">&gt;</span> <span class="n">support_tol</span><span class="p">]</span>
     <span class="n">y_support</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
@@ -1390,7 +1390,7 @@ G = \begin{bmatrix}
         <span class="n">Z_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">nz</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">Z</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()])</span>
         <span class="n">y_pred</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
             <span class="p">[</span>
-                <span class="nb">int</span><span class="p">(</span><span class="n">classify</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">*</span> <span class="n">y_</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">kernel</span><span class="p">(</span><span class="n">X_</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">Z_</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">SV</span><span class="p">)))</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">classify</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]()</span> <span class="o">*</span> <span class="n">y_</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">kernel</span><span class="p">(</span><span class="n">X_</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">Z_</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">))))</span>
                 <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nz</span><span class="p">)</span>
             <span class="p">],</span>
             <span class="n">index</span><span class="o">=</span><span class="n">Z</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
