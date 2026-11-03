@@ -1256,6 +1256,7 @@ Resource Report
 <section id="for-python-experts-creating-subclasses-of-concretemodel">
 <h2>For Python experts: Creating subclasses of <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code><a class="headerlink" href="#for-python-experts-creating-subclasses-of-concretemodel" title="Link to this heading">#</a></h2>
 <p>Some readers of these notebooks may be more experienced Python developers who wish to apply Pyomo in more specialized, data driven applications. The following cell shows how the Pyomo <code class="docutils literal notranslate"><span class="pre">ConcreteModel()</span></code> class can be extended by subclassing to create specialized model classes. Here we create a subclass called <code class="docutils literal notranslate"><span class="pre">ProductionModel</span></code> that accepts a particular representation of the problem data to produce a production model object. The production model object inherits all of the methods associated with any <code class="docutils literal notranslate"><span class="pre">ConcreteModel</span></code>, such as <code class="docutils literal notranslate"><span class="pre">.display()</span></code> and <code class="docutils literal notranslate"><span class="pre">.pprint()</span></code>. The subclass defines its own <code class="docutils literal notranslate"><span class="pre">.solve()</span></code> and <code class="docutils literal notranslate"><span class="pre">.report()</span></code> methods.</p>
+<p>As in the examples above, the subclass uses Pyomo sets for the indices and named <code class="docutils literal notranslate"><span class="pre">Expression</span></code> components for revenue and cost.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">ProductionModel</span><span class="p">(</span><span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">):</span>
@@ -1290,8 +1291,8 @@ Resource Report
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">()</span>
 
         <span class="c1"># create sets to index variables and constraints</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resources</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">))</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resources</span><span class="p">))</span>
 
         <span class="c1"># decision variables</span>
         <span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span>
@@ -1304,13 +1305,17 @@ Resource Report
         <span class="p">)</span>
 
         <span class="c1"># use expressions to break up complex objectives</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="s2">"price"</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">product</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">products</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">revenue</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span>
+            <span class="n">expr</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">[</span><span class="n">product</span><span class="p">][</span><span class="s2">"price"</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">product</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">PRODUCTS</span>
+            <span class="p">)</span>
         <span class="p">)</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">resources</span><span class="p">[</span><span class="n">resource</span><span class="p">][</span><span class="s2">"price"</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">resources</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span>
+            <span class="n">expr</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">quicksum</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">resources</span><span class="p">[</span><span class="n">resource</span><span class="p">][</span><span class="s2">"price"</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">resource</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">RESOURCES</span>
+            <span class="p">)</span>
         <span class="p">)</span>
 
         <span class="c1"># create objective</span>

@@ -566,6 +566,12 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#strict-fossil-fuel-policy-part-1">Strict fossil fuel policy, part 1</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#strict-fossil-fuel-policy-part-2">Strict fossil fuel policy, part 2</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#comparing-the-three-models">Comparing the three models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-line-switching-variant">A line-switching variant</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#a-small-network">A small network</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#why-opening-a-line-can-help">Why opening a line can help</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#using-the-118-bus-data">Using the 118-bus data</a></li>
+</ul>
+</li>
 </ul>
             </nav>
         </div>
@@ -604,6 +610,7 @@
 <section id="problem-description">
 <h2>Problem description<a class="headerlink" href="#problem-description" title="Link to this heading">#</a></h2>
 <p>Optimal Power Flow (OPF) minimizes electricity dispatch costs while meeting demand and respecting generation and transmission limits. We solve 96 independent 15-minute instances, then compare two policies that restrict fossil-fuel generation.</p>
+<p>The final section adds a line-switching variant, allowing a limited number of existing lines to be opened while retaining a connected fixed backbone.</p>
 </section>
 <section id="background-power-networks-and-power-flow-physics">
 <h2>Background: Power networks and power flow physics<a class="headerlink" href="#background-power-networks-and-power-flow-physics" title="Link to this heading">#</a></h2>
@@ -1762,6 +1769,238 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 <p>OPF3 can instead keep renewable production at or below 1000 and lift the generator-count limits. Its optimum need not equal either of the other two optima: this renewable-production cap makes its second alternative different from OPF1.</p>
 <p>In the 96 instances plotted above, the costs satisfy <span class="math notranslate nohighlight">\(v_1\leq v_3\leq v_2\)</span>. The comparison with OPF1 is an observation for these data, rather than a general feasible-region inclusion: OPF2 and OPF3 can deactivate wind or solar plants through <span class="math notranslate nohighlight">\(x_i\)</span>, whereas OPF1 enforces their positive minimum-output bounds.</p>
 </section>
+<section id="a-line-switching-variant">
+<h2>A line-switching variant<a class="headerlink" href="#a-line-switching-variant" title="Link to this heading">#</a></h2>
+<p>The three models above keep the transmission network fixed. We now allow a limited number of existing lines to be opened. Opening a line sets its flow to zero and removes its phase-angle equation; keeping that equation with zero flow would incorrectly force its endpoint angles to coincide. The signed-flow variables in this section replace the split flows used above.</p>
+<p>Let <span class="math notranslate nohighlight">\(S\subseteq E\)</span> contain the switchable lines and let <span class="math notranslate nohighlight">\(z_{ij}=1\)</span> mean that line <span class="math notranslate nohighlight">\((i,j)\in S\)</span> is active. All lines in <span class="math notranslate nohighlight">\(E\setminus S\)</span> remain active. We retain OPF1’s generation bounds, costs and nodal balances, and replace the line constraints by</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{aligned}
+-f^{\max}_{ij}z_{ij}\leq f_{ij}&amp;\leq f^{\max}_{ij}z_{ij}, &amp;&amp;(i,j)\in S,\\
+-M_{ij}(1-z_{ij})\leq f_{ij}-b_{ij}(\theta_i-\theta_j)&amp;\leq M_{ij}(1-z_{ij}), &amp;&amp;(i,j)\in S,\\
+\sum_{(i,j)\in S}(1-z_{ij})&amp;\leq K,\\
+z_{ij}&amp;\in\{0,1\}, &amp;&amp;\forall (i,j)\in S.
+\end{aligned}
+\end{split}\]</div>
+<p>For fixed lines we retain <span class="math notranslate nohighlight">\(|f_{ij}|\leq f^{\max}_{ij}\)</span> and <span class="math notranslate nohighlight">\(f_{ij}=b_{ij}(\theta_i-\theta_j)\)</span>. We fix one reference angle to zero. This is a mixed-integer linear optimization problem, which HiGHS can solve.</p>
+<p>For this teaching variant the permanently active lines must form a connected backbone. Along a fixed line, <span class="math notranslate nohighlight">\(|\theta_i-\theta_j|\leq f^{\max}_{ij}/b_{ij}\)</span>. Adding these inequalities along any backbone path between the endpoints of a switchable line gives a valid bound on its angle difference. The code uses the shortest such path, weighted by <span class="math notranslate nohighlight">\(f^{\max}/b\)</span>, and sets <span class="math notranslate nohighlight">\(M_{ij}\)</span> to its length times <span class="math notranslate nohighlight">\(b_{ij}\)</span>. Thus opening a line releases its physical equation without imposing an arbitrary numerical bound. The connected backbone also prevents islanding; choosing all lines freely would require a different formulation.</p>
+<p>The function below builds the model. <code class="docutils literal notranslate"><span class="pre">max_open</span></code> is <span class="math notranslate nohighlight">\(K\)</span>, the maximum number of open lines; the initial comparison has all lines active. This represents opening and reclosing existing transmission lines, not building new infrastructure. The plant-activation policies of OPF2 and OPF3 are not included in this extension.</p>
+<p>The fixed-backbone path bound is described by Fattahi, Lavaei and Atamtürk in <a class="reference external" href="https://atamturk.ieor.berkeley.edu/pubs/_published/ots.pdf">A Bound Strengthening Method for Optimal Transmission Switching in Power Systems</a>, Section IV (2019).</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">OPF_switching</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">switchable</span><span class="o">=</span><span class="p">(),</span> <span class="n">max_open</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Build DC optimal transmission switching with a connected fixed backbone."""</span>
+    <span class="n">nodes</span><span class="p">,</span> <span class="n">edges</span> <span class="o">=</span> <span class="n">network</span><span class="p">[</span><span class="s2">"nodes"</span><span class="p">],</span> <span class="n">network</span><span class="p">[</span><span class="s2">"edges"</span><span class="p">]</span>
+    <span class="n">switchable</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">switchable</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">switchable</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">switchable</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">switchable</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">set</span><span class="p">(</span><span class="n">edges</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Switchable lines must be distinct existing edge keys."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">max_open</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">max_open</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"max_open must be a nonnegative integer."</span><span class="p">)</span>
+    <span class="n">backbone</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+    <span class="n">backbone</span><span class="o">.</span><span class="n">add_nodes_from</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">edges</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">"b"</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">data</span><span class="p">[</span><span class="s2">"f_max"</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Lines need positive susceptance and nonnegative capacity."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">switchable</span><span class="p">:</span>
+            <span class="n">backbone</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"f_max"</span><span class="p">]</span> <span class="o">/</span> <span class="n">data</span><span class="p">[</span><span class="s2">"b"</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">nx</span><span class="o">.</span><span class="n">is_connected</span><span class="p">(</span><span class="n">backbone</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"The permanently active lines must connect all nodes."</span><span class="p">)</span>
+    <span class="n">big_m</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span> <span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">][</span><span class="s2">"b"</span><span class="p">]</span> <span class="o">*</span> <span class="n">nx</span><span class="o">.</span><span class="n">shortest_path_length</span><span class="p">(</span>
+            <span class="n">backbone</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s2">"weight"</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">switchable</span>
+    <span class="p">}</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">(</span><span class="s2">"Optimal transmission switching"</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">nodes</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">E</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">edges</span><span class="p">),</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="n">switchable</span><span class="p">,</span> <span class="n">dimen</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="p">(</span>
+        <span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"p_min"</span><span class="p">],</span> <span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"p_max"</span><span class="p">]</span>
+    <span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Reals</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">Binary</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">nodes</span><span class="p">))]</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">M</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="n">big_m</span><span class="p">)</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Objective</span><span class="p">(</span><span class="n">sense</span><span class="o">=</span><span class="n">pyo</span><span class="o">.</span><span class="n">minimize</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">objective</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"c_var"</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">V</span>
+                   <span class="k">if</span> <span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"is_generator"</span><span class="p">])</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">V</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">balance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">E</span> <span class="k">if</span> <span class="n">a</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>
+            <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">E</span> <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>
+            <span class="o">==</span> <span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"d"</span><span class="p">]</span>
+        <span class="p">)</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Expression</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">line_status</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="k">else</span> <span class="mi">1</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">capacity_upper</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">][</span><span class="s2">"f_max"</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">line_status</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">capacity_lower</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">][</span><span class="s2">"f_max"</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">line_status</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">physics_upper</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="n">residual</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">][</span><span class="s2">"b"</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">residual</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span> <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">E</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">physics_lower</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="n">residual</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">edges</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">][</span><span class="s2">"b"</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">residual</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span> <span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">Constraint</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">switching_budget</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">switchable</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Constraint</span><span class="o">.</span><span class="n">Skip</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">max_open</span>
+
+    <span class="k">return</span> <span class="n">model</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">solve_switching</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Solve to optimality before accessing generation, flows or statuses."""</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="a-small-network">
+<h3>A small network<a class="headerlink" href="#a-small-network" title="Link to this heading">#</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># A three-bus example with cheap generation at bus 0 and costly generation at bus 2.</span>
+<span class="n">triangle</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"nodes"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="mi">0</span><span class="p">:</span> <span class="p">{</span><span class="s2">"d"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"p_min"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"p_max"</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">"c_var"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">"is_generator"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+        <span class="mi">1</span><span class="p">:</span> <span class="p">{</span><span class="s2">"d"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"p_min"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"p_max"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"c_var"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"is_generator"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+        <span class="mi">2</span><span class="p">:</span> <span class="p">{</span><span class="s2">"d"</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">"p_min"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"p_max"</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">"c_var"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s2">"is_generator"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s2">"edges"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="p">{</span><span class="s2">"b"</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s2">"f_max"</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+        <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span> <span class="p">{</span><span class="s2">"b"</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s2">"f_max"</span><span class="p">:</span> <span class="mi">100</span><span class="p">},</span>
+        <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span> <span class="p">{</span><span class="s2">"b"</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s2">"f_max"</span><span class="p">:</span> <span class="mi">30</span><span class="p">},</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+<span class="n">triangle_fixed</span> <span class="o">=</span> <span class="n">OPF_switching</span><span class="p">(</span><span class="n">triangle</span><span class="p">,</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)],</span> <span class="n">max_open</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">triangle_switched</span> <span class="o">=</span> <span class="n">OPF_switching</span><span class="p">(</span><span class="n">triangle</span><span class="p">,</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)],</span> <span class="n">max_open</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">triangle_costs</span> <span class="o">=</span> <span class="p">[</span><span class="n">solve_switching</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="p">[</span><span class="n">triangle_fixed</span><span class="p">,</span> <span class="n">triangle_switched</span><span class="p">]]</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s2">"case"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"All lines active"</span><span class="p">,</span> <span class="s2">"At most one open line"</span><span class="p">],</span>
+    <span class="s2">"dispatch cost"</span><span class="p">:</span> <span class="n">triangle_costs</span><span class="p">,</span>
+    <span class="s2">"cheap generation"</span><span class="p">:</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="p">[</span><span class="n">triangle_fixed</span><span class="p">,</span> <span class="n">triangle_switched</span><span class="p">]],</span>
+    <span class="s2">"costly generation"</span><span class="p">:</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">]()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="p">[</span><span class="n">triangle_fixed</span><span class="p">,</span> <span class="n">triangle_switched</span><span class="p">]],</span>
+    <span class="s2">"line (0, 2) active"</span><span class="p">:</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">]())</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="p">[</span><span class="n">triangle_fixed</span><span class="p">,</span> <span class="n">triangle_switched</span><span class="p">]],</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>case</th>
+      <th>dispatch cost</th>
+      <th>cheap generation</th>
+      <th>costly generation</th>
+      <th>line (0, 2) active</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>All lines active</td>
+      <td>3200.0</td>
+      <td>45.0</td>
+      <td>55.0</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>At most one open line</td>
+      <td>1000.0</td>
+      <td>100.0</td>
+      <td>0.0</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
+</div>
+</section>
+<section id="why-opening-a-line-can-help">
+<h3>Why opening a line can help<a class="headerlink" href="#why-opening-a-line-can-help" title="Link to this heading">#</a></h3>
+<p>With all three lines active, the direct line <span class="math notranslate nohighlight">\((0,2)\)</span> carries two-thirds of the cheap generator’s output. Its capacity of 30 therefore limits that output to 45. The remaining 55 units come from the costly generator, giving a dispatch cost of 3,200. In this small example, bus 2 hosts both demand and a generator; the same nodal balance handles their net injection. Opening the direct line sends all 100 units through the path <span class="math notranslate nohighlight">\(0\to1\to2\)</span>, reducing the cost to 1,000. Its endpoints then have different angles: deleting the line’s angle equation is essential.</p>
+<p>This is a stylized DC-flow example of the interaction between network topology and congestion. It does not establish that opening lines is generally beneficial, nor assess reliability under outages. It uses the same cost convention as the preceding objective: no duration factor or switching charge has been added.</p>
+</section>
+<section id="using-the-118-bus-data">
+<h3>Using the 118-bus data<a class="headerlink" href="#using-the-118-bus-data" title="Link to this heading">#</a></h3>
+<p>We apply the variant to the first 15-minute instance. A spanning tree stays active, and the first three non-tree lines in sorted order are eligible for switching. This small deterministic candidate set makes the example quick to run and independently check; it is not a search for the best switching candidates across all 179 lines. We permit at most one of these three lines to be open.</p>
+<p>With zero allowed openings this formulation reproduces OPF1 for the same instance. Allowing openings includes the all-active solution, so its optimal cost cannot increase. Any saving reported here applies only to this instance and candidate set. The earlier 96-instance policy comparison remains unchanged.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Keep a spanning tree active and allow three deterministic non-tree candidates.</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+<span class="n">grid</span><span class="o">.</span><span class="n">add_nodes_from</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">"nodes"</span><span class="p">])</span>
+<span class="n">grid</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">(</span><span class="n">network</span><span class="p">[</span><span class="s2">"edges"</span><span class="p">])</span>
+<span class="n">tree_edges</span> <span class="o">=</span> <span class="p">{</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">nx</span><span class="o">.</span><span class="n">minimum_spanning_tree</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span><span class="o">.</span><span class="n">edges</span><span class="p">}</span>
+<span class="n">switchable_lines</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+    <span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">network</span><span class="p">[</span><span class="s2">"edges"</span><span class="p">]</span> <span class="k">if</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tree_edges</span>
+<span class="p">)[:</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">fixed_network</span> <span class="o">=</span> <span class="n">OPF_switching</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">switchable_lines</span><span class="p">,</span> <span class="n">max_open</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">switched_network</span> <span class="o">=</span> <span class="n">OPF_switching</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">switchable_lines</span><span class="p">,</span> <span class="n">max_open</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">fixed_cost</span> <span class="o">=</span> <span class="n">solve_switching</span><span class="p">(</span><span class="n">fixed_network</span><span class="p">)</span>
+<span class="n">switched_cost</span> <span class="o">=</span> <span class="n">solve_switching</span><span class="p">(</span><span class="n">switched_network</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">fixed_cost</span> <span class="o">-</span> <span class="n">sol1</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mf">1e-5</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sol1</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+<span class="k">assert</span> <span class="n">switched_cost</span> <span class="o">&lt;=</span> <span class="n">fixed_cost</span> <span class="o">+</span> <span class="mf">1e-5</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">fixed_cost</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Switchable lines:"</span><span class="p">,</span> <span class="n">switchable_lines</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"All lines active: </span><span class="si">{</span><span class="n">fixed_cost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"At most one candidate open: </span><span class="si">{</span><span class="n">switched_cost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Open lines:"</span><span class="p">,</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">switched_network</span><span class="o">.</span><span class="n">S</span> <span class="k">if</span> <span class="n">switched_network</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">e</span><span class="p">]()</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Dispatch-cost saving: </span><span class="si">{</span><span class="n">fixed_cost</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">switched_cost</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Switchable lines: [(2, 11), (4, 10), (6, 11)]
+All lines active: 25556.39
+At most one candidate open: 25555.97
+Open lines: [(4, 10)]
+Dispatch-cost saving: 0.4205
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
 </section>
 
     <script type="text/x-thebe-config">
@@ -1846,6 +2085,12 @@ p_i - d_i &amp;= \sum_{j: (i, j) \in E} f_{ij} - \sum_{j: (j, i) \in E} f_{ji}, 
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#strict-fossil-fuel-policy-part-1">Strict fossil fuel policy, part 1</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#strict-fossil-fuel-policy-part-2">Strict fossil fuel policy, part 2</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#comparing-the-three-models">Comparing the three models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#a-line-switching-variant">A line-switching variant</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#a-small-network">A small network</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#why-opening-a-line-can-help">Why opening a line can help</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#using-the-118-bus-data">Using the 118-bus data</a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 

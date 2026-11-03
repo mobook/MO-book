@@ -728,6 +728,7 @@ Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text
 <section id="data-imports">
 <h3>Data imports<a class="headerlink" href="#data-imports" title="Link to this heading">#</a></h3>
 <p>Importantly for our problem, the variable costs of producing a unit of energy per generator are stored in their corresponding ‘c_var’ attributes. For the rest, we are using the same data elements as in the <a class="reference internal" href="05-opf-wind-curtailment.html"><span class="std std-doc">OPF problem with wind curtailment</span></a>.</p>
+<p>The CSVs bundled in <code class="docutils literal notranslate"><span class="pre">notebooks/10/data</span></code> are used when running from the notebook folder or the repository root. For a standalone notebook, such as one opened in Colab, the same data are read from a fixed repository snapshot. Keep <code class="docutils literal notranslate"><span class="pre">nodes.csv</span></code> and <code class="docutils literal notranslate"><span class="pre">edges.csv</span></code> together when supplying local files.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load packages</span>
@@ -741,10 +742,26 @@ Q(\bar{p},\alpha,\Delta) := &amp;\min \quad &amp; \sum_{i \in \mathcal{G}^{\text
 <span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
-<span class="c1"># Download the data</span>
-<span class="n">base_url</span> <span class="o">=</span> <span class="s2">"https://raw.githubusercontent.com/mobook/MO-book/main/notebooks/10/data/"</span>
-<span class="n">nodes_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">base_url</span> <span class="o">+</span> <span class="s2">"nodes.csv"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">edges_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">base_url</span> <span class="o">+</span> <span class="s2">"edges.csv"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="c1"># Use the bundled data when available; otherwise download the same snapshot.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">data_files</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"nodes.csv"</span><span class="p">,</span> <span class="s2">"edges.csv"</span><span class="p">)</span>
+<span class="n">data_dir</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+    <span class="p">(</span><span class="n">folder</span> <span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"data"</span><span class="p">),</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"notebooks/10/data"</span><span class="p">))</span>
+     <span class="k">if</span> <span class="nb">any</span><span class="p">((</span><span class="n">folder</span> <span class="o">/</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">data_files</span><span class="p">)),</span>
+    <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">if</span> <span class="n">data_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">((</span><span class="n">data_dir</span> <span class="o">/</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">data_files</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Keep nodes.csv and edges.csv together in </span><span class="si">{</span><span class="n">data_dir</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+    <span class="n">data_source</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">data_dir</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">data_source</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"https://raw.githubusercontent.com/mobook/MO-book/"</span>
+        <span class="s2">"e745704ca19c0eef476beb32bb24dfba80244043/notebooks/10/data"</span>
+    <span class="p">)</span>
+<span class="n">nodes_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">data_source</span><span class="si">}</span><span class="s2">/nodes.csv"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">edges_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">data_source</span><span class="si">}</span><span class="s2">/edges.csv"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
 <span class="c1"># Rework the nodes and edges data into a form that is convenient for NetworkX to work with</span>
 <span class="n">nodes</span> <span class="o">=</span> <span class="n">nodes_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"node_id"</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
@@ -1037,7 +1054,7 @@ Average total cost = 45739.41 (cost-only estimate; network feasibility not check
 <section id="stochastic-case-nonzero-imbalances">
 <h3>Stochastic case (nonzero imbalances)<a class="headerlink" href="#stochastic-case-nonzero-imbalances" title="Link to this heading">#</a></h3>
 <p>If we assume that the forecast for solar and wind power is not perfect, then the total energy imbalance in the network will be nonzero in each scenario. The resulting average total cost of energy production would be much higher than the deterministic scenario. This is intuitive because recourse actions are needed to cover the imbalance, and the recourse actions are much more expensive than the first-stage production-level decisions.</p>
-<p>We now solve the two-stage stochastic optimization model that accounts for the fluctuations of solar and wind power from their forecasts, using the 100 generated scenarios. In this case, the recourse actions are still needed, but we assume fixed uniform participation factors equal to <span class="math notranslate nohighlight">\(0.1\)</span> for all the ten conventional generators in <span class="math notranslate nohighlight">\(\in \mathcal{G}^{\text{coal}} \cup \mathcal{G}^{\text{gas}}\)</span>.</p>
+<p>We now solve the two-stage stochastic optimization model that accounts for the fluctuations of solar and wind power from their forecasts, using the 100 generated scenarios. In this case, the recourse actions are still needed, but we assume fixed uniform participation factors equal to <span class="math notranslate nohighlight">\(0.1\)</span> for all ten conventional generators in <span class="math notranslate nohighlight">\(\mathcal{G}^{\mathrm{coal}}\cup\mathcal{G}^{\mathrm{gas}}\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">OPF_participationfactors</span><span class="p">(</span>

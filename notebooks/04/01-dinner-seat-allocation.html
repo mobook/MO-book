@@ -1471,7 +1471,7 @@ members seated:  [6, 8, 2, 9, 13, 1]
 <section id="the-source-to-sink-network-in-pyomo">
 <h3>The source-to-sink network in Pyomo<a class="headerlink" href="#the-source-to-sink-network-in-pyomo" title="Link to this heading">#</a></h3>
 <p>The two diagrams above correspond to Figure 4.1 in the textbook. The earlier Pyomo model uses the family-to-table variables in panel (a). We can also model panel (b) directly, with a flow variable on every arc, including those leaving <code class="docutils literal notranslate"><span class="pre">door</span></code> and entering <code class="docutils literal notranslate"><span class="pre">seat</span></code>.</p>
-<p>Write <span class="math notranslate nohighlight">\(u_{ij}\)</span> for an arc’s capacity and <span class="math notranslate nohighlight">\(q\)</span> for the total flow. The capacities are <span class="math notranslate nohighlight">\(m_f\)</span> on <code class="docutils literal notranslate"><span class="pre">door</span></code>-to-family arcs, <span class="math notranslate nohighlight">\(k_{\max}\)</span> on family-to-table arcs, and <span class="math notranslate nohighlight">\(c_t\)</span> on table-to-<code class="docutils literal notranslate"><span class="pre">seat</span></code> arcs. The maximum-flow formulation is</p>
+<p>Let <span class="math notranslate nohighlight">\(G=(V,E)\)</span> be the directed source-to-sink graph above, with source <code class="docutils literal notranslate"><span class="pre">door</span></code> and sink <code class="docutils literal notranslate"><span class="pre">seat</span></code>. Write <span class="math notranslate nohighlight">\(f_{ij}\)</span> for the flow on arc <span class="math notranslate nohighlight">\((i,j)\in E\)</span>, <span class="math notranslate nohighlight">\(u_{ij}\)</span> for its capacity and <span class="math notranslate nohighlight">\(q\)</span> for the total flow. The capacities are <span class="math notranslate nohighlight">\(m_f\)</span> on <code class="docutils literal notranslate"><span class="pre">door</span></code>-to-family arcs, <span class="math notranslate nohighlight">\(k_{\max}\)</span> on family-to-table arcs, and <span class="math notranslate nohighlight">\(c_t\)</span> on table-to-<code class="docutils literal notranslate"><span class="pre">seat</span></code> arcs. The earlier seating variables are recovered as <span class="math notranslate nohighlight">\(x_{ft}=f_{ft}\)</span> on the family-to-table arcs. The maximum-flow formulation is</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \begin{align*}
@@ -1487,8 +1487,7 @@ q &amp; i=\text{door},\\
 &amp; q\geq 0.
 \end{align*}
 \end{split}\]</div>
-<p>The balance equations at family and table nodes connect their incoming and outgoing flows. Thus, <span class="math notranslate nohighlight">\(f_{ft}\)</span> gives the seating allocation, and maximizing <span class="math notranslate nohighlight">\(q\)</span> is equivalent to the earlier partial-seating formulation. We use continuous variables here; with fixed integer capacities, an integral optimal flow exists.</p>
-<p>Let <span class="math notranslate nohighlight">\(G=(V,E)\)</span> be the directed source-to-sink graph above, with source <code class="docutils literal notranslate"><span class="pre">door</span></code>, sink <code class="docutils literal notranslate"><span class="pre">seat</span></code> and arc capacities <span class="math notranslate nohighlight">\(u_{ij}\)</span>. The variable <span class="math notranslate nohighlight">\(f_{ij}\)</span> is the flow on arc <span class="math notranslate nohighlight">\((i,j)\in E\)</span>, with <span class="math notranslate nohighlight">\(0\leq f_{ij}\leq u_{ij}\)</span>. The earlier seating variables are recovered as <span class="math notranslate nohighlight">\(x_{ft}=f_{ft}\)</span> on the family-to-table arcs.</p>
+<p>Maximizing <span class="math notranslate nohighlight">\(q\)</span> is equivalent to the earlier partial-seating formulation. We use continuous variables here; with fixed integer capacities, an integral optimal flow exists.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">maximum_flow_pyomo</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"door"</span><span class="p">,</span> <span class="n">sink</span><span class="o">=</span><span class="s2">"seat"</span><span class="p">):</span>
@@ -1642,16 +1641,29 @@ q &amp; i=\text{door},\\
 </section>
 <section id="timing-the-original-instance">
 <h3>Timing the original instance<a class="headerlink" href="#timing-the-original-instance" title="Link to this heading">#</a></h3>
-<p>The next two cells time the network-flow call and the continuous Pyomo solve on the original <span class="math notranslate nohighlight">\(k_{\max}=3\)</span> instance. Both models are constructed before the timed calls. Pyomo’s solve call includes communicating the model to the solver and loading the solution; the NetworkX call runs the selected graph algorithm. The larger comparison below records the same timing scope.</p>
+<p>The next two cells time the repeated network-flow call and the continuous Pyomo solve on the original <span class="math notranslate nohighlight">\(k_{\max}=3\)</span> instance. Both models are constructed before the timed calls. Pyomo’s solve call includes communicating the model to the solver and loading the solution; the NetworkX call runs the selected graph algorithm. The NetworkX cell reports the median time per call over repeated measurements. The larger comparison below records the same timing scope.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">time</span> flow_value, flow_dict = nx.maximum_flow(G, 'door', 'seat', flow_func=nx.algorithms.flow.preflow_push)
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">timeit</span><span class="w"> </span><span class="kn">import</span> <span class="n">repeat</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">median</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">timed_network_flow</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">nx</span><span class="o">.</span><span class="n">maximum_flow</span><span class="p">(</span>
+        <span class="n">G</span><span class="p">,</span> <span class="s1">'door'</span><span class="p">,</span> <span class="s1">'seat'</span><span class="p">,</span> <span class="n">flow_func</span><span class="o">=</span><span class="n">nx</span><span class="o">.</span><span class="n">algorithms</span><span class="o">.</span><span class="n">flow</span><span class="o">.</span><span class="n">preflow_push</span>
+    <span class="p">)</span>
+
+<span class="n">calls_per_repeat</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">elapsed</span> <span class="o">=</span> <span class="n">repeat</span><span class="p">(</span><span class="n">timed_network_flow</span><span class="p">,</span> <span class="n">number</span><span class="o">=</span><span class="n">calls_per_repeat</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">flow_value</span><span class="p">,</span> <span class="n">flow_dict</span> <span class="o">=</span> <span class="n">timed_network_flow</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">"NetworkX maximum flow: </span><span class="si">{</span><span class="n">median</span><span class="p">(</span><span class="n">elapsed</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">calls_per_repeat</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> s per call "</span>
+    <span class="sa">f</span><span class="s2">"(median of 5 repeats, </span><span class="si">{</span><span class="n">calls_per_repeat</span><span class="si">}</span><span class="s2"> calls each)"</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: total: 0 ns
-Wall time: 0 ns
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>NetworkX maximum flow: 0.000714 s per call (median of 5 repeats, 100 calls each)
 </pre></div>
 </div>
 </div>
