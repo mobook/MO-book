@@ -637,6 +637,7 @@ A good example is this <a class="reference external" href="https://onlinelibrary
 <h3>Preamble<a class="headerlink" href="#preamble" title="Link to this heading">#</a></h3>
 <p>Let us start by importing the modules that we will need.</p>
 <p>The first part of this notebook needs only the open-source solver HiGHS. From the section on lazy constraint generation onward we also use Gurobi through <code class="docutils literal notranslate"><span class="pre">gurobipy</span></code>. The size-limited license that comes with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">gurobipy</span></code> is sufficient for every instance solved with Gurobi here.</p>
+<p>For local execution, install <code class="docutils literal notranslate"><span class="pre">gurobipy</span></code> in the notebook’s Python environment with <code class="docutils literal notranslate"><span class="pre">%pip</span> <span class="pre">install</span> <span class="pre">gurobipy</span></code>. The Colab setup cell installs it automatically. No separate license setup is needed for the supplied examples.</p>
 <p>See <a class="reference internal" href="../appendix/installing-pyomo-and-solvers.html"><span class="std std-doc">Solvers used in this book</span></a> for installation, licensing and the differences between solver interfaces.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -2446,6 +2447,7 @@ These are commercial solvers. Gurobi’s <a class="reference external" href="htt
 </section>
 <section id="famous-benchmark-instances-from-the-internet">
 <h2>Famous benchmark instances from the Internet<a class="headerlink" href="#famous-benchmark-instances-from-the-internet" title="Link to this heading">#</a></h2>
+<p>The following cells download the original Waterloo benchmark table and instance files. Each request has a 10-second connection timeout and a 30-second read timeout. An HTTP error or timeout stops the download with an exception; no substitute instance is selected. These limits apply to connecting and waiting for data, not to the total notebook run time.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">url_tsp_world</span> <span class="o">=</span> <span class="s2">"https://www.math.uwaterloo.ca/tsp/world/"</span>
@@ -2455,7 +2457,12 @@ These are commercial solvers. Gurobi’s <a class="reference external" href="htt
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">url_exists</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <span class="n">StringIO</span>
+
+<span class="n">HTTP_TIMEOUT</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>  <span class="c1"># Connection and read timeouts, in seconds.</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">url_exists</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Check if the given URL exists by sending a GET request and checking the status code.</span>
 
@@ -2465,7 +2472,8 @@ These are commercial solvers. Gurobi’s <a class="reference external" href="htt
 <span class="sd">    Returns:</span>
 <span class="sd">        True if the URL exists (status code 200), False otherwise.</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span>
+    <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">HTTP_TIMEOUT</span><span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">ReadTextFromURL</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
@@ -2478,7 +2486,9 @@ These are commercial solvers. Gurobi’s <a class="reference external" href="htt
 <span class="sd">    Returns:</span>
 <span class="sd">        The text data fetched from the URL.</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+    <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">HTTP_TIMEOUT</span><span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">NumberOrString</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
@@ -2617,10 +2627,8 @@ These are commercial solvers. Gurobi’s <a class="reference external" href="htt
 <span class="sd">    Returns:</span>
 <span class="sd">        Pandas DataFrame containing the world summary table.</span>
 <span class="sd">    """</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">url_exists</span><span class="p">(</span><span class="n">world</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The page </span><span class="si">{</span><span class="n">world</span><span class="si">}</span><span class="s2"> is not reachable."</span><span class="p">)</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_html</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">world</span><span class="si">}</span><span class="s2">summary.html"</span><span class="p">,</span>
+        <span class="n">StringIO</span><span class="p">(</span><span class="n">ReadTextFromURL</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">world</span><span class="si">}</span><span class="s2">summary.html"</span><span class="p">)),</span>
         <span class="n">header</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
         <span class="n">converters</span><span class="o">=</span><span class="p">{</span><span class="s2">"Tour"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="s2">""</span><span class="p">))},</span>
     <span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>

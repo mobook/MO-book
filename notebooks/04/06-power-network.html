@@ -1872,9 +1872,15 @@ z_{ij}&amp;\in\{0,1\}, &amp;&amp;\forall (i,j)\in S.
     <span class="k">return</span> <span class="n">model</span>
 
 
+<span class="c1"># Keep the tighter switching settings separate from the earlier policy solves.</span>
+<span class="n">SWITCHING_SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="s2">"appsi_highs"</span><span class="p">)</span>
+<span class="n">SWITCHING_SOLVER</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">"mip_rel_gap"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="n">SWITCHING_SOLVER</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">"mip_abs_gap"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">solve_switching</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Solve to optimality before accessing generation, flows or statuses."""</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Request zero MIP gaps before comparing the switching costs."""</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">SWITCHING_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
     <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">pyo</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">objective</span><span class="p">)</span>
 </pre></div>
@@ -1968,6 +1974,7 @@ z_{ij}&amp;\in\{0,1\}, &amp;&amp;\forall (i,j)\in S.
 <h3>Using the 118-bus data<a class="headerlink" href="#using-the-118-bus-data" title="Link to this heading">#</a></h3>
 <p>We apply the variant to the first 15-minute instance. A spanning tree stays active, and the first three non-tree lines in sorted order are eligible for switching. This small deterministic candidate set makes the example quick to run and independently check; it is not a search for the best switching candidates across all 179 lines. We permit at most one of these three lines to be open.</p>
 <p>With zero allowed openings this formulation reproduces OPF1 for the same instance. Allowing openings includes the all-active solution, so its optimal cost cannot increase. Any saving reported here applies only to this instance and candidate set. The earlier 96-instance policy comparison remains unchanged.</p>
+<p>The saving here is only about 0.42 objective units (0.00165% of the all-active cost), so it is negligible for this candidate set. This difference is smaller than HiGHS’s default relative MIP-gap allowance. The separate <code class="docutils literal notranslate"><span class="pre">SWITCHING_SOLVER</span></code> therefore requests zero relative and absolute MIP gaps; ordinary floating-point feasibility tolerances still apply.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Keep a spanning tree active and allow three deterministic non-tree candidates.</span>
@@ -1982,13 +1989,14 @@ z_{ij}&amp;\in\{0,1\}, &amp;&amp;\forall (i,j)\in S.
 <span class="n">switched_network</span> <span class="o">=</span> <span class="n">OPF_switching</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">switchable_lines</span><span class="p">,</span> <span class="n">max_open</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">fixed_cost</span> <span class="o">=</span> <span class="n">solve_switching</span><span class="p">(</span><span class="n">fixed_network</span><span class="p">)</span>
 <span class="n">switched_cost</span> <span class="o">=</span> <span class="n">solve_switching</span><span class="p">(</span><span class="n">switched_network</span><span class="p">)</span>
-<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">fixed_cost</span> <span class="o">-</span> <span class="n">sol1</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mf">1e-5</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">sol1</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-<span class="k">assert</span> <span class="n">switched_cost</span> <span class="o">&lt;=</span> <span class="n">fixed_cost</span> <span class="o">+</span> <span class="mf">1e-5</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">fixed_cost</span><span class="p">))</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">fixed_cost</span> <span class="o">-</span> <span class="n">sol1</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mf">1e-5</span>
+<span class="k">assert</span> <span class="n">switched_cost</span> <span class="o">&lt;=</span> <span class="n">fixed_cost</span> <span class="o">+</span> <span class="mf">1e-5</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Switchable lines:"</span><span class="p">,</span> <span class="n">switchable_lines</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"All lines active: </span><span class="si">{</span><span class="n">fixed_cost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"At most one candidate open: </span><span class="si">{</span><span class="n">switched_cost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Open lines:"</span><span class="p">,</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">switched_network</span><span class="o">.</span><span class="n">S</span> <span class="k">if</span> <span class="n">switched_network</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">e</span><span class="p">]()</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Dispatch-cost saving: </span><span class="si">{</span><span class="n">fixed_cost</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">switched_cost</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">saving</span> <span class="o">=</span> <span class="n">fixed_cost</span> <span class="o">-</span> <span class="n">switched_cost</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Dispatch-cost saving: </span><span class="si">{</span><span class="n">saving</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="mi">100</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">saving</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">fixed_cost</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2">%)"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1997,7 +2005,7 @@ z_{ij}&amp;\in\{0,1\}, &amp;&amp;\forall (i,j)\in S.
 All lines active: 25556.39
 At most one candidate open: 25555.97
 Open lines: [(4, 10)]
-Dispatch-cost saving: 0.4205
+Dispatch-cost saving: 0.4205 (0.00165%)
 </pre></div>
 </div>
 </div>

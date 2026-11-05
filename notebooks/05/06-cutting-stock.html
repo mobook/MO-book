@@ -583,24 +583,35 @@
 <p>This notebook presents several models and solution algorithms for the cutting stock problem.</p>
 <section id="preamble-install-pyomo-and-solvers">
 <h2>Preamble: Install Pyomo and solvers<a class="headerlink" href="#preamble-install-pyomo-and-solvers" title="Link to this heading">#</a></h2>
-<p>We use the open-source solvers HiGHS for the linear models and SCIP for the bilinear mixed-integer models. On Colab, the following cell installs Pyomo, HiGHS and PySCIPOpt, which provides SCIP through its Python interface. For a local installation, run <code class="docutils literal notranslate"><span class="pre">%pip</span> <span class="pre">install</span> <span class="pre">&quot;pyomo&gt;=6.10.1&quot;</span> <span class="pre">highspy</span> <span class="pre">pyscipopt</span></code> in a notebook first. The <code class="docutils literal notranslate"><span class="pre">scip_direct</span></code> interface avoids a separate solver executable and an IDAES download.</p>
+<p>We use the open-source solver HiGHS for the linear models and SCIP for the bilinear mixed-integer models. HiGHS is sufficient for the known-pattern model and Phase 1 of the pattern-generation algorithm. SCIP is optional: without it, the notebook skips the bilinear demonstrations and Phase 2, and reports the feasible Phase-1 plan together with its lower bound. Its cost can be higher than the result obtained with Phase 2.</p>
+<p>On Colab, the following cell installs Pyomo and HiGHS, and installs PySCIPOpt when <code class="docutils literal notranslate"><span class="pre">USE_SCIP</span> <span class="pre">=</span> <span class="pre">True</span></code>. Set <code class="docutils literal notranslate"><span class="pre">USE_SCIP</span> <span class="pre">=</span> <span class="pre">False</span></code> for a HiGHS-only run. For a local installation, run <code class="docutils literal notranslate"><span class="pre">%pip</span> <span class="pre">install</span> <span class="pre">&quot;pyomo&gt;=6.10.1&quot;</span> <span class="pre">highspy</span></code> in a notebook first; add <code class="docutils literal notranslate"><span class="pre">%pip</span> <span class="pre">install</span> <span class="pre">pyscipopt</span></code> for the bilinear examples. PySCIPOpt provides SCIP through the <code class="docutils literal notranslate"><span class="pre">scip_direct</span></code> interface, without a separate solver executable or an IDAES download.</p>
 <p>See <a class="reference internal" href="../appendix/installing-pyomo-and-solvers.html"><span class="std std-doc">Solvers used in this book</span></a> for installation, licensing and the differences between solver interfaces.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 
+<span class="n">USE_SCIP</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Set False to run with HiGHS only.</span>
+
 <span class="k">if</span> <span class="s2">"google.colab"</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-    <span class="o">%</span><span class="k">pip</span> install -q "pyomo&gt;=6.10.1" highspy pyscipopt
+    <span class="o">%</span><span class="k">pip</span> install -q "pyomo&gt;=6.10.1" highspy
+    <span class="k">if</span> <span class="n">USE_SCIP</span><span class="p">:</span>
+        <span class="o">%</span><span class="k">pip</span> install -q pyscipopt
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pyomo.environ</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyo</span>
 
 <span class="n">MILO_solver</span> <span class="o">=</span> <span class="s2">"appsi_highs"</span>
 <span class="n">MINLO_solver</span> <span class="o">=</span> <span class="s2">"scip_direct"</span>
 <span class="n">MILO_SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">MILO_solver</span><span class="p">)</span>
-<span class="n">MINLO_SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">MINLO_solver</span><span class="p">)</span>
+<span class="n">MINLO_SOLVER</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">SolverFactory</span><span class="p">(</span><span class="n">MINLO_solver</span><span class="p">)</span> <span class="k">if</span> <span class="n">USE_SCIP</span> <span class="k">else</span> <span class="kc">None</span>
+
+<span class="c1"># Close MIP gaps before making the absolute cost comparisons below.</span>
+<span class="n">MILO_SOLVER</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">"mip_rel_gap"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="n">MILO_SOLVER</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">"mip_abs_gap"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
 
 <span class="k">assert</span> <span class="n">MILO_SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">"Solver </span><span class="si">{</span><span class="n">MILO_solver</span><span class="si">}</span><span class="s2"> is not available."</span>
-<span class="k">assert</span> <span class="n">MINLO_SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">"Solver </span><span class="si">{</span><span class="n">MINLO_solver</span><span class="si">}</span><span class="s2"> is not available."</span>
+<span class="n">HAVE_MINLO</span> <span class="o">=</span> <span class="n">USE_SCIP</span> <span class="ow">and</span> <span class="n">MINLO_SOLVER</span><span class="o">.</span><span class="n">available</span><span class="p">(</span><span class="n">exception_flag</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">HAVE_MINLO</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"SCIP is unavailable or switched off: running the HiGHS-only examples and Phase 1."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -916,6 +927,8 @@
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">bilinear_cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">Np</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">HAVE_MINLO</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"This bilinear model requires SCIP. Install pyscipopt and rerun the preamble with USE_SCIP = True."</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">Np</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">Np</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">finish</span><span class="p">)</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
@@ -983,8 +996,11 @@
     <span class="k">return</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span>
 
 
-<span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">bilinear_cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">HAVE_MINLO</span><span class="p">:</span>
+    <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">bilinear_cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">plot_nonzero_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">cost</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Skipping the bilinear example: SCIP is unavailable or switched off."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1017,6 +1033,8 @@
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">generate_pattern_bilinear</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">incumbent_cost</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">HAVE_MINLO</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"This bilinear model requires SCIP. Install pyscipopt and rerun the preamble with USE_SCIP = True."</span><span class="p">)</span>
     <span class="n">m</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">()</span>
 
     <span class="n">m</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">pyo</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">stocks</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
@@ -1088,7 +1106,10 @@
 <span class="p">}</span>
 
 <span class="n">patterns</span> <span class="o">=</span> <span class="n">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
-<span class="n">generate_pattern_bilinear</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">HAVE_MINLO</span><span class="p">:</span>
+    <span class="n">display</span><span class="p">(</span><span class="n">generate_pattern_bilinear</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">))</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Skipping bilinear pattern generation: SCIP is unavailable or switched off."</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1241,8 +1262,11 @@ V_s = \max\quad &amp; \left(\sum_{f\in F} \pi_{f} a'_{sf}\right) - c_s \\
 
 <span class="n">patterns</span> <span class="o">=</span> <span class="n">make_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Testing generate_patterns_bilinear: "</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
-<span class="o">%</span><span class="k">timeit</span> -n 1 -r 1 generate_pattern_bilinear(stocks, finish, patterns)
+<span class="k">if</span> <span class="n">HAVE_MINLO</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Testing generate_patterns_bilinear: "</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+    <span class="o">%</span><span class="k">timeit</span> -n 1 -r 1 generate_pattern_bilinear(stocks, finish, patterns)
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Skipping the bilinear timing: SCIP is unavailable or switched off."</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Testing generate_patterns_dual: "</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
 <span class="o">%</span><span class="k">timeit</span> -n 1 -r 1 generate_pattern_dual(stocks, finish, patterns)
@@ -1261,6 +1285,8 @@ Testing generate_patterns_dual: 61.7 ms ± 0 ns per loop (mean ± std. dev. of 1
 <h2>A hybrid solution algorithm using pattern generation<a class="headerlink" href="#a-hybrid-solution-algorithm-using-pattern-generation" title="Link to this heading">#</a></h2>
 <p>We start with <code class="docutils literal notranslate"><span class="pre">make_patterns</span></code> and use linear-dual pricing until no improving column remains. Solving the integer model over these patterns gives a feasible cutting plan and an upper bound; the priced relaxation supplies a lower bound. Phase 2 searches for a single additional pattern that strictly reduces the integer cost, repeating while an improvement is found.</p>
 <p>The final plan is optimal over the generated patterns. A gap between its cost and the lower bound can remain: failure to improve by adding one pattern does not rule out improvements requiring several new patterns together. The algorithm reports both bounds instead of claiming that every instance is solved globally.</p>
+<p>The pattern comparisons use an absolute cost tolerance of <code class="docutils literal notranslate"><span class="pre">1e-6</span></code>. We request zero relative and absolute MIP gaps from HiGHS so that an early gap-based stop is not mistaken for an improvement due to a new pattern. SCIP’s gap limits are already zero by default. These stopping settings do not remove ordinary floating-point feasibility tolerances.</p>
+<p>When SCIP is unavailable or switched off, Phase 2 is skipped. The returned plan is then the Phase-1 integer solution over the generated patterns; the reported lower bound still measures the remaining gap.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">cut_stock</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">):</span>
@@ -1280,19 +1306,22 @@ Testing generate_patterns_dual: 61.7 ms ± 0 ns per loop (mean ± std. dev. of 1
     <span class="n">x</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">cut_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">" Cost = </span><span class="si">{</span><span class="n">cost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">; LP lower bound = </span><span class="si">{</span><span class="n">lower_bound</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"Phase 2 "</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">"."</span><span class="p">)</span>
-    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="n">new_pattern</span> <span class="o">=</span> <span class="n">generate_pattern_bilinear</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">incumbent_cost</span><span class="o">=</span><span class="n">cost</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">new_pattern</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">break</span>
-        <span class="k">if</span> <span class="n">new_pattern</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"An existing pattern cannot improve an optimal restricted model."</span><span class="p">)</span>
-        <span class="n">patterns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_pattern</span><span class="p">)</span>
-        <span class="n">x</span><span class="p">,</span> <span class="n">improved_cost</span> <span class="o">=</span> <span class="n">cut_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">improved_cost</span> <span class="o">&lt;</span> <span class="n">cost</span> <span class="o">-</span> <span class="mf">1e-6</span>
-        <span class="n">cost</span> <span class="o">=</span> <span class="n">improved_cost</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">end</span><span class="o">=</span><span class="s2">"."</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">" Cost = </span><span class="si">{</span><span class="n">cost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">; bound gap = </span><span class="si">{</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">cost</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">lower_bound</span><span class="p">)</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">HAVE_MINLO</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Phase 2 "</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">"."</span><span class="p">)</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">new_pattern</span> <span class="o">=</span> <span class="n">generate_pattern_bilinear</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">incumbent_cost</span><span class="o">=</span><span class="n">cost</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">new_pattern</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="n">new_pattern</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"An existing pattern cannot improve an optimal restricted model."</span><span class="p">)</span>
+            <span class="n">patterns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_pattern</span><span class="p">)</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">improved_cost</span> <span class="o">=</span> <span class="n">cut_patterns</span><span class="p">(</span><span class="n">stocks</span><span class="p">,</span> <span class="n">finish</span><span class="p">,</span> <span class="n">patterns</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">improved_cost</span> <span class="o">&lt;</span> <span class="n">cost</span> <span class="o">-</span> <span class="mf">1e-6</span>
+            <span class="n">cost</span> <span class="o">=</span> <span class="n">improved_cost</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">end</span><span class="o">=</span><span class="s2">"."</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">" Cost = </span><span class="si">{</span><span class="n">cost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">; bound gap = </span><span class="si">{</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">cost</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">lower_bound</span><span class="p">)</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Phase 2 skipped (SCIP unavailable or switched off); returning Phase-1 plan; bound gap = </span><span class="si">{</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">cost</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">lower_bound</span><span class="p">)</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="n">used</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">patterns</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">used</span><span class="p">],</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">used</span><span class="p">],</span> <span class="n">cost</span>
