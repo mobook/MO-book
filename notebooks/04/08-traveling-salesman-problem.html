@@ -1291,6 +1291,7 @@ Models that confine themselves to arc or edge variables require some bookkeeping
     <span class="n">t</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span>
     <span class="n">r</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">t</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span>
+    <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">GetSolutionFromMTZFollowingU</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="o">==</span> <span class="n">ListNodesInSolution</span><span class="p">(</span><span class="n">m</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">results</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">pyo</span><span class="o">.</span><span class="n">check_optimal_termination</span><span class="p">(</span><span class="n">r</span><span class="p">),</span>
@@ -1503,7 +1504,9 @@ How is that affecting the times required to solve the integer versions?</p>
         <span class="n">m</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">PrepareMTZ</span><span class="p">(</span><span class="n">ForbidDiagonal</span><span class="p">(</span><span class="n">LAP</span><span class="p">(</span><span class="n">instance</span><span class="p">))))</span>
         <span class="n">t</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span>
         <span class="n">r</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">MTZ_times</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="n">display_seconds</span><span class="p">(</span><span class="n">pc</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span><span class="p">)</span>
+        <span class="n">elapsed</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span>
+        <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        <span class="n">MTZ_times</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="vm">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="n">display_seconds</span><span class="p">(</span><span class="n">elapsed</span><span class="p">)</span>
         <span class="n">cost</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Cost</span><span class="p">()))</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">cost</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span>
     <span class="n">MTZ_times</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="s2">"cost"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">cost</span><span class="p">)))</span>
@@ -1563,7 +1566,7 @@ How is that affecting the times required to solve the integer versions?</p>
 </div></div></div>
 </div>
 <p>Note that the times above are likely to be very different if you run this notebook on your own machine, even if using the same solver and version.
-In particular, if your machine has more than two (virtual) processors the differences between the models will be much smaller.
+The number of available processors and the solver’s parallel settings can affect these timing differences; more processors do not guarantee a smaller difference between the formulations.
 In fact, it may happen that the times taken to optimize do not directly reflect the strength of the model.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1693,10 +1696,13 @@ We add the MTZ variables and constraints and solve the resulting mixed model.</p
             <span class="n">t</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span>
             <span class="n">m</span> <span class="o">=</span> <span class="n">BestMTZ</span><span class="p">(</span><span class="n">PrepareMTZ</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
             <span class="n">r</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-            <span class="n">combined_results</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"tMTZ.</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">pc</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">elapsed</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span>
+            <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+            <span class="n">combined_results</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"tMTZ.</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">elapsed</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
         <span class="n">cost</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">Cost</span><span class="p">())))</span>
         <span class="n">linear_relaxation</span><span class="o">.</span><span class="n">apply_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
         <span class="n">r</span> <span class="o">=</span> <span class="n">SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
         <span class="n">combined_results</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"LR.</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">Cost</span><span class="p">()</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">cost</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cost</span>
     <span class="n">combined_results</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="s2">"cost"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>
@@ -2052,7 +2058,7 @@ Once these constraints are added, the previous solution becomes <em>separated</e
 </div>
 <p>With <span class="math notranslate nohighlight">\(50 \times 50 = 2500\)</span> binary variables, this instance exceeds the limit of 2000 variables of the size-limited Gurobi license, so it cannot be handed to that solver as it stands. HiGHS has no such limit and solves it by adding violated DFJ constraints over a modest number of rounds.</p>
 <p>We could be very happy about this, but we now realize that for all instances that we have been solving <span class="math notranslate nohighlight">\(c_{ij} = c_{ji}\)</span> and in fact we do not need to have both <span class="math notranslate nohighlight">\(x_{ij}\)</span> and <span class="math notranslate nohighlight">\(x_{ji}\)</span>.</p>
-<p>In essence, our underlying graph has been asymmetric (hence, with directed arcs) but can be regarded as symmetric (with undirected edges).</p>
+<p>The formulations above use directed arcs, although the costs are symmetric. We can exploit that symmetry by using undirected edges instead.</p>
 <p>We do need to be careful about what that means for the model!</p>
 </section>
 <section id="symmetry">
@@ -2279,9 +2285,10 @@ These are commercial solvers. Gurobi’s <a class="reference external" href="htt
 <span class="n">PERSISTENT_SOLVER</span><span class="o">.</span><span class="n">set_gurobi_param</span><span class="p">(</span><span class="s2">"PreCrush"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 <span class="n">PERSISTENT_SOLVER</span><span class="o">.</span><span class="n">set_gurobi_param</span><span class="p">(</span><span class="s2">"LazyConstraints"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 <span class="n">PERSISTENT_SOLVER</span><span class="o">.</span><span class="n">set_callback</span><span class="p">(</span><span class="n">my_callback</span><span class="p">)</span>
-<span class="n">PERSISTENT_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">PERSISTENT_SOLVER</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
 
 <span class="n">t</span> <span class="o">=</span> <span class="n">pc</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span>
+<span class="n">pyo</span><span class="o">.</span><span class="n">assert_optimal_termination</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -2318,7 +2325,7 @@ These are commercial solvers. Gurobi’s <a class="reference external" href="htt
 <h3>Gray area<a class="headerlink" href="#gray-area" title="Link to this heading">#</a></h3>
 <p>Defining a callback forces us to adhere to solver specific knowledge.</p>
 <p>One may argue that the flexibility offered by <code class="docutils literal notranslate"><span class="pre">pyomo</span></code> is now somewhat lost.</p>
-<p>Maybe this is the moment to consider modeling the whole model in the solver’s dialect (<code class="docutils literal notranslate"><span class="pre">gurobipy</span></code> in this case) and bypass the overhead of <code class="docutils literal notranslate"><span class="pre">pyomo</span></code> all together.</p>
+<p>Maybe this is the moment to consider modeling the whole model in the solver’s dialect (<code class="docutils literal notranslate"><span class="pre">gurobipy</span></code> in this case) and bypass the overhead of <code class="docutils literal notranslate"><span class="pre">pyomo</span></code> altogether.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">SymmetricTSPViaGurobi</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">trace</span><span class="p">):</span>
@@ -2366,6 +2373,8 @@ These are commercial solvers. Gurobi’s <a class="reference external" href="htt
     <span class="n">m</span><span class="o">.</span><span class="n">Params</span><span class="o">.</span><span class="n">OutputFlag</span> <span class="o">=</span> <span class="n">trace</span>
     <span class="n">m</span><span class="o">.</span><span class="n">Params</span><span class="o">.</span><span class="n">LazyConstraints</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">m</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">subtourelim</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">Status</span> <span class="o">!=</span> <span class="n">GRB</span><span class="o">.</span><span class="n">OPTIMAL</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Gurobi did not prove optimality (status </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">Status</span><span class="si">}</span><span class="s2">)."</span><span class="p">)</span>
 
     <span class="n">sub_tours</span> <span class="o">=</span> <span class="n">GetSubTours</span><span class="p">(</span><span class="n">GetAdjacent</span><span class="p">(</span><span class="n">GetSelected</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="s2">"X"</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">_x</span><span class="p">)),</span> <span class="n">m</span><span class="o">.</span><span class="n">_I</span><span class="p">))</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">sub_tours</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sub_tours</span>
@@ -3114,7 +3123,7 @@ Notice that we index at <em>inner indices</em> for code simplicity now.</p>
 <p>Suppose that you start at some node with <span class="math notranslate nohighlight">\(k\)</span> sales persons that should partition the other nodes and return to the starting node.</p>
 <p>Then, it is enough to replicate that node into <span class="math notranslate nohighlight">\(k\)</span> replicas, with a prohibitively large cost between all pairs of replicas (to force the sales person to go on a route).</p>
 <p><em>Note that this modified TSP stays symmetric if instance given was symmetric!</em></p>
-<p>Obviously that you can also combine these extensions!</p>
+<p>You can also combine these extensions.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">instance</span> <span class="o">=</span> <span class="n">generate_tsp</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
@@ -3356,6 +3365,8 @@ Notice that we index at <em>inner indices</em> for code simplicity now.</p>
     <span class="n">m</span><span class="o">.</span><span class="n">Params</span><span class="o">.</span><span class="n">OutputFlag</span> <span class="o">=</span> <span class="n">trace</span>
     <span class="n">m</span><span class="o">.</span><span class="n">Params</span><span class="o">.</span><span class="n">LazyConstraints</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">m</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">subtourelim</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">Status</span> <span class="o">!=</span> <span class="n">GRB</span><span class="o">.</span><span class="n">OPTIMAL</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Gurobi did not prove optimality (status </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">Status</span><span class="si">}</span><span class="s2">)."</span><span class="p">)</span>
 
     <span class="n">succ</span> <span class="o">=</span> <span class="n">GetNodeSuccessorFromArcVariables</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">getAttr</span><span class="p">(</span><span class="s2">"X"</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">_x</span><span class="p">))</span>
     <span class="n">cycles</span> <span class="o">=</span> <span class="n">PartitionSuccessorIntoCycles</span><span class="p">(</span><span class="n">succ</span><span class="p">)</span>
